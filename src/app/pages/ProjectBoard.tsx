@@ -166,6 +166,7 @@ function TaskCard({ task }: TaskCardProps) {
   return (
     <Link to={`/tasks/${task.id}`}>
       <motion.div
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ref={drag as any}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: isDragging ? 0.5 : 1, scale: 1 }}
@@ -266,6 +267,7 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
         </Button>
       </div>
       <div
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ref={drop as any}
         className={`space-y-3 min-h-[600px] p-3 rounded-lg transition-colors ${isOver ? 'bg-accent/50' : 'bg-muted/30'
           }`}

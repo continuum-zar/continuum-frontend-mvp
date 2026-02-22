@@ -18,6 +18,7 @@ const initialTimeEntries: TimeEntry[] = [
     { id: '6', project: 'Mobile App Redesign', task: 'Component library', duration: 210, date: '2026-02-19' },
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const myTasks = [
     { id: 't1', title: 'Implement dark mode toggle', project: 'Mobile App Redesign' },
     { id: 't2', title: 'Refactor Time Tracking widget', project: 'Dashboard v2' },
@@ -26,6 +27,7 @@ export const myTasks = [
     { id: 't5', title: 'Optimize React component renders', project: 'Mobile App Redesign' },
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const weeklyData = [
     { day: 'Mon', hours: 6.5 },
     { day: 'Tue', hours: 7.2 },
@@ -153,6 +155,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTimeTracking() {
     const context = useContext(TimeTrackingContext);
     if (context === undefined) {

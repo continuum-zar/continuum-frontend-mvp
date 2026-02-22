@@ -65,6 +65,7 @@ const gitCommitsData = [
 // Days: 0 (Mon) to 4 (Fri). Hours: 8 to 18 (9am to 7pm)
 const rhythmData = Array.from({ length: 5 }, (_, dayIndex) => {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dayRhythm: any = { day: days[dayIndex] };
   for (let h = 8; h <= 18; h++) {
     // Randomize activity, peaks between 10-12 and 14-16
