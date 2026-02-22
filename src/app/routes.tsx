@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import { Login } from "./pages/auth/Login";
 import { SignUp } from "./pages/auth/SignUp";
 import { ResetPassword } from "./pages/auth/ResetPassword";
+import { RoleSelection } from "./pages/RoleSelection";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { Dashboard } from "./pages/Dashboard";
 import { ProjectsList } from "./pages/ProjectsList";
@@ -29,6 +30,10 @@ export const router = createBrowserRouter([
   {
     path: "/reset-password",
     Component: ResetPassword,
+  },
+  {
+    path: "/role-selection",
+    Component: RoleSelection,
   },
   {
     path: "/",

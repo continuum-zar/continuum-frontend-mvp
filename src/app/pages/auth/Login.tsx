@@ -19,7 +19,7 @@ export function Login() {
     // Simulate auth
     setTimeout(() => {
       setLoading(false);
-      navigate('/dashboard');
+      navigate('/role-selection');
     }, 1500);
   };
 
