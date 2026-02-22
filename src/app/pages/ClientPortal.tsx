@@ -90,7 +90,7 @@ export function ClientPortal() {
                     <h2 className="text-xl mb-6 font-medium">Recent Highlights</h2>
 
                     <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
-                        {curatedActivity.map((activity, index) => (
+                        {curatedActivity.map((activity) => (
                             <div key={activity.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                                 {/* Timeline Marker */}
                                 <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-card bg-muted shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow flex-shrink-0 z-10 ${activity.color}`}>

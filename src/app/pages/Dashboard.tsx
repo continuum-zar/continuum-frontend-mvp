@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
-import { 
-  ArrowUpRight, 
+import {
+  ArrowUpRight,
   ArrowDownRight,
   TrendingUp,
   Activity,
@@ -16,15 +16,14 @@ import {
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
-import { 
-  BarChart, 
-  Bar, 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   ComposedChart,
   PieChart,
@@ -42,14 +41,6 @@ const velocityData = [
   { week: 'W3', score: 68, avg: 65, tasks: 48, hours: 40, commits: 16 },
   { week: 'W4', score: 85, avg: 72, tasks: 65, hours: 48, commits: 22 },
   { week: 'W5', score: 92, avg: 76, tasks: 72, hours: 52, commits: 25 },
-];
-
-const hpsData = [
-  { week: 'W1', value: 2.1 },
-  { week: 'W2', value: 2.4 },
-  { week: 'W3', value: 1.8 },
-  { week: 'W4', value: 1.5 },
-  { week: 'W5', value: 1.2 },
 ];
 
 // 2. Milestone Burndown
@@ -120,13 +111,13 @@ export function Dashboard() {
           <p className="text-muted-foreground">Team velocity, health, and efficiency insights.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline"><Clock className="mr-2 h-4 w-4"/> Last 30 Days</Button>
-          <Button variant="outline"><UserX className="mr-2 h-4 w-4"/> Team View</Button>
+          <Button variant="outline"><Clock className="mr-2 h-4 w-4" /> Last 30 Days</Button>
+          <Button variant="outline"><UserX className="mr-2 h-4 w-4" /> Team View</Button>
         </div>
       </div>
 
       {/* Row 1: KPI Velocity Cards */}
-      <motion.div 
+      <motion.div
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
         variants={container}
         initial="hidden"
@@ -214,7 +205,7 @@ export function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
               <XAxis dataKey="week" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
               />
               <Legend iconType="circle" />
@@ -239,7 +230,7 @@ export function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
               <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis yAxisId="left" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
               />
               <Legend iconType="circle" />
@@ -252,7 +243,7 @@ export function Dashboard() {
 
       {/* Row 3: User Rhythm Heatmap & Diagnostics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        
+
         {/* Heatmap */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -275,7 +266,7 @@ export function Dashboard() {
               <span>More</span>
             </div>
           </div>
-          
+
           <div className="w-full overflow-x-auto">
             <div className="min-w-[600px]">
               {/* x-axis labels */}
@@ -286,7 +277,7 @@ export function Dashboard() {
                   </div>
                 ))}
               </div>
-              
+
               {/* grid */}
               <div className="flex flex-col gap-1">
                 {rhythmData.map((dayRow, idx) => (
@@ -296,8 +287,8 @@ export function Dashboard() {
                     </div>
                     <div className="flex-1 flex gap-1">
                       {Array.from({ length: 11 }, (_, i) => i + 8).map(hour => (
-                        <div 
-                          key={hour} 
+                        <div
+                          key={hour}
                           className={`flex-1 aspect-square rounded-sm ${getHeatmapColor(dayRow[`hour${hour}`])}`}
                           title={`${dayRow.day} ${hour}:00 - ${dayRow[`hour${hour}`]} mins`}
                         />
@@ -312,55 +303,55 @@ export function Dashboard() {
 
         {/* Snapshots Radar/Cards */}
         <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.25 }}
-           className="bg-card border border-border rounded-lg p-6 flex flex-col"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="bg-card border border-border rounded-lg p-6 flex flex-col"
         >
-           <h3 className="mb-1">Task Snapshot</h3>
-           <p className="text-sm text-muted-foreground mb-6">Current breakdown</p>
-           
-           <div className="space-y-4 flex-1">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Circle className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">To Do</span>
-                </div>
-                <span className="text-lg font-bold">24</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Activity className="h-4 w-4 text-primary" />
-                  <span className="font-medium">In Progress</span>
-                </div>
-                <span className="text-lg font-bold">18</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <span className="font-medium">Done</span>
-                </div>
-                <span className="text-lg font-bold">142</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                  <span className="font-medium">Overdue</span>
-                </div>
-                <span className="text-lg font-bold text-destructive">4</span>
-              </div>
-           </div>
+          <h3 className="mb-1">Task Snapshot</h3>
+          <p className="text-sm text-muted-foreground mb-6">Current breakdown</p>
 
-           <div className="mt-4 pt-4 border-t border-border">
-              <Progress value={65} className="h-2 mb-2 bg-muted [&>div]:bg-success" />
-              <span className="text-xs text-muted-foreground">65% Overall Completion</span>
-           </div>
+          <div className="space-y-4 flex-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Circle className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">To Do</span>
+              </div>
+              <span className="text-lg font-bold">24</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Activity className="h-4 w-4 text-primary" />
+                <span className="font-medium">In Progress</span>
+              </div>
+              <span className="text-lg font-bold">18</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                <span className="font-medium">Done</span>
+              </div>
+              <span className="text-lg font-bold">142</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <span className="font-medium">Overdue</span>
+              </div>
+              <span className="text-lg font-bold text-destructive">4</span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-border">
+            <Progress value={65} className="h-2 mb-2 bg-muted [&>div]:bg-success" />
+            <span className="text-xs text-muted-foreground">65% Overall Completion</span>
+          </div>
         </motion.div>
       </div>
 
       {/* Row 4: Git Contribution & Stale Work */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Git Donut */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -375,7 +366,7 @@ export function Dashboard() {
             </div>
             <GitCommit className="h-5 w-5 text-muted-foreground" />
           </div>
-          
+
           <div className="h-[250px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -392,10 +383,10 @@ export function Dashboard() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
                 />
-                <Legend verticalAlign="bottom" height={36} iconType="circle"/>
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
               </PieChart>
             </ResponsiveContainer>
             {/* Center text */}
@@ -420,7 +411,7 @@ export function Dashboard() {
             </div>
             <Badge variant="destructive">Action Required</Badge>
           </div>
-          
+
           <div className="flex-1 overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground border-b border-border">
@@ -436,10 +427,10 @@ export function Dashboard() {
                   <tr key={branch.id} className="hover:bg-muted/30 transition-colors">
                     <td className="py-3 font-medium font-mono text-xs">{branch.name}</td>
                     <td className="py-3 text-muted-foreground flex items-center gap-2">
-                       <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] text-foreground">
-                         {branch.author.split(' ').map(n=>n[0]).join('')}
-                       </div>
-                       {branch.author}
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] text-foreground">
+                        {branch.author.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      {branch.author}
                     </td>
                     <td className="py-3 text-right">
                       <span className={`px-2 py-1 rounded text-xs font-bold ${branch.daysStale > 10 ? 'bg-destructive/20 text-destructive' : 'bg-warning/20 text-warning'}`}>
@@ -448,7 +439,7 @@ export function Dashboard() {
                     </td>
                     <td className="py-3 text-right">
                       <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4 text-muted-foreground"/>
+                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
                       </Button>
                     </td>
                   </tr>

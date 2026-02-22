@@ -15,7 +15,7 @@ export function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     // Simulate auth
     setTimeout(() => {
       setLoading(false);
@@ -48,8 +48,8 @@ export function Login() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              <Link 
-                to="/reset-password" 
+              <Link
+                to="/reset-password"
                 className="text-sm text-primary hover:underline"
               >
                 Forgot password?
@@ -76,9 +76,9 @@ export function Login() {
             </label>
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full" 
+          <Button
+            type="submit"
+            className="w-full"
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

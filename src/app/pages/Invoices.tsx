@@ -20,7 +20,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '../components/ui/dialog';
 import {
   Table,
@@ -181,7 +180,7 @@ export function Invoices() {
     const formattedItems = Array.from(itemsMap.entries()).map(([taskTitle, totalMins]) => {
       return {
         item: taskTitle,
-        qty: Math.max(1, Math.round((totalMins / 60) * 10) / 10), // Hours rounded to 1 decimal, min 1 
+        qty: Math.max(1, Math.round((totalMins / 60) * 10) / 10), // Hours rounded to 1 decimal, min 1
       };
     });
 

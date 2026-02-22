@@ -11,7 +11,6 @@ import {
   Users,
   Paperclip,
   MessageSquare,
-  Clock,
   CheckCircle2,
   CircleDot
 } from 'lucide-react';
@@ -35,7 +34,6 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
-import { Progress } from '../components/ui/progress';
 
 type TaskStatus = 'todo' | 'in-progress' | 'done';
 
@@ -146,10 +144,9 @@ const initialMilestones = [
 
 interface TaskCardProps {
   task: Task;
-  onMove: (taskId: string, newStatus: TaskStatus) => void;
 }
 
-function TaskCard({ task, onMove }: TaskCardProps) {
+function TaskCard({ task }: TaskCardProps) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'task',
     item: { id: task.id, status: task.status },
@@ -169,7 +166,7 @@ function TaskCard({ task, onMove }: TaskCardProps) {
   return (
     <Link to={`/tasks/${task.id}`}>
       <motion.div
-        ref={drag}
+        ref={drag as any}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: isDragging ? 0.5 : 1, scale: 1 }}
         className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:shadow-sm transition-shadow"
@@ -269,12 +266,12 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
         </Button>
       </div>
       <div
-        ref={drop}
+        ref={drop as any}
         className={`space-y-3 min-h-[600px] p-3 rounded-lg transition-colors ${isOver ? 'bg-accent/50' : 'bg-muted/30'
           }`}
       >
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onMove={onMove} />
+          <TaskCard key={task.id} task={task} />
         ))}
       </div>
     </div>
@@ -443,7 +440,7 @@ export function ProjectBoard() {
             {/* Horizontal Connecting Line */}
             <div className="absolute top-7 left-[5%] right-[5%] h-[2px] bg-border -z-0" />
 
-            {milestonesList.map((milestone, index) => {
+            {milestonesList.map((milestone) => {
               const isSelected = selectedMilestoneId === milestone.id;
               const isCompleted = milestone.status === 'completed';
               const isActive = milestone.status === 'active';
