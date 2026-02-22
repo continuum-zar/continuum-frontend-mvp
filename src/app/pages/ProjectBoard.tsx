@@ -23,6 +23,13 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -290,6 +297,32 @@ export function ProjectBoard() {
   const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ name: '', desc: '', date: '' });
 
+  // Team Modal State
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('Member');
+  const [teamMembers, setTeamMembers] = useState([
+    { id: 1, name: 'Sarah Anderson', email: 'sarah@example.com', role: 'Project Manager', initials: 'SA' },
+    { id: 2, name: 'Mike Torres', email: 'mike@example.com', role: 'Developer', initials: 'MT' },
+    { id: 3, name: 'Emily Wang', email: 'emily@example.com', role: 'Designer', initials: 'EW' },
+  ]);
+
+  const handleInvite = () => {
+    if (!inviteEmail) return;
+    setTeamMembers([
+      ...teamMembers,
+      {
+        id: Date.now(),
+        name: 'Pending Invite',
+        email: inviteEmail,
+        role: inviteRole,
+        initials: inviteEmail[0].toUpperCase()
+      }
+    ]);
+    setInviteEmail('');
+    setInviteRole('Member');
+  };
+
   // Find first active/upcoming milestone or default to first
   const initialMilestone = milestonesList.find(m => m.status === 'active') || milestonesList[0];
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(initialMilestone.id);
@@ -346,10 +379,65 @@ export function ProjectBoard() {
             <p className="text-muted-foreground">Track progress and manage tasks for the project</p>
           </div>
           <div className="flex items-center space-x-3">
-            <Button variant="outline">
-              <Users className="mr-2 h-4 w-4" />
-              Team
-            </Button>
+            <Dialog open={isTeamModalOpen} onOpenChange={setIsTeamModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Users className="mr-2 h-4 w-4" />
+                  Team
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Project Team</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium">Add new member</h4>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Email address..."
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
+                        className="bg-input-background flex-1"
+                      />
+                      <Select value={inviteRole} onValueChange={setInviteRole}>
+                        <SelectTrigger className="w-[140px] bg-input-background">
+                          <SelectValue placeholder="Role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Member">Member</SelectItem>
+                          <SelectItem value="Project Manager">Project Manager</SelectItem>
+                          <SelectItem value="Developer">Developer</SelectItem>
+                          <SelectItem value="Designer">Designer</SelectItem>
+                          <SelectItem value="Client">Client</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={handleInvite} disabled={!inviteEmail}>Invite</Button>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium text-muted-foreground">Current Members ({teamMembers.length})</h4>
+                    <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2">
+                      {teamMembers.map((member) => (
+                        <div key={member.id} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="h-8 w-8 border border-border">
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">{member.initials}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium leading-none mb-1">{member.name}</p>
+                              <p className="text-xs text-muted-foreground">{member.email}</p>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-[10px] font-normal">{member.role}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Link to="/tasks/new">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />

@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { GlobalActiveSession } from '../components/ui/GlobalActiveSession';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Time Tracking', href: '/time', icon: Clock },
   { name: 'Invoices', href: '/invoices', icon: FileText },
@@ -30,6 +30,9 @@ const navigation = [
 
 export function DashboardLayout() {
   const navigate = useNavigate();
+
+  // Simulated logged-in user role
+  const userRole = 'Project Manager';
 
   const handleLogout = () => {
     navigate('/login');
@@ -39,13 +42,15 @@ export function DashboardLayout() {
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 bg-card border-r border-border flex flex-col">
-        {/* Logo */}
+        {/* Role-based Logo */}
         <div className="h-16 flex items-center px-6 border-b border-border">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
-              <span className="text-primary-foreground font-semibold">PM</span>
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary rounded flex items-center justify-center p-1">
+              <span className="text-primary-foreground font-semibold text-xs tracking-wider">
+                {userRole.split(' ').map((w: string) => w[0]).join('').toUpperCase()}
+              </span>
             </div>
-            <span className="font-semibold">ProjectHub</span>
+            <span className="font-semibold text-base tracking-tight">{userRole}</span>
           </div>
         </div>
 
@@ -55,7 +60,7 @@ export function DashboardLayout() {
             <NavLink
               key={item.name}
               to={item.href}
-              end={item.href === '/'}
+              end={item.href === '/dashboard'}
               className={({ isActive }) =>
                 `flex items-center px-3 py-2 rounded-md transition-colors ${isActive
                   ? 'bg-primary text-primary-foreground'
