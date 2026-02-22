@@ -27,12 +27,19 @@ const navigation = [
   { name: 'Time Tracking', href: '/time', icon: Clock },
   { name: 'Invoices', href: '/invoices', icon: FileText },
 ];
+import { useRole } from '../context/RoleContext';
 
 export function DashboardLayout() {
   const navigate = useNavigate();
+  const { role: userRole } = useRole();
 
-  // Simulated logged-in user role
-  const userRole = 'Project Manager';
+  // Filter navigation based on role
+  const filteredNavigation = navigation.filter((item) => {
+    if (userRole === 'Client') {
+      return item.name === 'Dashboard';
+    }
+    return true; // PM and Developer see all
+  });
 
   const handleLogout = () => {
     navigate('/login');
@@ -56,7 +63,7 @@ export function DashboardLayout() {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navigation.map((item) => (
+          {filteredNavigation.map((item) => (
             <NavLink
               key={item.name}
               to={item.href}
