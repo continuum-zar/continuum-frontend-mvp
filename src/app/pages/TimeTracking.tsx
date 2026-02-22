@@ -1,0 +1,356 @@
+import { motion } from 'motion/react';
+import {
+  Play,
+  Pause,
+  Square,
+  Clock,
+  Calendar,
+  TrendingUp,
+  Download,
+  Sparkles,
+  Loader2
+} from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui/table';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useTimeTracking, myTasks, weeklyData } from '../context/TimeTrackingContext';
+
+function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours}h ${mins}m`;
+}
+
+export function TimeTracking() {
+  const {
+    entries,
+    sessionState,
+    setSessionState,
+    currentTime,
+    selectedTaskId,
+    setSelectedTaskId,
+    isLoggingModalOpen,
+    setIsLoggingModalOpen,
+    logForm,
+    setLogForm,
+    isAiGenerating,
+    simulateAiGeneration,
+    handleLogSubmit,
+    handleLogCancel,
+    handleStop,
+  } = useTimeTracking();
+
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const totalWeekHours = weeklyData.reduce((sum, day) => sum + day.hours, 0);
+  const totalMonthMinutes = entries.reduce((sum, entry) => sum + entry.duration, 0);
+
+  return (
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-2xl mb-2">Time Tracking</h1>
+        <p className="text-muted-foreground">Track your work hours and analyze productivity</p>
+      </div>
+
+      {/* Stats Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+      >
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-center w-10 h-10">
+              <Clock className="h-5 w-5 text-foreground" />
+            </div>
+          </div>
+          <div className="text-2xl font-semibold mb-1">{totalWeekHours.toFixed(1)}h</div>
+          <div className="text-sm text-muted-foreground">This Week</div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-center w-10 h-10">
+              <Calendar className="h-5 w-5 text-foreground" />
+            </div>
+          </div>
+          <div className="text-2xl font-semibold mb-1">{formatDuration(totalMonthMinutes)}</div>
+          <div className="text-sm text-muted-foreground">This Month</div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-center w-10 h-10">
+              <TrendingUp className="h-5 w-5 text-foreground" />
+            </div>
+          </div>
+          <div className="text-2xl font-semibold mb-1">6.8h</div>
+          <div className="text-sm text-muted-foreground">Daily Average</div>
+        </div>
+      </motion.div>
+
+      {/* Active Timer */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, delay: 0.1 }}
+        className="bg-card border border-border rounded-lg p-6 mb-8"
+      >
+        <h3 className="mb-6">Active Session</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className={`text-4xl font-mono ${sessionState === 'running' ? 'text-primary' : 'text-muted-foreground'}`}>
+              {formatTime(currentTime)}
+            </div>
+            <div className="space-y-2">
+              <Select value={selectedTaskId} onValueChange={setSelectedTaskId} disabled={sessionState !== 'idle'}>
+                <SelectTrigger className="w-80 truncate">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {myTasks.map(task => (
+                    <SelectItem key={task.id} value={task.id} className="cursor-pointer">
+                      <span className="font-medium mr-2">{task.title}</span>
+                      <span className="text-muted-foreground text-xs">({task.project})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {sessionState === 'running' && (
+                <Badge variant="secondary" className="animate-pulse">
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2" />
+                  Tracking
+                </Badge>
+              )}
+              {sessionState === 'paused' && (
+                <Badge variant="outline" className="text-warning border-warning/50">
+                  <div className="w-2 h-2 bg-warning rounded-full mr-2" />
+                  Paused
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {sessionState === 'idle' && (
+              <Button onClick={() => setSessionState('running')}>
+                <Play className="mr-2 h-4 w-4" />
+                Start
+              </Button>
+            )}
+            {sessionState === 'running' && (
+              <Button variant="outline" onClick={() => setSessionState('paused')}>
+                <Pause className="mr-2 h-4 w-4" />
+                Pause
+              </Button>
+            )}
+            {sessionState === 'paused' && (
+              <Button variant="outline" onClick={() => setSessionState('running')} className="border-primary text-primary hover:bg-primary/10">
+                <Play className="mr-2 h-4 w-4" />
+                Resume
+              </Button>
+            )}
+            {sessionState !== 'idle' && (
+              <Button
+                variant="destructive"
+                onClick={handleStop}
+              >
+                <Square className="mr-2 h-4 w-4" />
+                Stop
+              </Button>
+            )}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Session Logging Modal */}
+      <Dialog open={isLoggingModalOpen} onOpenChange={setIsLoggingModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Log Time Session</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label>Project</Label>
+                <Input value={myTasks.find(t => t.id === selectedTaskId)?.project || ''} disabled className="bg-muted/50" />
+              </div>
+              <div className="grid grid-cols-[1fr,auto] gap-4">
+                <div className="space-y-2">
+                  <Label>Task</Label>
+                  <Input value={myTasks.find(t => t.id === selectedTaskId)?.title || ''} disabled className="bg-muted/50 truncate" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Time Tracked</Label>
+                  <Input value={formatTime(currentTime)} disabled className="font-mono bg-muted/50 w-[120px] text-center" />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 relative mt-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="desc">Work Description</Label>
+                {/* AI Fill Button */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10 -mr-2"
+                  onClick={simulateAiGeneration}
+                  disabled={isAiGenerating}
+                >
+                  {isAiGenerating ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3 mr-1" />
+                  )}
+                  AI Fill from Commits
+                </Button>
+              </div>
+              <Textarea
+                id="desc"
+                className="min-h-[100px] resize-none"
+                placeholder="Describe the work completed during this session..."
+                value={logForm.description}
+                onChange={(e) => setLogForm({ ...logForm, description: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleLogCancel}>Cancel</Button>
+            <Button onClick={handleLogSubmit}>Log Session</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Weekly Chart */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, delay: 0.15 }}
+        className="bg-card border border-border rounded-lg p-6 mb-8"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="mb-1">Weekly Overview</h3>
+            <p className="text-sm text-muted-foreground">Hours tracked per day</p>
+          </div>
+          <Button variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={weeklyData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+            <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} />
+            <YAxis stroke="var(--color-muted-foreground)" fontSize={12} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'var(--color-card)',
+                border: '1px solid var(--color-border)',
+                borderRadius: '6px',
+              }}
+            />
+            <Bar dataKey="hours" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </motion.div>
+
+      {/* Time Entries Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, delay: 0.2 }}
+        className="bg-card border border-border rounded-lg p-6"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3>Recent Entries</h3>
+          <div className="flex items-center space-x-2">
+            <Select defaultValue="all">
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Projects</SelectItem>
+                <SelectItem value="mobile-app">Mobile App</SelectItem>
+                <SelectItem value="dashboard-v2">Dashboard v2</SelectItem>
+                <SelectItem value="marketing">Marketing</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+          </div>
+        </div>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Project</TableHead>
+              <TableHead>Task</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead className="text-right">Duration</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {entries.map((entry) => (
+              <TableRow key={entry.id}>
+                <TableCell>
+                  {new Date(entry.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{entry.project}</Badge>
+                </TableCell>
+                <TableCell className="font-medium max-w-[200px] truncate" title={entry.task}>{entry.task}</TableCell>
+                <TableCell className="text-muted-foreground text-sm max-w-[250px] truncate" title={entry.description}>
+                  {entry.description || '-'}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatDuration(entry.duration)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </motion.div>
+    </div>
+  );
+}

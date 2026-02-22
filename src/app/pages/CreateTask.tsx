@@ -1,0 +1,302 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { motion } from 'motion/react';
+import {
+  ArrowLeft,
+  Loader2,
+  Plus,
+  X,
+  Paperclip
+} from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import { Label } from '../components/ui/label';
+
+export function CreateTask() {
+  const navigate = useNavigate();
+  const [prompt, setPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    status: 'todo',
+    scope: 'M',
+    estimatedHours: '',
+    dueDate: '',
+  });
+
+  const [checklists, setChecklists] = useState<string[]>([]);
+  const [newChecklist, setNewChecklist] = useState('');
+
+  const handleAddChecklist = () => {
+    if (newChecklist.trim()) {
+      setChecklists([...checklists, newChecklist.trim()]);
+      setNewChecklist('');
+    }
+  };
+
+  const handleRemoveChecklist = (index: number) => {
+    setChecklists(checklists.filter((_, i) => i !== index));
+  };
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+
+    setIsGenerating(true);
+
+    // Simulate AI generation
+    setTimeout(() => {
+      setFormData({
+        title: 'Add Playwright E2E tests',
+        description: 'Set up Playwright and write initial end-to-end tests for the main user flows including authentication and dashboard navigation.',
+        status: 'todo',
+        scope: 'L',
+        estimatedHours: '8',
+        dueDate: '2026-03-01',
+      });
+      setChecklists([
+        'Install playwright dependencies',
+        'Configure playwright.config.ts',
+        'Write authentication test suite',
+        'Write dashboard navigation test suite',
+        'Add test scripts to package.json'
+      ]);
+      setIsGenerating(false);
+    }, 1500);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Simulate submission
+    console.log('Task Created', formData);
+    navigate('/projects');
+  };
+
+  return (
+    <div className="p-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-8 flex items-center space-x-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl mb-1">Create Task</h1>
+            <p className="text-muted-foreground">
+              Create a new task manually or generate one with AI
+            </p>
+          </div>
+        </div>
+
+
+
+        {/* Manual Form Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card border border-border rounded-lg p-6"
+        >
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="title">Task Title</Label>
+              <Input
+                id="title"
+                required
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Enter task title"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                rows={4}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Enter task description"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(val) => setFormData({ ...formData, status: val })}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="scope">Scope</Label>
+                <Select
+                  value={formData.scope}
+                  onValueChange={(val) => setFormData({ ...formData, scope: val })}
+                >
+                  <SelectTrigger id="scope">
+                    <SelectValue placeholder="Select scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="XS">Extra Small (XS)</SelectItem>
+                    <SelectItem value="S">Small (S)</SelectItem>
+                    <SelectItem value="M">Medium (M)</SelectItem>
+                    <SelectItem value="L">Large (L)</SelectItem>
+                    <SelectItem value="XL">Extra Large (XL)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="estimatedHours">Estimated Hours</Label>
+                <Input
+                  id="estimatedHours"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={formData.estimatedHours}
+                  onChange={(e) => setFormData({ ...formData, estimatedHours: e.target.value })}
+                  placeholder="e.g., 4"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dueDate">Due Date</Label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Checklists Section */}
+            <div className="space-y-3">
+              <Label>Checklist Items</Label>
+              <div className="flex space-x-2">
+                <Input
+                  value={newChecklist}
+                  onChange={(e) => setNewChecklist(e.target.value)}
+                  placeholder="Add a checklist item..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddChecklist();
+                    }
+                  }}
+                />
+                <Button type="button" variant="secondary" onClick={handleAddChecklist}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {checklists.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  {checklists.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded border border-border">
+                      <span className="text-sm">{item}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleRemoveChecklist(index)}
+                      >
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Attachments Section UI Mock */}
+            <div className="space-y-2">
+              <Label>Attachments</Label>
+              <div className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                  <Paperclip className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-sm font-medium mb-1">Click to upload or drag and drop</p>
+                <p className="text-xs text-muted-foreground">PDF, Figma, Image, or Video (max 10MB)</p>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border flex justify-end space-x-3">
+              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Create Task
+              </Button>
+            </div>
+          </form>
+        </motion.div>
+      </div>
+
+      {/* Floating AI Assistant Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="fixed bottom-8 right-8 w-72 p-4 bg-card border border-foreground rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-50"
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h3 className="font-medium text-foreground text-sm mb-1">AI Assistant</h3>
+            <p className="text-xs text-muted-foreground">
+              Describe the task and let AI fill in the details.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col space-y-2">
+          <Textarea
+            placeholder='e.g., "Add playwright tests..."'
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            className="bg-background text-sm min-h-[60px] resize-none border-border focus-visible:ring-foreground"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleGenerate();
+              }
+            }}
+          />
+          <Button
+            onClick={handleGenerate}
+            disabled={isGenerating || !prompt.trim()}
+            size="sm"
+            className="w-full bg-foreground text-background hover:bg-foreground/90 transition-colors"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              'Generate'
+            )}
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
