@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { Login } from "./pages/auth/Login";
+import { SignUp } from "./pages/auth/SignUp";
 import { ResetPassword } from "./pages/auth/ResetPassword";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { Dashboard } from "./pages/Dashboard";
@@ -14,8 +15,16 @@ import { NotFound } from "./pages/NotFound";
 
 export const router = createBrowserRouter([
   {
+    path: "/",
+    Component: Login,
+  },
+  {
     path: "/login",
     Component: Login,
+  },
+  {
+    path: "/register",
+    Component: SignUp,
   },
   {
     path: "/reset-password",
@@ -25,7 +34,7 @@ export const router = createBrowserRouter([
     path: "/",
     Component: DashboardLayout,
     children: [
-      { index: true, Component: Dashboard },
+      { path: "dashboard", Component: Dashboard },
       { path: "projects", Component: ProjectsList },
       { path: "projects/:projectId", Component: ProjectBoard },
       { path: "tasks/:taskId", Component: TaskDetail },
