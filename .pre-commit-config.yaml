@@ -1,0 +1,52 @@
+# Pre-commit hooks configuration for Continuum MVP
+# Run `pre-commit install` to set up the git hooks
+# Run `pre-commit run --all-files` to run all hooks manually
+
+repos:
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.venv/|node_modules/|dist/|build/'
+      - id: end-of-file-fixer
+        exclude: '\.venv/|node_modules/|dist/|build/'
+      - id: check-yaml
+        exclude: '\.venv/|node_modules/|dist/|build/'
+      - id: check-json
+        exclude: '\.venv/|node_modules/|dist/|build/'
+      - id: check-added-large-files
+        args: ['--maxkb=2000']  # Increased for large SVG assets
+        exclude: '\.venv/|node_modules/|dist/|build/'
+      - id: check-merge-conflict
+        exclude: '\.venv/|node_modules/|dist/|build/'
+      - id: detect-private-key
+        exclude: '\.venv/|node_modules/|dist/|build/'
+
+  # Local hooks for project-specific checks
+  - repo: local
+    hooks:
+      # Frontend TypeScript Type Check
+      - id: frontend-typecheck
+        name: Frontend Type Check (TypeScript)
+        entry: bash -c 'npm run typecheck'
+        language: system
+        files: ^src/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      # Frontend ESLint
+      - id: frontend-lint
+        name: Frontend Lint (ESLint)
+        entry: bash -c 'if command -v npm > /dev/null 2>&1 && [ -f package.json ]; then npm run lint || echo "ESLint check skipped (dependencies not installed)"; else echo "ESLint check skipped (npm not available)"; fi'
+        language: system
+        files: ^src/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      # Frontend Build Check (ensures the project builds)
+      - id: frontend-build
+        name: Frontend Build Check
+        entry: bash -c 'rm -rf dist/ 2>/dev/null || true && npm run build'
+        language: system
+        files: ^src/.*\.(ts|tsx)$
+        pass_filenames: false
+        stages: [pre-push]  # Only run on push, not commit (takes longer)

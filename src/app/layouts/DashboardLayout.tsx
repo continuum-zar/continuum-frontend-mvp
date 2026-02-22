@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   FolderKanban,
   Clock,
-  PlusSquare,
   FileText,
   Settings,
   Bell,

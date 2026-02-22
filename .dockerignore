@@ -1,0 +1,29 @@
+# Node
+**/node_modules/
+**/dist/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Documentation
+*.md
+!README.md
+
+# Build artifacts
+.npm/
+npm-debug.log
+
+# Local env
+.env
+.env.*
+!.env.example
+
+# Pre-commit / CI (not needed in image)
+.venv/
+.github/

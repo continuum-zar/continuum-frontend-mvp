@@ -21,7 +21,7 @@ export function ResetPassword() {
           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-6">
             <Mail className="h-6 w-6 text-primary" />
           </div>
-          
+
           <h1 className="text-2xl mb-2">Check your email</h1>
           <p className="text-muted-foreground mb-6">
             We've sent a password reset link to <strong>{email}</strong>
@@ -41,8 +41,8 @@ export function ResetPassword() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
-        <Link 
-          to="/login" 
+        <Link
+          to="/login"
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />

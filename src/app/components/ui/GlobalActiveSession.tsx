@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { useLocation } from 'react-router';
 import { motion } from 'motion/react';
 import { Play, Pause, Square, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from './button';
-import { Badge } from './badge';
 import { Input } from './input';
 import { Label } from './label';
 import { Textarea } from './textarea';
