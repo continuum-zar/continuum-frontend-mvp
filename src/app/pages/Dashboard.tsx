@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   ArrowUpRight,
@@ -16,6 +17,13 @@ import {
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import {
   Bar,
   LineChart,
@@ -104,6 +112,8 @@ const getHeatmapColor = (value: number) => {
 };
 
 export function Dashboard() {
+  const [selectedProject, setSelectedProject] = useState("all");
+
   return (
     <div className="p-8 pb-20">
       <div className="mb-8 flex justify-between items-end">
@@ -112,6 +122,17 @@ export function Dashboard() {
           <p className="text-muted-foreground">Team velocity, health, and efficiency insights.</p>
         </div>
         <div className="flex gap-2">
+          <Select value={selectedProject} onValueChange={setSelectedProject}>
+            <SelectTrigger className="w-[200px] border-border bg-card">
+              <SelectValue placeholder="Select project" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Projects</SelectItem>
+              <SelectItem value="1">Alpha Redesign</SelectItem>
+              <SelectItem value="2">Beta Launch</SelectItem>
+              <SelectItem value="3">Gamma Migration</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline"><Clock className="mr-2 h-4 w-4" /> Last 30 Days</Button>
           <Button variant="outline"><UserX className="mr-2 h-4 w-4" /> Team View</Button>
         </div>
