@@ -1,26 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Checkbox } from '../../components/ui/checkbox';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { useAuthStore } from '../../../store/authStore';
+import { toast } from 'sonner';
 
 export function Login() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const { login, isLoading, error, clearError } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  useEffect(() => {
+    return () => clearError();
+  }, [clearError]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    // Simulate auth
-    setTimeout(() => {
-      setLoading(false);
-      navigate('/role-selection');
-    }, 1500);
+    try {
+      await login({ email, password });
+      toast.success('Welcome back!');
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('Login error:', err);
+    }
   };
 
   return (
@@ -69,7 +75,8 @@ export function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12"
+                  disabled={isLoading}
+                  className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
                 />
               </div>
 
@@ -90,7 +97,8 @@ export function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12"
+                  disabled={isLoading}
+                  className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
                 />
               </div>
 
@@ -104,12 +112,19 @@ export function Login() {
                 </label>
               </div>
 
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm font-medium p-3 bg-destructive/10 rounded-xl animate-in fade-in slide-in-from-top-1">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 className="w-full h-12 text-md font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-xl mt-4"
-                disabled={loading}
+                disabled={isLoading}
               >
-                {loading ? (
+                {isLoading ? (
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
                   "Sign in"
