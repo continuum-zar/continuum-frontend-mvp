@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { authStore } from '../../../store/authStore';
+import { useAuthStore } from '../../../store/authStore';
 
 export function SignUp() {
     const navigate = useNavigate();
@@ -14,12 +14,14 @@ export function SignUp() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
+    const register = useAuthStore((state) => state.register);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            await authStore.register({
+            await register({
                 first_name: firstName,
                 last_name: lastName,
                 email,
