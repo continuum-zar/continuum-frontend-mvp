@@ -20,6 +20,7 @@ import {
 } from '../components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { GlobalActiveSession } from '../components/ui/GlobalActiveSession';
+import { useAuthStore } from '../../store/authStore';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -41,7 +42,11 @@ export function DashboardLayout() {
     return true; // PM and Developer see all
   });
 
-  const handleLogout = () => {
+  const logout = useAuthStore((state) => state.logout);
+  const isLoading = useAuthStore((state) => state.isLoading);
+
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -138,9 +143,9 @@ export function DashboardLayout() {
                 <DropdownMenuItem>Preferences</DropdownMenuItem>
                 <DropdownMenuItem>Team</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onClick={handleLogout} disabled={isLoading}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Log out
+                  {isLoading ? 'Logging out...' : 'Log out'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
