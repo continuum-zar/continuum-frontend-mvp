@@ -5,7 +5,7 @@ import { AuthState, AuthResponse } from '../types/auth';
 import { RegisterPayload, User } from '../types/user';
 
 interface AuthActions {
-    login: (credentials: Pick<RegisterPayload, 'email' | 'password'>) => Promise<void>;
+    login: (credentials: Required<Pick<RegisterPayload, 'email' | 'password'>>) => Promise<void>;
     register: (payload: RegisterPayload) => Promise<void>;
     logout: () => Promise<void>;
     checkAuth: () => Promise<void>;
@@ -37,7 +37,17 @@ export const useAuthStore = create<AuthStore>()(
                     });
 
                     // Fetch user info after login
-                    await get().checkAuth();
+                    try {
+                        await get().checkAuth();
+                    } catch (err) {
+                        set({
+                            accessToken: null,
+                            refreshToken: null,
+                            isAuthenticated: false,
+                            user: null
+                        });
+                        throw err;
+                    }
                 } catch (error: any) {
                     set({
                         error: error.response?.data?.message || 'Login failed',
@@ -60,7 +70,17 @@ export const useAuthStore = create<AuthStore>()(
                     });
 
                     // Fetch user info after registration
-                    await get().checkAuth();
+                    try {
+                        await get().checkAuth();
+                    } catch (err) {
+                        set({
+                            accessToken: null,
+                            refreshToken: null,
+                            isAuthenticated: false,
+                            user: null
+                        });
+                        throw err;
+                    }
                 } catch (error: any) {
                     set({
                         error: error.response?.data?.message || 'Registration failed',
@@ -101,14 +121,19 @@ export const useAuthStore = create<AuthStore>()(
                         isAuthenticated: true,
                         isLoading: false
                     });
-                } catch (error) {
-                    set({
-                        user: null,
-                        isAuthenticated: false,
-                        accessToken: null,
-                        refreshToken: null,
-                        isLoading: false
-                    });
+                } catch (error: any) {
+                    if (error.response?.status === 401 || error.response?.status === 403) {
+                        set({
+                            user: null,
+                            isAuthenticated: false,
+                            accessToken: null,
+                            refreshToken: null,
+                            isLoading: false
+                        });
+                    } else {
+                        set({ isLoading: false });
+                    }
+                    throw error;
                 }
             },
 
