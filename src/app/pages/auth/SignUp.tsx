@@ -4,11 +4,13 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { authStore } from '../../../store/authStore';
 
 export function SignUp() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [name, setName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -16,11 +18,19 @@ export function SignUp() {
         e.preventDefault();
         setLoading(true);
 
-        // Simulate auth
-        setTimeout(() => {
-            setLoading(false);
+        try {
+            await authStore.register({
+                first_name: firstName,
+                last_name: lastName,
+                email,
+                password
+            });
             navigate('/dashboard');
-        }, 1500);
+        } catch (error) {
+            console.error('Registration failed:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -67,17 +77,31 @@ export function SignUp() {
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="space-y-2">
-                                <Label htmlFor="name" className="text-foreground">Full Name</Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    placeholder="John Doe"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                    className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12"
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="firstName" className="text-foreground">First Name</Label>
+                                    <Input
+                                        id="firstName"
+                                        type="text"
+                                        placeholder="John"
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        required
+                                        className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="lastName" className="text-foreground">Last Name</Label>
+                                    <Input
+                                        id="lastName"
+                                        type="text"
+                                        placeholder="Doe"
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        required
+                                        className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12"
+                                    />
+                                </div>
                             </div>
 
                             <div className="space-y-2">
