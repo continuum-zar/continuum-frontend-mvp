@@ -10,6 +10,7 @@ interface AuthActions {
     register: (payload: RegisterPayload) => Promise<void>;
     logout: () => Promise<void>;
     checkAuth: () => Promise<void>;
+    setTokens: (accessToken: string, refreshToken: string) => void;
     clearError: () => void;
 }
 
@@ -136,6 +137,14 @@ export const useAuthStore = create<AuthStore>()(
                     }
                     throw error;
                 }
+            },
+
+            setTokens: (accessToken, refreshToken) => {
+                set({
+                    accessToken,
+                    refreshToken,
+                    isAuthenticated: true,
+                });
             },
 
             clearError: () => set({ error: null }),
