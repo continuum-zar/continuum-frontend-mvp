@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { isAxiosError } from 'axios';
 import api from '../lib/api';
 import { AuthState, AuthResponse } from '../types/auth';
 import { RegisterPayload, User } from '../types/user';
@@ -48,9 +49,9 @@ export const useAuthStore = create<AuthStore>()(
                         });
                         throw err;
                     }
-                } catch (error: any) {
+                } catch (error) {
                     set({
-                        error: error.response?.data?.message || 'Login failed',
+                        error: isAxiosError(error) ? (error.response?.data?.message || 'Login failed') : 'Login failed',
                         isLoading: false
                     });
                     throw error;
@@ -81,9 +82,9 @@ export const useAuthStore = create<AuthStore>()(
                         });
                         throw err;
                     }
-                } catch (error: any) {
+                } catch (error) {
                     set({
-                        error: error.response?.data?.message || 'Registration failed',
+                        error: isAxiosError(error) ? (error.response?.data?.message || 'Registration failed') : 'Registration failed',
                         isLoading: false
                     });
                     throw error;
@@ -121,8 +122,8 @@ export const useAuthStore = create<AuthStore>()(
                         isAuthenticated: true,
                         isLoading: false
                     });
-                } catch (error: any) {
-                    if (error.response?.status === 401 || error.response?.status === 403) {
+                } catch (error) {
+                    if (isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
                         set({
                             user: null,
                             isAuthenticated: false,
