@@ -13,6 +13,7 @@ export function Login() {
   const { login, isLoading, error, clearError } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
     return () => clearError();
@@ -103,7 +104,12 @@ export function Login() {
               </div>
 
               <div className="flex items-center space-x-3 pt-2">
-                <Checkbox id="remember" className="border-border text-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  className="border-border text-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
                 <label
                   htmlFor="remember"
                   className="text-sm text-muted-foreground cursor-pointer font-medium hover:text-foreground transition-colors select-none"
@@ -139,9 +145,6 @@ export function Login() {
                   Sign up
                 </Link>
               </div>
-              <p className="text-xs text-muted-foreground/70">
-                Demo credentials: any email/password combination
-              </p>
             </div>
           </div>
         </div>
