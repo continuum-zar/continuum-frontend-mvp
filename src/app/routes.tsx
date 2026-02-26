@@ -17,10 +17,6 @@ import { AuthGuard } from "./components/auth/AuthGuard";
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    Component: Login,
-  },
-  {
     path: "/login",
     Component: Login,
   },

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { useAuthStore } from '@/store/authStore';
 import { Skeleton } from '@/app/components/ui/skeleton';
@@ -8,15 +8,8 @@ interface AuthGuardProps {
 }
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-    const { isAuthenticated, isLoading, checkAuth, accessToken } = useAuthStore();
+    const { isAuthenticated, isLoading, accessToken } = useAuthStore();
     const location = useLocation();
-
-    useEffect(() => {
-        // If we have an access token but not authenticated (e.g. after refresh), check auth
-        if (accessToken && !isAuthenticated) {
-            checkAuth().catch(console.error);
-        }
-    }, [accessToken, isAuthenticated, checkAuth]);
 
     if (isLoading) {
         return (
