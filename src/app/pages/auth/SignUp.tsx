@@ -1,24 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 
 export function SignUp() {
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+    const { register, isLoading, error, clearError } = useAuthStore();
+    const [localLoading, setLocalLoading] = useState(false);
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const register = useAuthStore((state) => state.register);
+    useEffect(() => {
+        // Clear errors when navigating away or unmounting
+        return () => clearError();
+    }, [clearError]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
+        setLocalLoading(true);
 
         try {
             await register({
@@ -31,7 +35,7 @@ export function SignUp() {
         } catch (error) {
             console.error('Registration failed:', error);
         } finally {
-            setLoading(false);
+            setLocalLoading(false);
         }
     };
 
@@ -78,6 +82,13 @@ export function SignUp() {
                             <p className="text-muted-foreground">Start your 14-day free trial. No credit card required.</p>
                         </div>
 
+                        {error && (
+                            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <AlertCircle className="h-5 w-5 shrink-0" />
+                                <p className="text-sm font-medium">{error}</p>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -89,7 +100,8 @@ export function SignUp() {
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
                                         required
-                                        className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12"
+                                        disabled={isLoading || localLoading}
+                                        className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -101,7 +113,8 @@ export function SignUp() {
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
                                         required
-                                        className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12"
+                                        disabled={isLoading || localLoading}
+                                        className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
                                     />
                                 </div>
                             </div>
@@ -115,7 +128,8 @@ export function SignUp() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12"
+                                    disabled={isLoading || localLoading}
+                                    className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
                                 />
                             </div>
 
@@ -128,16 +142,17 @@ export function SignUp() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
-                                    className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12"
+                                    disabled={isLoading || localLoading}
+                                    className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
                                 />
                             </div>
 
                             <Button
                                 type="submit"
                                 className="w-full h-12 text-md font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-xl mt-2"
-                                disabled={loading}
+                                disabled={isLoading || localLoading}
                             >
-                                {loading ? (
+                                {isLoading || localLoading ? (
                                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                                 ) : (
                                     "Create Account"

@@ -8,5 +8,5 @@ services:
       - .:/app
       - /app/node_modules
     environment:
-      - VITE_API_BASE_URL=http://localhost:8001/api # Default backend URL
+      - VITE_API_BASE_URL=http://localhost:8001/api/v1 # Default backend URL
     restart: unless-stopped
