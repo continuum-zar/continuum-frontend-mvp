@@ -25,7 +25,7 @@ export function Login() {
       await login({ email, password });
       toast.success('Welcome back!');
       navigate('/dashboard');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Login error:', err);
     }
   };
