@@ -13,12 +13,9 @@ import { CreateTask } from "./pages/CreateTask";
 import { Invoices } from "./pages/Invoices";
 import { ClientPortal } from "./pages/ClientPortal";
 import { NotFound } from "./pages/NotFound";
+import { AuthGuard } from "./components/auth/AuthGuard";
 
 export const router = createBrowserRouter([
-  {
-    path: "/",
-    Component: Login,
-  },
   {
     path: "/login",
     Component: Login,
@@ -33,11 +30,19 @@ export const router = createBrowserRouter([
   },
   {
     path: "/role-selection",
-    Component: RoleSelection,
+    element: (
+      <AuthGuard>
+        <RoleSelection />
+      </AuthGuard>
+    ),
   },
   {
     path: "/",
-    Component: DashboardLayout,
+    element: (
+      <AuthGuard>
+        <DashboardLayout />
+      </AuthGuard>
+    ),
     children: [
       { path: "dashboard", Component: Dashboard },
       { path: "projects", Component: ProjectsList },
