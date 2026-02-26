@@ -8,7 +8,7 @@ interface AuthGuardProps {
 }
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-    const { isAuthenticated, isLoading, checkAuth, accessToken } = useAuthStore();
+    const { isAuthenticated, isLoading, accessToken, checkAuth } = useAuthStore();
     const location = useLocation();
     const [isInitCheck, setIsInitCheck] = useState(() => !!(accessToken && !isAuthenticated));
 
