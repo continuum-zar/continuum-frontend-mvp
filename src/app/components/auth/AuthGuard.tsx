@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { useAuthStore } from '@/store/authStore';
 import { Skeleton } from '@/app/components/ui/skeleton';
@@ -10,15 +10,34 @@ interface AuthGuardProps {
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     const { isAuthenticated, isLoading, checkAuth, accessToken } = useAuthStore();
     const location = useLocation();
+    const [isInitCheck, setIsInitCheck] = useState(() => !!(accessToken && !isAuthenticated));
 
     useEffect(() => {
-        // If we have an access token but not authenticated (e.g. after refresh), check auth
-        if (accessToken && !isAuthenticated) {
-            checkAuth().catch(console.error);
-        }
+        let mounted = true;
+
+        const verify = async () => {
+            if (accessToken && !isAuthenticated) {
+                try {
+                    await checkAuth();
+                } catch (error) {
+                    console.error('Auth verification failed', error);
+                }
+            }
+            if (mounted) {
+                setIsInitCheck(false);
+            }
+        };
+
+        verify();
+
+        return () => {
+            mounted = false;
+        };
     }, [accessToken, isAuthenticated, checkAuth]);
 
-    if (isLoading) {
+    const showLoader = isLoading || isInitCheck;
+
+    if (showLoader) {
         return (
             <div className="flex flex-col space-y-3 p-8">
                 <Skeleton className="h-[125px] w-[250px] rounded-xl" />
@@ -30,7 +49,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         );
     }
 
-    if (!isAuthenticated && !accessToken) {
+    if (!isAuthenticated) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
