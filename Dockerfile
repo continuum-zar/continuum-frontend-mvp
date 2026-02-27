@@ -21,7 +21,7 @@ RUN npm ci
 COPY . .
 
 # Expose the port Vite runs on
-EXPOSE 5173
+EXPOSE 5174
 
 # Start the development server
 CMD ["npm", "run", "dev", "--", "--host"]

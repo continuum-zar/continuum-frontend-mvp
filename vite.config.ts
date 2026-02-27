@@ -17,9 +17,10 @@ export default defineConfig({
     },
   },
   server: {
+    port: 5174,
     proxy: {
       '/api': {
-        // Use host.docker.internal when running in Docker so the container can reach the backend on the host
+        // Proxy /api to backend (host.docker.internal:8001 when in Docker)
         target: process.env.VITE_PROXY_TARGET || 'http://localhost:8001',
         changeOrigin: true,
       },
