@@ -1,9 +1,8 @@
+# Continuum MVP
 
-  # Project Management Dashboard UI
+Frontend for the Continuum project management dashboard. Connects to the backend at `http://localhost:8001/api`.
 
-  This is a code bundle for Project Management Dashboard UI. The original project is available at https://www.figma.com/design/RVgmp7DteN5XkrH91L6a0A/Project-Management-Dashboard-UI.
-
-  ## Running the code
+## Running the code
 
   Run `npm i` to install the dependencies.
 
