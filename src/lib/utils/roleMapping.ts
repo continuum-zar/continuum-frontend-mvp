@@ -1,4 +1,4 @@
-import { Role } from '@/app/context/RoleContext';
+import type { Role } from '@/app/context/RoleContext';
 
 export function mapBackendRole(backendRole: string | undefined): Role {
     if (!backendRole) return 'Project Manager';

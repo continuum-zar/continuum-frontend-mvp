@@ -6,7 +6,6 @@ export type Role = 'Project Manager' | 'Developer' | 'Client';
 
 interface RoleContextType {
     role: Role;
-    setRole: (role: Role) => void;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -19,11 +18,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (user) {
             setRole(mapBackendRole(user.role));
+        } else {
+            setRole('Project Manager');
         }
     }, [user]);
 
     return (
-        <RoleContext.Provider value={{ role, setRole }}>
+        <RoleContext.Provider value={{ role }}>
             {children}
         </RoleContext.Provider>
     );
