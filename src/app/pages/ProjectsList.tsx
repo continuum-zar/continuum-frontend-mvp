@@ -49,7 +49,7 @@ export function ProjectsList() {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.get<ProjectAPIResponse[]>('/projects');
+            const response = await api.get<ProjectAPIResponse[]>('/projects/');
             const mappedProjects: Project[] = response.data.map(p => ({
                 id: p.id.toString(),
                 apiId: p.id,
