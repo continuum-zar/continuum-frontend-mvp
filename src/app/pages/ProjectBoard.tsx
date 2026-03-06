@@ -339,30 +339,44 @@ export function ProjectBoard() {
     }
   }, [milestonesList]);
 
-  const handleCreateMilestone = () => {
-    if (!newMilestone.name || !newMilestone.date) return;
+  const handleCreateMilestone = async () => {
+    if (!newMilestone.name || !newMilestone.date || !projectId) return;
 
-    // Parse the input HTML date YYYY-MM-DD
-    const dateObj = new Date(newMilestone.date + 'T00:00:00');
-    const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    try {
+      // Send POST request to create milestone on backend
+      const response = await api.post('/milestones/', {
+        project_id: Number(projectId),
+        name: newMilestone.name,
+        due_date: newMilestone.date, // Send as YYYY-MM-DD
+        description: newMilestone.desc || undefined,
+      });
 
-    const newM: Milestone = {
-      id: `m${Date.now()}`,
-      name: newMilestone.name,
-      desc: newMilestone.desc || undefined,
-      date: formattedDate,
-      status: 'upcoming',
-    };
+      // Map the response to frontend format
+      const createdMilestone: Milestone = {
+        id: String(response.data.id),
+        name: response.data.name,
+        date: formatDueDate(response.data.due_date),
+        status: mapMilestoneStatus(response.data.status || 'upcoming'),
+        desc: response.data.description || undefined,
+      };
 
-    // Add to list and sort chronologically
-    const updated = [...milestonesList, newM].sort((a, b) => {
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
-    });
+      // Add to list and sort chronologically
+      const updated = [...milestonesList, createdMilestone].sort((a, b) => {
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
 
-    setMilestonesList(updated);
-    setIsAddMilestoneOpen(false);
-    setNewMilestone({ name: '', desc: '', date: '' });
-    setSelectedMilestoneId(newM.id);
+      setMilestonesList(updated);
+      setIsAddMilestoneOpen(false);
+      setNewMilestone({ name: '', desc: '', date: '' });
+      setSelectedMilestoneId(createdMilestone.id);
+      
+      toast.success('Milestone created successfully');
+    } catch (err: any) {
+      console.error('Failed to create milestone:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create milestone';
+      toast.error(errorMessage);
+      // Dialog stays open on error; user can fix validation errors and retry
+    }
   };
 
   const handleMove = async (taskId: string, newStatus: TaskStatus) => {
