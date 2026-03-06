@@ -137,7 +137,9 @@ export function CreateTask() {
 
       // Redirect back to the project board if projectId exists, otherwise to projects list
       if (projectId) {
-        navigate(`/projects/${projectId}`);
+        navigate(`/projects/${projectId}`, { 
+          state: { newTaskCreated: true, taskId: response.data.id } 
+        });
       } else {
         navigate('/projects');
       }

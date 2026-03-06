@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Link, useParams, useNavigate } from 'react-router';
+import { Link, useParams, useNavigate, useLocation } from 'react-router';
 import { toast } from 'sonner';
 import api from '../../lib/api';
 import {
@@ -226,6 +226,7 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
 export function ProjectBoard() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [project, setProject] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -233,6 +234,7 @@ export function ProjectBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [milestonesList, setMilestonesList] = useState<Milestone[]>([]);
   const [milestonesLoading, setMilestonesLoading] = useState(true);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -297,7 +299,7 @@ export function ProjectBoard() {
       }
     };
     fetchData();
-  }, [projectId, navigate]);
+  }, [projectId, navigate, location.key, refetchTrigger]);
 
   // Dialog State
   const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
@@ -338,6 +340,17 @@ export function ProjectBoard() {
       setSelectedMilestoneId(initial.id);
     }
   }, [milestonesList]);
+
+  // Refetch tasks when returning from task creation
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.newTaskCreated) {
+      // Trigger a refetch by incrementing refetchTrigger
+      setRefetchTrigger(prev => prev + 1);
+      // Clear the state so we don't refetch multiple times
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleCreateMilestone = async () => {
     if (!newMilestone.name || !newMilestone.date || !projectId) return;
@@ -413,7 +426,7 @@ export function ProjectBoard() {
   };
 
   const filteredTasks = selectedMilestoneId
-    ? tasks.filter(t => t.milestoneId === selectedMilestoneId)
+    ? tasks.filter(t => t.milestoneId === selectedMilestoneId || t.milestoneId === '')
     : tasks;
   const todoTasks = filteredTasks.filter((t) => t.status === 'todo');
   const inProgressTasks = filteredTasks.filter((t) => t.status === 'in-progress');
