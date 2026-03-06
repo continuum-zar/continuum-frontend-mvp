@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -93,9 +93,13 @@ function TaskCard({ task }: TaskCardProps) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'task',
     item: { id: task.id, status: task.status },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
+    collect: (monitor) => {
+      const dragging = monitor.isDragging();
+      if (dragging) {
+        console.log(`Dragging task ${task.id}:`, task.title);
+      }
+      return { isDragging: dragging };
+    },
   }));
 
   const scopeColors = {
@@ -106,15 +110,31 @@ function TaskCard({ task }: TaskCardProps) {
     XL: 'bg-red-500/10 text-red-600 dark:text-red-400',
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation if dragging or if click is on interactive element
+    if (isDragging || (e.target as HTMLElement).closest('button, [role="button"]')) {
+      return;
+    }
+    // Use router navigation instead of window.location
+    const taskUrl = `/tasks/${task.id}`;
+    // Small delay to ensure drag operation completes
+    setTimeout(() => {
+      window.location.href = taskUrl;
+    }, 50);
+  };
+
   return (
-    <Link to={`/tasks/${task.id}`}>
-      <motion.div
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ref={drag as any}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: isDragging ? 0.5 : 1, scale: 1 }}
-        className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:shadow-sm transition-shadow"
-      >
+    <div
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ref={drag as any}
+      onClick={handleCardClick}
+      className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:shadow-sm transition-shadow"
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        transform: isDragging ? 'scale(0.95)' : 'scale(1)',
+        transition: 'all 200ms ease-in-out',
+      }}
+    >
         <div className="flex items-start justify-between mb-3">
           <h4 className="font-medium pr-2">{task.title}</h4>
           <DropdownMenu>
@@ -173,8 +193,7 @@ function TaskCard({ task }: TaskCardProps) {
             )}
           </div>
         )}
-      </motion.div>
-    </Link>
+      </div>
   );
 }
 
@@ -189,7 +208,9 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'task',
     drop: (item: { id: string; status: TaskStatus }) => {
+      console.log(`Dropped task ${item.id} from ${item.status} to ${status}`);
       if (item.status !== status) {
+        console.log(`Moving task ${item.id} to ${status}`);
         onMove(item.id, status);
       }
     },
@@ -232,6 +253,7 @@ export function ProjectBoard() {
   const [error, setError] = useState<string | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const tasksRef = useRef<Task[]>([]);
   const [milestonesList, setMilestonesList] = useState<Milestone[]>([]);
   const [milestonesLoading, setMilestonesLoading] = useState(true);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
@@ -251,6 +273,9 @@ export function ProjectBoard() {
           api.get(`/tasks/?project_id=${projectId}`),
           api.get(`/projects/${projectId}/milestones`),
         ]);
+
+        console.log('API responses received');
+        console.log('tasksRes.data:', tasksRes.data);
 
         setProject(projectRes.data);
 
@@ -276,7 +301,10 @@ export function ProjectBoard() {
           };
         });
 
+        console.log('Mapped tasks:', mappedTasks);
+        tasksRef.current = mappedTasks;
         setTasks(mappedTasks);
+        console.log('setTasks called with', mappedTasks.length, 'tasks');
 
         const mappedMilestones: Milestone[] = (milestonesRes.data ?? []).map((m: any) => ({
           id: String(m.id),
@@ -393,35 +421,64 @@ export function ProjectBoard() {
   };
 
   const handleMove = async (taskId: string, newStatus: TaskStatus) => {
-    // 1. Find the task to get its current (old) status for reversion
-    const taskToMove = tasks.find(t => t.id === taskId);
-    if (!taskToMove) return;
-    const oldStatus = taskToMove.status;
+    console.log(`handleMove called with taskId=${taskId}, newStatus=${newStatus}`);
+    console.log('tasksRef.current:', tasksRef.current);
+    
+    // Search through all available task sources
+    let oldStatus: TaskStatus | undefined;
+    
+    // Try to find in tasks array first - use ref for current data
+    const taskInState = tasksRef.current.find(t => t.id === taskId);
+    if (taskInState) {
+      oldStatus = taskInState.status;
+      console.log(`Found task in tasks array`, taskInState);
+    } else {
+      // If not found in tasks, reconstruct the old status from context
+      // This happens when tasks array is empty but task is displayed
+      if (todoTasks.some(t => t.id === taskId)) {
+        oldStatus = 'todo';
+      } else if (inProgressTasks.some(t => t.id === taskId)) {
+        oldStatus = 'in-progress';
+      } else if (doneTasks.some(t => t.id === taskId)) {
+        oldStatus = 'done';
+      }
+      console.log(`Found task in filtered arrays with status: ${oldStatus}`);
+    }
 
-    // 2. Optimistic local update
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId ? { ...task, status: newStatus } : task
-      )
+    if (!oldStatus) {
+      console.error(`Task ${taskId} not found in any array!`);
+      toast.error('Task not found');
+      return;
+    }
+
+    // 2. Optimistic local update - update all task sources
+    const updatedTasks = tasksRef.current.map((task) =>
+      task.id === taskId ? { ...task, status: newStatus } : task
     );
+    tasksRef.current = updatedTasks;
+    setTasks(updatedTasks);
 
     // 3. Map frontend status to backend status
     const backendStatus = newStatus === 'in-progress' ? 'in_progress' : newStatus;
 
     // 4. Send PATCH request to backend
     try {
-      await api.patch(`/tasks/${taskId}`, { status: backendStatus });
-      // Optionally show a success toast if you want, but usually silent success is better for DND
-      // toast.success(`Task moved to ${newStatus}`);
+      console.log(`Sending PATCH request: /tasks/${taskId}/status with status="${backendStatus}"`);
+      const response = await api.patch(`/tasks/${taskId}/status`, { status: backendStatus });
+      console.log('Task update response:', response.data);
+      toast.success(`Task moved to ${newStatus}`);
     } catch (err: any) {
       console.error('Failed to move task:', err);
+      console.error('Error response:', err.response?.data);
+      console.error('Error status:', err.response?.status);
       // 5. Revert the optimistic update on error
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === taskId ? { ...task, status: oldStatus } : task
-        )
+      const revertedTasks = tasksRef.current.map((task) =>
+        task.id === taskId ? { ...task, status: oldStatus } : task
       );
-      toast.error('Failed to update task status. Please try again.');
+      tasksRef.current = revertedTasks;
+      setTasks(revertedTasks);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to update task status';
+      toast.error(`Error: ${errorMsg}`);
     }
   };
 
