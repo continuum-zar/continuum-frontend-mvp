@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'motion/react';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Loader2,
@@ -19,11 +20,24 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Label } from '../components/ui/label';
+import api from '../../lib/api';
+
+interface LocationState {
+  projectId?: string | number;
+  milestoneId?: string | number;
+}
 
 export function CreateTask() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = (location.state as LocationState) || {};
+  
+  const projectId = state.projectId;
+  const milestoneId = state.milestoneId;
+
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -74,11 +88,65 @@ export function CreateTask() {
     }, 1500);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate submission
-    console.log('Task Created', formData);
-    navigate('/projects');
+    
+    if (!formData.title.trim()) {
+      toast.error('Task title is required');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Map frontend status to backend status format
+      const backendStatus = formData.status === 'in-progress' ? 'in_progress' : formData.status;
+
+      // Build the payload
+      const payload: any = {
+        title: formData.title,
+        description: formData.description,
+        status: backendStatus,
+        scope_weight: formData.scope,
+      };
+
+      // Add optional fields if projectId is provided
+      if (projectId) {
+        payload.project_id = Number(projectId);
+      }
+
+      // Add milestone_id if provided
+      if (milestoneId) {
+        payload.milestone_id = Number(milestoneId);
+      }
+
+      // Add estimated hours if provided
+      if (formData.estimatedHours) {
+        payload.estimated_hours = Number(formData.estimatedHours);
+      }
+
+      // Add due date if provided
+      if (formData.dueDate) {
+        payload.due_date = formData.dueDate;
+      }
+
+      // Call the API
+      const response = await api.post('/tasks/', payload);
+
+      toast.success('Task created successfully');
+
+      // Redirect back to the project board if projectId exists, otherwise to projects list
+      if (projectId) {
+        navigate(`/projects/${projectId}`);
+      } else {
+        navigate('/projects');
+      }
+    } catch (err: any) {
+      console.error('Failed to create task:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create task';
+      toast.error(errorMessage);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -95,8 +163,6 @@ export function CreateTask() {
             </p>
           </div>
         </div>
-
-
 
         {/* Manual Form Section */}
         <motion.div
@@ -241,11 +307,18 @@ export function CreateTask() {
             </div>
 
             <div className="pt-4 border-t border-border flex justify-end space-x-3">
-              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+              <Button type="button" variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit">
-                Create Task
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Task'
+                )}
               </Button>
             </div>
           </form>

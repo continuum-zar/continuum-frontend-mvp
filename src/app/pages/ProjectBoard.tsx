@@ -502,12 +502,12 @@ export function ProjectBoard() {
                 </div>
               </DialogContent>
             </Dialog>
-            <Link to="/tasks/new">
-              <Button>
+            <Button
+                onClick={() => navigate("/tasks/new", { state: { projectId, milestoneId: selectedMilestoneId } })}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 New Task
               </Button>
-            </Link>
           </div>
         </div>
       </div>
