@@ -87,7 +87,7 @@ export function ProjectsList() {
         if (!newProject.title) return;
 
         try {
-            await api.post<ProjectAPIResponse>('/projects', {
+            await api.post<ProjectAPIResponse>('/projects/', {
                 name: newProject.title,
                 description: newProject.desc,
                 due_date: newProject.date || null,
