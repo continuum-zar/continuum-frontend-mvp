@@ -87,26 +87,14 @@ export function ProjectsList() {
         if (!newProject.title) return;
 
         try {
-            const response = await api.post<ProjectAPIResponse>('/projects', {
+            await api.post<ProjectAPIResponse>('/projects', {
                 name: newProject.title,
                 description: newProject.desc,
-                due_date: newProject.date || null
+                due_date: newProject.date || null,
+                status: 'active'
             });
 
-            const p = response.data;
-            const newP: Project = {
-                id: p.id.toString(),
-                apiId: p.id,
-                title: p.name,
-                description: p.description || 'No description provided.',
-                status: p.status,
-                progress: p.progress_percentage || 0,
-                dueDate: p.due_date || 'No Date',
-                teamSize: p.team_size || 1,
-                lastActive: 'Just now'
-            };
-
-            setProjects([newP, ...projects]);
+            await fetchProjects();
             setIsAddOpen(false);
             setNewProject({ title: '', desc: '', date: '' });
             toast.success('Project created successfully');
