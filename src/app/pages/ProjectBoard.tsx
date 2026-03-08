@@ -364,20 +364,36 @@ export function ProjectBoard() {
         desc: response.data.description || undefined,
       };
 
-      // Add to list and sort chronologically
-      const updated = [...milestonesList, createdMilestone].sort((a, b) => {
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      // Add to list and sort chronologically; keep "All tasks" sentinel first
+      const sentinel = milestonesList.find((m) => m.id === ALL_MILESTONES_ID);
+      const rest = milestonesList.filter((m) => m.id !== ALL_MILESTONES_ID);
+      const sortedRest = [...rest, createdMilestone].sort((a, b) => {
+        const ta = new Date(a.date || '').getTime();
+        const tb = new Date(b.date || '').getTime();
+        return (Number.isNaN(ta) ? 0 : ta) - (Number.isNaN(tb) ? 0 : tb);
       });
+      const updated = sentinel ? [sentinel, ...sortedRest] : sortedRest;
 
       setMilestonesList(updated);
       setIsAddMilestoneOpen(false);
       setNewMilestone({ name: '', desc: '', date: '' });
       setSelectedMilestoneId(createdMilestone.id);
-      
+
       toast.success('Milestone created successfully');
     } catch (err: any) {
       console.error('Failed to create milestone:', err);
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to create milestone';
+      const data = err.response?.data;
+      const detail = data?.detail;
+      let errorMessage: string =
+        data?.message || err.message || 'Failed to create milestone';
+      if (typeof detail === 'string' && detail) {
+        errorMessage = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        const messages = detail
+          .map((d: { msg?: string }) => (d?.msg != null ? d.msg : String(d)))
+          .filter(Boolean);
+        if (messages.length > 0) errorMessage = messages.join('. ');
+      }
       toast.error(errorMessage);
       // Dialog stays open on error; user can fix validation errors and retry
     }
@@ -692,6 +708,6 @@ export function ProjectBoard() {
           />
         </div>
       </DndProvider>
-    </div >
+    </div>
   );
 }
