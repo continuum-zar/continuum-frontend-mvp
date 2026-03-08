@@ -380,12 +380,13 @@ export function ProjectBoard() {
       setSelectedMilestoneId(createdMilestone.id);
 
       toast.success('Milestone created successfully');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to create milestone:', err);
-      const data = err.response?.data;
+      type ErrShape = { response?: { data?: { detail?: string | Array<{ msg?: string }>; message?: string }; message?: string }; message?: string };
+      const data = (err as ErrShape)?.response?.data;
       const detail = data?.detail;
       let errorMessage: string =
-        data?.message || err.message || 'Failed to create milestone';
+        data?.message ?? (err as ErrShape).message ?? 'Failed to create milestone';
       if (typeof detail === 'string' && detail) {
         errorMessage = detail;
       } else if (Array.isArray(detail) && detail.length > 0) {
