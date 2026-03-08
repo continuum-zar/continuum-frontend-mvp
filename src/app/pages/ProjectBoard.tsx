@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Link, useParams, useNavigate } from 'react-router';
+import api from '../../lib/api';
 import {
   Plus,
   ArrowLeft,
@@ -290,8 +291,36 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
 export function ProjectBoard() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const [project, setProject] = useState<{ name?: string; description?: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [tasks, setTasks] = useState(initialTasks);
   const [milestonesList, setMilestonesList] = useState(initialMilestones);
+
+  useEffect(() => {
+    const fetchProject = async () => {
+      if (!projectId || isNaN(Number(projectId))) {
+        navigate('/projects');
+        return;
+      }
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await api.get(`/projects/${projectId}`);
+        setProject(response.data);
+      } catch (err: unknown) {
+        if ((err as { response?: { status?: number } })?.response?.status === 404) {
+          setError('Project not found');
+        } else {
+          setError('Failed to load project details');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProject();
+  }, [projectId, navigate]);
 
   // Dialog State
   const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
@@ -375,8 +404,19 @@ export function ProjectBoard() {
         </Button>
         <div className="flex-1 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl mb-1 mt-1 capitalize">{projectId || 'Mobile App Redesign'}</h1>
-            <p className="text-muted-foreground">Track progress and manage tasks for the project</p>
+            {isLoading ? (
+              <div className="animate-pulse space-y-2">
+                <div className="h-8 bg-muted rounded w-64"></div>
+                <div className="h-4 bg-muted rounded w-96"></div>
+              </div>
+            ) : error ? (
+              <div className="text-destructive font-medium mt-2">{error}</div>
+            ) : (
+              <>
+                <h1 className="text-2xl mb-1 mt-1 capitalize">{project?.name || `Project ${projectId}`}</h1>
+                <p className="text-muted-foreground">{project?.description || 'Track progress and manage tasks for the project'}</p>
+              </>
+            )}
           </div>
           <div className="flex items-center space-x-3">
             <Dialog open={isTeamModalOpen} onOpenChange={setIsTeamModalOpen}>
