@@ -37,6 +37,21 @@ import api from '@/lib/api';
 import { Project, ProjectAPIResponse } from '@/types/project';
 import { formatDistanceToNow } from 'date-fns';
 
+/** Normalize FastAPI error detail (string or array of { msg?: string }) into a single message. */
+function getApiErrorMessage(
+    err: unknown,
+    fallback: string
+): string {
+    const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
+    const detail = data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+        const messages = detail.map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d))).filter(Boolean);
+        return messages.length > 0 ? messages.join('. ') : fallback;
+    }
+    return fallback;
+}
+
 export function ProjectsList() {
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
@@ -68,7 +83,7 @@ export function ProjectsList() {
             });
             setProjects(mappedProjects);
         } catch (err: unknown) {
-            const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to fetch projects';
+            const message = getApiErrorMessage(err, 'Failed to fetch projects');
             setError(message);
             toast.error(message);
         } finally {
@@ -102,7 +117,7 @@ export function ProjectsList() {
             setNewProject({ title: '', desc: '', date: '' });
             toast.success('Project created successfully');
         } catch (err: unknown) {
-            toast.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to create project');
+            toast.error(getApiErrorMessage(err, 'Failed to create project'));
         }
     };
 
