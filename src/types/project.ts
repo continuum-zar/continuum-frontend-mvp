@@ -1,12 +1,16 @@
 export interface ProjectAPIResponse {
     id: number;
     name: string;
-    description: string;
+    description?: string;
     status: string;
+    /** Backend list endpoint returns progress (float); some endpoints may use progress_percentage */
+    progress?: number;
     progress_percentage?: number;
     due_date?: string;
     team_size?: number;
     member_count?: number;
+    /** Backend list endpoint returns last_active (datetime); some endpoints may use updated_at */
+    last_active?: string;
     updated_at?: string;
 }
 

@@ -50,22 +50,25 @@ export function ProjectsList() {
         setError(null);
         try {
             const response = await api.get<ProjectAPIResponse[]>('/projects/');
-            const mappedProjects: Project[] = response.data.map(p => ({
-                id: p.id.toString(),
-                apiId: p.id,
-                title: p.name,
-                description: p.description || 'No description provided.',
-                status: p.status,
-                progress: p.progress_percentage || 0,
-                dueDate: p.due_date || 'No Date',
-                teamSize: p.team_size || p.member_count || 1,
-                lastActive: p.updated_at
-                    ? formatDistanceToNow(new Date(p.updated_at), { addSuffix: true })
-                    : 'Unknown'
-            }));
+            const mappedProjects: Project[] = response.data.map(p => {
+                const lastActiveRaw = p.last_active ?? p.updated_at;
+                return {
+                    id: p.id.toString(),
+                    apiId: p.id,
+                    title: p.name,
+                    description: p.description ?? 'No description provided.',
+                    status: p.status,
+                    progress: p.progress ?? p.progress_percentage ?? 0,
+                    dueDate: p.due_date ?? 'No Date',
+                    teamSize: p.team_size ?? p.member_count ?? 1,
+                    lastActive: lastActiveRaw
+                        ? formatDistanceToNow(new Date(lastActiveRaw), { addSuffix: true })
+                        : 'Unknown'
+                };
+            });
             setProjects(mappedProjects);
-        } catch (err: any) {
-            const message = err.response?.data?.detail || 'Failed to fetch projects';
+        } catch (err: unknown) {
+            const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to fetch projects';
             setError(message);
             toast.error(message);
         } finally {
@@ -98,8 +101,8 @@ export function ProjectsList() {
             setIsAddOpen(false);
             setNewProject({ title: '', desc: '', date: '' });
             toast.success('Project created successfully');
-        } catch (err: any) {
-            toast.error(err.response?.data?.detail || 'Failed to create project');
+        } catch (err: unknown) {
+            toast.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to create project');
         }
     };
 
