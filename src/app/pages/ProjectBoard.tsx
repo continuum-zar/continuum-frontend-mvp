@@ -61,12 +61,9 @@ interface Task {
 
 
 
+const ALL_MILESTONES_ID = '';
 const initialMilestones = [
-  { id: 'm1', name: 'Project Kickoff', date: 'Feb 15, 2026', status: 'completed' },
-  { id: 'm2', name: 'Alpha Release', date: 'Mar 15, 2026', status: 'active', desc: 'Focus on core system stability.' },
-  { id: 'm3', name: 'Beta Release', date: 'Apr 01, 2026', status: 'upcoming', desc: 'Feature freeze and UI polish.' },
-  { id: 'm4', name: 'RC1 Build', date: 'Apr 15, 2026', status: 'upcoming', desc: 'Final testing and QA.' },
-  { id: 'm5', name: 'Production Launch', date: 'May 01, 2026', status: 'upcoming' },
+  { id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' },
 ];
 
 interface TaskCardProps {
@@ -223,6 +220,7 @@ export function ProjectBoard() {
         navigate('/projects');
         return;
       }
+      setSelectedMilestoneId(ALL_MILESTONES_ID);
       try {
         setIsLoading(true);
         setError(null);
@@ -257,7 +255,25 @@ export function ProjectBoard() {
         });
 
         setTasks(mappedTasks);
+
+        try {
+          const milestonesRes = await api.get(`/projects/${projectId}/milestones`);
+          const apiMilestones = (milestonesRes.data as { id: number; name?: string; due_date?: string; status?: string; display_status?: string; description?: string }[]) ?? [];
+          const mappedMilestones = apiMilestones.map((m) => ({
+            id: String(m.id),
+            name: m.name || '',
+            date: m.due_date
+              ? new Date(m.due_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+              : '',
+            status: (m.display_status ?? (m.status === 'completed' ? 'completed' : m.status === 'in_progress' ? 'active' : 'upcoming')) as 'completed' | 'active' | 'upcoming',
+            desc: m.description || '',
+          }));
+          setMilestonesList([{ id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' }, ...mappedMilestones]);
+        } catch {
+          setMilestonesList([{ id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' }]);
+        }
       } catch (err: unknown) {
+        setTasks([]);
         if ((err as { response?: { status?: number } })?.response?.status === 404) {
           setError('Project not found');
         } else {
@@ -300,9 +316,7 @@ export function ProjectBoard() {
     setInviteRole('Member');
   };
 
-  // Find first active/upcoming milestone or default to first
-  const initialMilestone = milestonesList.find(m => m.status === 'active') || milestonesList[0];
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState(initialMilestone.id);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState(ALL_MILESTONES_ID);
 
   const handleCreateMilestone = () => {
     if (!newMilestone.name || !newMilestone.date) return;
@@ -338,7 +352,10 @@ export function ProjectBoard() {
     );
   };
 
-  const filteredTasks = tasks.filter(t => t.milestoneId === selectedMilestoneId);
+  const filteredTasks =
+    selectedMilestoneId === ALL_MILESTONES_ID
+      ? tasks
+      : tasks.filter((t) => t.milestoneId === selectedMilestoneId);
   const todoTasks = filteredTasks.filter((t) => t.status === 'todo');
   const inProgressTasks = filteredTasks.filter((t) => t.status === 'in-progress');
   const doneTasks = filteredTasks.filter((t) => t.status === 'done');
