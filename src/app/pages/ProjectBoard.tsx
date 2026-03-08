@@ -342,8 +342,18 @@ export function ProjectBoard() {
   const [teamMembers, setTeamMembers] = useState<Array<{ id: number; name: string; email: string; role: string; initials: string }>>([]);
   const [teamMembersLoading, setTeamMembersLoading] = useState(false);
   const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [teamMembersRefetchTrigger, setTeamMembersRefetchTrigger] = useState(0);
 
-  // Fetch project members when Team modal opens
+  // Map frontend role label to backend role (backend: admin, manager, member, viewer, guest, client)
+  const inviteRoleToBackend = (label: string): string => {
+    if (label === 'Project Manager') return 'manager';
+    if (label === 'Client') return 'client';
+    return 'member';
+  };
+
+  // Fetch project members when Team modal opens or after successful invite
   useEffect(() => {
     if (!isTeamModalOpen || !projectId) return;
     const projectIdNum = Number(projectId);
@@ -351,6 +361,7 @@ export function ProjectBoard() {
 
     let cancelled = false;
     setTeamMembersError(null);
+    setInviteError(null);
     setTeamMembersLoading(true);
 
     api
@@ -399,22 +410,37 @@ export function ProjectBoard() {
     return () => {
       cancelled = true;
     };
-  }, [isTeamModalOpen, projectId]);
+  }, [isTeamModalOpen, projectId, teamMembersRefetchTrigger]);
 
-  const handleInvite = () => {
-    if (!inviteEmail) return;
-    setTeamMembers((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: 'Pending Invite',
-        email: inviteEmail,
-        role: inviteRole,
-        initials: inviteEmail[0].toUpperCase()
-      }
-    ]);
-    setInviteEmail('');
-    setInviteRole('Member');
+  const handleInvite = async () => {
+    const email = inviteEmail?.trim();
+    if (!email || !projectId) return;
+    const projectIdNum = Number(projectId);
+    if (!Number.isInteger(projectIdNum)) return;
+
+    setInviteError(null);
+    setInviteLoading(true);
+    try {
+      await api.post(`/projects/${projectIdNum}/members`, {
+        email,
+        role: inviteRoleToBackend(inviteRole),
+      });
+      setInviteEmail('');
+      setInviteRole('Member');
+      setTeamMembersRefetchTrigger((t) => t + 1);
+      toast.success('Member added to project');
+    } catch (err: unknown) {
+      const res = (err as { response?: { data?: { detail?: string }; status?: number } })?.response;
+      const detail = res?.data?.detail;
+      const status = res?.status;
+      let message = typeof detail === 'string' ? detail : (err as { message?: string })?.message ?? 'Failed to add member';
+      if (status === 404) message = 'User not found. They must have an account with this email.';
+      else if (status === 409) message = 'User is already a member of this project.';
+      setInviteError(message);
+      toast.error(message);
+    } finally {
+      setInviteLoading(false);
+    }
   };
 
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(ALL_MILESTONES_ID);
@@ -582,11 +608,12 @@ export function ProjectBoard() {
                       <Input
                         placeholder="Email address..."
                         value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
+                        onChange={(e) => { setInviteEmail(e.target.value); setInviteError(null); }}
                         onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
                         className="bg-input-background flex-1"
+                        disabled={inviteLoading}
                       />
-                      <Select value={inviteRole} onValueChange={setInviteRole}>
+                      <Select value={inviteRole} onValueChange={setInviteRole} disabled={inviteLoading}>
                         <SelectTrigger className="w-[140px] bg-input-background">
                           <SelectValue placeholder="Role" />
                         </SelectTrigger>
@@ -598,8 +625,13 @@ export function ProjectBoard() {
                           <SelectItem value="Client">Client</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button onClick={handleInvite} disabled={!inviteEmail}>Invite</Button>
+                      <Button onClick={handleInvite} disabled={!inviteEmail?.trim() || inviteLoading}>
+                        {inviteLoading ? 'Adding…' : 'Invite'}
+                      </Button>
                     </div>
+                    {inviteError && (
+                      <p className="text-sm text-destructive">{inviteError}</p>
+                    )}
                   </div>
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium text-muted-foreground">Current Members ({teamMembers.length})</h4>
