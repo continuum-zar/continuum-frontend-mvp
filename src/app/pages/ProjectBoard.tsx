@@ -343,30 +343,61 @@ export function ProjectBoard() {
     }
   }, [milestonesList, selectedMilestoneId]);
 
-  const handleCreateMilestone = () => {
-    if (!newMilestone.name || !newMilestone.date) return;
+  const handleCreateMilestone = async () => {
+    if (!newMilestone.name || !newMilestone.date || !projectId) return;
 
-    // Parse the input HTML date YYYY-MM-DD
-    const dateObj = new Date(newMilestone.date + 'T00:00:00');
-    const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    try {
+      // Send POST request to create milestone on backend
+      const response = await api.post('/milestones/', {
+        project_id: Number(projectId),
+        name: newMilestone.name,
+        due_date: newMilestone.date, // Send as YYYY-MM-DD
+        description: newMilestone.desc || undefined,
+      });
 
-    const newM: Milestone = {
-      id: `m${Date.now()}`,
-      name: newMilestone.name,
-      desc: newMilestone.desc || undefined,
-      date: formattedDate,
-      status: 'upcoming',
-    };
+      // Map the response to frontend format
+      const createdMilestone: Milestone = {
+        id: String(response.data.id),
+        name: response.data.name,
+        date: formatDueDate(response.data.due_date),
+        status: mapMilestoneStatus(response.data.status || 'upcoming'),
+        desc: response.data.description || undefined,
+      };
 
-    // Add to list and sort chronologically
-    const updated = [...milestonesList, newM].sort((a, b) => {
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
-    });
+      // Add to list and sort chronologically; keep "All tasks" sentinel first
+      const sentinel = milestonesList.find((m) => m.id === ALL_MILESTONES_ID);
+      const rest = milestonesList.filter((m) => m.id !== ALL_MILESTONES_ID);
+      const sortedRest = [...rest, createdMilestone].sort((a, b) => {
+        const ta = new Date(a.date || '').getTime();
+        const tb = new Date(b.date || '').getTime();
+        return (Number.isNaN(ta) ? 0 : ta) - (Number.isNaN(tb) ? 0 : tb);
+      });
+      const updated = sentinel ? [sentinel, ...sortedRest] : sortedRest;
 
-    setMilestonesList(updated);
-    setIsAddMilestoneOpen(false);
-    setNewMilestone({ name: '', desc: '', date: '' });
-    setSelectedMilestoneId(newM.id);
+      setMilestonesList(updated);
+      setIsAddMilestoneOpen(false);
+      setNewMilestone({ name: '', desc: '', date: '' });
+      setSelectedMilestoneId(createdMilestone.id);
+
+      toast.success('Milestone created successfully');
+    } catch (err: unknown) {
+      console.error('Failed to create milestone:', err);
+      type ErrShape = { response?: { data?: { detail?: string | Array<{ msg?: string }>; message?: string }; message?: string }; message?: string };
+      const data = (err as ErrShape)?.response?.data;
+      const detail = data?.detail;
+      let errorMessage: string =
+        data?.message ?? (err as ErrShape).message ?? 'Failed to create milestone';
+      if (typeof detail === 'string' && detail) {
+        errorMessage = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        const messages = detail
+          .map((d: { msg?: string }) => (d?.msg != null ? d.msg : String(d)))
+          .filter(Boolean);
+        if (messages.length > 0) errorMessage = messages.join('. ');
+      }
+      toast.error(errorMessage);
+      // Dialog stays open on error; user can fix validation errors and retry
+    }
   };
 
   const handleMove = async (taskId: string, newStatus: TaskStatus) => {
@@ -678,6 +709,6 @@ export function ProjectBoard() {
           />
         </div>
       </DndProvider>
-    </div >
+    </div>
   );
 }
