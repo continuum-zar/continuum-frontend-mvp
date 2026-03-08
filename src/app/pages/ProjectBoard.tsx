@@ -339,16 +339,72 @@ export function ProjectBoard() {
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('Member');
-  const [teamMembers, setTeamMembers] = useState([
-    { id: 1, name: 'Sarah Anderson', email: 'sarah@example.com', role: 'Project Manager', initials: 'SA' },
-    { id: 2, name: 'Mike Torres', email: 'mike@example.com', role: 'Developer', initials: 'MT' },
-    { id: 3, name: 'Emily Wang', email: 'emily@example.com', role: 'Designer', initials: 'EW' },
-  ]);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: number; name: string; email: string; role: string; initials: string }>>([]);
+  const [teamMembersLoading, setTeamMembersLoading] = useState(false);
+  const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
+
+  // Fetch project members when Team modal opens
+  useEffect(() => {
+    if (!isTeamModalOpen || !projectId) return;
+    const projectIdNum = Number(projectId);
+    if (!Number.isInteger(projectIdNum)) return;
+
+    let cancelled = false;
+    setTeamMembersError(null);
+    setTeamMembersLoading(true);
+
+    api
+      .get<Array<{
+        id: number;
+        user_id: number;
+        role: string;
+        user?: { first_name?: string; last_name?: string; email?: string };
+        first_name?: string;
+        last_name?: string;
+        email?: string;
+      }>>(`/projects/${projectIdNum}/members`)
+      .then((res) => {
+        if (cancelled) return;
+        const list = res.data ?? [];
+        const mapped = list.map((m) => {
+          const user = m.user;
+          const firstName = user?.first_name ?? m.first_name ?? '';
+          const lastName = user?.last_name ?? m.last_name ?? '';
+          const name = [firstName, lastName].filter(Boolean).join(' ') || 'Unknown';
+          const email = user?.email ?? m.email ?? '';
+          const initials = [firstName, lastName].map((s) => (s && s[0]) || '').join('').toUpperCase().slice(0, 2) || (email ? email[0].toUpperCase() : '?');
+          return {
+            id: m.id,
+            name,
+            email,
+            role: m.role ?? 'member',
+            initials,
+          };
+        });
+        setTeamMembers(mapped);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const message = (err as { response?: { data?: { detail?: string }; status?: number } })?.response?.data?.detail;
+        const fallback = (err as { message?: string })?.message ?? 'Failed to load team members';
+        const errorMsg = typeof message === 'string' ? message : fallback;
+        setTeamMembersError(errorMsg);
+        setTeamMembers([]);
+        toast.error(errorMsg);
+      })
+      .finally(() => {
+        if (!cancelled) setTeamMembersLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isTeamModalOpen, projectId]);
 
   const handleInvite = () => {
     if (!inviteEmail) return;
-    setTeamMembers([
-      ...teamMembers,
+    setTeamMembers((prev) => [
+      ...prev,
       {
         id: Date.now(),
         name: 'Pending Invite',
@@ -548,20 +604,38 @@ export function ProjectBoard() {
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium text-muted-foreground">Current Members ({teamMembers.length})</h4>
                     <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2">
-                      {teamMembers.map((member) => (
-                        <div key={member.id} className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="h-8 w-8 border border-border">
-                              <AvatarFallback className="text-xs bg-primary/10 text-primary">{member.initials}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium leading-none mb-1">{member.name}</p>
-                              <p className="text-xs text-muted-foreground">{member.email}</p>
+                      {teamMembersLoading ? (
+                        <div className="space-y-3 py-2">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="flex items-center gap-3">
+                              <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                              <div className="flex-1 space-y-1">
+                                <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                                <div className="h-3 w-48 bg-muted rounded animate-pulse" />
+                              </div>
                             </div>
-                          </div>
-                          <Badge variant="secondary" className="text-[10px] font-normal">{member.role}</Badge>
+                          ))}
                         </div>
-                      ))}
+                      ) : teamMembersError ? (
+                        <p className="text-sm text-destructive py-2">{teamMembersError}</p>
+                      ) : teamMembers.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-4">No members yet.</p>
+                      ) : (
+                        teamMembers.map((member) => (
+                          <div key={member.id} className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="h-8 w-8 border border-border">
+                                <AvatarFallback className="text-xs bg-primary/10 text-primary">{member.initials}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="text-sm font-medium leading-none mb-1">{member.name}</p>
+                                <p className="text-xs text-muted-foreground">{member.email}</p>
+                              </div>
+                            </div>
+                            <Badge variant="secondary" className="text-[10px] font-normal">{member.role}</Badge>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
