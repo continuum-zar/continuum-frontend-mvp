@@ -67,8 +67,8 @@ export function ProjectsList() {
                 };
             });
             setProjects(mappedProjects);
-        } catch (err: any) {
-            const message = err.response?.data?.detail || 'Failed to fetch projects';
+        } catch (err: unknown) {
+            const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to fetch projects';
             setError(message);
             toast.error(message);
         } finally {
@@ -113,8 +113,8 @@ export function ProjectsList() {
             setIsAddOpen(false);
             setNewProject({ title: '', desc: '', date: '' });
             toast.success('Project created successfully');
-        } catch (err: any) {
-            toast.error(err.response?.data?.detail || 'Failed to create project');
+        } catch (err: unknown) {
+            toast.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to create project');
         }
     };
 
