@@ -291,7 +291,7 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
 export function ProjectBoard() {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const [project, setProject] = useState<any>(null);
+  const [project, setProject] = useState<{ name?: string; description?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -309,8 +309,8 @@ export function ProjectBoard() {
         setError(null);
         const response = await api.get(`/projects/${projectId}`);
         setProject(response.data);
-      } catch (err: any) {
-        if (err.response?.status === 404) {
+      } catch (err: unknown) {
+        if ((err as { response?: { status?: number } })?.response?.status === 404) {
           setError('Project not found');
         } else {
           setError('Failed to load project details');
