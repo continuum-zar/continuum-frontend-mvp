@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router';
 import {
@@ -32,68 +32,15 @@ import {
     DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import { Skeleton } from '../components/ui/skeleton';
-import { toast } from 'sonner';
-import api from '@/lib/api';
-import { Project, ProjectAPIResponse } from '@/types/project';
-import { formatDistanceToNow } from 'date-fns';
-
-/** Normalize FastAPI error detail (string or array of { msg?: string }) into a single message. */
-function getApiErrorMessage(
-    err: unknown,
-    fallback: string
-): string {
-    const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
-    const detail = data?.detail;
-    if (typeof detail === 'string') return detail;
-    if (Array.isArray(detail) && detail.length > 0) {
-        const messages = detail.map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d))).filter(Boolean);
-        return messages.length > 0 ? messages.join('. ') : fallback;
-    }
-    return fallback;
-}
+import { useProjects, useCreateProject } from '@/api/hooks';
 
 export function ProjectsList() {
     const navigate = useNavigate();
-    const [projects, setProjects] = useState<Project[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: projects = [], isLoading, error, refetch } = useProjects();
+    const createProjectMutation = useCreateProject();
+
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [newProject, setNewProject] = useState({ title: '', desc: '', date: '' });
-
-    const fetchProjects = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await api.get<ProjectAPIResponse[]>('/projects/');
-            const mappedProjects: Project[] = response.data.map(p => {
-                const lastActiveRaw = p.last_active ?? p.updated_at;
-                return {
-                    id: p.id.toString(),
-                    apiId: p.id,
-                    title: p.name,
-                    description: p.description ?? 'No description provided.',
-                    status: p.status,
-                    progress: p.progress ?? p.progress_percentage ?? 0,
-                    dueDate: p.due_date ?? 'No Date',
-                    teamSize: p.team_size ?? p.member_count ?? 1,
-                    lastActive: lastActiveRaw
-                        ? formatDistanceToNow(new Date(lastActiveRaw), { addSuffix: true })
-                        : 'Unknown'
-                };
-            });
-            setProjects(mappedProjects);
-        } catch (err: unknown) {
-            const message = getApiErrorMessage(err, 'Failed to fetch projects');
-            setError(message);
-            toast.error(message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchProjects();
-    }, [fetchProjects]);
 
     const getProgressColor = (progress: number) => {
         if (progress < 40) return "bg-red-500";
@@ -103,21 +50,16 @@ export function ProjectsList() {
 
     const handleCreateProject = async () => {
         if (!newProject.title) return;
-
         try {
-            await api.post<ProjectAPIResponse>('/projects/', {
+            await createProjectMutation.mutateAsync({
                 name: newProject.title,
-                description: newProject.desc,
+                description: newProject.desc || undefined,
                 due_date: newProject.date || null,
-                status: 'active'
             });
-
-            await fetchProjects();
             setIsAddOpen(false);
             setNewProject({ title: '', desc: '', date: '' });
-            toast.success('Project created successfully');
-        } catch (err: unknown) {
-            toast.error(getApiErrorMessage(err, 'Failed to create project'));
+        } catch {
+            // Toast handled in hook
         }
     };
 
@@ -134,7 +76,7 @@ export function ProjectsList() {
                 </div>
 
                 <div className="flex gap-2">
-                    <Button variant="outline" size="icon" onClick={fetchProjects} disabled={isLoading}>
+                    <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading}>
                         <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
                     <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -179,7 +121,7 @@ export function ProjectsList() {
                             </div>
                             <DialogFooter>
                                 <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-                                <Button onClick={handleCreateProject} disabled={!newProject.title}>Initialize Project</Button>
+                                <Button onClick={handleCreateProject} disabled={!newProject.title || createProjectMutation.isPending}>Initialize Project</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -235,8 +177,8 @@ export function ProjectsList() {
                 <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-destructive/50 rounded-lg bg-destructive/5">
                     <AlertCircle className="h-12 w-12 text-destructive mb-4" />
                     <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
-                    <p className="text-muted-foreground mb-6 max-w-md">{error}</p>
-                    <Button onClick={fetchProjects}>
+                    <p className="text-muted-foreground mb-6 max-w-md">{String(error.message)}</p>
+                    <Button onClick={() => refetch()}>
                         <RefreshCw className="mr-2 h-4 w-4" />
                         Try Again
                     </Button>

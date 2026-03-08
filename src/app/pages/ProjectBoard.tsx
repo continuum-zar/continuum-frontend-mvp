@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useParams, useNavigate, useLocation } from 'react-router';
-import { toast } from 'sonner';
-import api from '../../lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   ArrowLeft,
@@ -15,6 +14,19 @@ import {
   CheckCircle2,
   CircleDot
 } from 'lucide-react';
+import type { Task, TaskStatus } from '@/types/task';
+import type { Milestone } from '@/types/milestone';
+import {
+  useProject,
+  useProjectTasks,
+  useProjectMilestones,
+  useProjectMembers,
+  useUpdateTaskStatus,
+  useCreateMilestone,
+  useAddMember,
+  projectKeys,
+  mapMilestone,
+} from '@/api';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import {
@@ -43,48 +55,7 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 
-type TaskStatus = 'todo' | 'in-progress' | 'done';
-type MilestoneStatus = 'upcoming' | 'active' | 'completed' | 'overdue';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  scope: 'XS' | 'S' | 'M' | 'L' | 'XL';
-  assignees: string[];
-  attachments: number;
-  comments: number;
-  estimatedHours?: number;
-  checklists: { total: number; completed: number };
-  milestoneId: string;
-}
-
-interface Milestone {
-  id: string;
-  name: string;
-  date: string;
-  status: MilestoneStatus;
-  desc?: string;
-}
-
-function mapMilestoneStatus(s: string): MilestoneStatus {
-  switch (s) {
-    case 'in_progress': return 'active';
-    case 'completed': return 'completed';
-    case 'overdue': return 'overdue';
-    default: return 'upcoming'; // covers not_started and anything unexpected
-  }
-}
-
 const ALL_MILESTONES_ID = '';
-
-function formatDueDate(iso: string): string {
-  if (!iso) return 'No date';
-  const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
-}
 
 interface TaskCardProps {
   task: Task;
@@ -249,204 +220,94 @@ export function ProjectBoard() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [project, setProject] = useState<{ name?: string; description?: string } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const tasksRef = useRef<Task[]>([]);
-  const [milestonesList, setMilestonesList] = useState<Milestone[]>([]);
-  const [milestonesLoading, setMilestonesLoading] = useState(true);
-  const [refetchTrigger, setRefetchTrigger] = useState(0);
+  const projectQuery = useProject(projectId);
+  const tasksQuery = useProjectTasks(projectId);
+  const milestonesQuery = useProjectMilestones(projectId);
+  const updateStatusMutation = useUpdateTaskStatus(projectId);
+  const createMilestoneMutation = useCreateMilestone(projectId);
+  const addMemberMutation = useAddMember(projectId);
+
+  const project = projectQuery.data ?? null;
+  const isLoading = projectQuery.isLoading || tasksQuery.isLoading;
+  const error = projectQuery.error
+    ? (projectQuery.error as { response?: { status?: number } })?.response?.status === 404
+      ? 'Project not found'
+      : 'Failed to load project details or tasks'
+    : null;
+
+  const tasks: Task[] = tasksQuery.data ?? [];
+  const milestonesRaw = milestonesQuery.data ?? [];
+  const milestonesList: Milestone[] = [
+    { id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' },
+    ...milestonesRaw,
+  ];
+  const milestonesLoading = milestonesQuery.isLoading;
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!projectId || isNaN(Number(projectId))) {
-        navigate('/projects');
-        return;
-      }
-      setSelectedMilestoneId(ALL_MILESTONES_ID);
-      try {
-        setIsLoading(true);
-        setError(null);
+    if (!projectId || isNaN(Number(projectId))) {
+      navigate('/projects');
+      return;
+    }
+  }, [projectId, navigate]);
 
-        const [projectRes, tasksRes, milestonesRes] = await Promise.all([
-          api.get(`/projects/${projectId}`),
-          api.get(`/tasks/?project_id=${projectId}`),
-          api.get(`/projects/${projectId}/milestones`),
-        ]);
+  useEffect(() => {
+    const state = location.state as { newTaskCreated?: boolean } | null;
+    if (state?.newTaskCreated && projectId) {
+      queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, projectId, queryClient]);
 
-        console.log('API responses received');
-        console.log('tasksRes.data:', tasksRes.data);
-
-        setProject(projectRes.data);
-
-        const mappedTasks: Task[] = tasksRes.data.map((t: { id: number; title?: string; description?: string; status?: string; scope_weight?: 'XS' | 'S' | 'M' | 'L' | 'XL'; assigned_to?: number; attachment_count?: number; comment_count?: number; checklists?: { done?: boolean }[]; milestone_id?: number }) => {
-          let totalChecklists = 0;
-          let completedChecklists = 0;
-          if (t.checklists && Array.isArray(t.checklists)) {
-            totalChecklists = t.checklists.length;
-            completedChecklists = t.checklists.filter((c) => c.done).length;
-          }
-
-          return {
-            id: String(t.id),
-            title: t.title || '',
-            description: t.description || '',
-            status: t.status === 'in_progress' ? 'in-progress' : (t.status || 'todo'),
-            scope: t.scope_weight || 'M',
-            assignees: t.assigned_to ? [String(t.assigned_to)] : [],
-            attachments: t.attachment_count || 0,
-            comments: t.comment_count || 0,
-            checklists: { total: totalChecklists, completed: completedChecklists },
-            milestoneId: t.milestone_id ? String(t.milestone_id) : '',
-          };
-        });
-
-        console.log('Mapped tasks:', mappedTasks);
-        tasksRef.current = mappedTasks;
-        setTasks(mappedTasks);
-        console.log('setTasks called with', mappedTasks.length, 'tasks');
-
-        const mappedMilestones: Milestone[] = (milestonesRes.data ?? []).map((m: { id: number; name?: string; due_date?: string; status?: string; description?: string }) => ({
-          id: String(m.id),
-          name: m.name ?? '',
-          date: formatDueDate(m.due_date ?? ''),
-          status: mapMilestoneStatus(m.status ?? ''),
-          desc: m.description || undefined,
-        }));
-        setMilestonesList([{ id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' }, ...mappedMilestones]);
-        setMilestonesLoading(false);
-      } catch (err: unknown) {
-        setTasks([]);
-        if ((err as { response?: { status?: number } })?.response?.status === 404) {
-          setError('Project not found');
-        } else {
-          setError('Failed to load project details or tasks');
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [projectId, navigate, location.key, refetchTrigger]);
-
-  // Dialog State
   const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ name: '', desc: '', date: '' });
 
-  // Team Modal State
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('Member');
-  const [teamMembers, setTeamMembers] = useState<Array<{ id: number; name: string; email: string; role: string; initials: string }>>([]);
-  const [teamMembersLoading, setTeamMembersLoading] = useState(false);
-  const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
-  const [inviteLoading, setInviteLoading] = useState(false);
-  const [teamMembersRefetchTrigger, setTeamMembersRefetchTrigger] = useState(0);
 
-  // Map frontend role label to backend role (backend: admin, manager, member, viewer, guest, client)
+  const membersQuery = useProjectMembers(projectId, { enabled: isTeamModalOpen });
+  const teamMembers = membersQuery.data ?? [];
+  const teamMembersLoading = membersQuery.isLoading;
+  const teamMembersError = membersQuery.error
+    ? String((membersQuery.error as { message?: string })?.message ?? 'Failed to load team members')
+    : null;
+
   const inviteRoleToBackend = (label: string): string => {
     if (label === 'Project Manager') return 'manager';
     if (label === 'Client') return 'client';
     return 'member';
   };
 
-  // Fetch project members when Team modal opens or after successful invite
-  useEffect(() => {
-    if (!isTeamModalOpen || !projectId) return;
-    const projectIdNum = Number(projectId);
-    if (!Number.isInteger(projectIdNum)) return;
-
-    let cancelled = false;
-    setTeamMembersError(null);
-    setInviteError(null);
-    setTeamMembersLoading(true);
-
-    api
-      .get<Array<{
-        id: number;
-        user_id: number;
-        role: string;
-        user?: { first_name?: string; last_name?: string; email?: string };
-        first_name?: string;
-        last_name?: string;
-        email?: string;
-      }>>(`/projects/${projectIdNum}/members`)
-      .then((res) => {
-        if (cancelled) return;
-        const list = res.data ?? [];
-        const mapped = list.map((m) => {
-          const user = m.user;
-          const firstName = user?.first_name ?? m.first_name ?? '';
-          const lastName = user?.last_name ?? m.last_name ?? '';
-          const name = [firstName, lastName].filter(Boolean).join(' ') || 'Unknown';
-          const email = user?.email ?? m.email ?? '';
-          const initials = [firstName, lastName].map((s) => (s && s[0]) || '').join('').toUpperCase().slice(0, 2) || (email ? email[0].toUpperCase() : '?');
-          return {
-            id: m.id,
-            name,
-            email,
-            role: m.role ?? 'member',
-            initials,
-          };
-        });
-        setTeamMembers(mapped);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        const message = (err as { response?: { data?: { detail?: string }; status?: number } })?.response?.data?.detail;
-        const fallback = (err as { message?: string })?.message ?? 'Failed to load team members';
-        const errorMsg = typeof message === 'string' ? message : fallback;
-        setTeamMembersError(errorMsg);
-        setTeamMembers([]);
-        toast.error(errorMsg);
-      })
-      .finally(() => {
-        if (!cancelled) setTeamMembersLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isTeamModalOpen, projectId, teamMembersRefetchTrigger]);
-
-  const handleInvite = async () => {
+  const handleInvite = () => {
     const email = inviteEmail?.trim();
     if (!email || !projectId) return;
-    const projectIdNum = Number(projectId);
-    if (!Number.isInteger(projectIdNum)) return;
-
     setInviteError(null);
-    setInviteLoading(true);
-    try {
-      await api.post(`/projects/${projectIdNum}/members`, {
-        email,
-        role: inviteRoleToBackend(inviteRole),
-      });
-      setInviteEmail('');
-      setInviteRole('Member');
-      setTeamMembersRefetchTrigger((t) => t + 1);
-      toast.success('Member added to project');
-    } catch (err: unknown) {
-      const res = (err as { response?: { data?: { detail?: string }; status?: number } })?.response;
-      const detail = res?.data?.detail;
-      const status = res?.status;
-      let message = typeof detail === 'string' ? detail : (err as { message?: string })?.message ?? 'Failed to add member';
-      if (status === 404) message = 'User not found. They must have an account with this email.';
-      else if (status === 409) message = 'User is already a member of this project.';
-      setInviteError(message);
-      toast.error(message);
-    } finally {
-      setInviteLoading(false);
-    }
+    addMemberMutation.mutate(
+      { email, role: inviteRoleToBackend(inviteRole) },
+      {
+        onSuccess: () => {
+          setInviteEmail('');
+          setInviteRole('Member');
+        },
+        onError: (err: unknown) => {
+          const res = (err as { response?: { data?: { detail?: string }; status?: number } })?.response;
+          const detail = res?.data?.detail;
+          const status = res?.status;
+          let message = typeof detail === 'string' ? detail : (err as { message?: string })?.message ?? 'Failed to add member';
+          if (status === 404) message = 'User not found. They must have an account with this email.';
+          else if (status === 409) message = 'User is already a member of this project.';
+          setInviteError(message);
+        },
+      }
+    );
   };
 
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(ALL_MILESTONES_ID);
   const pendingMoveRef = useRef<Set<string>>(new Set());
 
-  // Auto-select first active/upcoming milestone once milestones load
   useEffect(() => {
     if (milestonesList.length > 0 && !selectedMilestoneId) {
       const initial = milestonesList.find(m => m.status === 'active') || milestonesList[0];
@@ -454,108 +315,36 @@ export function ProjectBoard() {
     }
   }, [milestonesList, selectedMilestoneId]);
 
-  // Refetch tasks when returning from task creation
-  useEffect(() => {
-    const state = location.state as { newTaskCreated?: boolean; taskId?: number } | null;
-    if (state?.newTaskCreated) {
-      // Trigger a refetch by incrementing refetchTrigger
-      setRefetchTrigger(prev => prev + 1);
-      // Clear the state so we don't refetch multiple times
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state]);
-
   const handleCreateMilestone = async () => {
     if (!newMilestone.name || !newMilestone.date || !projectId) return;
-
     try {
-      // Send POST request to create milestone on backend
-      const response = await api.post('/milestones/', {
-        project_id: Number(projectId),
+      const data = await createMilestoneMutation.mutateAsync({
         name: newMilestone.name,
-        due_date: newMilestone.date, // Send as YYYY-MM-DD
+        due_date: newMilestone.date,
         description: newMilestone.desc || undefined,
       });
-
-      // Map the response to frontend format
-      const createdMilestone: Milestone = {
-        id: String(response.data.id),
-        name: response.data.name,
-        date: formatDueDate(response.data.due_date),
-        status: mapMilestoneStatus(response.data.status || 'upcoming'),
-        desc: response.data.description || undefined,
-      };
-
-      // Add to list and sort chronologically; keep "All tasks" sentinel first
-      const sentinel = milestonesList.find((m) => m.id === ALL_MILESTONES_ID);
-      const rest = milestonesList.filter((m) => m.id !== ALL_MILESTONES_ID);
-      const sortedRest = [...rest, createdMilestone].sort((a, b) => {
-        const ta = new Date(a.date || '').getTime();
-        const tb = new Date(b.date || '').getTime();
-        return (Number.isNaN(ta) ? 0 : ta) - (Number.isNaN(tb) ? 0 : tb);
-      });
-      const updated = sentinel ? [sentinel, ...sortedRest] : sortedRest;
-
-      setMilestonesList(updated);
+      const createdMilestone = mapMilestone(data);
       setIsAddMilestoneOpen(false);
       setNewMilestone({ name: '', desc: '', date: '' });
       setSelectedMilestoneId(createdMilestone.id);
-
-      toast.success('Milestone created successfully');
-    } catch (err: unknown) {
-      console.error('Failed to create milestone:', err);
-      type ErrShape = { response?: { data?: { detail?: string | Array<{ msg?: string }>; message?: string }; message?: string }; message?: string };
-      const data = (err as ErrShape)?.response?.data;
-      const detail = data?.detail;
-      let errorMessage: string =
-        data?.message ?? (err as ErrShape).message ?? 'Failed to create milestone';
-      if (typeof detail === 'string' && detail) {
-        errorMessage = detail;
-      } else if (Array.isArray(detail) && detail.length > 0) {
-        const messages = detail
-          .map((d: { msg?: string }) => (d?.msg != null ? d.msg : String(d)))
-          .filter(Boolean);
-        if (messages.length > 0) errorMessage = messages.join('. ');
-      }
-      toast.error(errorMessage);
-      // Dialog stays open on error; user can fix validation errors and retry
+    } catch {
+      // Toast handled in hook
     }
   };
 
-  const handleMove = async (taskId: string, newStatus: TaskStatus) => {
+  const handleMove = (taskId: string, newStatus: TaskStatus) => {
     if (pendingMoveRef.current.has(taskId)) return;
     const taskToMove = tasks.find(t => t.id === taskId);
     if (!taskToMove) return;
-    const oldStatus = taskToMove.status;
-
     pendingMoveRef.current.add(taskId);
-
-    setTasks((prevTasks) => {
-      const next = prevTasks.map((task) =>
-        task.id === taskId ? { ...task, status: newStatus } : task
-      );
-      tasksRef.current = next;
-      return next;
-    });
-
-    const backendStatus = newStatus === 'in-progress' ? 'in_progress' : newStatus;
-
-    try {
-      await api.patch(`/tasks/${taskId}/status`, { status: backendStatus });
-      toast.success(`Task moved to ${newStatus}`);
-    } catch (err: unknown) {
-      console.error('Failed to move task:', err);
-      setTasks((prevTasks) => {
-        const reverted = prevTasks.map((task) =>
-          task.id === taskId ? { ...task, status: oldStatus } : task
-        );
-        tasksRef.current = reverted;
-        return reverted;
-      });
-      toast.error('Failed to update task status. Please try again.');
-    } finally {
-      pendingMoveRef.current.delete(taskId);
-    }
+    updateStatusMutation.mutate(
+      { taskId, status: newStatus },
+      {
+        onSettled: () => {
+          pendingMoveRef.current.delete(taskId);
+        },
+      }
+    );
   };
 
   const filteredTasks =
@@ -611,9 +400,9 @@ export function ProjectBoard() {
                         onChange={(e) => { setInviteEmail(e.target.value); setInviteError(null); }}
                         onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
                         className="bg-input-background flex-1"
-                        disabled={inviteLoading}
+                        disabled={addMemberMutation.isPending}
                       />
-                      <Select value={inviteRole} onValueChange={setInviteRole} disabled={inviteLoading}>
+                      <Select value={inviteRole} onValueChange={setInviteRole} disabled={addMemberMutation.isPending}>
                         <SelectTrigger className="w-[140px] bg-input-background">
                           <SelectValue placeholder="Role" />
                         </SelectTrigger>
@@ -625,8 +414,8 @@ export function ProjectBoard() {
                           <SelectItem value="Client">Client</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button onClick={handleInvite} disabled={!inviteEmail?.trim() || inviteLoading}>
-                        {inviteLoading ? 'Adding…' : 'Invite'}
+                      <Button onClick={handleInvite} disabled={!inviteEmail?.trim() || addMemberMutation.isPending}>
+                        {addMemberMutation.isPending ? 'Adding…' : 'Invite'}
                       </Button>
                     </div>
                     {inviteError && (

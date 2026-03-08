@@ -25,3 +25,25 @@ export interface Project {
     teamSize: number;
     lastActive: string;
 }
+
+/** Raw project detail from API (GET /projects/:id) */
+export interface ProjectDetailAPIResponse {
+    id: number;
+    name: string;
+    description?: string | null;
+    status: string;
+    due_date?: string | null;
+    created_at?: string;
+    updated_at?: string | null;
+    progress_percentage?: number;
+    total_logged_hours?: number;
+    members?: unknown[];
+    tasks?: unknown[];
+}
+
+/** Project detail shape used by UI (e.g. ProjectBoard header) */
+export interface ProjectDetail {
+    id: number;
+    name: string;
+    description: string;
+}
