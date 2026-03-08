@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -318,6 +318,7 @@ export function ProjectBoard() {
   };
 
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(ALL_MILESTONES_ID);
+  const pendingMoveRef = useRef<Set<string>>(new Set());
 
   const handleCreateMilestone = () => {
     if (!newMilestone.name || !newMilestone.date) return;
@@ -346,35 +347,33 @@ export function ProjectBoard() {
   };
 
   const handleMove = async (taskId: string, newStatus: TaskStatus) => {
-    // 1. Find the task to get its current (old) status for reversion
+    if (pendingMoveRef.current.has(taskId)) return;
     const taskToMove = tasks.find(t => t.id === taskId);
     if (!taskToMove) return;
     const oldStatus = taskToMove.status;
 
-    // 2. Optimistic local update
+    pendingMoveRef.current.add(taskId);
+
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
         task.id === taskId ? { ...task, status: newStatus } : task
       )
     );
 
-    // 3. Map frontend status to backend status
     const backendStatus = newStatus === 'in-progress' ? 'in_progress' : newStatus;
 
-    // 4. Send PATCH request to backend
     try {
-      await api.patch(`/tasks/${taskId}`, { status: backendStatus });
-      // Optionally show a success toast if you want, but usually silent success is better for DND
-      // toast.success(`Task moved to ${newStatus}`);
-    } catch (err: any) {
+      await api.patch(`/tasks/${taskId}/status`, { status: backendStatus });
+    } catch (err: unknown) {
       console.error('Failed to move task:', err);
-      // 5. Revert the optimistic update on error
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
           task.id === taskId ? { ...task, status: oldStatus } : task
         )
       );
       toast.error('Failed to update task status. Please try again.');
+    } finally {
+      pendingMoveRef.current.delete(taskId);
     }
   };
 
