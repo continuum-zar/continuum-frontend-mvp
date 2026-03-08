@@ -45,6 +45,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 
 type TaskStatus = 'todo' | 'in-progress' | 'done';
+type MilestoneStatus = 'upcoming' | 'active' | 'completed' | 'overdue';
 
 interface Task {
   id: string;
@@ -60,12 +61,31 @@ interface Task {
   milestoneId: string;
 }
 
+interface Milestone {
+  id: string;
+  name: string;
+  date: string;
+  status: MilestoneStatus;
+  desc?: string;
+}
 
+function mapMilestoneStatus(s: string): MilestoneStatus {
+  switch (s) {
+    case 'in_progress': return 'active';
+    case 'completed': return 'completed';
+    case 'overdue': return 'overdue';
+    default: return 'upcoming'; // covers not_started and anything unexpected
+  }
+}
 
 const ALL_MILESTONES_ID = '';
-const initialMilestones = [
-  { id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' },
-];
+
+function formatDueDate(iso: string): string {
+  if (!iso) return 'No date';
+  const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+}
 
 interface TaskCardProps {
   task: Task;
@@ -213,7 +233,8 @@ export function ProjectBoard() {
   const [error, setError] = useState<string | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [milestonesList, setMilestonesList] = useState(initialMilestones);
+  const [milestonesList, setMilestonesList] = useState<Milestone[]>([]);
+  const [milestonesLoading, setMilestonesLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -226,9 +247,10 @@ export function ProjectBoard() {
         setIsLoading(true);
         setError(null);
 
-        const [projectRes, tasksRes] = await Promise.all([
+        const [projectRes, tasksRes, milestonesRes] = await Promise.all([
           api.get(`/projects/${projectId}`),
-          api.get(`/tasks/?project_id=${projectId}`)
+          api.get(`/tasks/?project_id=${projectId}`),
+          api.get(`/projects/${projectId}/milestones`),
         ]);
 
         setProject(projectRes.data);
@@ -257,22 +279,15 @@ export function ProjectBoard() {
 
         setTasks(mappedTasks);
 
-        try {
-          const milestonesRes = await api.get(`/projects/${projectId}/milestones`);
-          const apiMilestones = (milestonesRes.data as { id: number; name?: string; due_date?: string; status?: string; display_status?: string; description?: string }[]) ?? [];
-          const mappedMilestones = apiMilestones.map((m) => ({
-            id: String(m.id),
-            name: m.name || '',
-            date: m.due_date
-              ? new Date(m.due_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
-              : '',
-            status: (m.display_status ?? (m.status === 'completed' ? 'completed' : m.status === 'in_progress' ? 'active' : 'upcoming')) as 'completed' | 'active' | 'upcoming',
-            desc: m.description || '',
-          }));
-          setMilestonesList([{ id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' }, ...mappedMilestones]);
-        } catch {
-          setMilestonesList([{ id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' }]);
-        }
+        const mappedMilestones: Milestone[] = (milestonesRes.data ?? []).map((m: { id: number; name?: string; due_date?: string; status?: string; description?: string }) => ({
+          id: String(m.id),
+          name: m.name ?? '',
+          date: formatDueDate(m.due_date ?? ''),
+          status: mapMilestoneStatus(m.status ?? ''),
+          desc: m.description || undefined,
+        }));
+        setMilestonesList([{ id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' }, ...mappedMilestones]);
+        setMilestonesLoading(false);
       } catch (err: unknown) {
         setTasks([]);
         if ((err as { response?: { status?: number } })?.response?.status === 404) {
@@ -320,6 +335,14 @@ export function ProjectBoard() {
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(ALL_MILESTONES_ID);
   const pendingMoveRef = useRef<Set<string>>(new Set());
 
+  // Auto-select first active/upcoming milestone once milestones load
+  useEffect(() => {
+    if (milestonesList.length > 0 && !selectedMilestoneId) {
+      const initial = milestonesList.find(m => m.status === 'active') || milestonesList[0];
+      setSelectedMilestoneId(initial.id);
+    }
+  }, [milestonesList, selectedMilestoneId]);
+
   const handleCreateMilestone = () => {
     if (!newMilestone.name || !newMilestone.date) return;
 
@@ -327,12 +350,12 @@ export function ProjectBoard() {
     const dateObj = new Date(newMilestone.date + 'T00:00:00');
     const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 
-    const newM = {
+    const newM: Milestone = {
       id: `m${Date.now()}`,
       name: newMilestone.name,
-      desc: newMilestone.desc,
+      desc: newMilestone.desc || undefined,
       date: formattedDate,
-      status: 'upcoming'
+      status: 'upcoming',
     };
 
     // Add to list and sort chronologically
@@ -555,53 +578,80 @@ export function ProjectBoard() {
         </div>
         <div className="bg-card border border-border rounded-lg p-6 overflow-x-auto relative min-h-[160px]">
 
-          <div className="flex items-start min-w-[800px] relative pt-2">
-
-            {/* Horizontal Connecting Line */}
-            <div className="absolute top-7 left-[5%] right-[5%] h-[2px] bg-border -z-0" />
-
-            {milestonesList.map((milestone) => {
-              const isSelected = selectedMilestoneId === milestone.id;
-              const isCompleted = milestone.status === 'completed';
-              const isActive = milestone.status === 'active';
-
-              return (
-                <div
-                  key={milestone.id}
-                  className={`flex-1 flex flex-col items-center relative z-10 cursor-pointer group px-2 text-center transition-all ${isSelected ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
-                  onClick={() => setSelectedMilestoneId(milestone.id)}
-                >
-                  {/* Timeline Node */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 transition-colors relative bg-card ${isCompleted
-                    ? 'border-2 border-foreground text-foreground'
-                    : isActive || isSelected
-                      ? 'border-2 border-foreground bg-card text-foreground'
-                      : 'border-2 border-muted bg-card text-muted-foreground'
-                    }`}>
-                    {isCompleted ? (
-                      <CheckCircle2 className="w-5 h-5" />
-                    ) : isActive || isSelected ? (
-                      <CircleDot className="w-5 h-5" />
-                    ) : (
-                      <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <h4 className={`text-sm font-semibold mb-1 text-foreground`}>
-                    {milestone.name}
-                  </h4>
-                  <div className="text-xs text-muted-foreground mb-2 flex items-center justify-center gap-1 font-mono">
-                    <Calendar className="w-3 h-3" />
-                    {milestone.date}
-                  </div>
-                  <p className="text-xs text-muted-foreground line-clamp-2 px-4">
-                    {milestone.desc || 'No description provided.'}
-                  </p>
+          {/* Loading skeleton */}
+          {milestonesLoading && (
+            <div className="flex items-start gap-8 min-w-[800px] relative pt-2 animate-pulse">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-muted" />
+                  <div className="h-3 bg-muted rounded w-24" />
+                  <div className="h-3 bg-muted rounded w-16" />
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!milestonesLoading && milestonesList.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-28 text-muted-foreground">
+              <Calendar className="w-6 h-6 mb-2 opacity-40" />
+              <p className="text-sm">No milestones yet. Add one to get started.</p>
+            </div>
+          )}
+
+          {/* Milestone nodes */}
+          {!milestonesLoading && milestonesList.length > 0 && (
+            <div className="flex items-start min-w-[800px] relative pt-2">
+
+              {/* Horizontal Connecting Line */}
+              <div className="absolute top-7 left-[5%] right-[5%] h-[2px] bg-border -z-0" />
+
+              {milestonesList.map((milestone) => {
+                const isSelected = selectedMilestoneId === milestone.id;
+                const isCompleted = milestone.status === 'completed';
+                const isActive = milestone.status === 'active';
+                const isOverdue = milestone.status === 'overdue';
+
+                return (
+                  <div
+                    key={milestone.id}
+                    className={`flex-1 flex flex-col items-center relative z-10 cursor-pointer group px-2 text-center transition-all ${isSelected ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
+                    onClick={() => setSelectedMilestoneId(milestone.id)}
+                  >
+                    {/* Timeline Node */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 transition-colors relative bg-card ${isCompleted
+                      ? 'border-2 border-foreground text-foreground'
+                      : isOverdue
+                        ? 'border-2 border-destructive text-destructive'
+                        : isActive || isSelected
+                          ? 'border-2 border-foreground bg-card text-foreground'
+                          : 'border-2 border-muted bg-card text-muted-foreground'
+                      }`}>
+                      {isCompleted ? (
+                        <CheckCircle2 className="w-5 h-5" />
+                      ) : isActive || isSelected ? (
+                        <CircleDot className="w-5 h-5" />
+                      ) : (
+                        <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <h4 className="text-sm font-semibold mb-1 text-foreground">
+                      {milestone.name}
+                    </h4>
+                    <div className={`text-xs mb-2 flex items-center justify-center gap-1 font-mono ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}>
+                      <Calendar className="w-3 h-3" />
+                      {milestone.date}
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 px-4">
+                      {milestone.desc || 'No description provided.'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
