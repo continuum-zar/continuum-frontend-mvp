@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
@@ -31,7 +31,7 @@ export function CreateTask() {
   const navigate = useNavigate();
   const location = useLocation();
   const state = (location.state as LocationState) || {};
-  
+
   const projectId = state.projectId;
   const milestoneId = state.milestoneId;
 
@@ -90,7 +90,7 @@ export function CreateTask() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim()) {
       toast.error('Task title is required');
       return;
@@ -137,8 +137,8 @@ export function CreateTask() {
 
       // Redirect back to the project board if projectId exists, otherwise to projects list
       if (projectId) {
-        navigate(`/projects/${projectId}`, { 
-          state: { newTaskCreated: true, taskId: response.data.id } 
+        navigate(`/projects/${projectId}`, {
+          state: { newTaskCreated: true, taskId: response.data.id }
         });
       } else {
         navigate('/projects');

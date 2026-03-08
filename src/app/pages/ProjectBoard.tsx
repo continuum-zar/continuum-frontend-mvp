@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Link, useParams, useNavigate, useLocation } from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import { toast } from 'sonner';
 import api from '../../lib/api';
 import {
@@ -77,6 +76,8 @@ function mapMilestoneStatus(s: string): MilestoneStatus {
     default: return 'upcoming'; // covers not_started and anything unexpected
   }
 }
+
+const ALL_MILESTONES_ID = '';
 
 function formatDueDate(iso: string): string {
   if (!iso) return 'No date';
@@ -248,7 +249,7 @@ export function ProjectBoard() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [project, setProject] = useState<any>(null);
+  const [project, setProject] = useState<{ name?: string; description?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -264,6 +265,7 @@ export function ProjectBoard() {
         navigate('/projects');
         return;
       }
+      setSelectedMilestoneId(ALL_MILESTONES_ID);
       try {
         setIsLoading(true);
         setError(null);
@@ -279,12 +281,12 @@ export function ProjectBoard() {
 
         setProject(projectRes.data);
 
-        const mappedTasks: Task[] = tasksRes.data.map((t: any) => {
+        const mappedTasks: Task[] = tasksRes.data.map((t: { id: number; title?: string; description?: string; status?: string; scope_weight?: 'XS' | 'S' | 'M' | 'L' | 'XL'; assigned_to?: number; attachment_count?: number; comment_count?: number; checklists?: { done?: boolean }[]; milestone_id?: number }) => {
           let totalChecklists = 0;
           let completedChecklists = 0;
           if (t.checklists && Array.isArray(t.checklists)) {
             totalChecklists = t.checklists.length;
-            completedChecklists = t.checklists.filter((c: any) => c.done).length;
+            completedChecklists = t.checklists.filter((c) => c.done).length;
           }
 
           return {
@@ -306,18 +308,18 @@ export function ProjectBoard() {
         setTasks(mappedTasks);
         console.log('setTasks called with', mappedTasks.length, 'tasks');
 
-        const mappedMilestones: Milestone[] = (milestonesRes.data ?? []).map((m: any) => ({
+        const mappedMilestones: Milestone[] = (milestonesRes.data ?? []).map((m: { id: number; name?: string; due_date?: string; status?: string; description?: string }) => ({
           id: String(m.id),
-          name: m.name,
-          date: formatDueDate(m.due_date),
-          status: mapMilestoneStatus(m.status),
+          name: m.name ?? '',
+          date: formatDueDate(m.due_date ?? ''),
+          status: mapMilestoneStatus(m.status ?? ''),
           desc: m.description || undefined,
         }));
-        setMilestonesList(mappedMilestones);
+        setMilestonesList([{ id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' }, ...mappedMilestones]);
         setMilestonesLoading(false);
-
-      } catch (err: any) {
-        if (err.response?.status === 404) {
+      } catch (err: unknown) {
+        setTasks([]);
+        if ((err as { response?: { status?: number } })?.response?.status === 404) {
           setError('Project not found');
         } else {
           setError('Failed to load project details or tasks');
@@ -359,7 +361,8 @@ export function ProjectBoard() {
     setInviteRole('Member');
   };
 
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('');
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState(ALL_MILESTONES_ID);
+  const pendingMoveRef = useRef<Set<string>>(new Set());
 
   // Auto-select first active/upcoming milestone once milestones load
   useEffect(() => {
@@ -367,7 +370,7 @@ export function ProjectBoard() {
       const initial = milestonesList.find(m => m.status === 'active') || milestonesList[0];
       setSelectedMilestoneId(initial.id);
     }
-  }, [milestonesList]);
+  }, [milestonesList, selectedMilestoneId]);
 
   // Refetch tasks when returning from task creation
   useEffect(() => {
@@ -401,90 +404,82 @@ export function ProjectBoard() {
         desc: response.data.description || undefined,
       };
 
-      // Add to list and sort chronologically
-      const updated = [...milestonesList, createdMilestone].sort((a, b) => {
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      // Add to list and sort chronologically; keep "All tasks" sentinel first
+      const sentinel = milestonesList.find((m) => m.id === ALL_MILESTONES_ID);
+      const rest = milestonesList.filter((m) => m.id !== ALL_MILESTONES_ID);
+      const sortedRest = [...rest, createdMilestone].sort((a, b) => {
+        const ta = new Date(a.date || '').getTime();
+        const tb = new Date(b.date || '').getTime();
+        return (Number.isNaN(ta) ? 0 : ta) - (Number.isNaN(tb) ? 0 : tb);
       });
+      const updated = sentinel ? [sentinel, ...sortedRest] : sortedRest;
 
       setMilestonesList(updated);
       setIsAddMilestoneOpen(false);
       setNewMilestone({ name: '', desc: '', date: '' });
       setSelectedMilestoneId(createdMilestone.id);
-      
+
       toast.success('Milestone created successfully');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to create milestone:', err);
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to create milestone';
+      type ErrShape = { response?: { data?: { detail?: string | Array<{ msg?: string }>; message?: string }; message?: string }; message?: string };
+      const data = (err as ErrShape)?.response?.data;
+      const detail = data?.detail;
+      let errorMessage: string =
+        data?.message ?? (err as ErrShape).message ?? 'Failed to create milestone';
+      if (typeof detail === 'string' && detail) {
+        errorMessage = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        const messages = detail
+          .map((d: { msg?: string }) => (d?.msg != null ? d.msg : String(d)))
+          .filter(Boolean);
+        if (messages.length > 0) errorMessage = messages.join('. ');
+      }
       toast.error(errorMessage);
       // Dialog stays open on error; user can fix validation errors and retry
     }
   };
 
   const handleMove = async (taskId: string, newStatus: TaskStatus) => {
-    console.log(`handleMove called with taskId=${taskId}, newStatus=${newStatus}`);
-    console.log('tasksRef.current:', tasksRef.current);
-    
-    // Search through all available task sources
-    let oldStatus: TaskStatus | undefined;
-    
-    // Try to find in tasks array first - use ref for current data
-    const taskInState = tasksRef.current.find(t => t.id === taskId);
-    if (taskInState) {
-      oldStatus = taskInState.status;
-      console.log(`Found task in tasks array`, taskInState);
-    } else {
-      // If not found in tasks, reconstruct the old status from context
-      // This happens when tasks array is empty but task is displayed
-      if (todoTasks.some(t => t.id === taskId)) {
-        oldStatus = 'todo';
-      } else if (inProgressTasks.some(t => t.id === taskId)) {
-        oldStatus = 'in-progress';
-      } else if (doneTasks.some(t => t.id === taskId)) {
-        oldStatus = 'done';
-      }
-      console.log(`Found task in filtered arrays with status: ${oldStatus}`);
-    }
+    if (pendingMoveRef.current.has(taskId)) return;
+    const taskToMove = tasks.find(t => t.id === taskId);
+    if (!taskToMove) return;
+    const oldStatus = taskToMove.status;
 
-    if (!oldStatus) {
-      console.error(`Task ${taskId} not found in any array!`);
-      toast.error('Task not found');
-      return;
-    }
+    pendingMoveRef.current.add(taskId);
 
-    // 2. Optimistic local update - update all task sources
-    const updatedTasks = tasksRef.current.map((task) =>
-      task.id === taskId ? { ...task, status: newStatus } : task
-    );
-    tasksRef.current = updatedTasks;
-    setTasks(updatedTasks);
+    setTasks((prevTasks) => {
+      const next = prevTasks.map((task) =>
+        task.id === taskId ? { ...task, status: newStatus } : task
+      );
+      tasksRef.current = next;
+      return next;
+    });
 
-    // 3. Map frontend status to backend status
     const backendStatus = newStatus === 'in-progress' ? 'in_progress' : newStatus;
 
-    // 4. Send PATCH request to backend
     try {
-      console.log(`Sending PATCH request: /tasks/${taskId}/status with status="${backendStatus}"`);
-      const response = await api.patch(`/tasks/${taskId}/status`, { status: backendStatus });
-      console.log('Task update response:', response.data);
+      await api.patch(`/tasks/${taskId}/status`, { status: backendStatus });
       toast.success(`Task moved to ${newStatus}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to move task:', err);
-      console.error('Error response:', err.response?.data);
-      console.error('Error status:', err.response?.status);
-      // 5. Revert the optimistic update on error
-      const revertedTasks = tasksRef.current.map((task) =>
-        task.id === taskId ? { ...task, status: oldStatus } : task
-      );
-      tasksRef.current = revertedTasks;
-      setTasks(revertedTasks);
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to update task status';
-      toast.error(`Error: ${errorMsg}`);
+      setTasks((prevTasks) => {
+        const reverted = prevTasks.map((task) =>
+          task.id === taskId ? { ...task, status: oldStatus } : task
+        );
+        tasksRef.current = reverted;
+        return reverted;
+      });
+      toast.error('Failed to update task status. Please try again.');
+    } finally {
+      pendingMoveRef.current.delete(taskId);
     }
   };
 
-  const filteredTasks = selectedMilestoneId
-    ? tasks.filter(t => t.milestoneId === selectedMilestoneId || t.milestoneId === '')
-    : tasks;
+  const filteredTasks =
+    selectedMilestoneId === ALL_MILESTONES_ID
+      ? tasks
+      : tasks.filter((t) => t.milestoneId === selectedMilestoneId);
   const todoTasks = filteredTasks.filter((t) => t.status === 'todo');
   const inProgressTasks = filteredTasks.filter((t) => t.status === 'in-progress');
   const doneTasks = filteredTasks.filter((t) => t.status === 'done');
@@ -759,6 +754,6 @@ export function ProjectBoard() {
           />
         </div>
       </DndProvider>
-    </div >
+    </div>
   );
 }
