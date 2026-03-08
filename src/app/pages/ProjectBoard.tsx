@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Link, useParams, useNavigate } from 'react-router';
+import { toast } from 'sonner';
 import api from '../../lib/api';
 import {
   Plus,
@@ -317,6 +318,7 @@ export function ProjectBoard() {
   };
 
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(ALL_MILESTONES_ID);
+  const pendingMoveRef = useRef<Set<string>>(new Set());
 
   const handleCreateMilestone = () => {
     if (!newMilestone.name || !newMilestone.date) return;
@@ -344,12 +346,35 @@ export function ProjectBoard() {
     setSelectedMilestoneId(newM.id);
   };
 
-  const handleMove = (taskId: string, newStatus: TaskStatus) => {
+  const handleMove = async (taskId: string, newStatus: TaskStatus) => {
+    if (pendingMoveRef.current.has(taskId)) return;
+    const taskToMove = tasks.find(t => t.id === taskId);
+    if (!taskToMove) return;
+    const oldStatus = taskToMove.status;
+
+    pendingMoveRef.current.add(taskId);
+
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
         task.id === taskId ? { ...task, status: newStatus } : task
       )
     );
+
+    const backendStatus = newStatus === 'in-progress' ? 'in_progress' : newStatus;
+
+    try {
+      await api.patch(`/tasks/${taskId}/status`, { status: backendStatus });
+    } catch (err: unknown) {
+      console.error('Failed to move task:', err);
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId ? { ...task, status: oldStatus } : task
+        )
+      );
+      toast.error('Failed to update task status. Please try again.');
+    } finally {
+      pendingMoveRef.current.delete(taskId);
+    }
   };
 
   const filteredTasks =
