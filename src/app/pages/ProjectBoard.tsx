@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Link, useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import { toast } from 'sonner';
 import api from '../../lib/api';
 import {
@@ -95,9 +94,13 @@ function TaskCard({ task }: TaskCardProps) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'task',
     item: { id: task.id, status: task.status },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
+    collect: (monitor) => {
+      const dragging = monitor.isDragging();
+      if (dragging) {
+        console.log(`Dragging task ${task.id}:`, task.title);
+      }
+      return { isDragging: dragging };
+    },
   }));
 
   const scopeColors = {
@@ -108,15 +111,31 @@ function TaskCard({ task }: TaskCardProps) {
     XL: 'bg-red-500/10 text-red-600 dark:text-red-400',
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation if dragging or if click is on interactive element
+    if (isDragging || (e.target as HTMLElement).closest('button, [role="button"]')) {
+      return;
+    }
+    // Use router navigation instead of window.location
+    const taskUrl = `/tasks/${task.id}`;
+    // Small delay to ensure drag operation completes
+    setTimeout(() => {
+      window.location.href = taskUrl;
+    }, 50);
+  };
+
   return (
-    <Link to={`/tasks/${task.id}`}>
-      <motion.div
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ref={drag as any}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: isDragging ? 0.5 : 1, scale: 1 }}
-        className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:shadow-sm transition-shadow"
-      >
+    <div
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ref={drag as any}
+      onClick={handleCardClick}
+      className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:shadow-sm transition-shadow"
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        transform: isDragging ? 'scale(0.95)' : 'scale(1)',
+        transition: 'all 200ms ease-in-out',
+      }}
+    >
         <div className="flex items-start justify-between mb-3">
           <h4 className="font-medium pr-2">{task.title}</h4>
           <DropdownMenu>
@@ -175,8 +194,7 @@ function TaskCard({ task }: TaskCardProps) {
             )}
           </div>
         )}
-      </motion.div>
-    </Link>
+      </div>
   );
 }
 
@@ -191,7 +209,9 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'task',
     drop: (item: { id: string; status: TaskStatus }) => {
+      console.log(`Dropped task ${item.id} from ${item.status} to ${status}`);
       if (item.status !== status) {
+        console.log(`Moving task ${item.id} to ${status}`);
         onMove(item.id, status);
       }
     },
@@ -228,13 +248,16 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
 export function ProjectBoard() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [project, setProject] = useState<{ name?: string; description?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const tasksRef = useRef<Task[]>([]);
   const [milestonesList, setMilestonesList] = useState<Milestone[]>([]);
   const [milestonesLoading, setMilestonesLoading] = useState(true);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -252,6 +275,9 @@ export function ProjectBoard() {
           api.get(`/tasks/?project_id=${projectId}`),
           api.get(`/projects/${projectId}/milestones`),
         ]);
+
+        console.log('API responses received');
+        console.log('tasksRes.data:', tasksRes.data);
 
         setProject(projectRes.data);
 
@@ -277,7 +303,10 @@ export function ProjectBoard() {
           };
         });
 
+        console.log('Mapped tasks:', mappedTasks);
+        tasksRef.current = mappedTasks;
         setTasks(mappedTasks);
+        console.log('setTasks called with', mappedTasks.length, 'tasks');
 
         const mappedMilestones: Milestone[] = (milestonesRes.data ?? []).map((m: { id: number; name?: string; due_date?: string; status?: string; description?: string }) => ({
           id: String(m.id),
@@ -300,7 +329,7 @@ export function ProjectBoard() {
       }
     };
     fetchData();
-  }, [projectId, navigate]);
+  }, [projectId, navigate, location.key, refetchTrigger]);
 
   // Dialog State
   const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
@@ -342,6 +371,17 @@ export function ProjectBoard() {
       setSelectedMilestoneId(initial.id);
     }
   }, [milestonesList, selectedMilestoneId]);
+
+  // Refetch tasks when returning from task creation
+  useEffect(() => {
+    const state = location.state as { newTaskCreated?: boolean; taskId?: number } | null;
+    if (state?.newTaskCreated) {
+      // Trigger a refetch by incrementing refetchTrigger
+      setRefetchTrigger(prev => prev + 1);
+      // Clear the state so we don't refetch multiple times
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleCreateMilestone = async () => {
     if (!newMilestone.name || !newMilestone.date || !projectId) return;
@@ -408,23 +448,28 @@ export function ProjectBoard() {
 
     pendingMoveRef.current.add(taskId);
 
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
+    setTasks((prevTasks) => {
+      const next = prevTasks.map((task) =>
         task.id === taskId ? { ...task, status: newStatus } : task
-      )
-    );
+      );
+      tasksRef.current = next;
+      return next;
+    });
 
     const backendStatus = newStatus === 'in-progress' ? 'in_progress' : newStatus;
 
     try {
       await api.patch(`/tasks/${taskId}/status`, { status: backendStatus });
+      toast.success(`Task moved to ${newStatus}`);
     } catch (err: unknown) {
       console.error('Failed to move task:', err);
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const reverted = prevTasks.map((task) =>
           task.id === taskId ? { ...task, status: oldStatus } : task
-        )
-      );
+        );
+        tasksRef.current = reverted;
+        return reverted;
+      });
       toast.error('Failed to update task status. Please try again.');
     } finally {
       pendingMoveRef.current.delete(taskId);
@@ -522,12 +567,12 @@ export function ProjectBoard() {
                 </div>
               </DialogContent>
             </Dialog>
-            <Link to="/tasks/new">
-              <Button>
+            <Button
+                onClick={() => navigate("/tasks/new", { state: { projectId, milestoneId: selectedMilestoneId } })}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 New Task
               </Button>
-            </Link>
           </div>
         </div>
       </div>
