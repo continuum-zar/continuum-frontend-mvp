@@ -374,7 +374,7 @@ export function ProjectBoard() {
 
   // Refetch tasks when returning from task creation
   useEffect(() => {
-    const state = location.state as any;
+    const state = location.state as { newTaskCreated?: boolean; taskId?: number } | null;
     if (state?.newTaskCreated) {
       // Trigger a refetch by incrementing refetchTrigger
       setRefetchTrigger(prev => prev + 1);

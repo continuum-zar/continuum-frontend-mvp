@@ -103,32 +103,25 @@ export function CreateTask() {
       const backendStatus = formData.status === 'in-progress' ? 'in_progress' : formData.status;
 
       // Build the payload
-      const payload: any = {
+      const payload: {
+        title: string;
+        description: string;
+        status: string;
+        scope_weight: string;
+        project_id?: number;
+        milestone_id?: number;
+        estimated_hours?: number;
+        due_date?: string;
+      } = {
         title: formData.title,
         description: formData.description,
         status: backendStatus,
         scope_weight: formData.scope,
+        ...(projectId && { project_id: Number(projectId) }),
+        ...(milestoneId && { milestone_id: Number(milestoneId) }),
+        ...(formData.estimatedHours && { estimated_hours: Number(formData.estimatedHours) }),
+        ...(formData.dueDate && { due_date: formData.dueDate }),
       };
-
-      // Add optional fields if projectId is provided
-      if (projectId) {
-        payload.project_id = Number(projectId);
-      }
-
-      // Add milestone_id if provided
-      if (milestoneId) {
-        payload.milestone_id = Number(milestoneId);
-      }
-
-      // Add estimated hours if provided
-      if (formData.estimatedHours) {
-        payload.estimated_hours = Number(formData.estimatedHours);
-      }
-
-      // Add due date if provided
-      if (formData.dueDate) {
-        payload.due_date = formData.dueDate;
-      }
 
       // Call the API
       const response = await api.post('/tasks/', payload);
@@ -143,9 +136,12 @@ export function CreateTask() {
       } else {
         navigate('/projects');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to create task:', err);
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to create task';
+      const errorMessage =
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (err as { message?: string })?.message ||
+        'Failed to create task';
       toast.error(errorMessage);
       setIsSubmitting(false);
     }
