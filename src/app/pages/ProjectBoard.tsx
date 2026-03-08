@@ -59,95 +59,11 @@ interface Task {
   milestoneId: string;
 }
 
-const initialTasks: Task[] = [
-  // Phase 1 (Completed)
-  {
-    id: '5',
-    title: 'Update documentation',
-    description: 'Refresh API documentation with new endpoints',
-    status: 'done',
-    scope: 'S',
-    assignees: ['EW'],
-    attachments: 0,
-    comments: 3,
-    estimatedHours: 2,
-    checklists: { total: 2, completed: 2 },
-    milestoneId: 'm1',
-  },
-  {
-    id: '6',
-    title: 'Security audit',
-    description: 'Complete Q1 security review',
-    status: 'done',
-    scope: 'XL',
-    assignees: ['LA', 'MT'],
-    attachments: 5,
-    comments: 18,
-    checklists: { total: 15, completed: 15 },
-    milestoneId: 'm1',
-  },
-  // Phase 2 (Active)
-  {
-    id: '1',
-    title: 'Design new landing page',
-    description: 'Create mockups for the new marketing site',
-    status: 'todo',
-    scope: 'L',
-    assignees: ['SC', 'EW'],
-    attachments: 3,
-    comments: 5,
-    estimatedHours: 8,
-    checklists: { total: 4, completed: 1 },
-    milestoneId: 'm2',
-  },
-  {
-    id: '3',
-    title: 'Implement dark mode',
-    description: 'Add theme switching functionality',
-    status: 'in-progress',
-    scope: 'M',
-    assignees: ['AJ', 'SC'],
-    attachments: 1,
-    comments: 8,
-    estimatedHours: 6,
-    checklists: { total: 3, completed: 2 },
-    milestoneId: 'm2',
-  },
-  {
-    id: '4',
-    title: 'Database migration',
-    description: 'Move to new database cluster',
-    status: 'in-progress',
-    scope: 'XL',
-    assignees: ['MT', 'AJ'],
-    attachments: 2,
-    comments: 12,
-    estimatedHours: 24,
-    checklists: { total: 10, completed: 4 },
-    milestoneId: 'm2',
-  },
-  // Phase 3 (Upcoming)
-  {
-    id: '2',
-    title: 'API endpoint optimization',
-    description: 'Improve response times for user queries',
-    status: 'todo',
-    scope: 'M',
-    assignees: ['MT'],
-    attachments: 0,
-    comments: 2,
-    estimatedHours: 4,
-    checklists: { total: 0, completed: 0 },
-    milestoneId: 'm3',
-  },
-];
 
+
+const ALL_MILESTONES_ID = '';
 const initialMilestones = [
-  { id: 'm1', name: 'Project Kickoff', date: 'Feb 15, 2026', status: 'completed' },
-  { id: 'm2', name: 'Alpha Release', date: 'Mar 15, 2026', status: 'active', desc: 'Focus on core system stability.' },
-  { id: 'm3', name: 'Beta Release', date: 'Apr 01, 2026', status: 'upcoming', desc: 'Feature freeze and UI polish.' },
-  { id: 'm4', name: 'RC1 Build', date: 'Apr 15, 2026', status: 'upcoming', desc: 'Final testing and QA.' },
-  { id: 'm5', name: 'Production Launch', date: 'May 01, 2026', status: 'upcoming' },
+  { id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' },
 ];
 
 interface TaskCardProps {
@@ -295,31 +211,79 @@ export function ProjectBoard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [milestonesList, setMilestonesList] = useState(initialMilestones);
 
   useEffect(() => {
-    const fetchProject = async () => {
+    const fetchData = async () => {
       if (!projectId || isNaN(Number(projectId))) {
         navigate('/projects');
         return;
       }
+      setSelectedMilestoneId(ALL_MILESTONES_ID);
       try {
         setIsLoading(true);
         setError(null);
-        const response = await api.get(`/projects/${projectId}`);
-        setProject(response.data);
+
+        const [projectRes, tasksRes] = await Promise.all([
+          api.get(`/projects/${projectId}`),
+          api.get(`/tasks/?project_id=${projectId}`)
+        ]);
+
+        setProject(projectRes.data);
+
+        const mappedTasks: Task[] = tasksRes.data.map((t: { id: number; title?: string; description?: string; status?: string; scope_weight?: 'XS' | 'S' | 'M' | 'L' | 'XL'; assigned_to?: number; attachment_count?: number; comment_count?: number; checklists?: { done?: boolean }[]; milestone_id?: number }) => {
+          let totalChecklists = 0;
+          let completedChecklists = 0;
+          if (t.checklists && Array.isArray(t.checklists)) {
+            totalChecklists = t.checklists.length;
+            completedChecklists = t.checklists.filter((c) => c.done).length;
+          }
+
+          return {
+            id: String(t.id),
+            title: t.title || '',
+            description: t.description || '',
+            status: t.status === 'in_progress' ? 'in-progress' : (t.status || 'todo'),
+            scope: t.scope_weight || 'M',
+            assignees: t.assigned_to ? [String(t.assigned_to)] : [],
+            attachments: t.attachment_count || 0,
+            comments: t.comment_count || 0,
+            checklists: { total: totalChecklists, completed: completedChecklists },
+            milestoneId: t.milestone_id ? String(t.milestone_id) : '',
+          };
+        });
+
+        setTasks(mappedTasks);
+
+        try {
+          const milestonesRes = await api.get(`/projects/${projectId}/milestones`);
+          const apiMilestones = (milestonesRes.data as { id: number; name?: string; due_date?: string; status?: string; display_status?: string; description?: string }[]) ?? [];
+          const mappedMilestones = apiMilestones.map((m) => ({
+            id: String(m.id),
+            name: m.name || '',
+            date: m.due_date
+              ? new Date(m.due_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+              : '',
+            status: (m.display_status ?? (m.status === 'completed' ? 'completed' : m.status === 'in_progress' ? 'active' : 'upcoming')) as 'completed' | 'active' | 'upcoming',
+            desc: m.description || '',
+          }));
+          setMilestonesList([{ id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' }, ...mappedMilestones]);
+        } catch {
+          setMilestonesList([{ id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' }]);
+        }
       } catch (err: unknown) {
+        setTasks([]);
         if ((err as { response?: { status?: number } })?.response?.status === 404) {
           setError('Project not found');
         } else {
-          setError('Failed to load project details');
+          setError('Failed to load project details or tasks');
         }
       } finally {
         setIsLoading(false);
       }
     };
-    fetchProject();
+    fetchData();
   }, [projectId, navigate]);
 
   // Dialog State
@@ -352,9 +316,7 @@ export function ProjectBoard() {
     setInviteRole('Member');
   };
 
-  // Find first active/upcoming milestone or default to first
-  const initialMilestone = milestonesList.find(m => m.status === 'active') || milestonesList[0];
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState(initialMilestone.id);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState(ALL_MILESTONES_ID);
 
   const handleCreateMilestone = () => {
     if (!newMilestone.name || !newMilestone.date) return;
@@ -390,7 +352,10 @@ export function ProjectBoard() {
     );
   };
 
-  const filteredTasks = tasks.filter(t => t.milestoneId === selectedMilestoneId);
+  const filteredTasks =
+    selectedMilestoneId === ALL_MILESTONES_ID
+      ? tasks
+      : tasks.filter((t) => t.milestoneId === selectedMilestoneId);
   const todoTasks = filteredTasks.filter((t) => t.status === 'todo');
   const inProgressTasks = filteredTasks.filter((t) => t.status === 'in-progress');
   const doneTasks = filteredTasks.filter((t) => t.status === 'done');
