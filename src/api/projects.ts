@@ -42,6 +42,20 @@ export async function createProject(body: {
     return data;
 }
 
+/** Update a project. PUT /api/v1/projects/{id}. Refetch list after success. */
+export async function updateProject(
+    projectId: number | string,
+    body: { name?: string; description?: string; due_date?: string | null; status?: string }
+): Promise<ProjectAPIResponse> {
+    const { data } = await api.put<ProjectAPIResponse>(`/projects/${projectId}`, {
+        ...(body.name !== undefined && { name: body.name }),
+        ...(body.description !== undefined && { description: body.description ?? null }),
+        ...(body.due_date !== undefined && { due_date: body.due_date ?? null }),
+        ...(body.status !== undefined && { status: body.status }),
+    });
+    return data;
+}
+
 /** Fetch a single project by ID. Returns UI-shaped project detail. */
 export async function fetchProject(id: number | string): Promise<ProjectDetail> {
     const { data } = await api.get<ProjectDetailAPIResponse>(`/projects/${id}`);

@@ -1,6 +1,7 @@
 export {
     fetchProjects,
     createProject,
+    updateProject,
     fetchProject,
     fetchProjectTasks,
     updateTaskStatus,
@@ -18,6 +19,7 @@ export {
     useProjectMilestones,
     useProjectMembers,
     useCreateProject,
+    useUpdateProject,
     useUpdateTaskStatus,
     useCreateMilestone,
     useAddMember,

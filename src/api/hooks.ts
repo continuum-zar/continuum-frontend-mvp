@@ -10,6 +10,7 @@ import {
     fetchMembers,
     addMember,
     createProject,
+    updateProject,
 } from './projects';
 import type { TaskStatus } from '@/types/task';
 
@@ -85,6 +86,27 @@ export function useCreateProject() {
         },
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to create project'));
+        },
+    });
+}
+
+export function useUpdateProject() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            projectId,
+            body,
+        }: {
+            projectId: number | string;
+            body: { name?: string; description?: string; due_date?: string | null; status?: string };
+        }) => updateProject(projectId, body),
+        onSuccess: (_data, { projectId }) => {
+            queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+            queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+            toast.success('Project updated successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to update project'));
         },
     });
 }

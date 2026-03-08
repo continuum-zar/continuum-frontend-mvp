@@ -31,16 +31,44 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 import { Skeleton } from '../components/ui/skeleton';
-import { useProjects, useCreateProject } from '@/api/hooks';
+import { useProjects, useCreateProject, useUpdateProject } from '@/api/hooks';
+
+/** Normalize due_date for date input (YYYY-MM-DD) or empty. */
+function toDateInputValue(dueDate: string): string {
+    if (!dueDate || dueDate === 'No Date') return '';
+    return dueDate.includes('T') ? dueDate.slice(0, 10) : dueDate;
+}
 
 export function ProjectsList() {
     const navigate = useNavigate();
     const { data: projects = [], isLoading, error, refetch } = useProjects();
     const createProjectMutation = useCreateProject();
+    const updateProjectMutation = useUpdateProject();
 
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [newProject, setNewProject] = useState({ title: '', desc: '', date: '' });
+    const [editState, setEditState] = useState<{
+        projectId: number;
+        name: string;
+        description: string;
+        due_date: string;
+        status: string;
+    } | null>(null);
+    const [archiveConfirmProject, setArchiveConfirmProject] = useState<{
+        apiId: number;
+        title: string;
+    } | null>(null);
 
     const getProgressColor = (progress: number) => {
         if (progress < 40) return "bg-red-500";
@@ -58,6 +86,38 @@ export function ProjectsList() {
             });
             setIsAddOpen(false);
             setNewProject({ title: '', desc: '', date: '' });
+        } catch {
+            // Toast handled in hook
+        }
+    };
+
+    const handleEditSubmit = async () => {
+        if (!editState?.name?.trim()) return;
+        try {
+            await updateProjectMutation.mutateAsync({
+                projectId: editState.projectId,
+                body: {
+                    name: editState.name.trim(),
+                    description: editState.description || undefined,
+                    due_date: editState.due_date || null,
+                    status: editState.status,
+                },
+            });
+            setEditState(null);
+        } catch {
+            // Toast handled in hook
+        }
+    };
+
+    const handleArchiveConfirm = async () => {
+        if (!archiveConfirmProject) return;
+        try {
+            // Archive = PUT project with status "completed" (backend has no separate archive endpoint).
+            await updateProjectMutation.mutateAsync({
+                projectId: archiveConfirmProject.apiId,
+                body: { status: 'completed' },
+            });
+            setArchiveConfirmProject(null);
         } catch {
             // Toast handled in hook
         }
@@ -127,6 +187,92 @@ export function ProjectsList() {
                     </Dialog>
                 </div>
             </div>
+
+            {/* Edit Project Dialog */}
+            <Dialog open={editState !== null} onOpenChange={(open) => !open && setEditState(null)}>
+                <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
+                    <DialogHeader>
+                        <DialogTitle>Edit Project</DialogTitle>
+                    </DialogHeader>
+                    {editState && (
+                        <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-title">Project Title</Label>
+                                <Input
+                                    id="edit-title"
+                                    value={editState.name}
+                                    onChange={(e) => setEditState({ ...editState, name: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-date">Target Delivery Date</Label>
+                                <Input
+                                    id="edit-date"
+                                    type="date"
+                                    value={editState.due_date}
+                                    onChange={(e) => setEditState({ ...editState, due_date: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-status">Status</Label>
+                                <select
+                                    id="edit-status"
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                    value={editState.status}
+                                    onChange={(e) => setEditState({ ...editState, status: e.target.value })}
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="on_hold">On hold</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-desc">Description</Label>
+                                <Textarea
+                                    id="edit-desc"
+                                    value={editState.description}
+                                    onChange={(e) => setEditState({ ...editState, description: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {editState && (
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setEditState(null)}>Cancel</Button>
+                            <Button
+                                onClick={handleEditSubmit}
+                                disabled={!editState.name?.trim() || updateProjectMutation.isPending}
+                            >
+                                Save changes
+                            </Button>
+                        </DialogFooter>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Archive confirmation */}
+            <AlertDialog open={archiveConfirmProject !== null} onOpenChange={(open) => !open && setArchiveConfirmProject(null)}>
+                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Archive project?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will mark &quot;{archiveConfirmProject?.title}&quot; as completed. You can still view it in the list.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleArchiveConfirm();
+                            }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Archive
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Stats Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -218,8 +364,29 @@ export function ProjectsList() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Edit Details</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={(e) => e.stopPropagation()} className="text-destructive">Archive Project</DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditState({
+                                                    projectId: project.apiId,
+                                                    name: project.title,
+                                                    description: project.description ?? '',
+                                                    due_date: toDateInputValue(project.dueDate),
+                                                    status: project.status,
+                                                });
+                                            }}
+                                        >
+                                            Edit Details
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setArchiveConfirmProject({ apiId: project.apiId, title: project.title });
+                                            }}
+                                            className="text-destructive"
+                                        >
+                                            Archive Project
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
