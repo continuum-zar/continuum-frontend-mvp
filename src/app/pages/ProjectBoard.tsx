@@ -210,7 +210,7 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
 export function ProjectBoard() {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const [project, setProject] = useState<any>(null);
+  const [project, setProject] = useState<{ name?: string; description?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -234,12 +234,12 @@ export function ProjectBoard() {
 
         setProject(projectRes.data);
 
-        const mappedTasks: Task[] = tasksRes.data.map((t: any) => {
+        const mappedTasks: Task[] = tasksRes.data.map((t: { id: number; title?: string; description?: string; status?: string; scope_weight?: 'XS' | 'S' | 'M' | 'L' | 'XL'; assigned_to?: number; attachment_count?: number; comment_count?: number; checklists?: { done?: boolean }[]; milestone_id?: number }) => {
           let totalChecklists = 0;
           let completedChecklists = 0;
           if (t.checklists && Array.isArray(t.checklists)) {
             totalChecklists = t.checklists.length;
-            completedChecklists = t.checklists.filter((c: any) => c.done).length;
+            completedChecklists = t.checklists.filter((c) => c.done).length;
           }
 
           return {
@@ -257,9 +257,8 @@ export function ProjectBoard() {
         });
 
         setTasks(mappedTasks);
-
-      } catch (err: any) {
-        if (err.response?.status === 404) {
+      } catch (err: unknown) {
+        if ((err as { response?: { status?: number } })?.response?.status === 404) {
           setError('Project not found');
         } else {
           setError('Failed to load project details or tasks');
