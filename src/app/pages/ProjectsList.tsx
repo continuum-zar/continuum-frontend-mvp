@@ -37,6 +37,21 @@ import api from '@/lib/api';
 import { Project, ProjectAPIResponse } from '@/types/project';
 import { formatDistanceToNow } from 'date-fns';
 
+/** Normalize FastAPI error detail (string or array of { msg?: string }) into a single message. */
+function getApiErrorMessage(
+    err: unknown,
+    fallback: string
+): string {
+    const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
+    const detail = data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+        const messages = detail.map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d))).filter(Boolean);
+        return messages.length > 0 ? messages.join('. ') : fallback;
+    }
+    return fallback;
+}
+
 export function ProjectsList() {
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
@@ -50,22 +65,25 @@ export function ProjectsList() {
         setError(null);
         try {
             const response = await api.get<ProjectAPIResponse[]>('/projects/');
-            const mappedProjects: Project[] = response.data.map(p => ({
-                id: p.id.toString(),
-                apiId: p.id,
-                title: p.name,
-                description: p.description || 'No description provided.',
-                status: p.status,
-                progress: p.progress_percentage || 0,
-                dueDate: p.due_date || 'No Date',
-                teamSize: p.team_size || p.member_count || 1,
-                lastActive: p.updated_at
-                    ? formatDistanceToNow(new Date(p.updated_at), { addSuffix: true })
-                    : 'Unknown'
-            }));
+            const mappedProjects: Project[] = response.data.map(p => {
+                const lastActiveRaw = p.last_active ?? p.updated_at;
+                return {
+                    id: p.id.toString(),
+                    apiId: p.id,
+                    title: p.name,
+                    description: p.description ?? 'No description provided.',
+                    status: p.status,
+                    progress: p.progress ?? p.progress_percentage ?? 0,
+                    dueDate: p.due_date ?? 'No Date',
+                    teamSize: p.team_size ?? p.member_count ?? 1,
+                    lastActive: lastActiveRaw
+                        ? formatDistanceToNow(new Date(lastActiveRaw), { addSuffix: true })
+                        : 'Unknown'
+                };
+            });
             setProjects(mappedProjects);
-        } catch (err: any) {
-            const message = err.response?.data?.detail || 'Failed to fetch projects';
+        } catch (err: unknown) {
+            const message = getApiErrorMessage(err, 'Failed to fetch projects');
             setError(message);
             toast.error(message);
         } finally {
@@ -87,7 +105,7 @@ export function ProjectsList() {
         if (!newProject.title) return;
 
         try {
-            await api.post<ProjectAPIResponse>('/projects', {
+            await api.post<ProjectAPIResponse>('/projects/', {
                 name: newProject.title,
                 description: newProject.desc,
                 due_date: newProject.date || null,
@@ -98,8 +116,8 @@ export function ProjectsList() {
             setIsAddOpen(false);
             setNewProject({ title: '', desc: '', date: '' });
             toast.success('Project created successfully');
-        } catch (err: any) {
-            toast.error(err.response?.data?.detail || 'Failed to create project');
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Failed to create project'));
         }
     };
 
