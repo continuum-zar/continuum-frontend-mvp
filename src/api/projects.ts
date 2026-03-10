@@ -127,3 +127,45 @@ export async function addMember(
     });
     return data;
 }
+
+/** Response shape for a single attachment (backend may vary). */
+export interface TaskAttachmentAPIResponse {
+    id: number;
+    name?: string;
+    file_name?: string;
+    size?: number;
+    size_bytes?: number;
+    url?: string;
+}
+
+/** Fetch attachments for a task. Returns empty array if endpoint not available (e.g. 404). */
+export async function fetchTaskAttachments(taskId: number | string): Promise<TaskAttachmentAPIResponse[]> {
+    try {
+        const { data } = await api.get<TaskAttachmentAPIResponse[]>(`/tasks/${taskId}/attachments`);
+        return Array.isArray(data) ? data : [];
+    } catch {
+        return [];
+    }
+}
+
+/** Format file size for display. */
+function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Map API attachment to UI shape. */
+export function mapTaskAttachment(a: TaskAttachmentAPIResponse): { id: number | string; name: string; size: string; url?: string } {
+    const name = a.name ?? a.file_name ?? 'Attachment';
+    const size = a.size ?? a.size_bytes ?? 0;
+    return { id: a.id, name, size: formatFileSize(size), url: a.url };
+}
+
+/** Upload a file as a task attachment. POST /api/v1/tasks/{taskId}/attachments (multipart). */
+export async function uploadTaskAttachment(taskId: number | string, file: File): Promise<TaskAttachmentAPIResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await api.post<TaskAttachmentAPIResponse>(`/tasks/${taskId}/attachments`, formData);
+    return data;
+}
