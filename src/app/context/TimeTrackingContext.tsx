@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { useAllTasks } from '@/api/hooks';
+import type { TaskOption } from '@/api/projects';
 
 export interface TimeEntry {
     id: string;
@@ -16,15 +18,6 @@ const initialTimeEntries: TimeEntry[] = [
     { id: '4', project: 'Marketing Website', task: 'Landing page optimization', duration: 240, date: '2026-02-20' },
     { id: '5', project: 'Dashboard v2', task: 'Database queries', duration: 150, date: '2026-02-19' },
     { id: '6', project: 'Mobile App Redesign', task: 'Component library', duration: 210, date: '2026-02-19' },
-];
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const myTasks = [
-    { id: 't1', title: 'Implement dark mode toggle', project: 'Mobile App Redesign' },
-    { id: 't2', title: 'Refactor Time Tracking widget', project: 'Dashboard v2' },
-    { id: 't3', title: 'Write tests for routing logic', project: 'Dashboard v2' },
-    { id: 't4', title: 'Deploy staging environment', project: 'Marketing Website' },
-    { id: 't5', title: 'Optimize React component renders', project: 'Mobile App Redesign' },
 ];
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -52,6 +45,12 @@ interface TimeTrackingContextProps {
     setSessionState: React.Dispatch<React.SetStateAction<SessionState>>;
     currentTime: number;
     setCurrentTime: React.Dispatch<React.SetStateAction<number>>;
+    /** Tasks from GET /api/v1/tasks (all user projects). id as string for Select value. */
+    tasks: TaskOption[];
+    tasksLoading: boolean;
+    tasksError: boolean;
+    /** Currently selected task for the session; has project_id for WorkSessionCreate. */
+    selectedTask: TaskOption | undefined;
     selectedTaskId: string;
     setSelectedTaskId: React.Dispatch<React.SetStateAction<string>>;
     isLoggingModalOpen: boolean;
@@ -68,10 +67,25 @@ interface TimeTrackingContextProps {
 const TimeTrackingContext = createContext<TimeTrackingContextProps | undefined>(undefined);
 
 export function TimeTrackingProvider({ children }: { children: ReactNode }) {
+    const { data: tasksData, isLoading: tasksLoading, isError: tasksError } = useAllTasks();
+    const tasks = tasksData ?? [];
+
     const [entries, setEntries] = useState<TimeEntry[]>(initialTimeEntries);
     const [sessionState, setSessionState] = useState<SessionState>('idle');
     const [currentTime, setCurrentTime] = useState(0);
-    const [selectedTaskId, setSelectedTaskId] = useState(myTasks[0].id);
+    const [selectedTaskId, setSelectedTaskId] = useState('');
+
+    // Default to first task when tasks load and none selected
+    useEffect(() => {
+        if (!tasksLoading && tasks.length > 0 && !selectedTaskId) {
+            setSelectedTaskId(tasks[0].id);
+        }
+    }, [tasksLoading, tasks, selectedTaskId]);
+
+    const selectedTask = useMemo(
+        () => tasks.find((t) => t.id === selectedTaskId),
+        [tasks, selectedTaskId]
+    );
 
     // Logging Modal State
     const [isLoggingModalOpen, setIsLoggingModalOpen] = useState(false);
@@ -105,7 +119,8 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     };
 
     const handleLogSubmit = () => {
-        const activeTask = myTasks.find(t => t.id === selectedTaskId) || myTasks[0];
+        const activeTask = selectedTask ?? tasks[0];
+        if (!activeTask) return;
 
         const newEntry: TimeEntry = {
             id: `e${Date.now()}`,
@@ -137,6 +152,10 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
                 setSessionState,
                 currentTime,
                 setCurrentTime,
+                tasks,
+                tasksLoading,
+                tasksError,
+                selectedTask,
                 selectedTaskId,
                 setSelectedTaskId,
                 isLoggingModalOpen,

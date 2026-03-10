@@ -4,6 +4,7 @@ import {
     fetchProjects,
     fetchProject,
     fetchProjectTasks,
+    fetchAllTasks,
     updateTaskStatus,
     fetchMilestones,
     createMilestone,
@@ -33,6 +34,7 @@ export const projectKeys = {
     list: () => [...projectKeys.all, 'list'] as const,
     detail: (id: number | string) => [...projectKeys.all, 'detail', id] as const,
     tasks: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'tasks'] as const,
+    allTasks: () => ['tasks', 'all'] as const,
     milestones: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'milestones'] as const,
     members: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'members'] as const,
 };
@@ -57,6 +59,14 @@ export function useProjectTasks(projectId: number | string | undefined | null) {
         queryKey: projectKeys.tasks(projectId!),
         queryFn: () => fetchProjectTasks(projectId!),
         enabled: projectId != null && projectId !== '',
+    });
+}
+
+/** All tasks across user's projects (for time-tracking task dropdown). No project_id filter. */
+export function useAllTasks() {
+    return useQuery({
+        queryKey: projectKeys.allTasks(),
+        queryFn: fetchAllTasks,
     });
 }
 

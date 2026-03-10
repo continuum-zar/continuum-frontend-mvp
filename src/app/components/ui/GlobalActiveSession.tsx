@@ -12,7 +12,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from './dialog';
-import { useTimeTracking, myTasks } from '../../context/TimeTrackingContext';
+import { useTimeTracking } from '../../context/TimeTrackingContext';
 
 const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -27,7 +27,7 @@ export function GlobalActiveSession() {
         sessionState,
         setSessionState,
         currentTime,
-        selectedTaskId,
+        selectedTask,
         isLoggingModalOpen,
         setIsLoggingModalOpen,
         logForm,
@@ -44,7 +44,7 @@ export function GlobalActiveSession() {
         return null;
     }
 
-    const activeTask = myTasks.find(t => t.id === selectedTaskId) || myTasks[0];
+    const activeTask = selectedTask;
 
     return (
         <>
@@ -61,8 +61,8 @@ export function GlobalActiveSession() {
                     <div className="relative h-6 flex items-center ml-2 w-[180px] overflow-hidden">
                         {/* Normal State - Hidden on Group Hover */}
                         <div className="absolute left-0 flex items-center space-x-2 transition-opacity duration-200 opacity-100 group-hover:opacity-0 group-hover:pointer-events-none">
-                            <span className="text-xs font-medium max-w-[100px] truncate" title={activeTask.title}>
-                                {activeTask.title}
+                            <span className="text-xs font-medium max-w-[100px] truncate" title={activeTask?.title}>
+                                {activeTask?.title ?? 'No task'}
                             </span>
                             {sessionState === 'running' ? (
                                 <div className="flex items-center text-[10px] text-primary uppercase font-bold tracking-wider">
@@ -107,12 +107,12 @@ export function GlobalActiveSession() {
                         <div className="grid gap-4">
                             <div className="space-y-2">
                                 <Label>Project</Label>
-                                <Input value={activeTask.project} disabled className="bg-muted/50" />
+                                <Input value={activeTask?.project ?? ''} disabled className="bg-muted/50" />
                             </div>
                             <div className="grid grid-cols-[1fr,auto] gap-4">
                                 <div className="space-y-2">
                                     <Label>Task</Label>
-                                    <Input value={activeTask.title} disabled className="bg-muted/50 truncate" />
+                                    <Input value={activeTask?.title ?? ''} disabled className="bg-muted/50 truncate" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Time Tracked</Label>
