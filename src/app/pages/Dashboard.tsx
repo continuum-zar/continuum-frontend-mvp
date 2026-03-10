@@ -143,7 +143,7 @@ export function Dashboard() {
       const row: Record<string, string | number> = { day: dayLabels[dayKey] ?? dayKey };
       const dayData = dh[dayKey] ?? {};
       for (let h = 8; h <= 18; h++) {
-        row[`hour${h}`] = Number(dayData[String(h)]) ?? 0;
+        row[`hour${h}`] = Number(dayData[String(h)] ?? 0);
       }
       return row;
     });
@@ -515,7 +515,7 @@ export function Dashboard() {
                         {Array.from({ length: 11 }, (_, i) => i + 8).map(hour => (
                           <div
                             key={hour}
-                            className={`flex-1 aspect-square rounded-sm ${getHeatmapColor(Number(dayRow[`hour${hour}`]) ?? 0)}`}
+                            className={`flex-1 aspect-square rounded-sm ${getHeatmapColor(Number(dayRow[`hour${hour}`] ?? 0))}`}
                             title={`${dayRow.day} ${hour}:00 - ${dayRow[`hour${hour}`]} mins`}
                           />
                         ))}
