@@ -50,7 +50,6 @@ export function TimeTracking() {
   const {
     entries,
     sessionState,
-    setSessionState,
     currentTime,
     tasks,
     tasksLoading,
@@ -64,9 +63,13 @@ export function TimeTracking() {
     setLogForm,
     isAiGenerating,
     simulateAiGeneration,
+    handleStart,
+    handlePause,
+    handleResume,
     handleLogSubmit,
     handleLogCancel,
     handleStop,
+    isSessionActionLoading,
   } = useTimeTracking();
 
   const canStartSession = Boolean(selectedTask?.project_id != null);
@@ -178,19 +181,19 @@ export function TimeTracking() {
 
           <div className="flex items-center space-x-2">
             {sessionState === 'idle' && (
-              <Button onClick={() => setSessionState('running')} disabled={!canStartSession}>
+              <Button onClick={handleStart} disabled={!canStartSession || isSessionActionLoading}>
                 <Play className="mr-2 h-4 w-4" />
                 Start
               </Button>
             )}
             {sessionState === 'running' && (
-              <Button variant="outline" onClick={() => setSessionState('paused')}>
+              <Button variant="outline" onClick={handlePause} disabled={isSessionActionLoading}>
                 <Pause className="mr-2 h-4 w-4" />
                 Pause
               </Button>
             )}
             {sessionState === 'paused' && (
-              <Button variant="outline" onClick={() => setSessionState('running')} className="border-primary text-primary hover:bg-primary/10">
+              <Button variant="outline" onClick={handleResume} className="border-primary text-primary hover:bg-primary/10" disabled={isSessionActionLoading}>
                 <Play className="mr-2 h-4 w-4" />
                 Resume
               </Button>
@@ -199,6 +202,7 @@ export function TimeTracking() {
               <Button
                 variant="destructive"
                 onClick={handleStop}
+                disabled={isSessionActionLoading}
               >
                 <Square className="mr-2 h-4 w-4" />
                 Stop
@@ -262,8 +266,8 @@ export function TimeTracking() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleLogCancel}>Cancel</Button>
-            <Button onClick={handleLogSubmit}>Log Session</Button>
+            <Button variant="outline" onClick={handleLogCancel} disabled={isSessionActionLoading}>Cancel</Button>
+            <Button onClick={handleLogSubmit} disabled={isSessionActionLoading}>Log Session</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
