@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import {
   ArrowLeft,
   Calendar,
@@ -10,7 +10,8 @@ import {
   Send,
   CheckCircle2,
   Clock,
-  Tag
+  Tag,
+  Loader2
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -24,6 +25,9 @@ import {
 } from '../components/ui/select';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
+import { fetchTask } from '@/api/projects';
+import type { TaskAPIResponse } from '@/types/task';
+import { formatDueDate } from '@/api/mappers';
 
 const comments = [
   {
@@ -62,11 +66,48 @@ const activityLog = [
   { id: 4, user: 'Mike Torres', action: 'created this task', time: '2 days ago' },
 ];
 
+function taskStatusToDisplay(s: string): string {
+  if (s === 'in_progress') return 'in-progress';
+  return s === 'todo' || s === 'done' ? s : 'todo';
+}
+
 export function TaskDetail() {
   const navigate = useNavigate();
+  const { taskId } = useParams<{ taskId: string }>();
+  const [task, setTask] = useState<TaskAPIResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [comment, setComment] = useState('');
   const [status, setStatus] = useState('in-progress');
   const [scope, setScope] = useState('L');
+
+  useEffect(() => {
+    if (!taskId) {
+      setLoading(false);
+      setError('No task ID');
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetchTask(taskId)
+      .then((data) => {
+        if (!cancelled) {
+          setTask(data);
+          setStatus(taskStatusToDisplay(data.status ?? 'todo'));
+          setScope((data.scope_weight as 'L') ?? 'L');
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err?.response?.data?.message ?? err?.message ?? 'Failed to load task');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [taskId]);
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +116,28 @@ export function TaskDetail() {
       setComment('');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error || !task) {
+    return (
+      <div className="p-8">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        <p className="text-destructive">{error ?? 'Task not found'}</p>
+      </div>
+    );
+  }
+
+  const taskChecklists = task.checklists && Array.isArray(task.checklists) ? task.checklists : [];
 
   return (
     <div className="flex h-full">
@@ -99,10 +162,10 @@ export function TaskDetail() {
             <div className="mb-8">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h1 className="text-3xl mb-2">Design new landing page</h1>
-                  <p className="text-muted-foreground">
-                    Create mockups for the new marketing site based on the updated brand guidelines
-                  </p>
+                  <h1 className="text-3xl mb-2">{task.title}</h1>
+                  {task.description ? (
+                    <p className="text-muted-foreground">{task.description}</p>
+                  ) : null}
                 </div>
                 <Button variant="ghost" size="icon">
                   <MoreVertical className="h-5 w-5" />
@@ -110,48 +173,45 @@ export function TaskDetail() {
               </div>
 
               <div className="flex items-center space-x-4">
-                <Badge variant="secondary">Mobile App Redesign</Badge>
+                {task.project_name ? (
+                  <Badge variant="secondary">{task.project_name}</Badge>
+                ) : null}
                 <div className="flex items-center space-x-2">
                   <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">TASK-1247</span>
+                  <span className="text-sm text-muted-foreground">TASK-{task.id}</span>
                 </div>
               </div>
             </div>
 
             {/* Description */}
-            <div className="mb-8 bg-card border border-border rounded-lg p-6">
-              <h3 className="mb-3">Description</h3>
-              <div className="text-muted-foreground space-y-2">
-                <p>
-                  We need to design a new landing page that showcases our updated product features
-                  and aligns with our refreshed brand identity.
-                </p>
+            {task.description ? (
+              <div className="mb-8 bg-card border border-border rounded-lg p-6">
+                <h3 className="mb-3">Description</h3>
+                <div className="text-muted-foreground space-y-2">
+                  <p>{task.description}</p>
+                </div>
               </div>
-            </div>
+            ) : null}
 
             {/* Checklists */}
             <div className="mb-8 bg-card border border-border rounded-lg p-6">
               <h3 className="mb-4">Checklist</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                  </div>
-                  <span className="text-sm text-muted-foreground line-through">Review competitor landing pages</span>
+              {taskChecklists.length > 0 ? (
+                <div className="space-y-3">
+                  {taskChecklists.map((item, index) => (
+                    <div key={item.id ?? index} className="flex items-center space-x-3">
+                      <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 ${item.done ? 'border-primary bg-primary' : 'border-border'}`}>
+                        {item.done ? <CheckCircle2 className="h-3 w-3 text-primary-foreground" /> : null}
+                      </div>
+                      <span className={`text-sm ${item.done ? 'text-muted-foreground line-through' : ''}`}>
+                        {item.text}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
-                  <span className="text-sm">Create wireframes for desktop & mobile</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
-                  <span className="text-sm">Design high-fidelity mockups</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
-                  <span className="text-sm">Get approval from marketing team</span>
-                </div>
-              </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No checklist items.</p>
+              )}
             </div>
 
             {/* Attachments */}
@@ -340,15 +400,15 @@ export function TaskDetail() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Created</span>
-                <span>Feb 19, 2026</span>
+                <span>{task.created_at ? formatDueDate(task.created_at) : '—'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Updated</span>
-                <span>Feb 21, 2026</span>
+                <span>{task.updated_at ? formatDueDate(task.updated_at) : '—'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Due date</span>
-                <span className="text-warning">Feb 25, 2026</span>
+                <span className={task.due_date ? 'text-warning' : ''}>{task.due_date ? formatDueDate(task.due_date) : '—'}</span>
               </div>
             </div>
           </div>
