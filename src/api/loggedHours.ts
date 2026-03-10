@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import { fetchAllTasks } from './projects';
 
 /** Table row shape for Recent Entries (matches TimeEntry in TimeTrackingContext). */
 export interface LoggedHourEntry {
@@ -81,7 +82,7 @@ export async function createLoggedHour(body: CreateLoggedHourBody): Promise<Logg
         hours,
         ...(body.project_id != null && body.project_id !== '' && { project_id: body.project_id }),
         ...(body.task_id != null && body.task_id !== '' && { task_id: body.task_id }),
-        ...(body.description != null && body.description !== '' && { description: body.description }),
+        ...(body.description != null && body.description !== '' && { note: body.description }),
         ...(body.date && { date: body.date }),
     };
     const { data } = await api.post<LoggedHourResponse>('/logged-hours', payload);
@@ -118,4 +119,9 @@ export async function downloadLoggedHoursCsv(params?: FetchLoggedHoursParams): P
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+}
+
+/** Tasks for time log dropdown (reuses GET /api/v1/tasks/ list). */
+export async function fetchTasksForTimeLog() {
+    return fetchAllTasks();
 }

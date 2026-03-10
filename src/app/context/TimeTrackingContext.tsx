@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 import { useAllTasks, useLoggedHours } from '@/api/hooks';
 import type { TaskOption } from '@/api/projects';
 import {
-    getActiveWorkSession,
-    createWorkSession,
+    fetchActiveWorkSession,
+    startWorkSession,
     pauseWorkSession,
     resumeWorkSession,
     stopWorkSession,
@@ -17,15 +17,6 @@ export interface TimeEntry {
     duration: number;
     date: string;
 }
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const myTasks = [
-    { id: 't1', title: 'Implement dark mode toggle', project: 'Mobile App Redesign' },
-    { id: 't2', title: 'Refactor Time Tracking widget', project: 'Dashboard v2' },
-    { id: 't3', title: 'Write tests for routing logic', project: 'Dashboard v2' },
-    { id: 't4', title: 'Deploy staging environment', project: 'Marketing Website' },
-    { id: 't5', title: 'Optimize React component renders', project: 'Mobile App Redesign' },
-];
 
 type SessionState = 'idle' | 'running' | 'paused';
 
@@ -127,7 +118,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     // On mount: fetch active work session and restore state; entries come from useLoggedHours
     useEffect(() => {
         let cancelled = false;
-        getActiveWorkSession()
+        fetchActiveWorkSession()
             .then((session) => {
                 if (cancelled || !session) return;
                 setActiveSessionId(session.id);
@@ -156,7 +147,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (sessionState !== 'running' || !activeSessionId) return;
         const syncInterval = setInterval(() => {
-            getActiveWorkSession()
+            fetchActiveWorkSession()
                 .then((session) => {
                 if (session?.id === activeSessionId && session.status === 'ACTIVE') {
                     setCurrentTime(session.current_duration_seconds ?? 0);
@@ -176,7 +167,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         setIsSessionActionLoading(true);
         try {
             const taskIdNum = task.id ? Number(task.id) : NaN;
-            const data = await createWorkSession({
+            const data = await startWorkSession({
                 project_id: task.project_id,
                 ...(Number.isFinite(taskIdNum) && { task_id: taskIdNum }),
                 note: undefined,
