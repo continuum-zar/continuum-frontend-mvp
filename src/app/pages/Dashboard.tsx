@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'motion/react';
 import {
   ArrowUpRight,
@@ -30,7 +31,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, postProjectQuery } from '@/api';
+import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, fetchClientProjects, fetchClientProjectProgress, postProjectQuery } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import {
   Bar,
@@ -49,19 +50,6 @@ import {
 } from 'recharts';
 
 // --- MOCK DATA ---
-
-// 6. Client View Mocks
-const activityFeed = [
-  { id: 1, action: 'Task Completed', target: 'Design System Update', user: 'Sarah Chen', time: '2 hours ago', icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
-  { id: 2, action: 'Commit Pushed', target: 'fix/auth-callback', user: 'Mike Torres', time: '4 hours ago', icon: GitCommit, color: 'text-primary', bg: 'bg-primary/10' },
-  { id: 3, action: 'Task Started', target: 'Payment Gateway', user: 'Alex Johnson', time: '5 hours ago', icon: Activity, color: 'text-info', bg: 'bg-info/10' },
-];
-
-const healthData = [
-  { name: 'On Track', value: 75, color: '#10b981' },
-  { name: 'At Risk', value: 15, color: '#f59e0b' },
-  { name: 'Blocked', value: 10, color: '#ef4444' },
-];
 
 const projectMembers = [
   { id: 'all', name: 'All Members (Collective)' },
@@ -181,6 +169,47 @@ export function Dashboard() {
   }, [classificationBreakdown]);
   const classificationTotal = (classificationBreakdown?.structural ?? 0) + (classificationBreakdown?.incremental ?? 0) + (classificationBreakdown?.trivial ?? 0);
 
+  const { data: clientProjectsList = [] } = useQuery({
+    queryKey: ['client-projects'],
+    queryFn: fetchClientProjects,
+    enabled: userRole === 'Client',
+  });
+
+  const clientProjectId = userRole === 'Client' && clientProjectsList.length > 0
+    ? (selectedProject !== 'all' && clientProjectsList.some((p) => String(p.id) === selectedProject) ? selectedProject : String(clientProjectsList[0].id))
+    : selectedProject;
+  useEffect(() => {
+    if (userRole === 'Client' && clientProjectsList.length > 0 && selectedProject === 'all') {
+      setSelectedProject(String(clientProjectsList[0].id));
+    }
+  }, [userRole, clientProjectsList, selectedProject]);
+
+  const { data: clientProgress, isLoading: clientProgressLoading, isError: clientProgressError } = useQuery({
+    queryKey: ['client-progress', clientProjectId],
+    queryFn: () => fetchClientProjectProgress(clientProjectId),
+    enabled: userRole === 'Client' && clientProjectId !== 'all',
+  });
+
+  const clientHealthChartData = useMemo(() => {
+    const hp = clientProgress?.health_pie;
+    if (!hp) return [];
+    return [
+      { name: 'On Track', value: hp.on_track_pct ?? 0, color: '#10b981' },
+      { name: 'At Risk', value: hp.at_risk_pct ?? 0, color: '#f59e0b' },
+      { name: 'Blocked', value: hp.blocked_pct ?? 0, color: '#ef4444' },
+    ].filter((d) => d.value > 0);
+  }, [clientProgress?.health_pie]);
+
+  const activityFeedFromApi = useMemo(() => {
+    const list = clientProgress?.recent_activity ?? [];
+    return list.map((a, idx) => {
+      const actionLabel = a.type === 'task_complete' ? 'Task Completed' : a.type === 'commit' ? 'Commit Pushed' : a.type === 'logged_hour' ? 'Logged hours' : a.type === 'task_started' ? 'Task Started' : (a.description?.slice(0, 30) ?? 'Activity');
+      const icon = a.type === 'task_complete' ? CheckCircle2 : a.type === 'commit' ? GitCommit : a.type === 'logged_hour' ? Clock : Activity;
+      const timeStr = a.date ? formatDistanceToNow(new Date(a.date), { addSuffix: true }) : '';
+      return { id: idx, action: actionLabel, target: a.target_title ?? '', user: a.user_name, time: timeStr, icon, color: 'text-muted-foreground', bg: 'bg-muted' };
+    });
+  }, [clientProgress?.recent_activity]);
+
   const { data: staleWorkResponse, isLoading: staleWorkLoading, isError: staleWorkError } = useQuery({
     queryKey: ['stale-work', selectedProject],
     queryFn: () => fetchProjectStaleWork(selectedProject),
@@ -197,7 +226,7 @@ export function Dashboard() {
     }));
   }, [staleWorkResponse]);
 
-  const hasProjects = projects.length > 0;
+  const hasProjects = userRole === 'Client' ? clientProjectsList.length > 0 : projects.length > 0;
 
   const handleSendChat = async () => {
     const msg = chatMessage.trim();
@@ -284,20 +313,24 @@ export function Dashboard() {
         </div>
         <div className="flex gap-2">
           <Select
-            value={selectedProject}
+            value={userRole === 'Client' ? clientProjectId : selectedProject}
             onValueChange={setSelectedProject}
-            disabled={projectsLoading || projectsError || !hasProjects}
+            disabled={userRole === 'Client' ? clientProjectsList.length === 0 : (projectsLoading || projectsError || !hasProjects)}
           >
             <SelectTrigger className="w-[200px] border-border bg-card">
-              <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Select project'} />
+              <SelectValue placeholder={userRole === 'Client' ? (clientProjectsList.length === 0 ? 'No projects' : 'Select project') : (projectsLoading ? 'Loading projects...' : 'Select project')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Projects</SelectItem>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.title}
-                </SelectItem>
-              ))}
+              {userRole !== 'Client' && <SelectItem value="all">All Projects</SelectItem>}
+              {userRole === 'Client'
+                ? clientProjectsList.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                  ))
+                : projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.title}
+                    </SelectItem>
+                  ))}
             </SelectContent>
           </Select>
           {userRole !== 'Client' && (
@@ -756,7 +789,7 @@ export function Dashboard() {
                       <td className="py-3 font-medium font-mono text-xs">{branch.name}</td>
                       <td className="py-3 text-muted-foreground flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] text-foreground">
-                          {branch.author.split(' ').map(n => n[0]).join('')}
+                          {branch.author.split(' ').map((n: string) => n[0]).join('')}
                         </div>
                         {branch.author}
                       </td>
@@ -791,12 +824,19 @@ export function Dashboard() {
                 <h3 className="text-lg font-semibold mb-1">Project Health</h3>
                 <p className="text-sm text-muted-foreground">Overall status of tasks and deliverables.</p>
               </div>
+              {clientProgressLoading ? (
+                <div className="text-sm text-muted-foreground">Loading...</div>
+              ) : clientProgressError ? (
+                <div className="text-sm text-destructive">Unable to load (you may not have access)</div>
+              ) : clientHealthChartData.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No health data yet</div>
+              ) : (
               <div className="flex items-center gap-4">
                 <div className="w-24 h-24">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={healthData} cx="50%" cy="50%" innerRadius={30} outerRadius={40} dataKey="value" stroke="none">
-                        {healthData.map((entry, index) => (
+                      <Pie data={clientHealthChartData} cx="50%" cy="50%" innerRadius={30} outerRadius={40} dataKey="value" stroke="none">
+                        {clientHealthChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -804,18 +844,30 @@ export function Dashboard() {
                   </ResponsiveContainer>
                 </div>
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500" /> <span className="text-sm">75% On Track</span></div>
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500" /> <span className="text-sm">15% At Risk</span></div>
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500" /> <span className="text-sm">10% Blocked</span></div>
+                  {clientProgress?.health_pie && (
+                    <>
+                      <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500" /> <span className="text-sm">{clientProgress.health_pie.on_track_pct ?? 0}% On Track</span></div>
+                      <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500" /> <span className="text-sm">{clientProgress.health_pie.at_risk_pct ?? 0}% At Risk</span></div>
+                      <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500" /> <span className="text-sm">{clientProgress.health_pie.blocked_pct ?? 0}% Blocked</span></div>
+                    </>
+                  )}
                 </div>
               </div>
+              )}
             </motion.div>
 
             {/* Activity Feed */}
             <motion.div variants={item} initial="hidden" animate="show" className="bg-card border border-border rounded-lg p-6">
               <h3 className="text-lg font-semibold mb-6">Recent Activity</h3>
+              {clientProgressLoading ? (
+                <div className="text-sm text-muted-foreground">Loading...</div>
+              ) : clientProgressError ? (
+                <div className="text-sm text-destructive">Unable to load activity</div>
+              ) : activityFeedFromApi.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No recent activity</div>
+              ) : (
               <div className="space-y-6">
-                {activityFeed.map((activity) => (
+                {activityFeedFromApi.map((activity) => (
                   <div key={activity.id} className="flex gap-4">
                     <div className={`mt-1 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${activity.bg}`}>
                       <activity.icon className={`h-4 w-4 ${activity.color}`} />
@@ -831,6 +883,7 @@ export function Dashboard() {
                   </div>
                 ))}
               </div>
+              )}
             </motion.div>
           </div>
 
