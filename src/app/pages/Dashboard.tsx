@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import {
   ArrowUpRight,
@@ -29,7 +30,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects } from '@/api';
+import { useProjects, fetchProjectDashboard } from '@/api';
 import {
   Bar,
   LineChart,
@@ -144,6 +145,20 @@ export function Dashboard() {
   const [snapshotMember, setSnapshotMember] = useState("all");
   const [chatMessage, setChatMessage] = useState("");
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects();
+
+  const { data: dashboardMetrics, isLoading: snapshotLoading, isError: snapshotError } = useQuery({
+    queryKey: ['project-dashboard', selectedProject],
+    queryFn: () => fetchProjectDashboard(selectedProject),
+    enabled: selectedProject !== 'all' && userRole !== 'Client',
+  });
+
+  const stats = dashboardMetrics?.stats;
+  const todoCount = stats?.total_todo_tasks ?? 0;
+  const inProgressCount = stats?.total_in_progress_tasks ?? 0;
+  const doneCount = stats?.total_completed_tasks ?? 0;
+  const overdueCount = stats?.total_overdue_tasks ?? 0;
+  const totalTasks = (stats?.total_tasks ?? 0) || (todoCount + inProgressCount + doneCount + overdueCount) || 0;
+  const completionPct = stats?.completion_percentage ?? (totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0);
 
   const hasProjects = projects.length > 0;
 
@@ -402,7 +417,7 @@ export function Dashboard() {
                 <p className="text-sm text-muted-foreground">Current breakdown</p>
               </div>
               {userRole === 'Project Manager' && (
-                <Select value={snapshotMember} onValueChange={setSnapshotMember}>
+                <Select value={snapshotMember} onValueChange={setSnapshotMember} disabled>
                   <SelectTrigger className="w-[140px] h-8 text-xs border-border bg-card">
                     <SelectValue placeholder="Filter member" />
                   </SelectTrigger>
@@ -415,41 +430,51 @@ export function Dashboard() {
               )}
             </div>
 
+            {selectedProject === 'all' ? (
+              <div className="py-8 text-center text-muted-foreground text-sm">Select a project to view task snapshot</div>
+            ) : snapshotLoading ? (
+              <div className="py-8 text-center text-muted-foreground text-sm">Loading snapshot...</div>
+            ) : snapshotError ? (
+              <div className="py-8 text-center text-destructive text-sm">Failed to load snapshot</div>
+            ) : (
+            <>
             <div className="space-y-4 flex-1">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Circle className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">To Do</span>
                 </div>
-                <span className="text-lg font-bold">24</span>
+                <span className="text-lg font-bold">{todoCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Activity className="h-4 w-4 text-primary" />
                   <span className="font-medium">In Progress</span>
                 </div>
-                <span className="text-lg font-bold">18</span>
+                <span className="text-lg font-bold">{inProgressCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <CheckCircle2 className="h-4 w-4 text-success" />
                   <span className="font-medium">Done</span>
                 </div>
-                <span className="text-lg font-bold">142</span>
+                <span className="text-lg font-bold">{doneCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <AlertCircle className="h-4 w-4 text-destructive" />
                   <span className="font-medium">Overdue</span>
                 </div>
-                <span className="text-lg font-bold text-destructive">4</span>
+                <span className="text-lg font-bold text-destructive">{overdueCount}</span>
               </div>
             </div>
 
             <div className="mt-4 pt-4 border-t border-border">
-              <Progress value={65} className="h-2 mb-2 bg-muted [&>div]:bg-success" />
-              <span className="text-xs text-muted-foreground">65% Overall Completion</span>
+              <Progress value={completionPct} className="h-2 mb-2 bg-muted [&>div]:bg-success" />
+              <span className="text-xs text-muted-foreground">{completionPct}% Overall Completion</span>
             </div>
+            </>
+            )}
           </motion.div>
         </div>
       )}
