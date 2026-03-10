@@ -28,7 +28,8 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate, useUpdateTask } from '@/api';
+import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, usePostComment } from '@/api';
+import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight } from '@/types/task';
 import type { TaskAPIResponse } from '@/types/task';
 
@@ -89,6 +90,10 @@ export function TaskDetail() {
   // Initialize the update task mutation
   const updateTaskMutation = useUpdateTask();
 
+  // Comments hooks
+  const { data: comments, isLoading: commentsLoading } = useTaskComments(taskId);
+  const postCommentMutation = usePostComment(taskId);
+
   useEffect(() => {
     const loadTask = async () => {
       try {
@@ -127,8 +132,12 @@ export function TaskDetail() {
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (comment.trim()) {
-      // Handle comment submission
-      setComment('');
+      postCommentMutation.mutate(comment, {
+        onSuccess: () => {
+          setComment('');
+          setTask((prev) => (prev ? { ...prev, comment_count: (prev.comment_count ?? 0) + 1 } : prev));
+        },
+      });
     }
   };
 
@@ -323,8 +332,25 @@ export function TaskDetail() {
             <div className="mb-8 bg-card border border-border rounded-lg p-6">
               <h3 className="mb-6">Comments</h3>
               <div className="space-y-6 mb-6">
-                {task.comment_count && task.comment_count > 0 ? (
-                  <p className="text-sm text-muted-foreground">{task.comment_count} comment(s)</p>
+                {commentsLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading comments...</p>
+                ) : comments && comments.length > 0 ? (
+                  <div className="space-y-4">
+                    {comments.map((c) => (
+                      <div key={c.id} className="flex items-start space-x-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>{(c.author?.display_name || c.author?.username || 'U').slice(0,2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-medium">{c.author?.display_name || c.author?.username || 'Unknown'}</div>
+                            <div className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</div>
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">{c.content}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">No comments yet</p>
                 )}
@@ -344,7 +370,7 @@ export function TaskDetail() {
                     className="mb-2 bg-input-background"
                   />
                   <div className="flex justify-end">
-                    <Button type="submit" size="sm" disabled={!comment.trim()}>
+                    <Button type="submit" size="sm" disabled={!comment.trim() || postCommentMutation.isLoading}>
                       <Send className="mr-2 h-4 w-4" />
                       Comment
                     </Button>
