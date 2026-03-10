@@ -13,7 +13,8 @@ import {
     createProject,
     updateProject,
 } from './projects';
-import { fetchLoggedHours } from './loggedHours';
+import { fetchLoggedHours, createLoggedHour } from './loggedHours';
+import type { CreateLoggedHourBody } from './loggedHours';
 import type { TaskStatus } from '@/types/task';
 
 /** Normalize FastAPI error detail into a single message. */
@@ -82,6 +83,24 @@ export function useLoggedHours(projectId?: string | null, options?: { limit?: nu
             ...(projectIdParam != null && { project_id: projectIdParam }),
             limit,
         }),
+    });
+}
+
+/** Create a logged hour (manual entry). Invalidates logged-hours so Recent Entries refetch. */
+export function useCreateLoggedHour() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateLoggedHourBody) => createLoggedHour(body),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['logged-hours'] });
+        },
+        onError: (err) => {
+            const res = (err as { response?: { status?: number; data?: { detail?: string } } })?.response;
+            const message = typeof res?.data?.detail === 'string'
+                ? res.data.detail
+                : getApiErrorMessage(err, 'Failed to log time. You may not have access to this project or task.');
+            toast.error(message);
+        },
     });
 }
 
