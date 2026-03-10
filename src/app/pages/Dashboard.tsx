@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects, useProjectMilestones, fetchMilestoneBurndown } from '@/api';
+import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown } from '@/api';
 import {
   Bar,
   LineChart,
@@ -48,15 +48,6 @@ import {
 } from 'recharts';
 
 // --- MOCK DATA ---
-
-// 1. Velocity & Efficiency Trends
-const velocityData = [
-  { week: 'W1', score: 65, avg: 60, tasks: 45, hours: 38, commits: 15 },
-  { week: 'W2', score: 72, avg: 63, tasks: 52, hours: 42, commits: 18 },
-  { week: 'W3', score: 68, avg: 65, tasks: 48, hours: 40, commits: 16 },
-  { week: 'W4', score: 85, avg: 72, tasks: 65, hours: 48, commits: 22 },
-  { week: 'W5', score: 92, avg: 76, tasks: 72, hours: 52, commits: 25 },
-];
 
 // 3. Git Contribution Breakdown
 const gitCommitsData = [
@@ -136,6 +127,21 @@ export function Dashboard() {
   const [chatMessage, setChatMessage] = useState("");
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects();
 
+  const { data: dashboardMetrics, isLoading: dashboardLoading, isError: dashboardError } = useQuery({
+    queryKey: ['project-dashboard', selectedProject],
+    queryFn: () => fetchProjectDashboard(selectedProject),
+    enabled: selectedProject !== 'all' && userRole === 'Project Manager',
+  });
+
+  const health = dashboardMetrics?.health;
+  const velocity = dashboardMetrics?.velocity;
+  const velocityScore = velocity?.trend?.velocity_score ?? (velocity?.weeks?.length ? velocity.weeks[velocity.weeks.length - 1].velocity_score : null);
+  const velocityDelta = velocity?.trend?.change_percentage != null ? `${velocity.trend.change_percentage > 0 ? '+' : ''}${velocity.trend.change_percentage}% from last period` : null;
+  const forecastScore = velocity?.forecast_next_week ?? null;
+  const hpsRatio = health?.hps_ratio ?? null;
+  const overdueCount = health?.overdue_count ?? 0;
+  const unassignedCount = health?.unassigned_count ?? 0;
+
   const hasProjects = projects.length > 0;
 
   const { data: milestones = [] } = useProjectMilestones(selectedProject !== 'all' ? selectedProject : undefined);
@@ -176,6 +182,22 @@ export function Dashboard() {
     });
   }, [burndown]);
 
+  const { data: velocityReport, isLoading: velocityLoading, isError: velocityError } = useQuery({
+    queryKey: ['velocity-report', selectedProject],
+    queryFn: () => fetchProjectVelocityReport(selectedProject),
+    enabled: selectedProject !== 'all' && userRole !== 'Client',
+  });
+
+  const velocityChartData =
+    velocityReport?.weeks?.map((w) => ({
+      week: w.week_start_date ? new Date(w.week_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : `W${w.week_number}`,
+      score: w.velocity_score,
+      avg: w.rolling_avg,
+      tasks: w.tasks_completed,
+      hours: w.hours_logged,
+      commits: w.commits_count,
+    })) ?? [];
+
   return (
     <div className="p-8 pb-20">
       <div className="mb-8 flex justify-between items-end">
@@ -212,14 +234,20 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Row 1: KPI Velocity Cards */}
-      {userRole === 'Project Manager' && (
+      {/* Row 1: KPI Velocity Cards (requires single project) */}
+      {userRole === 'Project Manager' && selectedProject !== 'all' && (
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
           variants={container}
           initial="hidden"
           animate="show"
         >
+          {dashboardLoading ? (
+            <div className="col-span-4 rounded-lg border border-border bg-card p-8 text-center text-muted-foreground text-sm">Loading KPIs...</div>
+          ) : dashboardError ? (
+            <div className="col-span-4 rounded-lg border border-border bg-card p-8 text-center text-destructive text-sm">Failed to load dashboard metrics</div>
+          ) : (
+            <>
           <motion.div variants={item} className="bg-card border border-border rounded-lg p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-muted-foreground">Team Velocity Score</span>
@@ -228,11 +256,13 @@ export function Dashboard() {
               </div>
             </div>
             <div>
-              <div className="text-3xl font-bold mb-1">92</div>
-              <div className="flex items-center text-sm text-success">
-                <ArrowUpRight className="h-4 w-4 mr-1" />
-                <span>+18% from last month</span>
-              </div>
+              <div className="text-3xl font-bold mb-1">{velocityScore ?? '—'}</div>
+              {velocityDelta != null && (
+                <div className={`flex items-center text-sm ${(velocity?.trend?.change_percentage ?? 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {(velocity?.trend?.change_percentage ?? 0) >= 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
+                  <span>{velocityDelta}</span>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -244,7 +274,7 @@ export function Dashboard() {
               </div>
             </div>
             <div>
-              <div className="text-3xl font-bold mb-1 text-muted-foreground">95</div>
+              <div className="text-3xl font-bold mb-1 text-muted-foreground">{forecastScore ?? '—'}</div>
               <div className="flex items-center text-sm text-success">
                 <ArrowUpRight className="h-4 w-4 mr-1" />
                 <span>Stable upward trend</span>
@@ -260,10 +290,10 @@ export function Dashboard() {
               </div>
             </div>
             <div>
-              <div className="text-3xl font-bold mb-1">1.2</div>
+              <div className="text-3xl font-bold mb-1">{hpsRatio ?? '—'}</div>
               <div className="flex items-center text-sm text-success">
                 <ArrowDownRight className="h-4 w-4 mr-1" />
-                <span>-20% (More efficient)</span>
+                <span>{health?.health_status ?? 'More efficient'}</span>
               </div>
             </div>
           </motion.div>
@@ -276,19 +306,26 @@ export function Dashboard() {
             <div className="space-y-2 mt-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Overdue Tasks</span>
-                <span className="font-bold">4</span>
+                <span className="font-bold">{overdueCount}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Unassigned Tasks</span>
-                <span className="font-bold">12</span>
+                <span className="font-bold">{unassignedCount}</span>
               </div>
             </div>
           </motion.div>
+            </>
+          )}
         </motion.div>
       )}
 
-      {/* Row 2: Charts (Velocity & Burndown) */}
-      {userRole !== 'Client' && (
+      {/* Row 2: Charts (Velocity & Burndown) — require single project */}
+      {userRole !== 'Client' && selectedProject === 'all' && (
+        <div className="mb-6 rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
+          Select a project to view velocity, burndown, and other metrics.
+        </div>
+      )}
+      {userRole !== 'Client' && selectedProject !== 'all' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -299,8 +336,17 @@ export function Dashboard() {
               <h3 className="mb-1">Weekly Velocity Composite</h3>
               <p className="text-sm text-muted-foreground">Weighted score vs. 4-week average</p>
             </div>
+            {velocityLoading && selectedProject !== 'all' ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Loading velocity...</div>
+            ) : velocityError && selectedProject !== 'all' ? (
+              <div className="h-[300px] flex items-center justify-center text-destructive text-sm">Failed to load velocity</div>
+            ) : selectedProject === 'all' ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Select a project to view velocity</div>
+            ) : velocityChartData.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">No velocity data yet</div>
+            ) : (
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={velocityData}>
+              <ComposedChart data={velocityChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                 <XAxis dataKey="week" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
@@ -312,6 +358,7 @@ export function Dashboard() {
                 <Line type="monotone" dataKey="avg" name="Rolling Avg" stroke="var(--color-success)" strokeWidth={3} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
+            )}
           </motion.div>
 
           {userRole === 'Project Manager' && (
@@ -369,8 +416,8 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Row 3: User Rhythm Heatmap & Diagnostics */}
-      {userRole !== 'Client' && (
+      {/* Row 3: User Rhythm Heatmap & Diagnostics (requires single project) */}
+      {userRole !== 'Client' && selectedProject !== 'all' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
           {/* Heatmap */}
@@ -509,8 +556,8 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Row 4: Git Contribution & Stale Work */}
-      {userRole === 'Project Manager' && (
+      {/* Row 4: Git Contribution & Stale Work (requires single project) */}
+      {userRole === 'Project Manager' && selectedProject !== 'all' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Git Donut */}
