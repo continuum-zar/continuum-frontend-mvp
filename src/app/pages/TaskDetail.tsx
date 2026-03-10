@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import {
   ArrowLeft,
   Calendar,
@@ -64,6 +64,8 @@ const activityLog = [
 
 export function TaskDetail() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = (location.state as { projectId?: string | number } | undefined) || {};
   const [comment, setComment] = useState('');
   const [status, setStatus] = useState('in-progress');
   const [scope, setScope] = useState('L');
@@ -83,7 +85,7 @@ export function TaskDetail() {
         <div className="p-8">
           <Button
             variant="ghost"
-            onClick={() => navigate(-1)}
+            onClick={() => (state.projectId ? navigate(`/projects/${state.projectId}`) : navigate(-1))}
             className="mb-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

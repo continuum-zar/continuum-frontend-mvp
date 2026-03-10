@@ -7,7 +7,6 @@ import {
   Loader2,
   Plus,
   X,
-  Paperclip
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -126,16 +125,12 @@ export function CreateTask() {
       // Call the API
       const response = await api.post('/tasks/', payload);
 
-      toast.success('Task created successfully');
+      toast.success('Task created. Add attachments on the task page.');
 
-      // Redirect back to the project board if projectId exists, otherwise to projects list
-      if (projectId) {
-        navigate(`/projects/${projectId}`, {
-          state: { newTaskCreated: true, taskId: response.data.id }
-        });
-      } else {
-        navigate('/projects');
-      }
+      // Redirect to task detail so user can add attachments there (see README)
+      navigate(`/tasks/${response.data.id}`, {
+        state: projectId ? { projectId, fromCreate: true } : undefined,
+      });
     } catch (err: unknown) {
       console.error('Failed to create task:', err);
       const errorMessage =
@@ -292,17 +287,9 @@ export function CreateTask() {
               )}
             </div>
 
-            {/* Attachments Section UI Mock */}
-            <div className="space-y-2">
-              <Label>Attachments</Label>
-              <div className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors">
-                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3">
-                  <Paperclip className="h-5 w-5 text-primary" />
-                </div>
-                <p className="text-sm font-medium mb-1">Click to upload or drag and drop</p>
-                <p className="text-xs text-muted-foreground">PDF, Figma, Image, or Video (max 10MB)</p>
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              You can add attachments on the task page after creating it.
+            </p>
 
             <div className="pt-4 border-t border-border flex justify-end space-x-3">
               <Button type="button" variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting}>
