@@ -13,6 +13,7 @@ import {
     createProject,
     updateProject,
 } from './projects';
+import { fetchLoggedHours } from './loggedHours';
 import type { TaskStatus } from '@/types/task';
 
 /** Normalize FastAPI error detail into a single message. */
@@ -37,6 +38,7 @@ export const projectKeys = {
     allTasks: () => ['tasks', 'all'] as const,
     milestones: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'milestones'] as const,
     members: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'members'] as const,
+    loggedHours: (projectId?: string | null) => ['logged-hours', projectId ?? 'all'] as const,
 };
 
 export function useProjects() {
@@ -67,6 +69,19 @@ export function useAllTasks() {
     return useQuery({
         queryKey: projectKeys.allTasks(),
         queryFn: fetchAllTasks,
+    });
+}
+
+/** Logged hours for Recent Entries. Optional project_id; "all" / empty = no filter. Refetch after logging a new entry. */
+export function useLoggedHours(projectId?: string | null, options?: { limit?: number }) {
+    const limit = options?.limit ?? 50;
+    const projectIdParam = (projectId == null || projectId === '' || projectId === 'all') ? undefined : projectId;
+    return useQuery({
+        queryKey: projectKeys.loggedHours(projectIdParam),
+        queryFn: () => fetchLoggedHours({
+            ...(projectIdParam != null && { project_id: projectIdParam }),
+            limit,
+        }),
     });
 }
 

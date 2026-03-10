@@ -153,7 +153,16 @@ export function GlobalActiveSession() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={handleLogCancel} disabled={isSessionActionLoading}>Cancel</Button>
-                        <Button onClick={handleLogSubmit} disabled={isSessionActionLoading}>Log Session</Button>
+                        <Button onClick={handleLogSubmit} disabled={isSessionActionLoading}>
+                            {isSessionActionLoading ? (
+                                <>
+                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                    Logging...
+                                </>
+                            ) : (
+                                'Log Session'
+                            )}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

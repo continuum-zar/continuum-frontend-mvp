@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { toast } from 'sonner';
-import { useAllTasks } from '@/api/hooks';
+import { useAllTasks, useLoggedHours } from '@/api/hooks';
 import type { TaskOption } from '@/api/projects';
 import {
     getActiveWorkSession,
@@ -8,8 +8,6 @@ import {
     pauseWorkSession,
     resumeWorkSession,
     stopWorkSession,
-    fetchLoggedHours,
-    type LoggedHourAPIResponse,
 } from '@/api/workSessions';
 export interface TimeEntry {
     id: string;
@@ -19,27 +17,6 @@ export interface TimeEntry {
     duration: number;
     date: string;
 }
-
-function mapLoggedHourToEntry(r: LoggedHourAPIResponse): TimeEntry {
-    const date = r.date ?? (r.logged_at ? r.logged_at.split('T')[0] : '');
-    return {
-        id: String(r.id),
-        project: r.project_name ?? r.project ?? '',
-        task: r.task_title ?? r.task ?? '',
-        description: r.description ?? undefined,
-        duration: r.duration_minutes ?? r.duration ?? 0,
-        date,
-    };
-}
-
-const initialTimeEntries: TimeEntry[] = [
-    { id: '1', project: 'Mobile App Redesign', task: 'Implement dark mode', description: 'Added next-themes, configured dark mode palette, updated root layout.', duration: 180, date: '2026-02-21' },
-    { id: '2', project: 'Dashboard v2', task: 'API integration', description: 'Wired up the useQuery hooks for the velocity metrics.', duration: 120, date: '2026-02-21' },
-    { id: '3', project: 'Mobile App Redesign', task: 'Design review', duration: 60, date: '2026-02-20' },
-    { id: '4', project: 'Marketing Website', task: 'Landing page optimization', duration: 240, date: '2026-02-20' },
-    { id: '5', project: 'Dashboard v2', task: 'Database queries', duration: 150, date: '2026-02-19' },
-    { id: '6', project: 'Mobile App Redesign', task: 'Component library', duration: 210, date: '2026-02-19' },
-];
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const myTasks = [
@@ -72,8 +49,14 @@ function getApiErrorMessage(err: unknown, fallback: string): string {
 }
 
 interface TimeTrackingContextProps {
+    /** Recent entries from GET /api/v1/logged-hours (filtered by project when set). */
     entries: TimeEntry[];
-    setEntries: React.Dispatch<React.SetStateAction<TimeEntry[]>>;
+    entriesLoading: boolean;
+    entriesError: boolean;
+    refetchEntries: () => void;
+    /** Project filter for Recent Entries: 'all' or project id. */
+    projectFilterId: string;
+    setProjectFilterId: React.Dispatch<React.SetStateAction<string>>;
     sessionState: SessionState;
     setSessionState: React.Dispatch<React.SetStateAction<SessionState>>;
     currentTime: number;
@@ -114,7 +97,10 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     const { data: tasksData, isLoading: tasksLoading, isError: tasksError } = useAllTasks();
     const tasks = tasksData ?? [];
 
-    const [entries, setEntries] = useState<TimeEntry[]>(initialTimeEntries);
+    const [projectFilterId, setProjectFilterId] = useState<string>('all');
+    const { data: entriesData, isLoading: entriesLoading, isError: entriesError, refetch: refetchEntries } = useLoggedHours(projectFilterId, { limit: 50 });
+    const entries = (entriesData ?? []) as TimeEntry[];
+
     const [sessionState, setSessionState] = useState<SessionState>('idle');
     const [currentTime, setCurrentTime] = useState(0);
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -138,7 +124,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     const [logForm, setLogForm] = useState<LogForm>({ task: '', description: '' });
     const [isAiGenerating, setIsAiGenerating] = useState(false);
 
-    // On mount: fetch active work session and restore state; load entries from API
+    // On mount: fetch active work session and restore state; entries come from useLoggedHours
     useEffect(() => {
         let cancelled = false;
         getActiveWorkSession()
@@ -149,13 +135,6 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
                 setCurrentTime(session.current_duration_seconds ?? 0);
                 if (session.task_id != null && session.task_id !== undefined) {
                     setSelectedTaskId(String(session.task_id));
-                }
-            })
-            .catch(() => {});
-        fetchLoggedHours()
-            .then((list) => {
-                if (!cancelled && list.length > 0) {
-                    setEntries(list.map(mapLoggedHourToEntry));
                 }
             })
             .catch(() => {});
@@ -187,16 +166,6 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         }, 30_000);
         return () => clearInterval(syncInterval);
     }, [sessionState, activeSessionId]);
-
-    const refetchEntries = useCallback(() => {
-        fetchLoggedHours()
-            .then((list) => {
-                if (list.length > 0) {
-                    setEntries(list.map(mapLoggedHourToEntry));
-                }
-            })
-            .catch(() => {});
-    }, []);
 
     const handleStart = useCallback(async () => {
         const task = selectedTask ?? tasks[0];
@@ -296,7 +265,11 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         <TimeTrackingContext.Provider
             value={{
                 entries,
-                setEntries,
+                entriesLoading,
+                entriesError,
+                refetchEntries,
+                projectFilterId,
+                setProjectFilterId,
                 sessionState,
                 setSessionState,
                 currentTime,
