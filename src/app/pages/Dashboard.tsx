@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import {
   ArrowUpRight,
@@ -29,7 +30,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects } from '@/api';
+import { useProjects, fetchProjectVelocityReport } from '@/api';
 import {
   Bar,
   LineChart,
@@ -47,15 +48,6 @@ import {
 } from 'recharts';
 
 // --- MOCK DATA ---
-
-// 1. Velocity & Efficiency Trends
-const velocityData = [
-  { week: 'W1', score: 65, avg: 60, tasks: 45, hours: 38, commits: 15 },
-  { week: 'W2', score: 72, avg: 63, tasks: 52, hours: 42, commits: 18 },
-  { week: 'W3', score: 68, avg: 65, tasks: 48, hours: 40, commits: 16 },
-  { week: 'W4', score: 85, avg: 72, tasks: 65, hours: 48, commits: 22 },
-  { week: 'W5', score: 92, avg: 76, tasks: 72, hours: 52, commits: 25 },
-];
 
 // 2. Milestone Burndown
 const burndownData = [
@@ -146,6 +138,22 @@ export function Dashboard() {
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects();
 
   const hasProjects = projects.length > 0;
+
+  const { data: velocityReport, isLoading: velocityLoading, isError: velocityError } = useQuery({
+    queryKey: ['velocity-report', selectedProject],
+    queryFn: () => fetchProjectVelocityReport(selectedProject),
+    enabled: selectedProject !== 'all' && userRole !== 'Client',
+  });
+
+  const velocityChartData =
+    velocityReport?.weeks?.map((w) => ({
+      week: w.week_start_date ? new Date(w.week_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : `W${w.week_number}`,
+      score: w.velocity_score,
+      avg: w.rolling_avg,
+      tasks: w.tasks_completed,
+      hours: w.hours_logged,
+      commits: w.commits_count,
+    })) ?? [];
 
   return (
     <div className="p-8 pb-20">
@@ -270,8 +278,17 @@ export function Dashboard() {
               <h3 className="mb-1">Weekly Velocity Composite</h3>
               <p className="text-sm text-muted-foreground">Weighted score vs. 4-week average</p>
             </div>
+            {velocityLoading && selectedProject !== 'all' ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Loading velocity...</div>
+            ) : velocityError && selectedProject !== 'all' ? (
+              <div className="h-[300px] flex items-center justify-center text-destructive text-sm">Failed to load velocity</div>
+            ) : selectedProject === 'all' ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Select a project to view velocity</div>
+            ) : velocityChartData.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">No velocity data yet</div>
+            ) : (
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={velocityData}>
+              <ComposedChart data={velocityChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                 <XAxis dataKey="week" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
@@ -283,6 +300,7 @@ export function Dashboard() {
                 <Line type="monotone" dataKey="avg" name="Rolling Avg" stroke="var(--color-success)" strokeWidth={3} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
+            )}
           </motion.div>
 
           {userRole === 'Project Manager' && (
