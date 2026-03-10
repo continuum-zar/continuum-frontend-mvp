@@ -183,8 +183,8 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Row 1: KPI Velocity Cards */}
-      {userRole === 'Project Manager' && (
+      {/* Row 1: KPI Velocity Cards (requires single project) */}
+      {userRole === 'Project Manager' && selectedProject !== 'all' && (
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
           variants={container}
@@ -258,8 +258,13 @@ export function Dashboard() {
         </motion.div>
       )}
 
-      {/* Row 2: Charts (Velocity & Burndown) */}
-      {userRole !== 'Client' && (
+      {/* Row 2: Charts (Velocity & Burndown) — require single project */}
+      {userRole !== 'Client' && selectedProject === 'all' && (
+        <div className="mb-6 rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
+          Select a project to view velocity, burndown, and other metrics.
+        </div>
+      )}
+      {userRole !== 'Client' && selectedProject !== 'all' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -314,8 +319,8 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Row 3: User Rhythm Heatmap & Diagnostics */}
-      {userRole !== 'Client' && (
+      {/* Row 3: User Rhythm Heatmap & Diagnostics (requires single project) */}
+      {userRole !== 'Client' && selectedProject !== 'all' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
           {/* Heatmap */}
@@ -454,8 +459,8 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Row 4: Git Contribution & Stale Work */}
-      {userRole === 'Project Manager' && (
+      {/* Row 4: Git Contribution & Stale Work (requires single project) */}
+      {userRole === 'Project Manager' && selectedProject !== 'all' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Git Donut */}
