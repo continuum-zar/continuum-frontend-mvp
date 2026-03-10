@@ -1,7 +1,16 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
+import { toast } from 'sonner';
 import { useAllTasks } from '@/api/hooks';
 import type { TaskOption } from '@/api/projects';
-
+import {
+    getActiveWorkSession,
+    createWorkSession,
+    pauseWorkSession,
+    resumeWorkSession,
+    stopWorkSession,
+    fetchLoggedHours,
+    type LoggedHourAPIResponse,
+} from '@/api/workSessions';
 export interface TimeEntry {
     id: string;
     project: string;
@@ -9,6 +18,18 @@ export interface TimeEntry {
     description?: string;
     duration: number;
     date: string;
+}
+
+function mapLoggedHourToEntry(r: LoggedHourAPIResponse): TimeEntry {
+    const date = r.date ?? (r.logged_at ? r.logged_at.split('T')[0] : '');
+    return {
+        id: String(r.id),
+        project: r.project_name ?? r.project ?? '',
+        task: r.task_title ?? r.task ?? '',
+        description: r.description ?? undefined,
+        duration: r.duration_minutes ?? r.duration ?? 0,
+        date,
+    };
 }
 
 const initialTimeEntries: TimeEntry[] = [
@@ -36,6 +57,20 @@ interface LogForm {
     description: string;
 }
 
+/** Normalize API error to a single message for toasts. */
+function getApiErrorMessage(err: unknown, fallback: string): string {
+    const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
+    const detail = data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+        const messages = detail
+            .map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d)))
+            .filter(Boolean);
+        return messages.length > 0 ? messages.join('. ') : fallback;
+    }
+    return fallback;
+}
+
 interface TimeTrackingContextProps {
     entries: TimeEntry[];
     setEntries: React.Dispatch<React.SetStateAction<TimeEntry[]>>;
@@ -43,6 +78,8 @@ interface TimeTrackingContextProps {
     setSessionState: React.Dispatch<React.SetStateAction<SessionState>>;
     currentTime: number;
     setCurrentTime: React.Dispatch<React.SetStateAction<number>>;
+    /** Current work session id from backend (for pause/resume/stop). */
+    activeSessionId: string | null;
     /** Tasks from GET /api/v1/tasks (all user projects). id as string for Select value. */
     tasks: TaskOption[];
     tasksLoading: boolean;
@@ -57,9 +94,18 @@ interface TimeTrackingContextProps {
     setLogForm: React.Dispatch<React.SetStateAction<LogForm>>;
     isAiGenerating: boolean;
     simulateAiGeneration: () => void;
-    handleLogSubmit: () => void;
+    /** Start a new work session (POST work-sessions). */
+    handleStart: () => Promise<void>;
+    /** Pause the active session (POST work-sessions/{id}/pause). */
+    handlePause: () => Promise<void>;
+    /** Resume the active session (POST work-sessions/{id}/resume). */
+    handleResume: () => Promise<void>;
+    handleLogSubmit: () => Promise<void>;
     handleLogCancel: () => void;
+    /** Open Log Time Session modal (timer pauses until user logs or cancels). */
     handleStop: () => void;
+    /** Whether a start/pause/resume/stop request is in flight. */
+    isSessionActionLoading: boolean;
 }
 
 const TimeTrackingContext = createContext<TimeTrackingContextProps | undefined>(undefined);
@@ -71,7 +117,9 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     const [entries, setEntries] = useState<TimeEntry[]>(initialTimeEntries);
     const [sessionState, setSessionState] = useState<SessionState>('idle');
     const [currentTime, setCurrentTime] = useState(0);
+    const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
     const [selectedTaskId, setSelectedTaskId] = useState('');
+    const [isSessionActionLoading, setIsSessionActionLoading] = useState(false);
 
     // Default to first task when tasks load and none selected
     useEffect(() => {
@@ -90,6 +138,31 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     const [logForm, setLogForm] = useState<LogForm>({ task: '', description: '' });
     const [isAiGenerating, setIsAiGenerating] = useState(false);
 
+    // On mount: fetch active work session and restore state; load entries from API
+    useEffect(() => {
+        let cancelled = false;
+        getActiveWorkSession()
+            .then((session) => {
+                if (cancelled || !session) return;
+                setActiveSessionId(session.id);
+                setSessionState(session.status === 'ACTIVE' ? 'running' : 'paused');
+                setCurrentTime(session.current_duration_seconds ?? 0);
+                if (session.task_id != null && session.task_id !== undefined) {
+                    setSelectedTaskId(String(session.task_id));
+                }
+            })
+            .catch(() => {});
+        fetchLoggedHours()
+            .then((list) => {
+                if (!cancelled && list.length > 0) {
+                    setEntries(list.map(mapLoggedHourToEntry));
+                }
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, []);
+
+    // Local timer: increment every second when running
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
         if (sessionState === 'running') {
@@ -99,6 +172,83 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         }
         return () => clearInterval(interval);
     }, [sessionState]);
+
+    // Periodic sync with backend when running (avoid drift)
+    useEffect(() => {
+        if (sessionState !== 'running' || !activeSessionId) return;
+        const syncInterval = setInterval(() => {
+            getActiveWorkSession()
+                .then((session) => {
+                if (session?.id === activeSessionId && session.status === 'ACTIVE') {
+                    setCurrentTime(session.current_duration_seconds ?? 0);
+                }
+            })
+                .catch(() => {});
+        }, 30_000);
+        return () => clearInterval(syncInterval);
+    }, [sessionState, activeSessionId]);
+
+    const refetchEntries = useCallback(() => {
+        fetchLoggedHours()
+            .then((list) => {
+                if (list.length > 0) {
+                    setEntries(list.map(mapLoggedHourToEntry));
+                }
+            })
+            .catch(() => {});
+    }, []);
+
+    const handleStart = useCallback(async () => {
+        const task = selectedTask ?? tasks[0];
+        if (!task?.project_id) {
+            toast.error('Select a task with a project to start a session.');
+            return;
+        }
+        setIsSessionActionLoading(true);
+        try {
+            const taskIdNum = task.id ? Number(task.id) : NaN;
+            const data = await createWorkSession({
+                project_id: task.project_id,
+                ...(Number.isFinite(taskIdNum) && { task_id: taskIdNum }),
+                note: undefined,
+            });
+            setActiveSessionId(data.id);
+            setSessionState('running');
+            setCurrentTime(data.current_duration_seconds ?? 0);
+        } catch (err) {
+            toast.error(getApiErrorMessage(err, 'Failed to start session. You may already have an active session.'));
+        } finally {
+            setIsSessionActionLoading(false);
+        }
+    }, [selectedTask, tasks]);
+
+    const handlePause = useCallback(async () => {
+        if (!activeSessionId) return;
+        setIsSessionActionLoading(true);
+        try {
+            const data = await pauseWorkSession(activeSessionId);
+            setSessionState('paused');
+            setCurrentTime(data.current_duration_seconds ?? 0);
+        } catch (err) {
+            toast.error(getApiErrorMessage(err, 'Failed to pause session.'));
+        } finally {
+            setIsSessionActionLoading(false);
+        }
+    }, [activeSessionId]);
+
+    const handleResume = useCallback(async () => {
+        if (!activeSessionId) return;
+        setIsSessionActionLoading(true);
+        try {
+            const data = await resumeWorkSession(activeSessionId);
+            setSessionState('running');
+            setCurrentTime(data.current_duration_seconds ?? 0);
+        } catch (err) {
+            toast.error(getApiErrorMessage(err, 'Failed to resume session.'));
+        } finally {
+            setIsSessionActionLoading(false);
+        }
+    }, [activeSessionId]);
 
     const handleStop = () => {
         setSessionState('paused'); // Pause the timer while logging
@@ -116,25 +266,26 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         }, 1500); // 1.5s simulated backend delay
     };
 
-    const handleLogSubmit = () => {
-        const activeTask = selectedTask ?? tasks[0];
-        if (!activeTask) return;
-
-        const newEntry: TimeEntry = {
-            id: `e${Date.now()}`,
-            project: activeTask.project,
-            task: activeTask.title,
-            description: logForm.description,
-            duration: Math.max(1, Math.floor(currentTime / 60)), // Convert seconds to minutes, min 1
-            date: new Date().toISOString().split('T')[0],
-        };
-
-        setEntries([newEntry, ...entries]);
-        setIsLoggingModalOpen(false);
-        setSessionState('idle');
-        setCurrentTime(0);
-        setLogForm({ task: '', description: '' });
-    };
+    const handleLogSubmit = useCallback(async () => {
+        if (!activeSessionId) {
+            toast.error('No active session to log.');
+            return;
+        }
+        setIsSessionActionLoading(true);
+        try {
+            await stopWorkSession(activeSessionId, { note: logForm.description || undefined });
+            setIsLoggingModalOpen(false);
+            setSessionState('idle');
+            setCurrentTime(0);
+            setActiveSessionId(null);
+            setLogForm({ task: '', description: '' });
+            refetchEntries();
+        } catch (err) {
+            toast.error(getApiErrorMessage(err, 'Failed to log session.'));
+        } finally {
+            setIsSessionActionLoading(false);
+        }
+    }, [activeSessionId, logForm.description, refetchEntries]);
 
     const handleLogCancel = () => {
         setIsLoggingModalOpen(false);
@@ -150,6 +301,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
                 setSessionState,
                 currentTime,
                 setCurrentTime,
+                activeSessionId,
                 tasks,
                 tasksLoading,
                 tasksError,
@@ -162,9 +314,13 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
                 setLogForm,
                 isAiGenerating,
                 simulateAiGeneration,
+                handleStart,
+                handlePause,
+                handleResume,
                 handleLogSubmit,
                 handleLogCancel,
                 handleStop,
+                isSessionActionLoading,
             }}
         >
             {children}
