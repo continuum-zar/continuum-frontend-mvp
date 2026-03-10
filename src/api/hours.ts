@@ -9,10 +9,11 @@ export interface UserHoursResponse {
 /** GET /api/v1/users/me/hours/by-day - hours broken down by day. */
 export interface DailyHoursItem {
     date: string;
-    hours: number;
+    hours: number; // hours for that day
 }
 
 export interface UserHoursByDayResponse {
+    /** Total in minutes (same as /users/me/hours) when present. */
     total_hours?: number;
     daily_hours?: DailyHoursItem[];
 }
@@ -31,6 +32,14 @@ export async function fetchUserHoursByDay(startDate: string, endDate: string): P
     return data ?? {};
 }
 
+/** Format a Date as local YYYY-MM-DD (no UTC conversion). */
+function toLocalDateString(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 /** Current week Monday 00:00 to Sunday 23:59 in local time (ISO date strings for API). */
 export function getCurrentWeekRange(): { start: string; end: string } {
     const now = new Date();
@@ -43,8 +52,8 @@ export function getCurrentWeekRange(): { start: string; end: string } {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
     return {
-        start: monday.toISOString().slice(0, 10),
-        end: sunday.toISOString().slice(0, 10),
+        start: toLocalDateString(monday),
+        end: toLocalDateString(sunday),
     };
 }
 
@@ -54,8 +63,8 @@ export function getCurrentMonthRange(): { start: string; end: string } {
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return {
-        start: start.toISOString().slice(0, 10),
-        end: end.toISOString().slice(0, 10),
+        start: toLocalDateString(start),
+        end: toLocalDateString(end),
     };
 }
 

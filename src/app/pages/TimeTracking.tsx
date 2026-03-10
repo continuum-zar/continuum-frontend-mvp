@@ -86,10 +86,11 @@ export function TimeTracking() {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // This Week: sum of daily_hours for the week, or total_hours from by-day response
+  // This Week: total_hours from by-day (minutes, same as /hours) → hours, or sum of daily_hours[].hours
   const totalWeekHours =
-    weekByDay?.total_hours ??
-    (weekByDay?.daily_hours?.length ? weekByDay.daily_hours.reduce((sum, d) => sum + d.hours, 0) : 0);
+    weekByDay?.total_hours != null
+      ? weekByDay.total_hours / 60
+      : (weekByDay?.daily_hours?.length ? weekByDay.daily_hours.reduce((sum, d) => sum + d.hours, 0) : 0);
   const weekChartData = (() => {
     const byDate = new Map(
       (weekByDay?.daily_hours ?? []).map((d) => [d.date.slice(0, 10), d.hours])
