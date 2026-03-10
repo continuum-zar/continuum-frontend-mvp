@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
+import { useProjects } from '@/api';
 import {
   Bar,
   LineChart,
@@ -142,6 +143,9 @@ export function Dashboard() {
   const [rhythmMember, setRhythmMember] = useState("all");
   const [snapshotMember, setSnapshotMember] = useState("all");
   const [chatMessage, setChatMessage] = useState("");
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects();
+
+  const hasProjects = projects.length > 0;
 
   return (
     <div className="p-8 pb-20">
@@ -153,15 +157,21 @@ export function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Select value={selectedProject} onValueChange={setSelectedProject}>
+          <Select
+            value={selectedProject}
+            onValueChange={setSelectedProject}
+            disabled={projectsLoading || projectsError || !hasProjects}
+          >
             <SelectTrigger className="w-[200px] border-border bg-card">
-              <SelectValue placeholder="Select project" />
+              <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Select project'} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Projects</SelectItem>
-              <SelectItem value="1">Alpha Redesign</SelectItem>
-              <SelectItem value="2">Beta Launch</SelectItem>
-              <SelectItem value="3">Gamma Migration</SelectItem>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.title}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           {userRole !== 'Client' && (
