@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import {
@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport } from '@/api';
+import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown } from '@/api';
 import {
   Bar,
   LineChart,
@@ -48,17 +48,6 @@ import {
 } from 'recharts';
 
 // --- MOCK DATA ---
-
-// 2. Milestone Burndown
-const burndownData = [
-  { date: 'Feb 01', actual: 120, ideal: 120 },
-  { date: 'Feb 05', actual: 105, ideal: 100 },
-  { date: 'Feb 10', actual: 95, ideal: 80 },
-  { date: 'Feb 15', actual: 65, ideal: 60 },
-  { date: 'Feb 20', actual: 45, ideal: 40 },
-  { date: 'Feb 25', actual: null, ideal: 20 },
-  { date: 'Mar 01', actual: null, ideal: 0 },
-];
 
 // 3. Git Contribution Breakdown
 const gitCommitsData = [
@@ -132,6 +121,7 @@ const getHeatmapColor = (value: number) => {
 export function Dashboard() {
   const { role: userRole } = useRole();
   const [selectedProject, setSelectedProject] = useState("all");
+  const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
   const [rhythmMember, setRhythmMember] = useState("all");
   const [snapshotMember, setSnapshotMember] = useState("all");
   const [chatMessage, setChatMessage] = useState("");
@@ -153,6 +143,44 @@ export function Dashboard() {
   const unassignedCount = health?.unassigned_count ?? 0;
 
   const hasProjects = projects.length > 0;
+
+  const { data: milestones = [] } = useProjectMilestones(selectedProject !== 'all' ? selectedProject : undefined);
+  const activeMilestoneId = useMemo(() => {
+    if (milestones.length === 0) return null;
+    const active = milestones.find((m) => m.status === 'active');
+    return active ? active.id : milestones[0].id;
+  }, [milestones]);
+  const milestoneId = selectedMilestone ?? activeMilestoneId;
+  useEffect(() => {
+    if (activeMilestoneId != null && selectedMilestone === null) setSelectedMilestone(activeMilestoneId);
+    if (milestones.length === 0) setSelectedMilestone(null);
+  }, [activeMilestoneId, selectedMilestone, milestones.length]);
+
+  const { data: burndown, isLoading: burndownLoading, isError: burndownError } = useQuery({
+    queryKey: ['milestone-burndown', milestoneId],
+    queryFn: () => fetchMilestoneBurndown(milestoneId!),
+    enabled: !!milestoneId && userRole === 'Project Manager',
+  });
+
+  const burndownChartData = useMemo(() => {
+    if (!burndown?.series?.length) return [];
+    const total = burndown.total_scope_points ?? 0;
+    const dueDate = burndown.due_date ? new Date(burndown.due_date).getTime() : null;
+    const idealSeries = burndown.ideal_series?.length ? burndown.ideal_series : null;
+    return burndown.series.map((point, i) => {
+      const dateLabel = new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+      let ideal: number | null = null;
+      if (idealSeries && idealSeries[i]?.ideal_scope_points != null) {
+        ideal = idealSeries[i].ideal_scope_points;
+      } else if (dueDate && total > 0) {
+        const start = new Date(burndown.series[0].date).getTime();
+        const elapsed = new Date(point.date).getTime() - start;
+        const totalDuration = dueDate - start;
+        ideal = totalDuration > 0 ? Math.max(0, total - (elapsed / totalDuration) * total) : total;
+      }
+      return { date: dateLabel, actual: point.remaining_scope_points, ideal };
+    });
+  }, [burndown]);
 
   const { data: velocityReport, isLoading: velocityLoading, isError: velocityError } = useQuery({
     queryKey: ['velocity-report', selectedProject],
@@ -340,12 +368,37 @@ export function Dashboard() {
               transition={{ delay: 0.1 }}
               className="bg-card border border-border rounded-lg p-6"
             >
-              <div className="mb-4">
-                <h3 className="mb-1">Milestone Burndown</h3>
-                <p className="text-sm text-muted-foreground">Remaining scope points towards deadline</p>
+              <div className="mb-4 flex justify-between items-start">
+                <div>
+                  <h3 className="mb-1">Milestone Burndown</h3>
+                  <p className="text-sm text-muted-foreground">Remaining scope points towards deadline</p>
+                </div>
+                {milestones.length > 1 && (
+                  <Select value={milestoneId ?? ''} onValueChange={(v) => setSelectedMilestone(v || null)}>
+                    <SelectTrigger className="w-[180px] h-8 text-xs border-border bg-card">
+                      <SelectValue placeholder="Milestone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {milestones.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
+              {selectedProject === 'all' ? (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Select a project to view burndown</div>
+              ) : burndownLoading ? (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Loading burndown...</div>
+              ) : burndownError ? (
+                <div className="h-[300px] flex items-center justify-center text-destructive text-sm">Failed to load burndown</div>
+              ) : milestones.length === 0 ? (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">No milestones yet</div>
+              ) : burndownChartData.length === 0 ? (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">No burndown data yet</div>
+              ) : (
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={burndownData}>
+                <LineChart data={burndownChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                   <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis yAxisId="left" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
@@ -357,6 +410,7 @@ export function Dashboard() {
                   <Line yAxisId="left" type="monotone" dataKey="actual" name="Actual Remaining" stroke="var(--color-destructive)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
+              )}
             </motion.div>
           )}
         </div>
