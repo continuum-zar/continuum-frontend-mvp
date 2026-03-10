@@ -27,17 +27,6 @@ export const myTasks = [
     { id: 't5', title: 'Optimize React component renders', project: 'Mobile App Redesign' },
 ];
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const weeklyData = [
-    { day: 'Mon', hours: 6.5 },
-    { day: 'Tue', hours: 7.2 },
-    { day: 'Wed', hours: 5.8 },
-    { day: 'Thu', hours: 8.1 },
-    { day: 'Fri', hours: 6.3 },
-    { day: 'Sat', hours: 2.0 },
-    { day: 'Sun', hours: 0 },
-];
-
 type SessionState = 'idle' | 'running' | 'paused';
 
 interface LogForm {
