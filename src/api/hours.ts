@@ -33,7 +33,7 @@ export async function fetchUserHoursByDay(startDate: string, endDate: string): P
 }
 
 /** Format a Date as local YYYY-MM-DD (no UTC conversion). */
-function toLocalDateString(d: Date): string {
+export function toLocalDateString(d: Date): string {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -42,11 +42,16 @@ function toLocalDateString(d: Date): string {
 
 /** Current week Monday 00:00 to Sunday 23:59 in local time (ISO date strings for API). */
 export function getCurrentWeekRange(): { start: string; end: string } {
+    return getWeekRangeAtOffset(0);
+}
+
+/** Week range for offset from current week. 0 = this week, -1 = last week, etc. (Mon–Sun). */
+export function getWeekRangeAtOffset(offsetWeeks: number): { start: string; end: string } {
     const now = new Date();
     const day = now.getDay();
     const mondayOffset = day === 0 ? -6 : 1 - day;
     const monday = new Date(now);
-    monday.setDate(now.getDate() + mondayOffset);
+    monday.setDate(now.getDate() + mondayOffset + offsetWeeks * 7);
     monday.setHours(0, 0, 0, 0);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
@@ -55,6 +60,11 @@ export function getCurrentWeekRange(): { start: string; end: string } {
         start: toLocalDateString(monday),
         end: toLocalDateString(sunday),
     };
+}
+
+/** Last week (Mon–Sun) as start/end date strings. */
+export function getLastWeekRange(): { start: string; end: string } {
+    return getWeekRangeAtOffset(-1);
 }
 
 /** First and last day of current month (local) as ISO date strings. */

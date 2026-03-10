@@ -37,13 +37,16 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTimeTracking } from '../context/TimeTrackingContext';
 import { useProjects } from '@/api/hooks';
 import {
   getCurrentWeekRange,
+  getWeekRangeAtOffset,
   getCurrentMonthRange,
   getDaysElapsedInMonth,
+  toLocalDateString,
   useUserHours,
   useUserHoursByDay,
 } from '@/api/hours';
@@ -57,9 +60,12 @@ function formatDuration(minutes: number): string {
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export function TimeTracking() {
-  const weekRange = getCurrentWeekRange();
+  const [weekOffset, setWeekOffset] = useState<number>(0); // 0 = this week, -1 = last week
+  const currentWeekRange = getCurrentWeekRange();
+  const weekRange = getWeekRangeAtOffset(weekOffset);
   const monthRange = getCurrentMonthRange();
   const { data: monthHours, isLoading: monthLoading } = useUserHours(monthRange.start, monthRange.end);
+  const { data: currentWeekByDay, isLoading: currentWeekLoading } = useUserHoursByDay(currentWeekRange.start, currentWeekRange.end);
   const { data: weekByDay, isLoading: weekLoading } = useUserHoursByDay(weekRange.start, weekRange.end);
 
   const {
@@ -102,11 +108,12 @@ export function TimeTracking() {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // This Week: total_hours from by-day (minutes, same as /hours) → hours, or sum of daily_hours[].hours
+  // This Week (stat card): always current week
   const totalWeekHours =
-    weekByDay?.total_hours != null
-      ? weekByDay.total_hours / 60
-      : (weekByDay?.daily_hours?.length ? weekByDay.daily_hours.reduce((sum, d) => sum + d.hours, 0) : 0);
+    currentWeekByDay?.total_hours != null
+      ? currentWeekByDay.total_hours / 60
+      : (currentWeekByDay?.daily_hours?.length ? currentWeekByDay.daily_hours.reduce((sum, d) => sum + d.hours, 0) : 0);
+  // Chart: selected week from GET /api/v1/users/me/hours/by-day; map to { day, hours }[], fill missing days with 0
   const weekChartData = (() => {
     const byDate = new Map(
       (weekByDay?.daily_hours ?? []).map((d) => [d.date.slice(0, 10), d.hours])
@@ -115,7 +122,7 @@ export function TimeTracking() {
     return WEEKDAY_LABELS.map((day, i) => {
       const d = new Date(startDate);
       d.setDate(startDate.getDate() + i);
-      const key = d.toISOString().slice(0, 10);
+      const key = toLocalDateString(d);
       return { day, hours: byDate.get(key) ?? 0 };
     });
   })();
@@ -126,7 +133,7 @@ export function TimeTracking() {
   const dailyAverageHours =
     daysElapsed > 0 && totalMonthMinutes != null ? totalMonthMinutes / 60 / daysElapsed : null;
 
-  const statsLoading = weekLoading || monthLoading;
+  const statsLoading = currentWeekLoading || monthLoading;
 
   return (
     <div className="p-8">
@@ -345,7 +352,7 @@ export function TimeTracking() {
         </DialogContent>
       </Dialog>
 
-      {/* Weekly Chart */}
+      {/* Weekly Chart - GET /api/v1/users/me/hours/by-day for selected week */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -357,26 +364,47 @@ export function TimeTracking() {
             <h3 className="mb-1">Weekly Overview</h3>
             <p className="text-sm text-muted-foreground">Hours tracked per day</p>
           </div>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select
+              value={String(weekOffset)}
+              onValueChange={(v) => setWeekOffset(Number(v))}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">This week</SelectItem>
+                <SelectItem value="-1">Last week</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+          </div>
         </div>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={weekChartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-            <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} />
-            <YAxis stroke="var(--color-muted-foreground)" fontSize={12} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'var(--color-card)',
-                border: '1px solid var(--color-border)',
-                borderRadius: '6px',
-              }}
-            />
-            <Bar dataKey="hours" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {weekLoading ? (
+          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin mr-2" />
+            <span className="text-sm">Loading hours...</span>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={weekChartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+              <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} />
+              <YAxis stroke="var(--color-muted-foreground)" fontSize={12} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--color-card)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '6px',
+                }}
+              />
+              <Bar dataKey="hours" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </motion.div>
 
       {/* Time Entries Table */}
