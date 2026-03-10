@@ -38,7 +38,14 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useTimeTracking, weeklyData } from '../context/TimeTrackingContext';
+import { useTimeTracking } from '../context/TimeTrackingContext';
+import {
+  getCurrentWeekRange,
+  getCurrentMonthRange,
+  getDaysElapsedInMonth,
+  useUserHours,
+  useUserHoursByDay,
+} from '@/api/hours';
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -46,7 +53,14 @@ function formatDuration(minutes: number): string {
   return `${hours}h ${mins}m`;
 }
 
+const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 export function TimeTracking() {
+  const weekRange = getCurrentWeekRange();
+  const monthRange = getCurrentMonthRange();
+  const { data: monthHours, isLoading: monthLoading } = useUserHours(monthRange.start, monthRange.end);
+  const { data: weekByDay, isLoading: weekLoading } = useUserHoursByDay(weekRange.start, weekRange.end);
+
   const {
     entries,
     sessionState,
@@ -78,8 +92,31 @@ export function TimeTracking() {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const totalWeekHours = weeklyData.reduce((sum, day) => sum + day.hours, 0);
-  const totalMonthMinutes = entries.reduce((sum, entry) => sum + entry.duration, 0);
+  // This Week: total_hours from by-day (minutes, same as /hours) → hours, or sum of daily_hours[].hours
+  const totalWeekHours =
+    weekByDay?.total_hours != null
+      ? weekByDay.total_hours / 60
+      : (weekByDay?.daily_hours?.length ? weekByDay.daily_hours.reduce((sum, d) => sum + d.hours, 0) : 0);
+  const weekChartData = (() => {
+    const byDate = new Map(
+      (weekByDay?.daily_hours ?? []).map((d) => [d.date.slice(0, 10), d.hours])
+    );
+    const startDate = new Date(weekRange.start + 'T00:00:00');
+    return WEEKDAY_LABELS.map((day, i) => {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      return { day, hours: byDate.get(key) ?? 0 };
+    });
+  })();
+
+  // This Month: total_hours from /users/me/hours (assumed in minutes for formatDuration)
+  const totalMonthMinutes = monthHours?.total_hours ?? 0;
+  const daysElapsed = getDaysElapsedInMonth();
+  const dailyAverageHours =
+    daysElapsed > 0 && totalMonthMinutes != null ? totalMonthMinutes / 60 / daysElapsed : null;
+
+  const statsLoading = weekLoading || monthLoading;
 
   return (
     <div className="p-8">
@@ -101,7 +138,13 @@ export function TimeTracking() {
               <Clock className="h-5 w-5 text-foreground" />
             </div>
           </div>
-          <div className="text-2xl font-semibold mb-1">{totalWeekHours.toFixed(1)}h</div>
+          <div className="text-2xl font-semibold mb-1">
+            {statsLoading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            ) : (
+              `${totalWeekHours.toFixed(1)}h`
+            )}
+          </div>
           <div className="text-sm text-muted-foreground">This Week</div>
         </div>
 
@@ -111,7 +154,13 @@ export function TimeTracking() {
               <Calendar className="h-5 w-5 text-foreground" />
             </div>
           </div>
-          <div className="text-2xl font-semibold mb-1">{formatDuration(totalMonthMinutes)}</div>
+          <div className="text-2xl font-semibold mb-1">
+            {statsLoading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            ) : (
+              formatDuration(totalMonthMinutes)
+            )}
+          </div>
           <div className="text-sm text-muted-foreground">This Month</div>
         </div>
 
@@ -121,7 +170,15 @@ export function TimeTracking() {
               <TrendingUp className="h-5 w-5 text-foreground" />
             </div>
           </div>
-          <div className="text-2xl font-semibold mb-1">6.8h</div>
+          <div className="text-2xl font-semibold mb-1">
+            {statsLoading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            ) : dailyAverageHours != null ? (
+              `${dailyAverageHours.toFixed(1)}h`
+            ) : (
+              '—'
+            )}
+          </div>
           <div className="text-sm text-muted-foreground">Daily Average</div>
         </div>
       </motion.div>
@@ -286,7 +343,7 @@ export function TimeTracking() {
           </Button>
         </div>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={weeklyData}>
+          <BarChart data={weekChartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
             <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} />
             <YAxis stroke="var(--color-muted-foreground)" fontSize={12} />

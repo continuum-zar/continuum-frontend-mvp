@@ -21,14 +21,12 @@ const initialTimeEntries: TimeEntry[] = [
 ];
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const weeklyData = [
-    { day: 'Mon', hours: 6.5 },
-    { day: 'Tue', hours: 7.2 },
-    { day: 'Wed', hours: 5.8 },
-    { day: 'Thu', hours: 8.1 },
-    { day: 'Fri', hours: 6.3 },
-    { day: 'Sat', hours: 2.0 },
-    { day: 'Sun', hours: 0 },
+export const myTasks = [
+    { id: 't1', title: 'Implement dark mode toggle', project: 'Mobile App Redesign' },
+    { id: 't2', title: 'Refactor Time Tracking widget', project: 'Dashboard v2' },
+    { id: 't3', title: 'Write tests for routing logic', project: 'Dashboard v2' },
+    { id: 't4', title: 'Deploy staging environment', project: 'Marketing Website' },
+    { id: 't5', title: 'Optimize React component renders', project: 'Mobile App Redesign' },
 ];
 
 type SessionState = 'idle' | 'running' | 'paused';
