@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchTaskAttachments, uploadTaskAttachment, deleteAttachment } from "./projects";
 import { toast } from 'sonner';
 import {
     fetchProjects,
@@ -226,6 +227,45 @@ export function usePostComment(taskId: number | string | undefined | null) {
         },
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to post comment'));
+        },
+    });
+}
+
+// Attachment keys
+const taskAttachmentsKey = (taskId: number | string) => ['taskAttachments', taskId] as const;
+
+export function useTaskAttachments(taskId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: taskAttachmentsKey(taskId!),
+        queryFn: () => fetchTaskAttachments(taskId!),
+        enabled: taskId != null && taskId !== '',
+    });
+}
+
+export function useUploadAttachment(taskId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (file: File) => uploadTaskAttachment(taskId!, file),
+        onSuccess: () => {
+            if (taskId != null && taskId !== '') queryClient.invalidateQueries({ queryKey: taskAttachmentsKey(taskId!) });
+            toast.success('Attachment uploaded successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to upload attachment'));
+        },
+    });
+}
+
+export function useDeleteAttachment(taskId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (attachmentId: number | string) => deleteAttachment(attachmentId),
+        onSuccess: () => {
+            if (taskId != null && taskId !== '') queryClient.invalidateQueries({ queryKey: taskAttachmentsKey(taskId!) });
+            toast.success('Attachment deleted successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to delete attachment'));
         },
     });
 }

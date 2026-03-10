@@ -1,4 +1,5 @@
 import { formatDistanceToNow } from 'date-fns';
+import type { AttachmentAPIResponse, Attachment } from "@/types/attachment";
 import type { ProjectAPIResponse, Project } from '@/types/project';
 import type { ProjectDetailAPIResponse, ProjectDetail } from '@/types/project';
 import type { TaskAPIResponse, Task, TaskStatus } from '@/types/task';
@@ -105,5 +106,24 @@ export function mapMember(m: MemberAPIResponse): Member {
         email,
         role: m.role ?? 'member',
         initials,
+    };
+}
+
+function formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+export function mapAttachment(a: AttachmentAPIResponse): Attachment {
+    return {
+        id: String(a.id),
+        filename: a.original_filename,
+        size: formatFileSize(a.file_size),
+        mimeType: a.mime_type,
+        createdAt: formatDistanceToNow(new Date(a.created_at), { addSuffix: true }),
+        uploadedBy: a.uploaded_by?.display_name || a.uploaded_by?.username,
     };
 }

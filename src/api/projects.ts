@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { AttachmentAPIResponse } from "@/types/attachment";
 import type { CommentAPIResponse } from '@/types/comment';
 import type { ProjectAPIResponse, ProjectDetailAPIResponse } from '@/types/project';
 import type { TaskAPIResponse } from '@/types/task';
@@ -164,4 +165,33 @@ export async function fetchTaskComments(taskId: number | string): Promise<Commen
 export async function postTaskComment(taskId: number | string, body: { content: string }): Promise<CommentAPIResponse> {
     const { data } = await api.post<CommentAPIResponse>(`/tasks/${taskId}/comments`, { content: body.content });
     return data;
+}
+
+/** Fetch attachments for a task. Returns raw API attachment objects. */
+export async function fetchTaskAttachments(taskId: number | string): Promise<AttachmentAPIResponse[]> {
+    const { data } = await api.get<AttachmentAPIResponse[]>(`/tasks/${taskId}/attachments`);
+    return data ?? [];
+}
+
+/** Upload an attachment to a task. Returns the created attachment. */
+export async function uploadTaskAttachment(taskId: number | string, file: File): Promise<AttachmentAPIResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const { data } = await api.post<AttachmentAPIResponse>(`/tasks/${taskId}/attachments`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return data;
+}
+
+/** Delete an attachment. */
+export async function deleteAttachment(attachmentId: number | string): Promise<void> {
+    await api.delete(`/attachments/${attachmentId}`);
+}
+
+/** Download an attachment. Returns the download URL. */
+export function getAttachmentDownloadUrl(attachmentId: number | string): string {
+    return `/api/v1/attachments/${attachmentId}/download`;
 }
