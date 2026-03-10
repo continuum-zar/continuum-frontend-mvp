@@ -78,3 +78,35 @@ export async function createLoggedHour(body: CreateLoggedHourBody): Promise<Logg
     });
     return data;
 }
+
+/**
+ * GET /api/v1/logged-hours?format=csv. Downloads CSV with same filters (project_id, start_date, end_date).
+ * Uses response blob and Content-Disposition filename; triggers file download. Throws on error.
+ */
+export async function downloadLoggedHoursCsv(params?: FetchLoggedHoursParams): Promise<void> {
+    const { data: blob, headers } = await api.get<Blob>('/logged-hours', {
+        params: {
+            format: 'csv',
+            ...(params?.project_id != null && params.project_id !== '' && { project_id: params.project_id }),
+            ...(params?.start_date && { start_date: params.start_date }),
+            ...(params?.end_date && { end_date: params.end_date }),
+            ...(params?.limit != null && { limit: params.limit }),
+        },
+        responseType: 'blob',
+    });
+
+    const contentDisposition = headers?.['content-disposition'];
+    let filename = 'logged-hours.csv';
+    if (typeof contentDisposition === 'string') {
+        const match = contentDisposition.match(/filename\*?=(?:UTF-8'')?["']?([^"'\s;]+)["']?/i)
+            ?? contentDisposition.match(/filename=["']?([^"'\s;]+)["']?/i);
+        if (match?.[1]) filename = decodeURIComponent(match[1].trim());
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
