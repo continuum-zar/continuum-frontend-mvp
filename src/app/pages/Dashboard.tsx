@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, fetchClientProjects, fetchClientProjectProgress } from '@/api';
+import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, fetchClientProjects, fetchClientProjectProgress, postProjectQuery } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import {
   Bar,
@@ -86,6 +86,10 @@ export function Dashboard() {
   const [rhythmMember, setRhythmMember] = useState("all");
   const [snapshotMember, setSnapshotMember] = useState("all");
   const [chatMessage, setChatMessage] = useState("");
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
+    { role: 'assistant', content: "Hello! I'm your Continuum assistant. Ask me anything about the project's progress, invoices, or recent activities." },
+  ]);
+  const [chatSending, setChatSending] = useState(false);
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects();
   const user = useAuthStore((s) => s.user);
   const { data: rhythmMembers = [] } = useProjectMembers(
@@ -223,6 +227,26 @@ export function Dashboard() {
   }, [staleWorkResponse]);
 
   const hasProjects = userRole === 'Client' ? clientProjectsList.length > 0 : projects.length > 0;
+
+  const handleSendChat = async () => {
+    const msg = chatMessage.trim();
+    if (!msg) return;
+    if (selectedProject === 'all') {
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Please select a project first.' }]);
+      return;
+    }
+    setChatMessages((prev) => [...prev, { role: 'user', content: msg }]);
+    setChatMessage('');
+    setChatSending(true);
+    try {
+      const res = await postProjectQuery(selectedProject, { query: msg });
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: res.answer ?? 'No response.' }]);
+    } catch {
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Something went wrong. Please try again.' }]);
+    } finally {
+      setChatSending(false);
+    }
+  };
 
   const { data: milestones = [] } = useProjectMilestones(selectedProject !== 'all' ? selectedProject : undefined);
   const activeMilestoneId = useMemo(() => {
@@ -870,12 +894,16 @@ export function Dashboard() {
               <h3 className="font-semibold">Project AI Assistant</h3>
             </div>
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
-              <div className="flex gap-3">
-                <Avatar className="h-8 w-8"><AvatarFallback className="bg-primary/20 text-primary"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
-                <div className="bg-muted p-3 rounded-xl rounded-tl-none text-sm max-w-[85%]">
-                  Hello! I'm your Continuum assistant. Ask me anything about the project's progress, invoices, or recent activities.
+              {chatMessages.map((m, idx) => (
+                <div key={idx} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  {m.role === 'assistant' && (
+                    <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="bg-primary/20 text-primary"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
+                  )}
+                  <div className={`p-3 rounded-xl text-sm max-w-[85%] ${m.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-muted rounded-tl-none'}`}>
+                    {m.content}
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
             <div className="p-4 border-t border-border">
               <div className="relative">
@@ -883,9 +911,11 @@ export function Dashboard() {
                   placeholder="Ask about the project..."
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendChat()}
                   className="pr-10 bg-input-background"
+                  disabled={chatSending}
                 />
-                <Button size="icon" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-primary">
+                <Button size="icon" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-primary" onClick={handleSendChat} disabled={chatSending || !chatMessage.trim()}>
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
