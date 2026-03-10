@@ -4,18 +4,20 @@ export {
     updateProject,
     fetchProject,
     fetchProjectTasks,
+    fetchAllTasks,
     updateTaskStatus,
     fetchMilestones,
     createMilestone,
     fetchMembers,
     addMember,
 } from './projects';
-export type { Project, ProjectDetail, ProjectAPIResponse, Task, TaskStatus, Milestone, Member } from './projects';
+export type { Project, ProjectDetail, ProjectAPIResponse, Task, TaskStatus, TaskOption, Milestone, Member } from './projects';
 export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate } from './mappers';
 export {
     useProjects,
     useProject,
     useProjectTasks,
+    useAllTasks,
     useProjectMilestones,
     useProjectMembers,
     useCreateProject,

@@ -38,7 +38,7 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useTimeTracking, myTasks } from '../context/TimeTrackingContext';
+import { useTimeTracking } from '../context/TimeTrackingContext';
 import {
   getCurrentWeekRange,
   getCurrentMonthRange,
@@ -66,6 +66,10 @@ export function TimeTracking() {
     sessionState,
     setSessionState,
     currentTime,
+    tasks,
+    tasksLoading,
+    tasksError,
+    selectedTask,
     selectedTaskId,
     setSelectedTaskId,
     isLoggingModalOpen,
@@ -78,6 +82,8 @@ export function TimeTracking() {
     handleLogCancel,
     handleStop,
   } = useTimeTracking();
+
+  const canStartSession = Boolean(selectedTask?.project_id != null);
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -191,19 +197,27 @@ export function TimeTracking() {
               {formatTime(currentTime)}
             </div>
             <div className="space-y-2">
-              <Select value={selectedTaskId} onValueChange={setSelectedTaskId} disabled={sessionState !== 'idle'}>
-                <SelectTrigger className="w-80 truncate">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {myTasks.map(task => (
-                    <SelectItem key={task.id} value={task.id} className="cursor-pointer">
-                      <span className="font-medium mr-2">{task.title}</span>
-                      <span className="text-muted-foreground text-xs">({task.project})</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {tasksLoading ? (
+                <div className="h-10 w-80 rounded-md border border-input bg-muted/50 animate-pulse" />
+              ) : tasksError ? (
+                <p className="text-sm text-destructive">Failed to load tasks. Try again later.</p>
+              ) : tasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No tasks yet. Create tasks in a project to track time.</p>
+              ) : (
+                <Select value={selectedTaskId || undefined} onValueChange={setSelectedTaskId} disabled={sessionState !== 'idle'}>
+                  <SelectTrigger className="w-80 truncate">
+                    <SelectValue placeholder="Select a task..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tasks.map(task => (
+                      <SelectItem key={task.id} value={task.id} className="cursor-pointer">
+                        <span className="font-medium mr-2">{task.title}</span>
+                        <span className="text-muted-foreground text-xs">({task.project})</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               {sessionState === 'running' && (
                 <Badge variant="secondary" className="animate-pulse">
                   <div className="w-2 h-2 bg-primary rounded-full mr-2" />
@@ -221,7 +235,7 @@ export function TimeTracking() {
 
           <div className="flex items-center space-x-2">
             {sessionState === 'idle' && (
-              <Button onClick={() => setSessionState('running')}>
+              <Button onClick={() => setSessionState('running')} disabled={!canStartSession}>
                 <Play className="mr-2 h-4 w-4" />
                 Start
               </Button>
@@ -261,12 +275,12 @@ export function TimeTracking() {
             <div className="grid gap-4">
               <div className="space-y-2">
                 <Label>Project</Label>
-                <Input value={myTasks.find(t => t.id === selectedTaskId)?.project || ''} disabled className="bg-muted/50" />
+                <Input value={selectedTask?.project ?? ''} disabled className="bg-muted/50" />
               </div>
               <div className="grid grid-cols-[1fr,auto] gap-4">
                 <div className="space-y-2">
                   <Label>Task</Label>
-                  <Input value={myTasks.find(t => t.id === selectedTaskId)?.title || ''} disabled className="bg-muted/50 truncate" />
+                  <Input value={selectedTask?.title ?? ''} disabled className="bg-muted/50 truncate" />
                 </div>
                 <div className="space-y-2">
                   <Label>Time Tracked</Label>
