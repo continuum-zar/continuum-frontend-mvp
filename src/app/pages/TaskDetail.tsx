@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useLocation, useParams } from 'react-router';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Calendar,
@@ -11,7 +12,7 @@ import {
   CheckCircle2,
   Clock,
   Tag,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -25,8 +26,14 @@ import {
 } from '../components/ui/select';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
-import { fetchTask } from '@/api/projects';
+import {
+  fetchTask,
+  fetchTaskAttachments,
+  uploadTaskAttachment,
+  mapTaskAttachment,
+} from '@/api/projects';
 import type { TaskAPIResponse } from '@/types/task';
+import type { TaskAttachmentItem } from '@/types/task';
 import { formatDueDate } from '@/api/mappers';
 
 const comments = [
@@ -53,12 +60,6 @@ const comments = [
   },
 ];
 
-const attachments = [
-  { id: 1, name: 'landing-page-mockup-v1.fig', size: '2.4 MB', type: 'figma' },
-  { id: 2, name: 'design-specs.pdf', size: '892 KB', type: 'pdf' },
-  { id: 3, name: 'brand-guidelines.pdf', size: '1.2 MB', type: 'pdf' },
-];
-
 const activityLog = [
   { id: 1, user: 'Sarah Chen', action: 'changed status from', from: 'To Do', to: 'In Progress', time: '3 hours ago' },
   { id: 2, user: 'Emma Wilson', action: 'added attachment', detail: 'design-specs.pdf', time: '5 hours ago' },
@@ -72,11 +73,16 @@ function taskStatusToDisplay(s: string): string {
 }
 
 export function TaskDetail() {
-  const navigate = useNavigate();
   const { taskId } = useParams<{ taskId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const state = (location.state as { projectId?: string | number } | undefined) || {};
   const [task, setTask] = useState<TaskAPIResponse | null>(null);
+  const [attachments, setAttachments] = useState<TaskAttachmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [comment, setComment] = useState('');
   const [status, setStatus] = useState('in-progress');
   const [scope, setScope] = useState('L');
@@ -90,24 +96,46 @@ export function TaskDetail() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchTask(taskId)
-      .then((data) => {
-        if (!cancelled) {
-          setTask(data);
-          setStatus(taskStatusToDisplay(data.status ?? 'todo'));
-          setScope((data.scope_weight as 'L') ?? 'L');
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err?.response?.data?.message ?? err?.message ?? 'Failed to load task');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    Promise.all([
+      fetchTask(taskId).catch((err: unknown) => err),
+      fetchTaskAttachments(taskId),
+    ]).then(([taskResult, attachmentList]) => {
+      if (cancelled) return;
+      if (taskResult && !(taskResult instanceof Error) && typeof taskResult === 'object' && 'id' in taskResult) {
+        const t = taskResult as TaskAPIResponse;
+        setTask(t);
+        setStatus(taskStatusToDisplay(t.status ?? 'todo'));
+        setScope((t.scope_weight as 'L') ?? 'L');
+      } else {
+        setTask(null);
+        setError(taskResult instanceof Error ? taskResult.message : 'Failed to load task');
+      }
+      setAttachments((attachmentList ?? []).map(mapTaskAttachment));
+      setLoading(false);
+    });
     return () => { cancelled = true; };
   }, [taskId]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length || !taskId) return;
+    setUploading(true);
+    const fileArray = Array.from(files);
+    for (const file of fileArray) {
+      try {
+        const data = await uploadTaskAttachment(taskId, file);
+        setAttachments((prev) => [...prev, mapTaskAttachment(data)]);
+        toast.success(`Added "${file.name}"`);
+      } catch (err: unknown) {
+        const msg = (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message
+          ?? (err as { message?: string })?.message
+          ?? 'Upload failed';
+        toast.error(`${msg} You can try again on this task page.`);
+      }
+    }
+    setUploading(false);
+    e.target.value = '';
+  };
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +174,7 @@ export function TaskDetail() {
         <div className="p-8">
           <Button
             variant="ghost"
-            onClick={() => navigate(-1)}
+            onClick={() => (state.projectId ? navigate(`/projects/${state.projectId}`) : navigate(-1))}
             className="mb-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -171,7 +199,6 @@ export function TaskDetail() {
                   <MoreVertical className="h-5 w-5" />
                 </Button>
               </div>
-
               <div className="flex items-center space-x-4">
                 {task.project_name ? (
                   <Badge variant="secondary">{task.project_name}</Badge>
@@ -218,29 +245,62 @@ export function TaskDetail() {
             <div className="mb-8 bg-card border border-border rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3>Attachments</h3>
-                <Button variant="outline" size="sm">
-                  <Paperclip className="mr-2 h-4 w-4" />
-                  Add File
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  multiple
+                  accept="*/*"
+                  onChange={handleFileSelect}
+                  disabled={!taskId || uploading}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!taskId || uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Paperclip className="mr-2 h-4 w-4" />
+                      Add File
+                    </>
+                  )}
                 </Button>
               </div>
               <div className="space-y-2">
-                {attachments.map((attachment) => (
-                  <div
-                    key={attachment.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center">
-                        <Paperclip className="h-5 w-5 text-primary" />
+                {attachments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">No attachments yet. Use &quot;Add File&quot; to upload.</p>
+                ) : (
+                  attachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center">
+                          <Paperclip className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{attachment.name}</p>
+                          <p className="text-xs text-muted-foreground">{attachment.size}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{attachment.name}</p>
-                        <p className="text-xs text-muted-foreground">{attachment.size}</p>
-                      </div>
+                      {attachment.url ? (
+                        <a href={attachment.url} target="_blank" rel="noreferrer">
+                          <Button variant="ghost" size="sm">Download</Button>
+                        </a>
+                      ) : (
+                        <Button variant="ghost" size="sm" disabled>Download</Button>
+                      )}
                     </div>
-                    <Button variant="ghost" size="sm">Download</Button>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
