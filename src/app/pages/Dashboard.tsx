@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import {
   ArrowUpRight,
@@ -29,7 +30,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects } from '@/api';
+import { useProjects, fetchClassificationBreakdown } from '@/api';
 import {
   Bar,
   LineChart,
@@ -66,13 +67,6 @@ const burndownData = [
   { date: 'Feb 20', actual: 45, ideal: 40 },
   { date: 'Feb 25', actual: null, ideal: 20 },
   { date: 'Mar 01', actual: null, ideal: 0 },
-];
-
-// 3. Git Contribution Breakdown
-const gitCommitsData = [
-  { name: 'Structural', value: 35, color: '#3b82f6' },  // blue
-  { name: 'Incremental', value: 50, color: '#10b981' }, // emerald
-  { name: 'Trivial', value: 15, color: '#64748b' },     // slate
 ];
 
 // 4. User Rhythm / Productivity Heatmap (Mocked as daily hour buckets for current week)
@@ -144,6 +138,23 @@ export function Dashboard() {
   const [snapshotMember, setSnapshotMember] = useState("all");
   const [chatMessage, setChatMessage] = useState("");
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects();
+
+  const { data: classificationBreakdown, isLoading: classificationLoading, isError: classificationError } = useQuery({
+    queryKey: ['classification-breakdown', selectedProject],
+    queryFn: () => fetchClassificationBreakdown(selectedProject),
+    enabled: selectedProject !== 'all' && userRole === 'Project Manager',
+  });
+
+  const gitCommitsChartData = useMemo(() => {
+    if (!classificationBreakdown) return [];
+    const { structural, incremental, trivial } = classificationBreakdown;
+    return [
+      { name: 'Structural', value: structural ?? 0, color: '#3b82f6' },
+      { name: 'Incremental', value: incremental ?? 0, color: '#10b981' },
+      { name: 'Trivial', value: trivial ?? 0, color: '#64748b' },
+    ].filter((d) => d.value > 0);
+  }, [classificationBreakdown]);
+  const classificationTotal = (classificationBreakdown?.structural ?? 0) + (classificationBreakdown?.incremental ?? 0) + (classificationBreakdown?.trivial ?? 0);
 
   const hasProjects = projects.length > 0;
 
@@ -474,10 +485,20 @@ export function Dashboard() {
             </div>
 
             <div className="h-[250px] relative">
+              {selectedProject === 'all' ? (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">Select a project to view classification</div>
+              ) : classificationLoading ? (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">Loading...</div>
+              ) : classificationError ? (
+                <div className="h-full flex items-center justify-center text-destructive text-sm">Failed to load</div>
+              ) : gitCommitsChartData.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">No commit data yet</div>
+              ) : (
+              <>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={gitCommitsData}
+                    data={gitCommitsChartData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -485,7 +506,7 @@ export function Dashboard() {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {gitCommitsData.map((entry, index) => (
+                    {gitCommitsChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -495,11 +516,12 @@ export function Dashboard() {
                   <Legend verticalAlign="bottom" height={36} iconType="circle" />
                 </PieChart>
               </ResponsiveContainer>
-              {/* Center text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-[-36px]">
-                <span className="text-3xl font-bold">100</span>
+                <span className="text-3xl font-bold">{classificationTotal}</span>
                 <span className="text-xs text-muted-foreground">Total</span>
               </div>
+              </>
+              )}
             </div>
           </motion.div>
 
