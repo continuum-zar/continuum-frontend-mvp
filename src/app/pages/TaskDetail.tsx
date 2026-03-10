@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import {
   ArrowLeft,
-  Calendar,
   User,
   Paperclip,
   MoreVertical,
@@ -12,8 +11,11 @@ import {
   Clock,
   Tag,
   AlertCircle,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { Calendar } from '../components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Badge } from '../components/ui/badge';
 import { Textarea } from '../components/ui/textarea';
 import {
@@ -26,7 +28,8 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate } from '@/api';
+import { fetchTask, formatDueDate, useUpdateTask } from '@/api';
+import type { TaskStatus, TaskStatusAPI, ScopeWeight } from '@/types/task';
 import type { TaskAPIResponse } from '@/types/task';
 
 function TaskDetailSkeleton() {
@@ -71,13 +74,6 @@ function TaskNotFound() {
   );
 }
 
-function formatStatusDisplay(status: string): string {
-  if (status === 'in_progress') return 'In Progress';
-  if (status === 'todo') return 'To Do';
-  if (status === 'done') return 'Done';
-  return status;
-}
-
 export function TaskDetail() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
@@ -88,6 +84,10 @@ export function TaskDetail() {
   const [comment, setComment] = useState('');
   const [status, setStatus] = useState('');
   const [scope, setScope] = useState('');
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  
+  // Initialize the update task mutation
+  const updateTaskMutation = useUpdateTask();
 
   useEffect(() => {
     const loadTask = async () => {
@@ -110,6 +110,9 @@ export function TaskDetail() {
         setTask(taskData);
         setStatus(taskData.status || 'todo');
         setScope(taskData.scope_weight || 'M');
+        if (taskData.due_date) {
+          setDueDate(new Date(taskData.due_date));
+        }
       } catch (err) {
         console.error('Failed to load task:', err);
         setError('Failed to load task. Please try again.');
@@ -134,6 +137,82 @@ export function TaskDetail() {
       navigate(`/projects/${task.project_id}`);
     } else {
       navigate(-1);
+    }
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    // Store previous state for rollback
+    const previousStatus = status;
+    
+    // Optimistic update
+    setStatus(newStatus);
+    
+    // Convert from backend format to frontend format for API
+    const frontendStatus: TaskStatus = newStatus === 'in_progress' ? 'in-progress' : (newStatus as TaskStatusAPI as TaskStatus);
+    
+    // Call API
+    if (taskId && task) {
+      updateTaskMutation.mutate(
+        {
+          taskId,
+          status: frontendStatus,
+        },
+        {
+          onError: () => {
+            // Rollback on error
+            setStatus(previousStatus);
+          },
+        }
+      );
+    }
+  };
+
+  const handleScopeChange = (newScope: string) => {
+    // Store previous state for rollback
+    const previousScope = scope;
+    
+    // Optimistic update
+    setScope(newScope);
+    
+    // Call API
+    if (taskId && task) {
+      updateTaskMutation.mutate(
+        {
+          taskId,
+          scope_weight: newScope as ScopeWeight,
+        },
+        {
+          onError: () => {
+            // Rollback on error
+            setScope(previousScope);
+          },
+        }
+      );
+    }
+  };
+
+  const handleDueDateChange = (date: Date | undefined) => {
+    // Store previous state for rollback
+    const previousDueDate = dueDate;
+    
+    // Optimistic update
+    setDueDate(date);
+    
+    // Call API with ISO string or null
+    if (taskId && task) {
+      const isoDate = date ? date.toISOString().split('T')[0] : null;
+      updateTaskMutation.mutate(
+        {
+          taskId,
+          due_date: isoDate,
+        },
+        {
+          onError: () => {
+            // Rollback on error
+            setDueDate(previousDueDate);
+          },
+        }
+      );
     }
   };
 
@@ -287,7 +366,7 @@ export function TaskDetail() {
         >
           <div>
             <label className="text-sm text-muted-foreground mb-2 block">Status</label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status} onValueChange={handleStatusChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -301,7 +380,7 @@ export function TaskDetail() {
 
           <div>
             <label className="text-sm text-muted-foreground mb-2 block">Scope</label>
-            <Select value={scope} onValueChange={setScope}>
+            <Select value={scope} onValueChange={handleScopeChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -345,7 +424,7 @@ export function TaskDetail() {
 
           <div>
             <div className="flex items-center text-sm text-muted-foreground mb-3">
-              <Calendar className="h-4 w-4 mr-2" />
+              <CalendarIcon className="h-4 w-4 mr-2" />
               Dates
             </div>
             <div className="space-y-2 text-sm">
@@ -361,12 +440,24 @@ export function TaskDetail() {
                   <span>{formatDueDate(task.updated_at)}</span>
                 </div>
               )}
-              {task.due_date && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Due date</span>
-                  <span className="text-warning">{formatDueDate(task.due_date)}</span>
-                </div>
-              )}
+            </div>
+            
+            <div className="mt-4">
+              <label className="text-sm text-muted-foreground block mb-2">Due date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    {dueDate ? formatDueDate(dueDate.toISOString()) : 'Set due date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={handleDueDateChange}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 

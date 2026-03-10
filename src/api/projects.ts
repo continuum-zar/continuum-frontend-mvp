@@ -11,7 +11,7 @@ import {
     mapMember,
 } from '@/api/mappers';
 import type { Project, ProjectDetail } from '@/types/project';
-import type { Task, TaskStatus } from '@/types/task';
+import type { Task, TaskStatus, ScopeWeight } from '@/types/task';
 import type { Milestone } from '@/types/milestone';
 import type { Member } from '@/types/member';
 
@@ -85,6 +85,31 @@ export async function updateTaskStatus(
 /** Fetch a single task by ID. Returns raw API response. */
 export async function fetchTask(taskId: number | string): Promise<TaskAPIResponse> {
     const { data } = await api.get<TaskAPIResponse>(`/tasks/${taskId}`);
+    return data;
+}
+
+/** Update task with multiple fields (status, scope_weight, due_date). Returns updated task from API. */
+export async function updateTask(
+    taskId: number | string,
+    body: {
+        status?: TaskStatus;
+        scope_weight?: ScopeWeight;
+        due_date?: string | null;
+    }
+): Promise<TaskAPIResponse> {
+    const payload: Record<string, TaskStatus | ScopeWeight | string | null> = {};
+    
+    if (body.status !== undefined) {
+        payload.status = body.status === 'in-progress' ? 'in_progress' : body.status;
+    }
+    if (body.scope_weight !== undefined) {
+        payload.scope_weight = body.scope_weight;
+    }
+    if (body.due_date !== undefined) {
+        payload.due_date = body.due_date;
+    }
+    
+    const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
     return data;
 }
 

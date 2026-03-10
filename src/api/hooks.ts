@@ -5,6 +5,7 @@ import {
     fetchProject,
     fetchProjectTasks,
     updateTaskStatus,
+    updateTask,
     fetchMilestones,
     createMilestone,
     fetchMembers,
@@ -12,7 +13,7 @@ import {
     createProject,
     updateProject,
 } from './projects';
-import type { TaskStatus } from '@/types/task';
+import type { TaskStatus, ScopeWeight } from '@/types/task';
 
 /** Normalize FastAPI error detail into a single message. */
 function getApiErrorMessage(err: unknown, fallback: string): string {
@@ -170,6 +171,35 @@ export function useAddMember(projectId: number | string | undefined | null) {
             if (status === 404) message = 'User not found. They must have an account with this email.';
             else if (status === 409) message = 'User is already a member of this project.';
             toast.error(message);
+        },
+    });
+}
+
+
+export function useUpdateTask() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            taskId,
+            status,
+            scope_weight,
+            due_date,
+        }: {
+            taskId: string | number;
+            status?: TaskStatus;
+            scope_weight?: ScopeWeight;
+            due_date?: string | null;
+        }) => updateTask(taskId, { status, scope_weight, due_date }),
+        onSuccess: () => {
+            // Show success toast
+            toast.success('Task updated successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to update task'));
+        },
+        onSettled: () => {
+            // Refetch all project task lists to ensure consistency
+            queryClient.invalidateQueries({ queryKey: projectKeys.all });
         },
     });
 }
