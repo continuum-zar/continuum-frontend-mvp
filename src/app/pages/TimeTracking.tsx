@@ -46,6 +46,7 @@ import {
   getWeekRangeAtOffset,
   getCurrentMonthRange,
   getDaysElapsedInMonth,
+  toLocalDateString,
   useUserHours,
   useUserHoursByDay,
 } from '@/api/hours';
@@ -121,7 +122,7 @@ export function TimeTracking() {
     return WEEKDAY_LABELS.map((day, i) => {
       const d = new Date(startDate);
       d.setDate(startDate.getDate() + i);
-      const key = d.toISOString().slice(0, 10);
+      const key = toLocalDateString(d);
       return { day, hours: byDate.get(key) ?? 0 };
     });
   })();

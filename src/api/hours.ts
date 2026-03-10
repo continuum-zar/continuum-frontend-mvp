@@ -33,7 +33,7 @@ export async function fetchUserHoursByDay(startDate: string, endDate: string): P
 }
 
 /** Format a Date as local YYYY-MM-DD (no UTC conversion). */
-function toLocalDateString(d: Date): string {
+export function toLocalDateString(d: Date): string {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
