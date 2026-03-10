@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import { fetchAllTasks } from './projects';
 
 /** Table row shape for Recent Entries (matches TimeEntry in TimeTrackingContext). */
 export interface LoggedHourEntry {
@@ -118,4 +119,9 @@ export async function downloadLoggedHoursCsv(params?: FetchLoggedHoursParams): P
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+}
+
+/** Tasks for time log dropdown (reuses GET /api/v1/tasks/ list). */
+export async function fetchTasksForTimeLog() {
+    return fetchAllTasks();
 }

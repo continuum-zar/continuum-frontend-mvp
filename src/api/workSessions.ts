@@ -3,7 +3,7 @@ import api from '@/lib/api';
 /** Backend work session status */
 export type WorkSessionStatus = 'ACTIVE' | 'PAUSED';
 
-/** Active work session from GET /api/v1/work-sessions/active */
+/** Active work session from GET /api/v1/work-sessions/active (and pause/resume responses). */
 export interface ActiveWorkSessionResponse {
     id: string;
     status: WorkSessionStatus;
@@ -12,6 +12,9 @@ export interface ActiveWorkSessionResponse {
     task_id?: number | null;
     note?: string | null;
 }
+
+/** Alias for work session from API (active or create response). */
+export type WorkSessionOut = ActiveWorkSessionResponse | WorkSessionCreateResponse;
 
 /** Response from POST /api/v1/work-sessions (create) */
 export interface WorkSessionCreateResponse {
@@ -38,7 +41,7 @@ export interface WorkSessionStopBody {
  * GET /api/v1/work-sessions/active
  * Returns the current user's active work session, or 404 if none.
  */
-export async function getActiveWorkSession(): Promise<ActiveWorkSessionResponse | null> {
+export async function fetchActiveWorkSession(): Promise<ActiveWorkSessionResponse | null> {
     try {
         const { data } = await api.get<ActiveWorkSessionResponse>('/work-sessions/active');
         return data;
@@ -53,7 +56,7 @@ export async function getActiveWorkSession(): Promise<ActiveWorkSessionResponse 
  * POST /api/v1/work-sessions
  * Start a new work session. Fails if user already has an active session.
  */
-export async function createWorkSession(body: WorkSessionCreateBody): Promise<WorkSessionCreateResponse> {
+export async function startWorkSession(body: WorkSessionCreateBody): Promise<WorkSessionCreateResponse> {
     const { data } = await api.post<WorkSessionCreateResponse>('/work-sessions', {
         project_id: body.project_id,
         ...(body.task_id != null && { task_id: body.task_id }),
@@ -88,30 +91,8 @@ export async function stopWorkSession(sessionId: string, body: WorkSessionStopBo
     });
 }
 
-/** Logged hour entry from GET /api/v1/logged-hours (or similar). */
-export interface LoggedHourAPIResponse {
-    id: number | string;
-    project_name?: string;
-    project?: string;
-    task_title?: string;
-    task?: string;
-    description?: string | null;
-    duration_minutes?: number;
-    duration?: number;
-    date?: string;
-    logged_at?: string;
-}
+/** @deprecated Use fetchActiveWorkSession. */
+export const getActiveWorkSession = fetchActiveWorkSession;
 
-/**
- * GET /api/v1/logged-hours
- * Fetches recent logged hours for the current user (for Recent Entries table).
- * Returns empty array if endpoint is not available.
- */
-export async function fetchLoggedHours(): Promise<LoggedHourAPIResponse[]> {
-    try {
-        const { data } = await api.get<LoggedHourAPIResponse[]>('/logged-hours');
-        return Array.isArray(data) ? data : [];
-    } catch {
-        return [];
-    }
-}
+/** @deprecated Use startWorkSession. */
+export const createWorkSession = startWorkSession;

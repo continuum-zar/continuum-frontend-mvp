@@ -48,7 +48,29 @@ export {
     useUserHoursByDay,
     userHoursKeys,
 } from './hours';
-export type { UserHoursResponse, UserHoursByDayResponse, DailyHoursItem } from './hours';
+export type { UserHoursResponse, UserHoursByDayResponse, UserDailyHoursResponse, DailyHoursItem } from './hours';
+export {
+    fetchLoggedHours,
+    createLoggedHour,
+    downloadLoggedHoursCsv,
+    fetchTasksForTimeLog,
+} from './loggedHours';
+export type { LoggedHourResponse, LoggedHourEntry, FetchLoggedHoursParams, CreateLoggedHourBody } from './loggedHours';
+export {
+    fetchActiveWorkSession,
+    startWorkSession,
+    pauseWorkSession,
+    resumeWorkSession,
+    stopWorkSession,
+} from './workSessions';
+export type {
+    WorkSessionOut,
+    WorkSessionStatus,
+    ActiveWorkSessionResponse,
+    WorkSessionCreateResponse,
+    WorkSessionCreateBody,
+    WorkSessionStopBody,
+} from './workSessions';
 export type {
     DashboardMetricsResponse,
     ProjectVelocityResponse,

@@ -18,16 +18,21 @@ export interface UserHoursByDayResponse {
     daily_hours?: DailyHoursItem[];
 }
 
-export async function fetchUserHours(startDate: string, endDate: string): Promise<UserHoursResponse> {
+/** Alias for UserHoursByDayResponse (backend hours-by-day shape). */
+export type UserDailyHoursResponse = UserHoursByDayResponse;
+
+export async function fetchUserHours(startDate?: string, endDate?: string): Promise<UserHoursResponse> {
+    const range = startDate && endDate ? { start: startDate, end: endDate } : getCurrentWeekRange();
     const { data } = await api.get<UserHoursResponse>('/users/me/hours', {
-        params: { start_date: startDate, end_date: endDate },
+        params: { start_date: range.start, end_date: range.end },
     });
     return data;
 }
 
-export async function fetchUserHoursByDay(startDate: string, endDate: string): Promise<UserHoursByDayResponse> {
+export async function fetchUserHoursByDay(startDate?: string, endDate?: string): Promise<UserHoursByDayResponse> {
+    const range = startDate && endDate ? { start: startDate, end: endDate } : getCurrentWeekRange();
     const { data } = await api.get<UserHoursByDayResponse>('/users/me/hours/by-day', {
-        params: { start_date: startDate, end_date: endDate },
+        params: { start_date: range.start, end_date: range.end },
     });
     return data ?? {};
 }

@@ -41,7 +41,7 @@ import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTimeTracking } from '../context/TimeTrackingContext';
-import { useProjects } from '@/api/hooks';
+import { useProjects, useCreateLoggedHour } from '@/api/hooks';
 import {
   getCurrentWeekRange,
   getWeekRangeAtOffset,
@@ -52,7 +52,6 @@ import {
   useUserHoursByDay,
 } from '@/api/hours';
 import { downloadLoggedHoursCsv } from '@/api/loggedHours';
-import { useCreateLoggedHour } from '@/api/hooks';
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
