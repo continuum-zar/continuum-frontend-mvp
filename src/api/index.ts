@@ -5,6 +5,7 @@ export {
     fetchProject,
     fetchProjectTasks,
     updateTaskStatus,
+    fetchTask,
     fetchMilestones,
     createMilestone,
     fetchMembers,

@@ -82,6 +82,12 @@ export async function updateTaskStatus(
     return data;
 }
 
+/** Fetch a single task by ID. Returns raw API response. */
+export async function fetchTask(taskId: number | string): Promise<TaskAPIResponse> {
+    const { data } = await api.get<TaskAPIResponse>(`/tasks/${taskId}`);
+    return data;
+}
+
 /** Fetch milestones for a project. Returns UI-shaped milestones. */
 export async function fetchMilestones(projectId: number | string): Promise<Milestone[]> {
     const { data } = await api.get<MilestoneAPIResponse[]>(`/projects/${projectId}/milestones`);
