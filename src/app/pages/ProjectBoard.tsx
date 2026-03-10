@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useParams, useNavigate, useLocation } from 'react-router';
@@ -238,11 +238,13 @@ export function ProjectBoard() {
     : null;
 
   const tasks: Task[] = tasksQuery.data ?? [];
-  const milestonesRaw = milestonesQuery.data ?? [];
-  const milestonesList: Milestone[] = [
-    { id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' },
-    ...milestonesRaw,
-  ];
+  const milestonesList = useMemo<Milestone[]>(
+    () => [
+      { id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' },
+      ...(milestonesQuery.data ?? []),
+    ],
+    [milestonesQuery.data]
+  );
   const milestonesLoading = milestonesQuery.isLoading;
 
   useEffect(() => {
