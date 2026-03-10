@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
-import { useAllTasks } from '@/api/hooks';
+import { useAllTasks, useLoggedHours } from '@/api/hooks';
 import type { TaskOption } from '@/api/projects';
 
 export interface TimeEntry {
@@ -10,15 +10,6 @@ export interface TimeEntry {
     duration: number;
     date: string;
 }
-
-const initialTimeEntries: TimeEntry[] = [
-    { id: '1', project: 'Mobile App Redesign', task: 'Implement dark mode', description: 'Added next-themes, configured dark mode palette, updated root layout.', duration: 180, date: '2026-02-21' },
-    { id: '2', project: 'Dashboard v2', task: 'API integration', description: 'Wired up the useQuery hooks for the velocity metrics.', duration: 120, date: '2026-02-21' },
-    { id: '3', project: 'Mobile App Redesign', task: 'Design review', duration: 60, date: '2026-02-20' },
-    { id: '4', project: 'Marketing Website', task: 'Landing page optimization', duration: 240, date: '2026-02-20' },
-    { id: '5', project: 'Dashboard v2', task: 'Database queries', duration: 150, date: '2026-02-19' },
-    { id: '6', project: 'Mobile App Redesign', task: 'Component library', duration: 210, date: '2026-02-19' },
-];
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const weeklyData = [
@@ -39,8 +30,14 @@ interface LogForm {
 }
 
 interface TimeTrackingContextProps {
+    /** Recent entries from GET /api/v1/logged-hours (filtered by project when set). */
     entries: TimeEntry[];
-    setEntries: React.Dispatch<React.SetStateAction<TimeEntry[]>>;
+    entriesLoading: boolean;
+    entriesError: boolean;
+    refetchEntries: () => void;
+    /** Project filter for Recent Entries: 'all' or project id. */
+    projectFilterId: string;
+    setProjectFilterId: React.Dispatch<React.SetStateAction<string>>;
     sessionState: SessionState;
     setSessionState: React.Dispatch<React.SetStateAction<SessionState>>;
     currentTime: number;
@@ -70,7 +67,10 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     const { data: tasksData, isLoading: tasksLoading, isError: tasksError } = useAllTasks();
     const tasks = tasksData ?? [];
 
-    const [entries, setEntries] = useState<TimeEntry[]>(initialTimeEntries);
+    const [projectFilterId, setProjectFilterId] = useState<string>('all');
+    const { data: entriesData, isLoading: entriesLoading, isError: entriesError, refetch: refetchEntries } = useLoggedHours(projectFilterId, { limit: 50 });
+    const entries = (entriesData ?? []) as TimeEntry[];
+
     const [sessionState, setSessionState] = useState<SessionState>('idle');
     const [currentTime, setCurrentTime] = useState(0);
     const [selectedTaskId, setSelectedTaskId] = useState('');
@@ -122,20 +122,11 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         const activeTask = selectedTask ?? tasks[0];
         if (!activeTask) return;
 
-        const newEntry: TimeEntry = {
-            id: `e${Date.now()}`,
-            project: activeTask.project,
-            task: activeTask.title,
-            description: logForm.description,
-            duration: Math.max(1, Math.floor(currentTime / 60)), // Convert seconds to minutes, min 1
-            date: new Date().toISOString().split('T')[0],
-        };
-
-        setEntries([newEntry, ...entries]);
         setIsLoggingModalOpen(false);
         setSessionState('idle');
         setCurrentTime(0);
         setLogForm({ task: '', description: '' });
+        refetchEntries();
     };
 
     const handleLogCancel = () => {
@@ -147,7 +138,11 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         <TimeTrackingContext.Provider
             value={{
                 entries,
-                setEntries,
+                entriesLoading,
+                entriesError,
+                refetchEntries,
+                projectFilterId,
+                setProjectFilterId,
                 sessionState,
                 setSessionState,
                 currentTime,

@@ -39,6 +39,7 @@ import {
 } from '../components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTimeTracking, weeklyData } from '../context/TimeTrackingContext';
+import { useProjects } from '@/api/hooks';
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -49,6 +50,10 @@ function formatDuration(minutes: number): string {
 export function TimeTracking() {
   const {
     entries,
+    entriesLoading,
+    entriesError,
+    projectFilterId,
+    setProjectFilterId,
     sessionState,
     setSessionState,
     currentTime,
@@ -68,6 +73,8 @@ export function TimeTracking() {
     handleLogCancel,
     handleStop,
   } = useTimeTracking();
+
+  const { data: projects = [] } = useProjects();
 
   const canStartSession = Boolean(selectedTask?.project_id != null);
 
@@ -312,15 +319,17 @@ export function TimeTracking() {
         <div className="flex items-center justify-between mb-6">
           <h3>Recent Entries</h3>
           <div className="flex items-center space-x-2">
-            <Select defaultValue="all">
+            <Select value={projectFilterId} onValueChange={setProjectFilterId}>
               <SelectTrigger className="w-40">
-                <SelectValue />
+                <SelectValue placeholder="All Projects" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Projects</SelectItem>
-                <SelectItem value="mobile-app">Mobile App</SelectItem>
-                <SelectItem value="dashboard-v2">Dashboard v2</SelectItem>
-                <SelectItem value="marketing">Marketing</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.title}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm">
@@ -341,27 +350,52 @@ export function TimeTracking() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entries.map((entry) => (
-              <TableRow key={entry.id}>
-                <TableCell>
-                  {new Date(entry.date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{entry.project}</Badge>
-                </TableCell>
-                <TableCell className="font-medium max-w-[200px] truncate" title={entry.task}>{entry.task}</TableCell>
-                <TableCell className="text-muted-foreground text-sm max-w-[250px] truncate" title={entry.description}>
-                  {entry.description || '-'}
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  {formatDuration(entry.duration)}
+            {entriesLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={5} className="h-12">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Loading entries...</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : entriesError ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  Failed to load entries. Please try again later.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : entries.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  No logged hours yet. Start a session and log time to see entries here.
+                </TableCell>
+              </TableRow>
+            ) : (
+              entries.map((entry) => (
+                <TableRow key={entry.id}>
+                  <TableCell>
+                    {new Date(entry.date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{entry.project}</Badge>
+                  </TableCell>
+                  <TableCell className="font-medium max-w-[200px] truncate" title={entry.task}>{entry.task}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm max-w-[250px] truncate" title={entry.description}>
+                    {entry.description || '-'}
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    {formatDuration(entry.duration)}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </motion.div>
