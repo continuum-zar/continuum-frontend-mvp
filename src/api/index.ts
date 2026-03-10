@@ -25,3 +25,30 @@ export {
     useAddMember,
     projectKeys,
 } from './hooks';
+export {
+    fetchProjectDashboard,
+    fetchProjectVelocityReport,
+    fetchMilestoneBurndown,
+    fetchUserRhythm,
+    fetchProjectStaleWork,
+    fetchClassificationBreakdown,
+    fetchClientProjects,
+    fetchClientProjectProgress,
+    postProjectQuery,
+} from './dashboard';
+export type {
+    DashboardMetricsResponse,
+    ProjectVelocityResponse,
+    WeeklyVelocityData,
+    MilestoneBurndownResponse,
+    UserRhythmDayHourResponse,
+    StaleWorkResponse,
+    StaleBranchItem,
+    ClassificationBreakdown,
+    ClientPortalProgress,
+    ClientProjectSummary,
+    ClientHealthPie,
+    ClientRecentActivityItem,
+    ProjectQueryRequest,
+    ProjectQueryResponse,
+} from './dashboard';
