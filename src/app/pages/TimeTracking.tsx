@@ -68,6 +68,7 @@ export function TimeTracking() {
     logForm,
     setLogForm,
     isAiGenerating,
+    isSubmittingLog,
     simulateAiGeneration,
     handleLogSubmit,
     handleLogCancel,
@@ -269,8 +270,17 @@ export function TimeTracking() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleLogCancel}>Cancel</Button>
-            <Button onClick={handleLogSubmit}>Log Session</Button>
+            <Button variant="outline" onClick={handleLogCancel} disabled={isSubmittingLog}>Cancel</Button>
+            <Button onClick={handleLogSubmit} disabled={isSubmittingLog}>
+              {isSubmittingLog ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging...
+                </>
+              ) : (
+                'Log Session'
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

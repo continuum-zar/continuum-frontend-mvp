@@ -58,3 +58,23 @@ export async function fetchLoggedHours(params?: FetchLoggedHoursParams): Promise
     });
     return (data ?? []).map(mapLoggedHourToTimeEntry);
 }
+
+/** Body for creating a logged hour (POST /api/v1/logged-hours). */
+export interface CreateLoggedHourBody {
+    task_id: number | string;
+    hours: number;
+    note?: string | null;
+    /** Optional date (YYYY-MM-DD); backend may default to today. */
+    date?: string;
+}
+
+/** POST /api/v1/logged-hours. Creates a logged hour for the current user; refetch list after success. */
+export async function createLoggedHour(body: CreateLoggedHourBody): Promise<LoggedHourResponse> {
+    const { data } = await api.post<LoggedHourResponse>('/logged-hours', {
+        task_id: body.task_id,
+        hours: body.hours,
+        ...(body.note != null && body.note !== '' && { note: body.note }),
+        ...(body.date && { date: body.date }),
+    });
+    return data;
+}

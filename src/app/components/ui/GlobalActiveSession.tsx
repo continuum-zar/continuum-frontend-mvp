@@ -33,6 +33,7 @@ export function GlobalActiveSession() {
         logForm,
         setLogForm,
         isAiGenerating,
+        isSubmittingLog,
         simulateAiGeneration,
         handleLogSubmit,
         handleLogCancel,
@@ -150,8 +151,17 @@ export function GlobalActiveSession() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={handleLogCancel}>Cancel</Button>
-                        <Button onClick={handleLogSubmit}>Log Session</Button>
+                        <Button variant="outline" onClick={handleLogCancel} disabled={isSubmittingLog}>Cancel</Button>
+                        <Button onClick={handleLogSubmit} disabled={isSubmittingLog}>
+                            {isSubmittingLog ? (
+                                <>
+                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                    Logging...
+                                </>
+                            ) : (
+                                'Log Session'
+                            )}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { toast } from 'sonner';
 import { useAllTasks, useLoggedHours } from '@/api/hooks';
+import { createLoggedHour } from '@/api/loggedHours';
 import type { TaskOption } from '@/api/projects';
 
 export interface TimeEntry {
@@ -55,8 +57,9 @@ interface TimeTrackingContextProps {
     logForm: LogForm;
     setLogForm: React.Dispatch<React.SetStateAction<LogForm>>;
     isAiGenerating: boolean;
+    isSubmittingLog: boolean;
     simulateAiGeneration: () => void;
-    handleLogSubmit: () => void;
+    handleLogSubmit: () => Promise<void>;
     handleLogCancel: () => void;
     handleStop: () => void;
 }
@@ -118,15 +121,39 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         }, 1500); // 1.5s simulated backend delay
     };
 
-    const handleLogSubmit = () => {
+    const [isSubmittingLog, setIsSubmittingLog] = useState(false);
+
+    const handleLogSubmit = async () => {
         const activeTask = selectedTask ?? tasks[0];
         if (!activeTask) return;
 
-        setIsLoggingModalOpen(false);
-        setSessionState('idle');
-        setCurrentTime(0);
-        setLogForm({ task: '', description: '' });
-        refetchEntries();
+        const hours = currentTime / 3600;
+        if (hours <= 0) {
+            toast.error('Please run the timer before logging.');
+            return;
+        }
+
+        setIsSubmittingLog(true);
+        try {
+            await createLoggedHour({
+                task_id: activeTask.id,
+                hours,
+                note: logForm.description?.trim() || undefined,
+                date: new Date().toISOString().split('T')[0],
+            });
+            setIsLoggingModalOpen(false);
+            setSessionState('idle');
+            setCurrentTime(0);
+            setLogForm({ task: '', description: '' });
+            toast.success('Time logged successfully.');
+            await refetchEntries();
+        } catch (err) {
+            console.error('Failed to log time:', err);
+            const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            toast.error(typeof msg === 'string' ? msg : 'Failed to log time. Please try again.');
+        } finally {
+            setIsSubmittingLog(false);
+        }
     };
 
     const handleLogCancel = () => {
@@ -158,6 +185,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
                 logForm,
                 setLogForm,
                 isAiGenerating,
+                isSubmittingLog,
                 simulateAiGeneration,
                 handleLogSubmit,
                 handleLogCancel,
