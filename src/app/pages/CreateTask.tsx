@@ -111,6 +111,7 @@ export function CreateTask() {
         milestone_id?: number;
         estimated_hours?: number;
         due_date?: string;
+        checklists?: Array<{ text: string; done: boolean }>;
       } = {
         title: formData.title,
         description: formData.description,
@@ -120,6 +121,9 @@ export function CreateTask() {
         ...(milestoneId && { milestone_id: Number(milestoneId) }),
         ...(formData.estimatedHours && { estimated_hours: Number(formData.estimatedHours) }),
         ...(formData.dueDate && { due_date: formData.dueDate }),
+        ...(checklists.length > 0 && {
+          checklists: checklists.map((text) => ({ text, done: false })),
+        }),
       };
 
       // Call the API

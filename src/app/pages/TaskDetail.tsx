@@ -31,9 +31,10 @@ import {
   fetchTaskAttachments,
   uploadTaskAttachment,
   mapTaskAttachment,
-} from '../../api/projects';
-import type { TaskAPIResponse } from '../../types/task';
-import type { TaskAttachmentItem } from '../../types/task';
+} from '@/api/projects';
+import type { TaskAPIResponse } from '@/types/task';
+import type { TaskAttachmentItem } from '@/types/task';
+import { formatDueDate } from '@/api/mappers';
 
 const comments = [
   {
@@ -66,6 +67,11 @@ const activityLog = [
   { id: 4, user: 'Mike Torres', action: 'created this task', time: '2 days ago' },
 ];
 
+function taskStatusToDisplay(s: string): string {
+  if (s === 'in_progress') return 'in-progress';
+  return s === 'todo' || s === 'done' ? s : 'todo';
+}
+
 export function TaskDetail() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
@@ -73,8 +79,8 @@ export function TaskDetail() {
   const state = (location.state as { projectId?: string | number } | undefined) || {};
   const [task, setTask] = useState<TaskAPIResponse | null>(null);
   const [attachments, setAttachments] = useState<TaskAttachmentItem[]>([]);
-  const [taskLoading, setTaskLoading] = useState(true);
-  const [taskError, setTaskError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [comment, setComment] = useState('');
@@ -83,26 +89,29 @@ export function TaskDetail() {
 
   useEffect(() => {
     if (!taskId) {
-      setTaskLoading(false);
-      setTaskError('No task ID');
+      setLoading(false);
+      setError('No task ID');
       return;
     }
     let cancelled = false;
-    setTaskLoading(true);
-    setTaskError(null);
+    setLoading(true);
+    setError(null);
     Promise.all([
-      fetchTask(taskId).catch((err) => err),
+      fetchTask(taskId).catch((err: unknown) => err),
       fetchTaskAttachments(taskId),
     ]).then(([taskResult, attachmentList]) => {
       if (cancelled) return;
       if (taskResult && !(taskResult instanceof Error) && typeof taskResult === 'object' && 'id' in taskResult) {
-        setTask(taskResult as TaskAPIResponse);
+        const t = taskResult as TaskAPIResponse;
+        setTask(t);
+        setStatus(taskStatusToDisplay(t.status ?? 'todo'));
+        setScope((t.scope_weight as 'L') ?? 'L');
       } else {
         setTask(null);
-        setTaskError(taskResult instanceof Error ? taskResult.message : 'Failed to load task');
+        setError(taskResult instanceof Error ? taskResult.message : 'Failed to load task');
       }
       setAttachments((attachmentList ?? []).map(mapTaskAttachment));
-      setTaskLoading(false);
+      setLoading(false);
     });
     return () => { cancelled = true; };
   }, [taskId]);
@@ -136,6 +145,28 @@ export function TaskDetail() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error || !task) {
+    return (
+      <div className="p-8">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        <p className="text-destructive">{error ?? 'Task not found'}</p>
+      </div>
+    );
+  }
+
+  const taskChecklists = task.checklists && Array.isArray(task.checklists) ? task.checklists : [];
+
   return (
     <div className="flex h-full">
       {/* Main Content */}
@@ -157,71 +188,57 @@ export function TaskDetail() {
           >
             {/* Task Header */}
             <div className="mb-8">
-              {taskLoading ? (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Loading task...</span>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h1 className="text-3xl mb-2">{task.title}</h1>
+                  {task.description ? (
+                    <p className="text-muted-foreground">{task.description}</p>
+                  ) : null}
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h1 className="text-3xl mb-2">{task?.title ?? 'Task'}</h1>
-                      <p className="text-muted-foreground">
-                        {task?.description ?? (taskError ? 'Could not load task details.' : 'No description.')}
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-5 w-5" />
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    {task?.project_name && (
-                      <Badge variant="secondary">{task.project_name}</Badge>
-                    )}
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">TASK-{task?.id ?? taskId}</span>
-                    </div>
-                  </div>
-                </>
-              )}
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </div>
+              <div className="flex items-center space-x-4">
+                {task.project_name ? (
+                  <Badge variant="secondary">{task.project_name}</Badge>
+                ) : null}
+                <div className="flex items-center space-x-2">
+                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">TASK-{task.id}</span>
+                </div>
+              </div>
             </div>
 
             {/* Description */}
-            {!taskLoading && (
-            <div className="mb-8 bg-card border border-border rounded-lg p-6">
-              <h3 className="mb-3">Description</h3>
-              <div className="text-muted-foreground space-y-2">
-                <p>{task?.description ?? 'No description.'}</p>
+            {task.description ? (
+              <div className="mb-8 bg-card border border-border rounded-lg p-6">
+                <h3 className="mb-3">Description</h3>
+                <div className="text-muted-foreground space-y-2">
+                  <p>{task.description}</p>
+                </div>
               </div>
-            </div>
-            )}
+            ) : null}
 
             {/* Checklists */}
             <div className="mb-8 bg-card border border-border rounded-lg p-6">
               <h3 className="mb-4">Checklist</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                  </div>
-                  <span className="text-sm text-muted-foreground line-through">Review competitor landing pages</span>
+              {taskChecklists.length > 0 ? (
+                <div className="space-y-3">
+                  {taskChecklists.map((item, index) => (
+                    <div key={item.id ?? index} className="flex items-center space-x-3">
+                      <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 ${item.done ? 'border-primary bg-primary' : 'border-border'}`}>
+                        {item.done ? <CheckCircle2 className="h-3 w-3 text-primary-foreground" /> : null}
+                      </div>
+                      <span className={`text-sm ${item.done ? 'text-muted-foreground line-through' : ''}`}>
+                        {item.text}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
-                  <span className="text-sm">Create wireframes for desktop & mobile</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
-                  <span className="text-sm">Design high-fidelity mockups</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
-                  <span className="text-sm">Get approval from marketing team</span>
-                </div>
-              </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No checklist items.</p>
+              )}
             </div>
 
             {/* Attachments */}
@@ -443,15 +460,15 @@ export function TaskDetail() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Created</span>
-                <span>Feb 19, 2026</span>
+                <span>{task.created_at ? formatDueDate(task.created_at) : '—'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Updated</span>
-                <span>Feb 21, 2026</span>
+                <span>{task.updated_at ? formatDueDate(task.updated_at) : '—'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Due date</span>
-                <span className="text-warning">Feb 25, 2026</span>
+                <span className={task.due_date ? 'text-warning' : ''}>{task.due_date ? formatDueDate(task.due_date) : '—'}</span>
               </div>
             </div>
           </div>

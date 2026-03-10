@@ -70,6 +70,12 @@ export async function fetchProjectTasks(projectId: number | string): Promise<Tas
     return (data ?? []).map(mapTask);
 }
 
+/** Fetch a single task by ID. Returns raw API response (includes checklists). */
+export async function fetchTask(taskId: number | string): Promise<TaskAPIResponse> {
+    const { data } = await api.get<TaskAPIResponse>(`/tasks/${taskId}`);
+    return data;
+}
+
 /** Update task status. Returns updated task from API (use mapTask if you need UI shape). */
 export async function updateTaskStatus(
     taskId: number | string,
@@ -119,12 +125,6 @@ export async function addMember(
         email: body.email,
         role: body.role ?? 'member',
     });
-    return data;
-}
-
-/** Fetch a single task by ID. Returns raw API response. */
-export async function fetchTask(taskId: number | string): Promise<TaskAPIResponse> {
-    const { data } = await api.get<TaskAPIResponse>(`/tasks/${taskId}`);
     return data;
 }
 
