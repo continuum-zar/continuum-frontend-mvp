@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import {
   ArrowUpRight,
@@ -29,7 +30,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects } from '@/api';
+import { useProjects, fetchProjectStaleWork } from '@/api';
 import {
   Bar,
   LineChart,
@@ -89,13 +90,6 @@ const rhythmData = Array.from({ length: 5 }, (_, dayIndex) => {
   return dayRhythm;
 });
 
-// 5. Diagnostics
-const staleBranches = [
-  { id: 1, name: 'feature/payment-gateway', author: 'Mike Torres', daysStale: 12 },
-  { id: 2, name: 'fix/auth-callback', author: 'Sarah Chen', daysStale: 8 },
-  { id: 3, name: 'refactor/database-models', author: 'Alex Johnson', daysStale: 7 },
-];
-
 // 6. Client View Mocks
 const activityFeed = [
   { id: 1, action: 'Task Completed', target: 'Design System Update', user: 'Sarah Chen', time: '2 hours ago', icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
@@ -144,6 +138,22 @@ export function Dashboard() {
   const [snapshotMember, setSnapshotMember] = useState("all");
   const [chatMessage, setChatMessage] = useState("");
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects();
+
+  const { data: staleWorkResponse, isLoading: staleWorkLoading, isError: staleWorkError } = useQuery({
+    queryKey: ['stale-work', selectedProject],
+    queryFn: () => fetchProjectStaleWork(selectedProject),
+    enabled: selectedProject !== 'all' && userRole === 'Project Manager',
+  });
+
+  const staleBranchesList = useMemo(() => {
+    const list = staleWorkResponse?.stale_branches ?? [];
+    return list.map((item, idx) => ({
+      id: idx,
+      name: item.branch,
+      author: item.last_committer_name,
+      daysStale: item.days_inactive ?? (item.last_commit_at ? Math.floor((Date.now() - new Date(item.last_commit_at).getTime()) / 86400000) : 0),
+    }));
+  }, [staleWorkResponse]);
 
   const hasProjects = projects.length > 0;
 
@@ -513,11 +523,20 @@ export function Dashboard() {
             <div className="mb-6 flex justify-between items-center">
               <div>
                 <h3 className="mb-1">Stale Work</h3>
-                <p className="text-sm text-muted-foreground">Branches with no activity in 7+ days</p>
+                <p className="text-sm text-muted-foreground">Branches with no activity in {staleWorkResponse?.threshold_days ?? 7}+ days</p>
               </div>
-              <Badge variant="destructive">Action Required</Badge>
+              {staleBranchesList.length > 0 && <Badge variant="destructive">Action Required</Badge>}
             </div>
 
+            {selectedProject === 'all' ? (
+              <div className="py-12 text-center text-muted-foreground text-sm">Select a project to view stale work</div>
+            ) : staleWorkLoading ? (
+              <div className="py-12 text-center text-muted-foreground text-sm">Loading stale work...</div>
+            ) : staleWorkError ? (
+              <div className="py-12 text-center text-destructive text-sm">Failed to load stale work</div>
+            ) : staleBranchesList.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground text-sm">No stale branches</div>
+            ) : (
             <div className="flex-1 overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-muted-foreground border-b border-border">
@@ -529,7 +548,7 @@ export function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {staleBranches.map((branch) => (
+                  {staleBranchesList.map((branch) => (
                     <tr key={branch.id} className="hover:bg-muted/30 transition-colors">
                       <td className="py-3 font-medium font-mono text-xs">{branch.name}</td>
                       <td className="py-3 text-muted-foreground flex items-center gap-2">
@@ -553,6 +572,7 @@ export function Dashboard() {
                 </tbody>
               </table>
             </div>
+            )}
           </motion.div>
 
         </div>
