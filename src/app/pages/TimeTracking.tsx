@@ -37,7 +37,8 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTimeTracking } from '../context/TimeTrackingContext';
 import { useProjects } from '@/api/hooks';
@@ -50,6 +51,7 @@ import {
   useUserHours,
   useUserHoursByDay,
 } from '@/api/hours';
+import { downloadLoggedHoursCsv } from '@/api/loggedHours';
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -134,6 +136,23 @@ export function TimeTracking() {
     daysElapsed > 0 && totalMonthMinutes != null ? totalMonthMinutes / 60 / daysElapsed : null;
 
   const statsLoading = currentWeekLoading || monthLoading;
+
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      await downloadLoggedHoursCsv({
+        ...(projectFilterId && projectFilterId !== 'all' && { project_id: projectFilterId }),
+        start_date: weekRange.start,
+        end_date: weekRange.end,
+      });
+      toast.success('CSV downloaded');
+    } catch {
+      toast.error('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [projectFilterId, weekRange.start, weekRange.end]);
 
   return (
     <div className="p-8">
@@ -377,8 +396,8 @@ export function TimeTracking() {
                 <SelectItem value="-1">Last week</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               Export
             </Button>
           </div>
@@ -430,8 +449,8 @@ export function TimeTracking() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               Export
             </Button>
           </div>
