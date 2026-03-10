@@ -133,7 +133,7 @@ export function TimeTracking() {
         project_id: manualProjectId,
         ...(manualTaskId && { task_id: manualTaskId }),
         duration_minutes: duration,
-        note: manualDescription.trim() || undefined,
+        description: manualDescription.trim() || undefined,
         date: manualDate,
       });
       toast.success('Time logged.');

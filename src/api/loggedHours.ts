@@ -67,7 +67,8 @@ export interface CreateLoggedHourBody {
     hours?: number;
     /** Duration in minutes; if set, hours is derived as duration_minutes/60 (backend may accept either). */
     duration_minutes?: number;
-    note?: string | null;
+    /** Description/note for the entry (optional). */
+    description?: string | null;
     /** Date (ISO date string YYYY-MM-DD); backend may default to today. */
     date?: string;
 }
@@ -80,7 +81,7 @@ export async function createLoggedHour(body: CreateLoggedHourBody): Promise<Logg
         hours,
         ...(body.project_id != null && body.project_id !== '' && { project_id: body.project_id }),
         ...(body.task_id != null && body.task_id !== '' && { task_id: body.task_id }),
-        ...(body.note != null && body.note !== '' && { note: body.note }),
+        ...(body.description != null && body.description !== '' && { description: body.description }),
         ...(body.date && { date: body.date }),
     };
     const { data } = await api.post<LoggedHourResponse>('/logged-hours', payload);
