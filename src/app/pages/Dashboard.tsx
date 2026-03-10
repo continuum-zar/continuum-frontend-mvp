@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import {
   ArrowUpRight,
@@ -29,7 +30,8 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects } from '@/api';
+import { useProjects, useProjectMembers, fetchUserRhythm } from '@/api';
+import { useAuthStore } from '@/store/authStore';
 import {
   Bar,
   LineChart,
@@ -74,20 +76,6 @@ const gitCommitsData = [
   { name: 'Incremental', value: 50, color: '#10b981' }, // emerald
   { name: 'Trivial', value: 15, color: '#64748b' },     // slate
 ];
-
-// 4. User Rhythm / Productivity Heatmap (Mocked as daily hour buckets for current week)
-// Days: 0 (Mon) to 4 (Fri). Hours: 8 to 18 (9am to 7pm)
-const rhythmData = Array.from({ length: 5 }, (_, dayIndex) => {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dayRhythm: any = { day: days[dayIndex] };
-  for (let h = 8; h <= 18; h++) {
-    // Randomize activity, peaks between 10-12 and 14-16
-    const isPeak = (h >= 10 && h <= 12) || (h >= 14 && h <= 16);
-    dayRhythm[`hour${h}`] = isPeak ? Math.floor(Math.random() * 40) + 20 : Math.floor(Math.random() * 20);
-  }
-  return dayRhythm;
-});
 
 // 5. Diagnostics
 const staleBranches = [
@@ -144,6 +132,41 @@ export function Dashboard() {
   const [snapshotMember, setSnapshotMember] = useState("all");
   const [chatMessage, setChatMessage] = useState("");
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects();
+  const user = useAuthStore((s) => s.user);
+  const { data: rhythmMembers = [] } = useProjectMembers(
+    userRole === 'Project Manager' && selectedProject !== 'all' ? selectedProject : undefined
+  );
+
+  const rhythmUserId = useMemo(() => {
+    if (userRole === 'Developer') return user?.id ?? null;
+    if (userRole === 'Project Manager') {
+      if (rhythmMember === 'all') return rhythmMembers[0]?.userId ?? null;
+      const m = rhythmMembers.find((x) => String(x.id) === rhythmMember);
+      return m?.userId ?? null;
+    }
+    return null;
+  }, [userRole, user?.id, rhythmMember, rhythmMembers]);
+
+  const { data: rhythmResponse, isLoading: rhythmLoading, isError: rhythmError } = useQuery({
+    queryKey: ['user-rhythm', rhythmUserId],
+    queryFn: () => fetchUserRhythm(rhythmUserId!),
+    enabled: rhythmUserId != null && userRole !== 'Client',
+  });
+
+  const rhythmChartData = useMemo(() => {
+    const dh = rhythmResponse?.day_hour;
+    if (!dh) return [];
+    const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri'] as const;
+    const dayLabels: Record<string, string> = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri' };
+    return dayOrder.map((dayKey) => {
+      const row: Record<string, string | number> = { day: dayLabels[dayKey] ?? dayKey };
+      const dayData = dh[dayKey] ?? {};
+      for (let h = 8; h <= 18; h++) {
+        row[`hour${h}`] = Number(dayData[String(h)]) ?? 0;
+      }
+      return row;
+    });
+  }, [rhythmResponse]);
 
   const hasProjects = projects.length > 0;
 
@@ -337,8 +360,9 @@ export function Dashboard() {
                       <SelectValue placeholder="Filter member" />
                     </SelectTrigger>
                     <SelectContent>
-                      {projectMembers.map(m => (
-                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                      <SelectItem value="all">All Members (Collective)</SelectItem>
+                      {rhythmMembers.map((m) => (
+                        <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -367,8 +391,21 @@ export function Dashboard() {
                 </div>
 
                 {/* grid */}
+                {(userRole === 'Developer' && !user?.id) || (userRole === 'Project Manager' && selectedProject === 'all') ? (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
+                    {userRole === 'Project Manager' ? 'Select a project to view rhythm' : 'Sign in to view your rhythm'}
+                  </div>
+                ) : rhythmLoading ? (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">Loading rhythm...</div>
+                ) : rhythmError ? (
+                  <div className="h-[200px] flex items-center justify-center text-destructive text-sm">Failed to load rhythm</div>
+                ) : userRole === 'Project Manager' && rhythmMember === 'all' && rhythmMembers.length === 0 ? (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No members in this project</div>
+                ) : rhythmChartData.length === 0 ? (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No rhythm data yet</div>
+                ) : (
                 <div className="flex flex-col gap-1">
-                  {rhythmData.map((dayRow, idx) => (
+                  {rhythmChartData.map((dayRow, idx) => (
                     <div key={idx} className="flex items-center">
                       <div className="w-[40px] text-xs font-medium text-muted-foreground">
                         {dayRow.day}
@@ -377,7 +414,7 @@ export function Dashboard() {
                         {Array.from({ length: 11 }, (_, i) => i + 8).map(hour => (
                           <div
                             key={hour}
-                            className={`flex-1 aspect-square rounded-sm ${getHeatmapColor(dayRow[`hour${hour}`])}`}
+                            className={`flex-1 aspect-square rounded-sm ${getHeatmapColor(Number(dayRow[`hour${hour}`]) ?? 0)}`}
                             title={`${dayRow.day} ${hour}:00 - ${dayRow[`hour${hour}`]} mins`}
                           />
                         ))}
@@ -385,6 +422,7 @@ export function Dashboard() {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
             </div>
           </motion.div>
