@@ -59,23 +59,31 @@ export async function fetchLoggedHours(params?: FetchLoggedHoursParams): Promise
     return (data ?? []).map(mapLoggedHourToTimeEntry);
 }
 
-/** Body for creating a logged hour (POST /api/v1/logged-hours). */
+/** Body for creating a logged hour (POST /api/v1/logged-hours). Manual entry: project_id + optional task_id; timer flow may use task_id only. Provide either hours or duration_minutes. */
 export interface CreateLoggedHourBody {
-    task_id: number | string;
-    hours: number;
+    project_id?: number | string;
+    task_id?: number | string;
+    /** Duration in hours. Omit if using duration_minutes. */
+    hours?: number;
+    /** Duration in minutes; if set, hours is derived as duration_minutes/60 (backend may accept either). */
+    duration_minutes?: number;
     note?: string | null;
-    /** Optional date (YYYY-MM-DD); backend may default to today. */
+    /** Date (ISO date string YYYY-MM-DD); backend may default to today. */
     date?: string;
 }
 
-/** POST /api/v1/logged-hours. Creates a logged hour for the current user; refetch list after success. */
+/** POST /api/v1/logged-hours. Creates a logged hour for the current user; refetch list after success. Backend validates project/task access (403 if forbidden). */
 export async function createLoggedHour(body: CreateLoggedHourBody): Promise<LoggedHourResponse> {
-    const { data } = await api.post<LoggedHourResponse>('/logged-hours', {
-        task_id: body.task_id,
-        hours: body.hours,
+    const hours = body.duration_minutes != null ? body.duration_minutes / 60 : (body.hours ?? 0);
+    if (!Number.isFinite(hours) || hours <= 0) throw new Error('Provide either hours or duration_minutes (positive).');
+    const payload: Record<string, unknown> = {
+        hours,
+        ...(body.project_id != null && body.project_id !== '' && { project_id: body.project_id }),
+        ...(body.task_id != null && body.task_id !== '' && { task_id: body.task_id }),
         ...(body.note != null && body.note !== '' && { note: body.note }),
         ...(body.date && { date: body.date }),
-    });
+    };
+    const { data } = await api.post<LoggedHourResponse>('/logged-hours', payload);
     return data;
 }
 

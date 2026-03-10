@@ -52,6 +52,7 @@ import {
   useUserHoursByDay,
 } from '@/api/hours';
 import { downloadLoggedHoursCsv } from '@/api/loggedHours';
+import { useCreateLoggedHour } from '@/api/hooks';
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -74,6 +75,7 @@ export function TimeTracking() {
     entries,
     entriesLoading,
     entriesError,
+    refetchEntries,
     projectFilterId,
     setProjectFilterId,
     sessionState,
@@ -100,8 +102,51 @@ export function TimeTracking() {
   } = useTimeTracking();
 
   const { data: projects = [] } = useProjects();
+  const createLoggedHour = useCreateLoggedHour();
 
   const canStartSession = Boolean(selectedTask?.project_id != null);
+
+  // Manual log entry state
+  const [isManualLogOpen, setIsManualLogOpen] = useState(false);
+  const [manualProjectId, setManualProjectId] = useState('');
+  const [manualTaskId, setManualTaskId] = useState('');
+  const [manualDate, setManualDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [manualDurationMinutes, setManualDurationMinutes] = useState<number>(60);
+  const [manualDescription, setManualDescription] = useState('');
+
+  const tasksForManualProject = tasks.filter(
+    (t) => manualProjectId !== '' && String(t.project_id) === manualProjectId
+  );
+
+  const handleManualLogSubmit = useCallback(async () => {
+    if (!manualProjectId) {
+      toast.error('Select a project.');
+      return;
+    }
+    const duration = Number(manualDurationMinutes);
+    if (!Number.isFinite(duration) || duration <= 0) {
+      toast.error('Enter a valid duration (minutes).');
+      return;
+    }
+    try {
+      await createLoggedHour.mutateAsync({
+        project_id: manualProjectId,
+        ...(manualTaskId && { task_id: manualTaskId }),
+        duration_minutes: duration,
+        note: manualDescription.trim() || undefined,
+        date: manualDate,
+      });
+      toast.success('Time logged.');
+      setIsManualLogOpen(false);
+      setManualTaskId('');
+      setManualDescription('');
+      setManualDurationMinutes(60);
+      setManualDate(new Date().toISOString().slice(0, 10));
+      refetchEntries();
+    } catch {
+      // Error toast handled in useCreateLoggedHour onError (including 403)
+    }
+  }, [manualProjectId, manualTaskId, manualDate, manualDurationMinutes, manualDescription, createLoggedHour, refetchEntries]);
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -371,6 +416,105 @@ export function TimeTracking() {
         </DialogContent>
       </Dialog>
 
+      {/* Manual log time modal */}
+      <Dialog open={isManualLogOpen} onOpenChange={setIsManualLogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Log time manually</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Project</Label>
+              <Select
+                value={manualProjectId}
+                onValueChange={(v) => {
+                  setManualProjectId(v);
+                  setManualTaskId('');
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Task (optional)</Label>
+              <Select
+                value={manualTaskId}
+                onValueChange={setManualTaskId}
+                disabled={!manualProjectId || tasksForManualProject.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select task (optional)..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {tasksForManualProject.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  value={manualDate}
+                  onChange={(e) => setManualDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Duration (minutes)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={manualDurationMinutes}
+                  onChange={(e) => setManualDurationMinutes(Number(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="manual-desc">Description (optional)</Label>
+              <Textarea
+                id="manual-desc"
+                className="min-h-[80px] resize-none"
+                placeholder="What did you work on?"
+                value={manualDescription}
+                onChange={(e) => setManualDescription(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManualLogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleManualLogSubmit}
+              disabled={createLoggedHour.isPending || !manualProjectId || manualDurationMinutes <= 0}
+            >
+              {createLoggedHour.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging...
+                </>
+              ) : (
+                'Add entry'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Weekly Chart - GET /api/v1/users/me/hours/by-day for selected week */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -436,6 +580,18 @@ export function TimeTracking() {
         <div className="flex items-center justify-between mb-6">
           <h3>Recent Entries</h3>
           <div className="flex items-center space-x-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                setIsManualLogOpen(true);
+                if (projectFilterId && projectFilterId !== 'all') setManualProjectId(projectFilterId);
+                else setManualProjectId('');
+              }}
+            >
+              <Clock className="mr-2 h-4 w-4" />
+              Log time manually
+            </Button>
             <Select value={projectFilterId} onValueChange={setProjectFilterId}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="All Projects" />
@@ -487,7 +643,7 @@ export function TimeTracking() {
             ) : entries.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  No logged hours yet. Start a session and log time to see entries here.
+                  No logged hours yet. Start a session or log time manually to see entries here.
                 </TableCell>
               </TableRow>
             ) : (
