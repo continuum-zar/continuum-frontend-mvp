@@ -206,6 +206,22 @@ export function Dashboard() {
     });
   }, [clientProgress?.recent_activity]);
 
+  const { data: staleWorkResponse, isLoading: staleWorkLoading, isError: staleWorkError } = useQuery({
+    queryKey: ['stale-work', selectedProject],
+    queryFn: () => fetchProjectStaleWork(selectedProject),
+    enabled: selectedProject !== 'all' && userRole === 'Project Manager',
+  });
+
+  const staleBranchesList = useMemo(() => {
+    const list = staleWorkResponse?.stale_branches ?? [];
+    return list.map((item, idx) => ({
+      id: idx,
+      name: item.branch,
+      author: item.last_committer_name,
+      daysStale: item.days_inactive ?? (item.last_commit_at ? Math.floor((Date.now() - new Date(item.last_commit_at).getTime()) / 86400000) : 0),
+    }));
+  }, [staleWorkResponse]);
+
   const hasProjects = userRole === 'Client' ? clientProjectsList.length > 0 : projects.length > 0;
 
   const { data: milestones = [] } = useProjectMilestones(selectedProject !== 'all' ? selectedProject : undefined);
@@ -261,22 +277,6 @@ export function Dashboard() {
       hours: w.hours_logged,
       commits: w.commits_count,
     })) ?? [];
-
-  const { data: staleWorkResponse, isLoading: staleWorkLoading, isError: staleWorkError } = useQuery({
-    queryKey: ['stale-work', selectedProject],
-    queryFn: () => fetchProjectStaleWork(selectedProject),
-    enabled: selectedProject !== 'all' && userRole === 'Project Manager',
-  });
-
-  const staleBranchesList = useMemo(() => {
-    const list = staleWorkResponse?.stale_branches ?? [];
-    return list.map((item, idx) => ({
-      id: idx,
-      name: item.branch,
-      author: item.last_committer_name,
-      daysStale: item.days_inactive ?? (item.last_commit_at ? Math.floor((Date.now() - new Date(item.last_commit_at).getTime()) / 86400000) : 0),
-    }));
-  }, [staleWorkResponse]);
 
   return (
     <div className="p-8 pb-20">
