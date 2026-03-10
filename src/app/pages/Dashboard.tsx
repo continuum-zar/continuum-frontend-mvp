@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import {
@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects, useProjectMembers, fetchUserRhythm } from '@/api';
+import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import {
   Bar,
@@ -49,26 +49,6 @@ import {
 } from 'recharts';
 
 // --- MOCK DATA ---
-
-// 1. Velocity & Efficiency Trends
-const velocityData = [
-  { week: 'W1', score: 65, avg: 60, tasks: 45, hours: 38, commits: 15 },
-  { week: 'W2', score: 72, avg: 63, tasks: 52, hours: 42, commits: 18 },
-  { week: 'W3', score: 68, avg: 65, tasks: 48, hours: 40, commits: 16 },
-  { week: 'W4', score: 85, avg: 72, tasks: 65, hours: 48, commits: 22 },
-  { week: 'W5', score: 92, avg: 76, tasks: 72, hours: 52, commits: 25 },
-];
-
-// 2. Milestone Burndown
-const burndownData = [
-  { date: 'Feb 01', actual: 120, ideal: 120 },
-  { date: 'Feb 05', actual: 105, ideal: 100 },
-  { date: 'Feb 10', actual: 95, ideal: 80 },
-  { date: 'Feb 15', actual: 65, ideal: 60 },
-  { date: 'Feb 20', actual: 45, ideal: 40 },
-  { date: 'Feb 25', actual: null, ideal: 20 },
-  { date: 'Mar 01', actual: null, ideal: 0 },
-];
 
 // 3. Git Contribution Breakdown
 const gitCommitsData = [
@@ -128,6 +108,7 @@ const getHeatmapColor = (value: number) => {
 export function Dashboard() {
   const { role: userRole } = useRole();
   const [selectedProject, setSelectedProject] = useState("all");
+  const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
   const [rhythmMember, setRhythmMember] = useState("all");
   const [snapshotMember, setSnapshotMember] = useState("all");
   const [chatMessage, setChatMessage] = useState("");
@@ -168,7 +149,76 @@ export function Dashboard() {
     });
   }, [rhythmResponse]);
 
+  const { data: dashboardMetrics, isLoading: dashboardLoading, isError: dashboardError } = useQuery({
+    queryKey: ['project-dashboard', selectedProject],
+    queryFn: () => fetchProjectDashboard(selectedProject),
+    enabled: selectedProject !== 'all' && userRole === 'Project Manager',
+  });
+
+  const health = dashboardMetrics?.health;
+  const velocity = dashboardMetrics?.velocity;
+  const velocityScore = velocity?.trend?.velocity_score ?? (velocity?.weeks?.length ? velocity.weeks[velocity.weeks.length - 1].velocity_score : null);
+  const velocityDelta = velocity?.trend?.change_percentage != null ? `${velocity.trend.change_percentage > 0 ? '+' : ''}${velocity.trend.change_percentage}% from last period` : null;
+  const forecastScore = velocity?.forecast_next_week ?? null;
+  const hpsRatio = health?.hps_ratio ?? null;
+  const overdueCount = health?.overdue_count ?? 0;
+  const unassignedCount = health?.unassigned_count ?? 0;
+
   const hasProjects = projects.length > 0;
+
+  const { data: milestones = [] } = useProjectMilestones(selectedProject !== 'all' ? selectedProject : undefined);
+  const activeMilestoneId = useMemo(() => {
+    if (milestones.length === 0) return null;
+    const active = milestones.find((m) => m.status === 'active');
+    return active ? active.id : milestones[0].id;
+  }, [milestones]);
+  const milestoneId = selectedMilestone ?? activeMilestoneId;
+  useEffect(() => {
+    if (activeMilestoneId != null && selectedMilestone === null) setSelectedMilestone(activeMilestoneId);
+    if (milestones.length === 0) setSelectedMilestone(null);
+  }, [activeMilestoneId, selectedMilestone, milestones.length]);
+
+  const { data: burndown, isLoading: burndownLoading, isError: burndownError } = useQuery({
+    queryKey: ['milestone-burndown', milestoneId],
+    queryFn: () => fetchMilestoneBurndown(milestoneId!),
+    enabled: !!milestoneId && userRole === 'Project Manager',
+  });
+
+  const burndownChartData = useMemo(() => {
+    if (!burndown?.series?.length) return [];
+    const total = burndown.total_scope_points ?? 0;
+    const dueDate = burndown.due_date ? new Date(burndown.due_date).getTime() : null;
+    const idealSeries = burndown.ideal_series?.length ? burndown.ideal_series : null;
+    return burndown.series.map((point, i) => {
+      const dateLabel = new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+      let ideal: number | null = null;
+      if (idealSeries && idealSeries[i]?.ideal_scope_points != null) {
+        ideal = idealSeries[i].ideal_scope_points;
+      } else if (dueDate && total > 0) {
+        const start = new Date(burndown.series[0].date).getTime();
+        const elapsed = new Date(point.date).getTime() - start;
+        const totalDuration = dueDate - start;
+        ideal = totalDuration > 0 ? Math.max(0, total - (elapsed / totalDuration) * total) : total;
+      }
+      return { date: dateLabel, actual: point.remaining_scope_points, ideal };
+    });
+  }, [burndown]);
+
+  const { data: velocityReport, isLoading: velocityLoading, isError: velocityError } = useQuery({
+    queryKey: ['velocity-report', selectedProject],
+    queryFn: () => fetchProjectVelocityReport(selectedProject),
+    enabled: selectedProject !== 'all' && userRole !== 'Client',
+  });
+
+  const velocityChartData =
+    velocityReport?.weeks?.map((w) => ({
+      week: w.week_start_date ? new Date(w.week_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : `W${w.week_number}`,
+      score: w.velocity_score,
+      avg: w.rolling_avg,
+      tasks: w.tasks_completed,
+      hours: w.hours_logged,
+      commits: w.commits_count,
+    })) ?? [];
 
   return (
     <div className="p-8 pb-20">
@@ -206,14 +256,20 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Row 1: KPI Velocity Cards */}
-      {userRole === 'Project Manager' && (
+      {/* Row 1: KPI Velocity Cards (requires single project) */}
+      {userRole === 'Project Manager' && selectedProject !== 'all' && (
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
           variants={container}
           initial="hidden"
           animate="show"
         >
+          {dashboardLoading ? (
+            <div className="col-span-4 rounded-lg border border-border bg-card p-8 text-center text-muted-foreground text-sm">Loading KPIs...</div>
+          ) : dashboardError ? (
+            <div className="col-span-4 rounded-lg border border-border bg-card p-8 text-center text-destructive text-sm">Failed to load dashboard metrics</div>
+          ) : (
+            <>
           <motion.div variants={item} className="bg-card border border-border rounded-lg p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-muted-foreground">Team Velocity Score</span>
@@ -222,11 +278,13 @@ export function Dashboard() {
               </div>
             </div>
             <div>
-              <div className="text-3xl font-bold mb-1">92</div>
-              <div className="flex items-center text-sm text-success">
-                <ArrowUpRight className="h-4 w-4 mr-1" />
-                <span>+18% from last month</span>
-              </div>
+              <div className="text-3xl font-bold mb-1">{velocityScore ?? '—'}</div>
+              {velocityDelta != null && (
+                <div className={`flex items-center text-sm ${(velocity?.trend?.change_percentage ?? 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {(velocity?.trend?.change_percentage ?? 0) >= 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
+                  <span>{velocityDelta}</span>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -238,7 +296,7 @@ export function Dashboard() {
               </div>
             </div>
             <div>
-              <div className="text-3xl font-bold mb-1 text-muted-foreground">95</div>
+              <div className="text-3xl font-bold mb-1 text-muted-foreground">{forecastScore ?? '—'}</div>
               <div className="flex items-center text-sm text-success">
                 <ArrowUpRight className="h-4 w-4 mr-1" />
                 <span>Stable upward trend</span>
@@ -254,10 +312,10 @@ export function Dashboard() {
               </div>
             </div>
             <div>
-              <div className="text-3xl font-bold mb-1">1.2</div>
+              <div className="text-3xl font-bold mb-1">{hpsRatio ?? '—'}</div>
               <div className="flex items-center text-sm text-success">
                 <ArrowDownRight className="h-4 w-4 mr-1" />
-                <span>-20% (More efficient)</span>
+                <span>{health?.health_status ?? 'More efficient'}</span>
               </div>
             </div>
           </motion.div>
@@ -270,19 +328,26 @@ export function Dashboard() {
             <div className="space-y-2 mt-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Overdue Tasks</span>
-                <span className="font-bold">4</span>
+                <span className="font-bold">{overdueCount}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Unassigned Tasks</span>
-                <span className="font-bold">12</span>
+                <span className="font-bold">{unassignedCount}</span>
               </div>
             </div>
           </motion.div>
+            </>
+          )}
         </motion.div>
       )}
 
-      {/* Row 2: Charts (Velocity & Burndown) */}
-      {userRole !== 'Client' && (
+      {/* Row 2: Charts (Velocity & Burndown) — require single project */}
+      {userRole !== 'Client' && selectedProject === 'all' && (
+        <div className="mb-6 rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
+          Select a project to view velocity, burndown, and other metrics.
+        </div>
+      )}
+      {userRole !== 'Client' && selectedProject !== 'all' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -293,8 +358,17 @@ export function Dashboard() {
               <h3 className="mb-1">Weekly Velocity Composite</h3>
               <p className="text-sm text-muted-foreground">Weighted score vs. 4-week average</p>
             </div>
+            {velocityLoading && selectedProject !== 'all' ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Loading velocity...</div>
+            ) : velocityError && selectedProject !== 'all' ? (
+              <div className="h-[300px] flex items-center justify-center text-destructive text-sm">Failed to load velocity</div>
+            ) : selectedProject === 'all' ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Select a project to view velocity</div>
+            ) : velocityChartData.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">No velocity data yet</div>
+            ) : (
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={velocityData}>
+              <ComposedChart data={velocityChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                 <XAxis dataKey="week" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
@@ -306,6 +380,7 @@ export function Dashboard() {
                 <Line type="monotone" dataKey="avg" name="Rolling Avg" stroke="var(--color-success)" strokeWidth={3} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
+            )}
           </motion.div>
 
           {userRole === 'Project Manager' && (
@@ -315,12 +390,37 @@ export function Dashboard() {
               transition={{ delay: 0.1 }}
               className="bg-card border border-border rounded-lg p-6"
             >
-              <div className="mb-4">
-                <h3 className="mb-1">Milestone Burndown</h3>
-                <p className="text-sm text-muted-foreground">Remaining scope points towards deadline</p>
+              <div className="mb-4 flex justify-between items-start">
+                <div>
+                  <h3 className="mb-1">Milestone Burndown</h3>
+                  <p className="text-sm text-muted-foreground">Remaining scope points towards deadline</p>
+                </div>
+                {milestones.length > 1 && (
+                  <Select value={milestoneId ?? ''} onValueChange={(v) => setSelectedMilestone(v || null)}>
+                    <SelectTrigger className="w-[180px] h-8 text-xs border-border bg-card">
+                      <SelectValue placeholder="Milestone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {milestones.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
+              {selectedProject === 'all' ? (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Select a project to view burndown</div>
+              ) : burndownLoading ? (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Loading burndown...</div>
+              ) : burndownError ? (
+                <div className="h-[300px] flex items-center justify-center text-destructive text-sm">Failed to load burndown</div>
+              ) : milestones.length === 0 ? (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">No milestones yet</div>
+              ) : burndownChartData.length === 0 ? (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">No burndown data yet</div>
+              ) : (
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={burndownData}>
+                <LineChart data={burndownChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                   <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis yAxisId="left" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
@@ -332,13 +432,14 @@ export function Dashboard() {
                   <Line yAxisId="left" type="monotone" dataKey="actual" name="Actual Remaining" stroke="var(--color-destructive)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
+              )}
             </motion.div>
           )}
         </div>
       )}
 
-      {/* Row 3: User Rhythm Heatmap & Diagnostics */}
-      {userRole !== 'Client' && (
+      {/* Row 3: User Rhythm Heatmap & Diagnostics (requires single project) */}
+      {userRole !== 'Client' && selectedProject !== 'all' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
           {/* Heatmap */}
@@ -492,8 +593,8 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Row 4: Git Contribution & Stale Work */}
-      {userRole === 'Project Manager' && (
+      {/* Row 4: Git Contribution & Stale Work (requires single project) */}
+      {userRole === 'Project Manager' && selectedProject !== 'all' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Git Donut */}
