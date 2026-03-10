@@ -25,7 +25,6 @@ export function GlobalActiveSession() {
     const location = useLocation();
     const {
         sessionState,
-        setSessionState,
         currentTime,
         selectedTask,
         isLoggingModalOpen,
@@ -33,11 +32,13 @@ export function GlobalActiveSession() {
         logForm,
         setLogForm,
         isAiGenerating,
-        isSubmittingLog,
         simulateAiGeneration,
+        handlePause,
+        handleResume,
         handleLogSubmit,
         handleLogCancel,
         handleStop,
+        isSessionActionLoading,
     } = useTimeTracking();
 
     // Hide on /time page or if idle and modal is not open
@@ -81,16 +82,16 @@ export function GlobalActiveSession() {
                         {/* Hover State - Shown on Group Hover */}
                         <div className="absolute left-0 flex items-center space-x-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
                             {sessionState === 'running' && (
-                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSessionState('paused')}>
+                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={handlePause} disabled={isSessionActionLoading}>
                                     <Pause className="mr-1 h-3 w-3" /> Pause
                                 </Button>
                             )}
                             {sessionState === 'paused' && (
-                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-primary" onClick={() => setSessionState('running')}>
+                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-primary" onClick={handleResume} disabled={isSessionActionLoading}>
                                     <Play className="mr-1 h-3 w-3" /> Resume
                                 </Button>
                             )}
-                            <Button variant="destructive" size="sm" className="h-6 px-2 text-xs" onClick={handleStop}>
+                            <Button variant="destructive" size="sm" className="h-6 px-2 text-xs" onClick={handleStop} disabled={isSessionActionLoading}>
                                 <Square className="mr-1 h-3 w-3" /> Stop
                             </Button>
                         </div>
@@ -151,9 +152,9 @@ export function GlobalActiveSession() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={handleLogCancel} disabled={isSubmittingLog}>Cancel</Button>
-                        <Button onClick={handleLogSubmit} disabled={isSubmittingLog}>
-                            {isSubmittingLog ? (
+                        <Button variant="outline" onClick={handleLogCancel} disabled={isSessionActionLoading}>Cancel</Button>
+                        <Button onClick={handleLogSubmit} disabled={isSessionActionLoading}>
+                            {isSessionActionLoading ? (
                                 <>
                                     <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                                     Logging...

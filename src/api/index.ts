@@ -38,6 +38,17 @@ export {
     fetchClientProjectProgress,
     postProjectQuery,
 } from './dashboard';
+export {
+    fetchUserHours,
+    fetchUserHoursByDay,
+    getCurrentWeekRange,
+    getCurrentMonthRange,
+    getDaysElapsedInMonth,
+    useUserHours,
+    useUserHoursByDay,
+    userHoursKeys,
+} from './hours';
+export type { UserHoursResponse, UserHoursByDayResponse, DailyHoursItem } from './hours';
 export type {
     DashboardMetricsResponse,
     ProjectVelocityResponse,
