@@ -71,17 +71,10 @@ function TaskNotFound() {
   );
 }
 
-function formatStatusDisplay(status: string): string {
-  if (status === 'in_progress') return 'In Progress';
-  if (status === 'todo') return 'To Do';
-  if (status === 'done') return 'Done';
-  return status;
-}
-
 export function TaskDetail() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  
+
   const [task, setTask] = useState<TaskAPIResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +87,7 @@ export function TaskDetail() {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Validate taskId
         if (!taskId || isNaN(Number(taskId))) {
           setError('Invalid task ID');
@@ -106,7 +99,7 @@ export function TaskDetail() {
           setError('Task not found');
           return;
         }
-        
+
         setTask(taskData);
         setStatus(taskData.status || 'todo');
         setScope(taskData.scope_weight || 'M');
