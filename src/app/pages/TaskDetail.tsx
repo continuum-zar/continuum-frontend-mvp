@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
+import { useNavigate, useLocation, useParams } from 'react-router';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
-  Calendar,
   User,
   Paperclip,
   MoreVertical,
@@ -13,9 +12,12 @@ import {
   Clock,
   Tag,
   AlertCircle,
+  Calendar as CalendarIcon,
   Loader2,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { Calendar } from '../components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Badge } from '../components/ui/badge';
 import { Textarea } from '../components/ui/textarea';
 import {
@@ -28,12 +30,15 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate } from '@/api';
 import {
+  fetchTask,
   fetchTaskAttachments,
   uploadTaskAttachment,
   mapTaskAttachment,
 } from '@/api/projects';
+import { formatDueDate } from '@/api/mappers';
+import { useUpdateTask } from '@/api';
+import type { TaskStatus, TaskStatusAPI, ScopeWeight } from '@/types/task';
 import type { TaskAPIResponse, TaskAttachmentItem } from '@/types/task';
 
 function TaskDetailSkeleton() {
@@ -78,10 +83,16 @@ function TaskNotFound() {
   );
 }
 
+function taskStatusToDisplay(s: string): string {
+  if (s === 'in_progress') return 'in-progress';
+  return s === 'todo' || s === 'done' ? s : 'todo';
+}
+
 export function TaskDetail() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-
+  const location = useLocation();
+  const state = (location.state as { projectId?: string | number } | undefined) || {};
   const [task, setTask] = useState<TaskAPIResponse | null>(null);
   const [attachments, setAttachments] = useState<TaskAttachmentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,6 +102,10 @@ export function TaskDetail() {
   const [comment, setComment] = useState('');
   const [status, setStatus] = useState('');
   const [scope, setScope] = useState('');
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+
+  // Initialize the update task mutation
+  const updateTaskMutation = useUpdateTask();
 
   useEffect(() => {
     if (!taskId || isNaN(Number(taskId))) {
@@ -109,8 +124,9 @@ export function TaskDetail() {
       if (taskResult && !(taskResult instanceof Error) && typeof taskResult === 'object' && 'id' in taskResult) {
         const t = taskResult as TaskAPIResponse;
         setTask(t);
-        setStatus(t.status ?? 'todo');
-        setScope(t.scope_weight ?? 'M');
+        setStatus(taskStatusToDisplay(t.status ?? 'todo'));
+        setScope((t.scope_weight ?? 'M') as ScopeWeight);
+        if (t.due_date) setDueDate(new Date(t.due_date));
       } else {
         setTask(null);
         setError(taskResult instanceof Error ? taskResult.message : 'Failed to load task');
@@ -151,18 +167,55 @@ export function TaskDetail() {
   };
 
   const handleNavigateBack = () => {
-    if (task?.project_id) {
-      navigate(`/projects/${task.project_id}`);
+    const projectId = task?.project_id ?? state.projectId;
+    if (projectId != null) {
+      navigate(`/projects/${projectId}`);
     } else {
       navigate(-1);
+    }
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    const previousStatus = status;
+    setStatus(newStatus);
+    const frontendStatus: TaskStatus = newStatus === 'in_progress' ? 'in-progress' : (newStatus as TaskStatusAPI as TaskStatus);
+    if (taskId && task) {
+      updateTaskMutation.mutate(
+        { taskId, status: frontendStatus },
+        { onError: () => setStatus(previousStatus) }
+      );
+    }
+  };
+
+  const handleScopeChange = (newScope: string) => {
+    const previousScope = scope;
+    setScope(newScope);
+    if (taskId && task) {
+      updateTaskMutation.mutate(
+        { taskId, scope_weight: newScope as ScopeWeight },
+        { onError: () => setScope(previousScope) }
+      );
+    }
+  };
+
+  const handleDueDateChange = (date: Date | undefined) => {
+    const previousDueDate = dueDate;
+    setDueDate(date);
+    if (taskId && task) {
+      const isoDate = date ? date.toISOString().split('T')[0] : null;
+      updateTaskMutation.mutate(
+        { taskId, due_date: isoDate },
+        { onError: () => setDueDate(previousDueDate) }
+      );
     }
   };
 
   if (loading) return <TaskDetailSkeleton />;
   if (error || !task) return <TaskNotFound />;
 
-  const totalChecklists = task.checklists?.length ?? 0;
-  const completedChecklists = task.checklists?.filter(c => c.done).length ?? 0;
+  const taskChecklists = task.checklists && Array.isArray(task.checklists) ? task.checklists : [];
+  const totalChecklists = taskChecklists.length;
+  const completedChecklists = taskChecklists.filter((c) => c.done).length;
 
   return (
     <div className="flex h-full">
@@ -222,19 +275,15 @@ export function TaskDetail() {
             {/* Checklists */}
             <div className="mb-8 bg-card border border-border rounded-lg p-6">
               <h3 className="mb-4">Checklist ({completedChecklists}/{totalChecklists})</h3>
-              {task.checklists && task.checklists.length > 0 ? (
+              {taskChecklists.length > 0 ? (
                 <div className="space-y-3">
-                  {task.checklists.map((checklist, idx) => (
-                    <div key={checklist.id ?? idx} className="flex items-center space-x-3">
-                      {checklist.done ? (
-                        <div className="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center flex-shrink-0">
-                          <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                        </div>
-                      ) : (
-                        <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
-                      )}
-                      <span className={`text-sm ${checklist.done ? 'text-muted-foreground line-through' : ''}`}>
-                        {checklist.text}
+                  {taskChecklists.map((item, index) => (
+                    <div key={item.id ?? index} className="flex items-center space-x-3">
+                      <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 ${item.done ? 'border-primary bg-primary' : 'border-border'}`}>
+                        {item.done ? <CheckCircle2 className="h-3 w-3 text-primary-foreground" /> : null}
+                      </div>
+                      <span className={`text-sm ${item.done ? 'text-muted-foreground line-through' : ''}`}>
+                        {item.text}
                       </span>
                     </div>
                   ))}
@@ -354,7 +403,7 @@ export function TaskDetail() {
         >
           <div>
             <label className="text-sm text-muted-foreground mb-2 block">Status</label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status} onValueChange={handleStatusChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -368,7 +417,7 @@ export function TaskDetail() {
 
           <div>
             <label className="text-sm text-muted-foreground mb-2 block">Scope</label>
-            <Select value={scope} onValueChange={setScope}>
+            <Select value={scope} onValueChange={handleScopeChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -412,7 +461,7 @@ export function TaskDetail() {
 
           <div>
             <div className="flex items-center text-sm text-muted-foreground mb-3">
-              <Calendar className="h-4 w-4 mr-2" />
+              <CalendarIcon className="h-4 w-4 mr-2" />
               Dates
             </div>
             <div className="space-y-2 text-sm">
@@ -424,10 +473,23 @@ export function TaskDetail() {
                 <span className="text-muted-foreground">Updated</span>
                 <span>{task.updated_at ? formatDueDate(task.updated_at) : '—'}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Due date</span>
-                <span className={task.due_date ? 'text-warning' : ''}>{task.due_date ? formatDueDate(task.due_date) : '—'}</span>
-              </div>
+            </div>
+            <div className="mt-4">
+              <label className="text-sm text-muted-foreground block mb-2">Due date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    {dueDate ? formatDueDate(dueDate.toISOString()) : 'Set due date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={handleDueDateChange}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
