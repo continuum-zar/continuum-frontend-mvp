@@ -38,7 +38,7 @@ import {
 } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useState, useMemo } from 'react';
-import { useTimeTracking, myTasks } from '../context/TimeTrackingContext';
+import { useTimeTracking } from '../context/TimeTrackingContext';
 
 interface Invoice {
   id: string;
@@ -152,20 +152,25 @@ const projectToClientMap: Record<string, typeof clients[0]> = {
 };
 
 export function Invoices() {
-  const { entries } = useTimeTracking();
+  const { entries, tasks } = useTimeTracking();
   const [isNewInvoiceOpen, setIsNewInvoiceOpen] = useState(false);
 
-  // New Invoice Form State
+  // New Invoice Form State (selectedProjectId is project_id as string for project selector)
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [hourlyRate, setHourlyRate] = useState<number>(200);
+
+  // Distinct projects from tasks (by project_id) for dropdown
+  const projectOptions = useMemo(() => {
+    const byId = new Map<number, string>();
+    tasks.forEach((t) => byId.set(t.project_id, t.project));
+    return Array.from(byId.entries()).map(([project_id, project]) => ({ project_id, project }));
+  }, [tasks]);
 
   // Group entries by task and calculate duration sum where project matches
   const invoiceItems = useMemo(() => {
     if (!selectedProjectId) return [];
 
-    // selectedProjectId correlates to the project ID or Name. The `myTasks` uses `id` for tracking, but projects are stored by full string name in current implementation.
-    // In our mockup, myTasks looks like: { id: 't1', title: '...', project: 'Mobile App Redesign' }
-    const project = myTasks.find(p => p.id === selectedProjectId)?.project || '';
+    const project = tasks.find((t) => String(t.project_id) === selectedProjectId)?.project ?? '';
 
     // Grouping logic for matched entries
     const itemsMap = new Map<string, number>(); // Task Title -> Total Minutes
@@ -185,11 +190,11 @@ export function Invoices() {
     });
 
     return formattedItems;
-  }, [selectedProjectId, entries]);
+  }, [selectedProjectId, entries, tasks]);
 
   const subTotal = invoiceItems.reduce((acc, curr) => acc + (curr.qty * hourlyRate), 0);
-  const selectedProjectObj = myTasks.find(p => p.id === selectedProjectId);
-  const mappedClient = selectedProjectObj ? projectToClientMap[selectedProjectObj.project] : null;
+  const selectedProjectName = tasks.find((t) => String(t.project_id) === selectedProjectId)?.project;
+  const mappedClient = selectedProjectName ? projectToClientMap[selectedProjectName] : null;
 
   const totalPaid = invoices
     .filter((inv) => inv.status === 'paid')
@@ -509,20 +514,16 @@ export function Invoices() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Project</Label>
-                  <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                    <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a project..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {/* Using distinct projects from myTasks */}
-                      {Array.from(new Set(myTasks.map(t => t.project))).map(projName => {
-                        const taskRep = myTasks.find(t => t.project === projName)!;
-                        return (
-                          <SelectItem key={taskRep.id} value={taskRep.id}>
-                            {projName}
-                          </SelectItem>
-                        );
-                      })}
+                      {projectOptions.map(({ project_id, project }) => (
+                        <SelectItem key={project_id} value={String(project_id)}>
+                          {project}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

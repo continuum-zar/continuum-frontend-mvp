@@ -102,6 +102,7 @@ export function mapMember(m: MemberAPIResponse): Member {
             .slice(0, 2) || (email ? email[0].toUpperCase() : '?');
     return {
         id: m.id,
+        userId: m.user_id,
         name,
         email,
         role: m.role ?? 'member',
