@@ -23,4 +23,3 @@ export interface Member {
     role: string;
     initials: string;
 }
-
