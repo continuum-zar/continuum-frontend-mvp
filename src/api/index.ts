@@ -4,6 +4,7 @@ export {
     updateProject,
     fetchProject,
     fetchProjectTasks,
+    fetchAllTasks,
     updateTaskStatus,
     updateTask,
     fetchTask,
@@ -16,13 +17,14 @@ export {
     fetchTaskTimeline,
     assignTask,
 } from './projects';
-export type { Project, ProjectDetail, ProjectAPIResponse, Task, TaskStatus, Milestone, Member, TaskTimelineEntry } from './projects';
+export type { Project, ProjectDetail, ProjectAPIResponse, Task, TaskStatus, TaskOption, Milestone, Member, TaskTimelineEntry } from './projects';
 export type { CommentAPIResponse } from '@/types/comment';
 export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate, mapAttachment } from './mappers';
 export {
     useProjects,
     useProject,
     useProjectTasks,
+    useAllTasks,
     useProjectMilestones,
     useProjectMembers,
     useCreateProject,
@@ -41,3 +43,63 @@ export {
     projectKeys,
 } from './hooks';
 export type { AttachmentAPIResponse, Attachment } from '@/types/attachment';
+export {
+    fetchProjectDashboard,
+    fetchProjectVelocityReport,
+    fetchMilestoneBurndown,
+    fetchUserRhythm,
+    fetchProjectStaleWork,
+    fetchClassificationBreakdown,
+    fetchClientProjects,
+    fetchClientProjectProgress,
+    postProjectQuery,
+} from './dashboard';
+export {
+    fetchUserHours,
+    fetchUserHoursByDay,
+    getCurrentWeekRange,
+    getCurrentMonthRange,
+    getDaysElapsedInMonth,
+    useUserHours,
+    useUserHoursByDay,
+    userHoursKeys,
+} from './hours';
+export type { UserHoursResponse, UserHoursByDayResponse, UserDailyHoursResponse, DailyHoursItem } from './hours';
+export {
+    fetchLoggedHours,
+    createLoggedHour,
+    downloadLoggedHoursCsv,
+    fetchTasksForTimeLog,
+} from './loggedHours';
+export type { LoggedHourResponse, LoggedHourEntry, FetchLoggedHoursParams, CreateLoggedHourBody } from './loggedHours';
+export {
+    fetchActiveWorkSession,
+    startWorkSession,
+    pauseWorkSession,
+    resumeWorkSession,
+    stopWorkSession,
+} from './workSessions';
+export type {
+    WorkSessionOut,
+    WorkSessionStatus,
+    ActiveWorkSessionResponse,
+    WorkSessionCreateResponse,
+    WorkSessionCreateBody,
+    WorkSessionStopBody,
+} from './workSessions';
+export type {
+    DashboardMetricsResponse,
+    ProjectVelocityResponse,
+    WeeklyVelocityData,
+    MilestoneBurndownResponse,
+    UserRhythmDayHourResponse,
+    StaleWorkResponse,
+    StaleBranchItem,
+    ClassificationBreakdown,
+    ClientPortalProgress,
+    ClientProjectSummary,
+    ClientHealthPie,
+    ClientRecentActivityItem,
+    ProjectQueryRequest,
+    ProjectQueryResponse,
+} from './dashboard';

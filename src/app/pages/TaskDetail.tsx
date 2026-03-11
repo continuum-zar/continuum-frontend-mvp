@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
+import { useNavigate, useLocation, useParams } from 'react-router';
 import {
   ArrowLeft,
   User,
@@ -31,7 +31,7 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, usePostComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, useTaskTimeline, useProjectMembers, useAssignTask } from '@/api';
+import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, usePostComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { TaskAPIResponse } from '@/types/task';
@@ -92,9 +92,10 @@ const getActivityLabel = (entry: TaskTimelineEntry) => {
       return 'added a comment';
     case 'attachment_uploaded':
       return `added attachment ${entry.data?.original_filename || entry.data?.filename || 'a file'}`;
-    case 'hours_logged':
+    case 'hours_logged': {
       const hours = Number(entry.data?.hours) || 0;
       return `logged ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    }
     default:
       return 'performed an action';
   }
@@ -122,13 +123,20 @@ const getActivityColor = (type: string) => {
   }
 };
 
+function taskStatusToDisplay(s: string): string {
+  if (s === 'in_progress') return 'in-progress';
+  return s === 'todo' || s === 'done' ? s : 'todo';
+}
+
 export function TaskDetail() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-
+  const location = useLocation();
+  const state = (location.state as { projectId?: string | number } | undefined) || {};
   const [task, setTask] = useState<TaskAPIResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [comment, setComment] = useState('');
   const [status, setStatus] = useState('');
   const [scope, setScope] = useState('');
@@ -144,7 +152,6 @@ export function TaskDetail() {
   const { data: attachments, isLoading: attachmentsLoading } = useTaskAttachments(taskId);
   const uploadAttachmentMutation = useUploadAttachment(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Timeline hook
   const { data: timeline, isLoading: timelineLoading } = useTaskTimeline(taskId);
@@ -159,7 +166,6 @@ export function TaskDetail() {
         setLoading(true);
         setError(null);
 
-        // Validate taskId
         if (!taskId || isNaN(Number(taskId))) {
           setError('Invalid task ID');
           return;
@@ -172,8 +178,8 @@ export function TaskDetail() {
         }
 
         setTask(taskData);
-        setStatus(taskData.status || 'todo');
-        setScope(taskData.scope_weight || 'M');
+        setStatus(taskStatusToDisplay(taskData.status ?? 'todo'));
+        setScope((taskData.scope_weight ?? 'M') as ScopeWeight);
         if (taskData.due_date) {
           setDueDate(new Date(taskData.due_date));
         }
@@ -184,7 +190,6 @@ export function TaskDetail() {
         setLoading(false);
       }
     };
-
     loadTask();
   }, [taskId]);
 
@@ -201,85 +206,45 @@ export function TaskDetail() {
   };
 
   const handleNavigateBack = () => {
-    if (task?.project_id) {
-      navigate(`/projects/${task.project_id}`);
+    const projectId = task?.project_id ?? state.projectId;
+    if (projectId != null) {
+      navigate(`/projects/${projectId}`);
     } else {
       navigate(-1);
     }
   };
 
   const handleStatusChange = (newStatus: string) => {
-    // Store previous state for rollback
     const previousStatus = status;
-
-    // Optimistic update
     setStatus(newStatus);
-
-    // Convert from backend format to frontend format for API
     const frontendStatus: TaskStatus = newStatus === 'in_progress' ? 'in-progress' : (newStatus as TaskStatusAPI as TaskStatus);
-
-    // Call API
     if (taskId && task) {
       updateTaskMutation.mutate(
-        {
-          taskId,
-          status: frontendStatus,
-        },
-        {
-          onError: () => {
-            // Rollback on error
-            setStatus(previousStatus);
-          },
-        }
+        { taskId, status: frontendStatus },
+        { onError: () => setStatus(previousStatus) }
       );
     }
   };
 
   const handleScopeChange = (newScope: string) => {
-    // Store previous state for rollback
     const previousScope = scope;
-
-    // Optimistic update
     setScope(newScope);
-
-    // Call API
     if (taskId && task) {
       updateTaskMutation.mutate(
-        {
-          taskId,
-          scope_weight: newScope as ScopeWeight,
-        },
-        {
-          onError: () => {
-            // Rollback on error
-            setScope(previousScope);
-          },
-        }
+        { taskId, scope_weight: newScope as ScopeWeight },
+        { onError: () => setScope(previousScope) }
       );
     }
   };
 
   const handleDueDateChange = (date: Date | undefined) => {
-    // Store previous state for rollback
     const previousDueDate = dueDate;
-
-    // Optimistic update
     setDueDate(date);
-
-    // Call API with ISO string or null
     if (taskId && task) {
       const isoDate = date ? date.toISOString().split('T')[0] : null;
       updateTaskMutation.mutate(
-        {
-          taskId,
-          due_date: isoDate,
-        },
-        {
-          onError: () => {
-            // Rollback on error
-            setDueDate(previousDueDate);
-          },
-        }
+        { taskId, due_date: isoDate },
+        { onError: () => setDueDate(previousDueDate) }
       );
     }
   };
@@ -300,8 +265,9 @@ export function TaskDetail() {
   if (loading) return <TaskDetailSkeleton />;
   if (error || !task) return <TaskNotFound />;
 
-  const totalChecklists = task.checklists?.length ?? 0;
-  const completedChecklists = task.checklists?.filter(c => c.done).length ?? 0;
+  const taskChecklists = task.checklists && Array.isArray(task.checklists) ? task.checklists : [];
+  const totalChecklists = taskChecklists.length;
+  const completedChecklists = taskChecklists.filter((c) => c.done).length;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -349,12 +315,11 @@ export function TaskDetail() {
                   <MoreVertical className="h-5 w-5" />
                 </Button>
               </div>
-
               <div className="flex items-center space-x-4">
                 {task.project_name && (
                   <Badge variant="secondary">{task.project_name}</Badge>
                 )}
-                {task.id && (
+                {task.id != null && (
                   <div className="flex items-center space-x-2">
                     <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">TASK-{task.id}</span>
@@ -425,11 +390,14 @@ export function TaskDetail() {
                 </div>
               ) : attachments && attachments.length > 0 ? (
                 <div className="space-y-2">
-                  {attachments.map((attachment) => (
+                  {(attachments ?? []).map(mapAttachment).map((attachment) => (
                     <div key={attachment.id} className="flex items-center justify-between p-2 bg-input-background rounded">
-                      <a href={getAttachmentDownloadUrl(attachment.id)} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                        {attachment.original_filename}
-                      </a>
+                      <div className="min-w-0 flex-1">
+                        <a href={getAttachmentDownloadUrl(attachment.id)} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                          {attachment.filename}
+                        </a>
+                        <span className="text-sm text-muted-foreground ml-2">{attachment.size}</span>
+                      </div>
                       <Button
                         variant="ghost"
                         size="sm"
