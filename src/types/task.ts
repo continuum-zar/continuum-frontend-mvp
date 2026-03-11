@@ -40,3 +40,17 @@ export interface Task {
     checklists: { total: number; completed: number };
     milestoneId: string;
 }
+
+export type ActivityType = | 'task_created' | 'status_changed' | 'comment_added' | 'attachment_uploaded' | 'hours_logged';
+
+export interface TaskTimelineEntry {
+    id: number;
+    activity_type: ActivityType;
+    user: {
+        id: number;
+        username: string;
+        display_name: string | null;
+    };
+    timestamp: string;
+    data: Record<string, unknown>;
+}

@@ -2,7 +2,7 @@ import api from '@/lib/api';
 import type { AttachmentAPIResponse } from "@/types/attachment";
 import type { CommentAPIResponse } from '@/types/comment';
 import type { ProjectAPIResponse, ProjectDetailAPIResponse } from '@/types/project';
-import type { TaskAPIResponse } from '@/types/task';
+import type { TaskAPIResponse, TaskTimelineEntry } from '@/types/task';
 import type { MilestoneAPIResponse } from '@/types/milestone';
 import type { MemberAPIResponse } from '@/types/member';
 import {
@@ -18,7 +18,7 @@ import type { Milestone } from '@/types/milestone';
 import type { Member } from '@/types/member';
 
 export type { Project, ProjectDetail, ProjectAPIResponse };
-export type { Task, TaskStatus };
+export type { Task, TaskStatus, TaskTimelineEntry };
 export type { Milestone };
 export type { Member };
 
@@ -194,4 +194,10 @@ export async function deleteAttachment(attachmentId: number | string): Promise<v
 /** Download an attachment. Returns the download URL. */
 export function getAttachmentDownloadUrl(attachmentId: number | string): string {
     return `/api/v1/attachments/${attachmentId}/download`;
+}
+
+/** Fetch timeline for a task. Returns raw API timeline objects. */
+export async function fetchTaskTimeline(taskId: number | string): Promise<TaskTimelineEntry[]> {
+    const { data } = await api.get<TaskTimelineEntry[]>(`/tasks/${taskId}/timeline`);
+    return data ?? [];
 }

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchTaskAttachments, uploadTaskAttachment, deleteAttachment } from "./projects";
+import { fetchTaskAttachments, uploadTaskAttachment, deleteAttachment, fetchTaskTimeline } from "./projects";
 import { toast } from 'sonner';
 import {
     fetchProjects,
@@ -193,9 +193,12 @@ export function useUpdateTask() {
             scope_weight?: ScopeWeight;
             due_date?: string | null;
         }) => updateTask(taskId, { status, scope_weight, due_date }),
-        onSuccess: () => {
+        onSuccess: (_data, { taskId }) => {
             // Show success toast
             toast.success('Task updated successfully');
+            if (taskId) {
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            }
         },
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to update task'));
@@ -222,7 +225,10 @@ export function usePostComment(taskId: number | string | undefined | null) {
     return useMutation({
         mutationFn: (content: string) => postTaskComment(taskId!, { content }),
         onSuccess: () => {
-            if (taskId != null && taskId !== '') queryClient.invalidateQueries({ queryKey: taskCommentsKey(taskId!) });
+            if (taskId != null && taskId !== '') {
+                queryClient.invalidateQueries({ queryKey: taskCommentsKey(taskId!) });
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId!) });
+            }
             toast.success('Comment posted');
         },
         onError: (err) => {
@@ -247,7 +253,10 @@ export function useUploadAttachment(taskId: number | string | undefined | null) 
     return useMutation({
         mutationFn: (file: File) => uploadTaskAttachment(taskId!, file),
         onSuccess: () => {
-            if (taskId != null && taskId !== '') queryClient.invalidateQueries({ queryKey: taskAttachmentsKey(taskId!) });
+            if (taskId != null && taskId !== '') {
+                queryClient.invalidateQueries({ queryKey: taskAttachmentsKey(taskId!) });
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId!) });
+            }
             toast.success('Attachment uploaded successfully');
         },
         onError: (err) => {
@@ -261,11 +270,25 @@ export function useDeleteAttachment(taskId: number | string | undefined | null) 
     return useMutation({
         mutationFn: (attachmentId: number | string) => deleteAttachment(attachmentId),
         onSuccess: () => {
-            if (taskId != null && taskId !== '') queryClient.invalidateQueries({ queryKey: taskAttachmentsKey(taskId!) });
+            if (taskId != null && taskId !== '') {
+                queryClient.invalidateQueries({ queryKey: taskAttachmentsKey(taskId!) });
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId!) });
+            }
             toast.success('Attachment deleted successfully');
         },
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to delete attachment'));
         },
+    });
+}
+
+// Timeline keys
+const taskTimelineKey = (taskId: number | string) => ['taskTimeline', taskId] as const;
+
+export function useTaskTimeline(taskId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: taskTimelineKey(taskId!),
+        queryFn: () => fetchTaskTimeline(taskId!),
+        enabled: taskId != null && taskId !== '',
     });
 }
