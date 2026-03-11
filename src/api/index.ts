@@ -13,11 +13,11 @@ export {
     fetchMembers,
     addMember,
     fetchTaskComments,
-    postTaskComment,
+    postTaskComment, fetchTaskAttachments, uploadTaskAttachment, deleteAttachment, getAttachmentDownloadUrl,
 } from './projects';
 export type { Project, ProjectDetail, ProjectAPIResponse, Task, TaskStatus, TaskOption, Milestone, Member } from './projects';
 export type { CommentAPIResponse } from '@/types/comment';
-export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate } from './mappers';
+export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate, mapAttachment } from './mappers';
 export {
     useProjects,
     useProject,
@@ -33,8 +33,12 @@ export {
     useAddMember,
     useTaskComments,
     usePostComment,
+    useTaskAttachments,
+    useUploadAttachment,
+    useDeleteAttachment,
     projectKeys,
 } from './hooks';
+export type { AttachmentAPIResponse, Attachment } from '@/types/attachment';
 export {
     fetchProjectDashboard,
     fetchProjectVelocityReport,
