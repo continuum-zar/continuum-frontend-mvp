@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { useNavigate, useLocation, useParams } from 'react-router';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Clock,
   Tag,
+  AlertCircle,
   Loader2,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -26,57 +27,61 @@ import {
 } from '../components/ui/select';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
+import { Skeleton } from '../components/ui/skeleton';
+import { fetchTask, formatDueDate } from '@/api';
 import {
-  fetchTask,
   fetchTaskAttachments,
   uploadTaskAttachment,
   mapTaskAttachment,
 } from '@/api/projects';
-import type { TaskAPIResponse } from '@/types/task';
-import type { TaskAttachmentItem } from '@/types/task';
-import { formatDueDate } from '@/api/mappers';
+import type { TaskAPIResponse, TaskAttachmentItem } from '@/types/task';
 
-const comments = [
-  {
-    id: 1,
-    user: 'Sarah Chen',
-    avatar: 'SC',
-    content: 'I\'ve started working on the initial mockups. Will have something to share by EOD.',
-    timestamp: '2 hours ago',
-  },
-  {
-    id: 2,
-    user: 'Emma Wilson',
-    avatar: 'EW',
-    content: 'Great! Make sure to follow the design system we established in Figma.',
-    timestamp: '1 hour ago',
-  },
-  {
-    id: 3,
-    user: 'Sarah Chen',
-    avatar: 'SC',
-    content: 'Absolutely. I\'m using the component library as reference.',
-    timestamp: '45 minutes ago',
-  },
-];
+function TaskDetailSkeleton() {
+  return (
+    <div className="flex h-full">
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-8">
+          <Skeleton className="h-10 w-32 mb-6" />
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-6 w-2/3" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </div>
+      </div>
+      <aside className="w-80 bg-card border-l border-border p-6">
+        <div className="space-y-6">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      </aside>
+    </div>
+  );
+}
 
-const activityLog = [
-  { id: 1, user: 'Sarah Chen', action: 'changed status from', from: 'To Do', to: 'In Progress', time: '3 hours ago' },
-  { id: 2, user: 'Emma Wilson', action: 'added attachment', detail: 'design-specs.pdf', time: '5 hours ago' },
-  { id: 3, user: 'Sarah Chen', action: 'was assigned to this task', time: '1 day ago' },
-  { id: 4, user: 'Mike Torres', action: 'created this task', time: '2 days ago' },
-];
-
-function taskStatusToDisplay(s: string): string {
-  if (s === 'in_progress') return 'in-progress';
-  return s === 'todo' || s === 'done' ? s : 'todo';
+function TaskNotFound() {
+  const navigate = useNavigate();
+  return (
+    <div className="flex h-full items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center"
+      >
+        <AlertCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
+        <h2 className="text-2xl font-bold mb-2">Task not found</h2>
+        <p className="text-muted-foreground mb-6">The task you're looking for doesn't exist or has been deleted.</p>
+        <Button onClick={() => navigate('/projects')}>Go to Projects</Button>
+      </motion.div>
+    </div>
+  );
 }
 
 export function TaskDetail() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
-  const state = (location.state as { projectId?: string | number } | undefined) || {};
+
   const [task, setTask] = useState<TaskAPIResponse | null>(null);
   const [attachments, setAttachments] = useState<TaskAttachmentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,13 +89,13 @@ export function TaskDetail() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [comment, setComment] = useState('');
-  const [status, setStatus] = useState('in-progress');
-  const [scope, setScope] = useState('L');
+  const [status, setStatus] = useState('');
+  const [scope, setScope] = useState('');
 
   useEffect(() => {
-    if (!taskId) {
+    if (!taskId || isNaN(Number(taskId))) {
       setLoading(false);
-      setError('No task ID');
+      setError('Invalid task ID');
       return;
     }
     let cancelled = false;
@@ -104,8 +109,8 @@ export function TaskDetail() {
       if (taskResult && !(taskResult instanceof Error) && typeof taskResult === 'object' && 'id' in taskResult) {
         const t = taskResult as TaskAPIResponse;
         setTask(t);
-        setStatus(taskStatusToDisplay(t.status ?? 'todo'));
-        setScope((t.scope_weight as 'L') ?? 'L');
+        setStatus(t.status ?? 'todo');
+        setScope(t.scope_weight ?? 'M');
       } else {
         setTask(null);
         setError(taskResult instanceof Error ? taskResult.message : 'Failed to load task');
@@ -145,27 +150,19 @@ export function TaskDetail() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  const handleNavigateBack = () => {
+    if (task?.project_id) {
+      navigate(`/projects/${task.project_id}`);
+    } else {
+      navigate(-1);
+    }
+  };
 
-  if (error || !task) {
-    return (
-      <div className="p-8">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <p className="text-destructive">{error ?? 'Task not found'}</p>
-      </div>
-    );
-  }
+  if (loading) return <TaskDetailSkeleton />;
+  if (error || !task) return <TaskNotFound />;
 
-  const taskChecklists = task.checklists && Array.isArray(task.checklists) ? task.checklists : [];
+  const totalChecklists = task.checklists?.length ?? 0;
+  const completedChecklists = task.checklists?.filter(c => c.done).length ?? 0;
 
   return (
     <div className="flex h-full">
@@ -174,7 +171,7 @@ export function TaskDetail() {
         <div className="p-8">
           <Button
             variant="ghost"
-            onClick={() => (state.projectId ? navigate(`/projects/${state.projectId}`) : navigate(-1))}
+            onClick={handleNavigateBack}
             className="mb-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -191,22 +188,24 @@ export function TaskDetail() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h1 className="text-3xl mb-2">{task.title}</h1>
-                  {task.description ? (
-                    <p className="text-muted-foreground">{task.description}</p>
-                  ) : null}
+                  <p className="text-muted-foreground">
+                    {task.description || 'No description provided'}
+                  </p>
                 </div>
                 <Button variant="ghost" size="icon">
                   <MoreVertical className="h-5 w-5" />
                 </Button>
               </div>
               <div className="flex items-center space-x-4">
-                {task.project_name ? (
+                {task.project_name && (
                   <Badge variant="secondary">{task.project_name}</Badge>
-                ) : null}
-                <div className="flex items-center space-x-2">
-                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">TASK-{task.id}</span>
-                </div>
+                )}
+                {task.id != null && (
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">TASK-{task.id}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -222,16 +221,20 @@ export function TaskDetail() {
 
             {/* Checklists */}
             <div className="mb-8 bg-card border border-border rounded-lg p-6">
-              <h3 className="mb-4">Checklist</h3>
-              {taskChecklists.length > 0 ? (
+              <h3 className="mb-4">Checklist ({completedChecklists}/{totalChecklists})</h3>
+              {task.checklists && task.checklists.length > 0 ? (
                 <div className="space-y-3">
-                  {taskChecklists.map((item, index) => (
-                    <div key={item.id ?? index} className="flex items-center space-x-3">
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 ${item.done ? 'border-primary bg-primary' : 'border-border'}`}>
-                        {item.done ? <CheckCircle2 className="h-3 w-3 text-primary-foreground" /> : null}
-                      </div>
-                      <span className={`text-sm ${item.done ? 'text-muted-foreground line-through' : ''}`}>
-                        {item.text}
+                  {task.checklists.map((checklist, idx) => (
+                    <div key={checklist.id ?? idx} className="flex items-center space-x-3">
+                      {checklist.done ? (
+                        <div className="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
+                      )}
+                      <span className={`text-sm ${checklist.done ? 'text-muted-foreground line-through' : ''}`}>
+                        {checklist.text}
                       </span>
                     </div>
                   ))}
@@ -308,20 +311,11 @@ export function TaskDetail() {
             <div className="mb-8 bg-card border border-border rounded-lg p-6">
               <h3 className="mb-6">Comments</h3>
               <div className="space-y-6 mb-6">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="flex space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>{comment.avatar}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="font-medium text-sm">{comment.user}</span>
-                        <span className="text-xs text-muted-foreground">{comment.timestamp}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{comment.content}</p>
-                    </div>
-                  </div>
-                ))}
+                {task.comment_count && task.comment_count > 0 ? (
+                  <p className="text-sm text-muted-foreground">{task.comment_count} comment(s)</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No comments yet</p>
+                )}
               </div>
 
               <Separator className="my-6" />
@@ -346,35 +340,6 @@ export function TaskDetail() {
                 </div>
               </form>
             </div>
-
-            {/* Activity Log */}
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="mb-4">Activity</h3>
-              <div className="space-y-4">
-                {activityLog.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 text-sm">
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p>
-                        <span className="font-medium">{activity.user}</span>{' '}
-                        <span className="text-muted-foreground">{activity.action}</span>
-                        {activity.from && (
-                          <>
-                            {' '}<Badge variant="outline" className="mx-1">{activity.from}</Badge>
-                            {' to '}
-                            <Badge variant="outline" className="ml-1">{activity.to}</Badge>
-                          </>
-                        )}
-                        {activity.detail && (
-                          <span className="font-medium ml-1">{activity.detail}</span>
-                        )}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </motion.div>
         </div>
       </div>
@@ -395,8 +360,7 @@ export function TaskDetail() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todo">To Do</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
-                <SelectItem value="review">In Review</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="done">Done</SelectItem>
               </SelectContent>
             </Select>
@@ -426,24 +390,18 @@ export function TaskDetail() {
               Assignees
             </div>
             <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>SC</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium">Sarah Chen</p>
-                  <p className="text-xs text-muted-foreground">Designer</p>
+              {task.assigned_to ? (
+                <div className="flex items-center space-x-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>U{task.assigned_to}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium">User {task.assigned_to}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>EW</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium">Emma Wilson</p>
-                  <p className="text-xs text-muted-foreground">Design Lead</p>
-                </div>
-              </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Not assigned</p>
+              )}
               <Button variant="outline" size="sm" className="w-full mt-2">
                 Add Assignee
               </Button>
@@ -481,9 +439,9 @@ export function TaskDetail() {
               Labels
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">Design</Badge>
-              <Badge variant="secondary">Frontend</Badge>
-              <Badge variant="secondary">Marketing</Badge>
+              {task.project_name && (
+                <Badge variant="secondary">{task.project_name}</Badge>
+              )}
             </div>
             <Button variant="outline" size="sm" className="w-full mt-2">
               Add Label
@@ -500,11 +458,11 @@ export function TaskDetail() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Estimated</span>
-                <span>8 hours</span>
+                <span>—</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Logged</span>
-                <span>4.5 hours</span>
+                <span>—</span>
               </div>
             </div>
             <Button variant="outline" size="sm" className="w-full mt-2">
