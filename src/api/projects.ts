@@ -64,12 +64,37 @@ export async function fetchProject(id: number | string): Promise<ProjectDetail> 
     return mapProjectDetail(data);
 }
 
+/** Dropdown task shape for time-tracking / task selector (id as string for Select value). */
+export interface TaskOption {
+    id: string;
+    title: string;
+    project: string;
+    project_id: number;
+}
+
+/** Fetch all tasks for the current user's projects (no project_id). For time log task dropdown. */
+export async function fetchAllTasks(): Promise<TaskOption[]> {
+    const { data } = await api.get<TaskAPIResponse[]>('/tasks/');
+    return (data ?? []).map((t) => ({
+        id: String(t.id),
+        title: t.title ?? '',
+        project: t.project_name ?? '',
+        project_id: t.project_id,
+    }));
+}
+
 /** Fetch tasks for a project. Returns UI-shaped tasks. */
 export async function fetchProjectTasks(projectId: number | string): Promise<Task[]> {
     const { data } = await api.get<TaskAPIResponse[]>(`/tasks/`, {
         params: { project_id: projectId },
     });
     return (data ?? []).map(mapTask);
+}
+
+/** Fetch a single task by ID. Returns raw API response (includes checklists). */
+export async function fetchTask(taskId: number | string): Promise<TaskAPIResponse> {
+    const { data } = await api.get<TaskAPIResponse>(`/tasks/${taskId}`);
+    return data;
 }
 
 /** Update task status. Returns updated task from API (use mapTask if you need UI shape). */
@@ -84,12 +109,6 @@ export async function updateTaskStatus(
     return data;
 }
 
-/** Fetch a single task by ID. Returns raw API response. */
-export async function fetchTask(taskId: number | string): Promise<TaskAPIResponse> {
-    const { data } = await api.get<TaskAPIResponse>(`/tasks/${taskId}`);
-    return data;
-}
-
 /** Update task with multiple fields (status, scope_weight, due_date). Returns updated task from API. */
 export async function updateTask(
     taskId: number | string,
@@ -100,7 +119,7 @@ export async function updateTask(
     }
 ): Promise<TaskAPIResponse> {
     const payload: Record<string, TaskStatus | ScopeWeight | string | null> = {};
-    
+
     if (body.status !== undefined) {
         payload.status = body.status === 'in-progress' ? 'in_progress' : body.status;
     }
@@ -110,7 +129,7 @@ export async function updateTask(
     if (body.due_date !== undefined) {
         payload.due_date = body.due_date;
     }
-    
+
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
     return data;
 }
@@ -177,12 +196,8 @@ export async function fetchTaskAttachments(taskId: number | string): Promise<Att
 export async function uploadTaskAttachment(taskId: number | string, file: File): Promise<AttachmentAPIResponse> {
     const formData = new FormData();
     formData.append('file', file);
-    
-    const { data } = await api.post<AttachmentAPIResponse>(`/tasks/${taskId}/attachments`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+
+    const { data } = await api.post<AttachmentAPIResponse>(`/tasks/${taskId}/attachments`, formData);
     return data;
 }
 
