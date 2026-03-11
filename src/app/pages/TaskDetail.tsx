@@ -125,7 +125,7 @@ export function TaskDetail() {
         const t = taskResult as TaskAPIResponse;
         setTask(t);
         setStatus(taskStatusToDisplay(t.status ?? 'todo'));
-        setScope((t.scope_weight as 'L') ?? 'L');
+        setScope((t.scope_weight ?? 'M') as ScopeWeight);
         if (t.due_date) setDueDate(new Date(t.due_date));
       } else {
         setTask(null);
