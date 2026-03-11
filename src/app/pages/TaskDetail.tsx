@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Calendar,
@@ -12,6 +13,7 @@ import {
   Clock,
   Tag,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -27,7 +29,12 @@ import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
 import { fetchTask, formatDueDate } from '@/api';
-import type { TaskAPIResponse } from '@/types/task';
+import {
+  fetchTaskAttachments,
+  uploadTaskAttachment,
+  mapTaskAttachment,
+} from '@/api/projects';
+import type { TaskAPIResponse, TaskAttachmentItem } from '@/types/task';
 
 function TaskDetailSkeleton() {
   return (
@@ -76,43 +83,64 @@ export function TaskDetail() {
   const navigate = useNavigate();
 
   const [task, setTask] = useState<TaskAPIResponse | null>(null);
+  const [attachments, setAttachments] = useState<TaskAttachmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [comment, setComment] = useState('');
   const [status, setStatus] = useState('');
   const [scope, setScope] = useState('');
 
   useEffect(() => {
-    const loadTask = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Validate taskId
-        if (!taskId || isNaN(Number(taskId))) {
-          setError('Invalid task ID');
-          return;
-        }
-
-        const taskData = await fetchTask(taskId);
-        if (!taskData) {
-          setError('Task not found');
-          return;
-        }
-
-        setTask(taskData);
-        setStatus(taskData.status || 'todo');
-        setScope(taskData.scope_weight || 'M');
-      } catch (err) {
-        console.error('Failed to load task:', err);
-        setError('Failed to load task. Please try again.');
-      } finally {
-        setLoading(false);
+    if (!taskId || isNaN(Number(taskId))) {
+      setLoading(false);
+      setError('Invalid task ID');
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      fetchTask(taskId).catch((err: unknown) => err),
+      fetchTaskAttachments(taskId),
+    ]).then(([taskResult, attachmentList]) => {
+      if (cancelled) return;
+      if (taskResult && !(taskResult instanceof Error) && typeof taskResult === 'object' && 'id' in taskResult) {
+        const t = taskResult as TaskAPIResponse;
+        setTask(t);
+        setStatus(t.status ?? 'todo');
+        setScope(t.scope_weight ?? 'M');
+      } else {
+        setTask(null);
+        setError(taskResult instanceof Error ? taskResult.message : 'Failed to load task');
       }
-    };
-
-    loadTask();
+      setAttachments((attachmentList ?? []).map(mapTaskAttachment));
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
   }, [taskId]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length || !taskId) return;
+    setUploading(true);
+    const fileArray = Array.from(files);
+    for (const file of fileArray) {
+      try {
+        const data = await uploadTaskAttachment(taskId, file);
+        setAttachments((prev) => [...prev, mapTaskAttachment(data)]);
+        toast.success(`Added "${file.name}"`);
+      } catch (err: unknown) {
+        const msg = (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message
+          ?? (err as { message?: string })?.message
+          ?? 'Upload failed';
+        toast.error(`${msg} You can try again on this task page.`);
+      }
+    }
+    setUploading(false);
+    e.target.value = '';
+  };
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,12 +196,11 @@ export function TaskDetail() {
                   <MoreVertical className="h-5 w-5" />
                 </Button>
               </div>
-
               <div className="flex items-center space-x-4">
                 {task.project_name && (
                   <Badge variant="secondary">{task.project_name}</Badge>
                 )}
-                {task.id && (
+                {task.id != null && (
                   <div className="flex items-center space-x-2">
                     <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">TASK-{task.id}</span>
@@ -183,22 +210,22 @@ export function TaskDetail() {
             </div>
 
             {/* Description */}
-            {task.description && (
+            {task.description ? (
               <div className="mb-8 bg-card border border-border rounded-lg p-6">
                 <h3 className="mb-3">Description</h3>
                 <div className="text-muted-foreground space-y-2">
                   <p>{task.description}</p>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Checklists */}
-            {task.checklists && task.checklists.length > 0 && (
-              <div className="mb-8 bg-card border border-border rounded-lg p-6">
-                <h3 className="mb-4">Checklist ({completedChecklists}/{totalChecklists})</h3>
+            <div className="mb-8 bg-card border border-border rounded-lg p-6">
+              <h3 className="mb-4">Checklist ({completedChecklists}/{totalChecklists})</h3>
+              {task.checklists && task.checklists.length > 0 ? (
                 <div className="space-y-3">
                   {task.checklists.map((checklist, idx) => (
-                    <div key={idx} className="flex items-center space-x-3">
+                    <div key={checklist.id ?? idx} className="flex items-center space-x-3">
                       {checklist.done ? (
                         <div className="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center flex-shrink-0">
                           <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
@@ -212,25 +239,72 @@ export function TaskDetail() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-muted-foreground">No checklist items.</p>
+              )}
+            </div>
 
             {/* Attachments */}
             <div className="mb-8 bg-card border border-border rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3>Attachments</h3>
-                <Button variant="outline" size="sm">
-                  <Paperclip className="mr-2 h-4 w-4" />
-                  Add File
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  multiple
+                  accept="*/*"
+                  onChange={handleFileSelect}
+                  disabled={!taskId || uploading}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!taskId || uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Paperclip className="mr-2 h-4 w-4" />
+                      Add File
+                    </>
+                  )}
                 </Button>
               </div>
-              {task.attachment_count && task.attachment_count > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">{task.attachment_count} file(s) attached</p>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No attachments yet</p>
-              )}
+              <div className="space-y-2">
+                {attachments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">No attachments yet. Use &quot;Add File&quot; to upload.</p>
+                ) : (
+                  attachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center">
+                          <Paperclip className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{attachment.name}</p>
+                          <p className="text-xs text-muted-foreground">{attachment.size}</p>
+                        </div>
+                      </div>
+                      {attachment.url ? (
+                        <a href={attachment.url} target="_blank" rel="noreferrer">
+                          <Button variant="ghost" size="sm">Download</Button>
+                        </a>
+                      ) : (
+                        <Button variant="ghost" size="sm" disabled>Download</Button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
             {/* Comments */}
@@ -342,24 +416,18 @@ export function TaskDetail() {
               Dates
             </div>
             <div className="space-y-2 text-sm">
-              {task.created_at && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Created</span>
-                  <span>{formatDueDate(task.created_at)}</span>
-                </div>
-              )}
-              {task.updated_at && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Updated</span>
-                  <span>{formatDueDate(task.updated_at)}</span>
-                </div>
-              )}
-              {task.due_date && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Due date</span>
-                  <span className="text-warning">{formatDueDate(task.due_date)}</span>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Created</span>
+                <span>{task.created_at ? formatDueDate(task.created_at) : '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Updated</span>
+                <span>{task.updated_at ? formatDueDate(task.updated_at) : '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Due date</span>
+                <span className={task.due_date ? 'text-warning' : ''}>{task.due_date ? formatDueDate(task.due_date) : '—'}</span>
+              </div>
             </div>
           </div>
 
