@@ -100,7 +100,7 @@ export async function updateTask(
     }
 ): Promise<TaskAPIResponse> {
     const payload: Record<string, TaskStatus | ScopeWeight | string | null> = {};
-    
+
     if (body.status !== undefined) {
         payload.status = body.status === 'in-progress' ? 'in_progress' : body.status;
     }
@@ -110,7 +110,7 @@ export async function updateTask(
     if (body.due_date !== undefined) {
         payload.due_date = body.due_date;
     }
-    
+
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
     return data;
 }
@@ -177,12 +177,8 @@ export async function fetchTaskAttachments(taskId: number | string): Promise<Att
 export async function uploadTaskAttachment(taskId: number | string, file: File): Promise<AttachmentAPIResponse> {
     const formData = new FormData();
     formData.append('file', file);
-    
-    const { data } = await api.post<AttachmentAPIResponse>(`/tasks/${taskId}/attachments`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+
+    const { data } = await api.post<AttachmentAPIResponse>(`/tasks/${taskId}/attachments`, formData);
     return data;
 }
 

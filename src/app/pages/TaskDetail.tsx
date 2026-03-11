@@ -28,7 +28,7 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, usePostComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl } from '@/api';
+import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, usePostComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight } from '@/types/task';
 import type { TaskAPIResponse } from '@/types/task';
@@ -358,11 +358,14 @@ export function TaskDetail() {
             </div>
           ) : attachments && attachments.length > 0 ? (
             <div className="space-y-2">
-              {attachments.map((attachment) => (
+              {(attachments ?? []).map(mapAttachment).map((attachment) => (
                 <div key={attachment.id} className="flex items-center justify-between p-2 bg-input-background rounded">
-                  <a href={getAttachmentDownloadUrl(attachment.id)} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                    {attachment.original_filename}
-                  </a>
+                  <div className="min-w-0 flex-1">
+                    <a href={getAttachmentDownloadUrl(attachment.id)} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                      {attachment.filename}
+                    </a>
+                    <span className="text-sm text-muted-foreground ml-2">{attachment.size}</span>
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
