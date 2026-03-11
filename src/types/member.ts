@@ -17,8 +17,10 @@ export interface MemberAPIResponse {
 /** Member shape used by UI (e.g. ProjectBoard Team modal) */
 export interface Member {
     id: number;
+    userId: number;
     name: string;
     email: string;
     role: string;
     initials: string;
 }
+

@@ -100,7 +100,7 @@ export async function updateTask(
     }
 ): Promise<TaskAPIResponse> {
     const payload: Record<string, TaskStatus | ScopeWeight | string | null> = {};
-    
+
     if (body.status !== undefined) {
         payload.status = body.status === 'in-progress' ? 'in_progress' : body.status;
     }
@@ -110,7 +110,7 @@ export async function updateTask(
     if (body.due_date !== undefined) {
         payload.due_date = body.due_date;
     }
-    
+
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
     return data;
 }
@@ -177,7 +177,7 @@ export async function fetchTaskAttachments(taskId: number | string): Promise<Att
 export async function uploadTaskAttachment(taskId: number | string, file: File): Promise<AttachmentAPIResponse> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const { data } = await api.post<AttachmentAPIResponse>(`/tasks/${taskId}/attachments`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
@@ -200,4 +200,10 @@ export function getAttachmentDownloadUrl(attachmentId: number | string): string 
 export async function fetchTaskTimeline(taskId: number | string): Promise<TaskTimelineEntry[]> {
     const { data } = await api.get<TaskTimelineEntry[]>(`/tasks/${taskId}/timeline`);
     return data ?? [];
+}
+
+/** Assign a task to a user. PATCH /api/v1/tasks/{id}/assign. */
+export async function assignTask(taskId: number | string, userId: number | null): Promise<TaskAPIResponse> {
+    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { user_id: userId });
+    return data;
 }
