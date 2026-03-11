@@ -92,9 +92,10 @@ const getActivityLabel = (entry: TaskTimelineEntry) => {
       return 'added a comment';
     case 'attachment_uploaded':
       return `added attachment ${entry.data?.original_filename || entry.data?.filename || 'a file'}`;
-    case 'hours_logged':
+    case 'hours_logged': {
       const hours = Number(entry.data?.hours) || 0;
       return `logged ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    }
     default:
       return 'performed an action';
   }
