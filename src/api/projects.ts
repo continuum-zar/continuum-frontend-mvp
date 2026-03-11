@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { CommentAPIResponse } from '@/types/comment';
 import type { ProjectAPIResponse, ProjectDetailAPIResponse } from '@/types/project';
 import type { TaskAPIResponse } from '@/types/task';
 import type { MilestoneAPIResponse } from '@/types/milestone';
@@ -169,6 +170,18 @@ export async function addMember(
         email: body.email,
         role: body.role ?? 'member',
     });
+    return data;
+}
+
+/** Fetch comments for a task. Returns raw API comment objects. */
+export async function fetchTaskComments(taskId: number | string): Promise<CommentAPIResponse[]> {
+    const { data } = await api.get<CommentAPIResponse[]>(`/tasks/${taskId}/comments`);
+    return data ?? [];
+}
+
+/** Post a comment to a task. Returns the created comment. */
+export async function postTaskComment(taskId: number | string, body: { content: string }): Promise<CommentAPIResponse> {
+    const { data } = await api.post<CommentAPIResponse>(`/tasks/${taskId}/comments`, { content: body.content });
     return data;
 }
 

@@ -13,6 +13,8 @@ import {
     addMember,
     createProject,
     updateProject,
+    fetchTaskComments,
+    postTaskComment,
 } from './projects';
 import { fetchLoggedHours, createLoggedHour } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
@@ -244,6 +246,30 @@ export function useUpdateTask() {
         onSettled: () => {
             // Refetch all project task lists to ensure consistency
             queryClient.invalidateQueries({ queryKey: projectKeys.all });
+        },
+    });
+}
+// Comment keys
+const taskCommentsKey = (taskId: number | string) => ['taskComments', taskId] as const;
+
+export function useTaskComments(taskId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: taskCommentsKey(taskId!),
+        queryFn: () => fetchTaskComments(taskId!),
+        enabled: taskId != null && taskId !== '',
+    });
+}
+
+export function usePostComment(taskId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (content: string) => postTaskComment(taskId!, { content }),
+        onSuccess: () => {
+            if (taskId != null && taskId !== '') queryClient.invalidateQueries({ queryKey: taskCommentsKey(taskId!) });
+            toast.success('Comment posted');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to post comment'));
         },
     });
 }
