@@ -78,7 +78,7 @@ function TaskNotFound() {
 export function TaskDetail() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  
+
   const [task, setTask] = useState<TaskAPIResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export function TaskDetail() {
   const [status, setStatus] = useState('');
   const [scope, setScope] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  
+
   // Initialize the update task mutation
   const updateTaskMutation = useUpdateTask();
 
@@ -99,7 +99,7 @@ export function TaskDetail() {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Validate taskId
         if (!taskId || isNaN(Number(taskId))) {
           setError('Invalid task ID');
@@ -111,7 +111,7 @@ export function TaskDetail() {
           setError('Task not found');
           return;
         }
-        
+
         setTask(taskData);
         setStatus(taskData.status || 'todo');
         setScope(taskData.scope_weight || 'M');
@@ -152,13 +152,13 @@ export function TaskDetail() {
   const handleStatusChange = (newStatus: string) => {
     // Store previous state for rollback
     const previousStatus = status;
-    
+
     // Optimistic update
     setStatus(newStatus);
-    
+
     // Convert from backend format to frontend format for API
     const frontendStatus: TaskStatus = newStatus === 'in_progress' ? 'in-progress' : (newStatus as TaskStatusAPI as TaskStatus);
-    
+
     // Call API
     if (taskId && task) {
       updateTaskMutation.mutate(
@@ -179,10 +179,10 @@ export function TaskDetail() {
   const handleScopeChange = (newScope: string) => {
     // Store previous state for rollback
     const previousScope = scope;
-    
+
     // Optimistic update
     setScope(newScope);
-    
+
     // Call API
     if (taskId && task) {
       updateTaskMutation.mutate(
@@ -203,10 +203,10 @@ export function TaskDetail() {
   const handleDueDateChange = (date: Date | undefined) => {
     // Store previous state for rollback
     const previousDueDate = dueDate;
-    
+
     // Optimistic update
     setDueDate(date);
-    
+
     // Call API with ISO string or null
     if (taskId && task) {
       const isoDate = date ? date.toISOString().split('T')[0] : null;
@@ -370,7 +370,7 @@ export function TaskDetail() {
                     className="mb-2 bg-input-background"
                   />
                   <div className="flex justify-end">
-                    <Button type="submit" size="sm" disabled={!comment.trim() || postCommentMutation.isLoading}>
+                    <Button type="submit" size="sm" disabled={!comment.trim() || postCommentMutation.isPending}>
                       <Send className="mr-2 h-4 w-4" />
                       Comment
                     </Button>
@@ -467,7 +467,7 @@ export function TaskDetail() {
                 </div>
               )}
             </div>
-            
+
             <div className="mt-4">
               <label className="text-sm text-muted-foreground block mb-2">Due date</label>
               <Popover>
