@@ -3,15 +3,18 @@ import { toast } from 'sonner';
 import {
     fetchProjects,
     fetchProject,
-    fetchProjectTasks,
-    updateTaskStatus,
-    updateTask,
     fetchMilestones,
     createMilestone,
     fetchMembers,
     addMember,
     createProject,
     updateProject,
+} from './projects';
+import {
+    fetchProjectTasks,
+    fetchAllTasks,
+    updateTaskStatus,
+    updateTask,
     fetchTaskComments,
     createTaskComment,
     fetchTaskAttachments,
@@ -19,7 +22,9 @@ import {
     deleteAttachment,
     fetchTaskTimeline,
     assignTask,
-} from '@/api';
+} from './tasks';
+import { fetchLoggedHours, createLoggedHour } from './loggedHours';
+import type { CreateLoggedHourBody } from './loggedHours';
 import type { Task, TaskStatus, ScopeWeight } from '@/types/task';
 
 /** Normalize FastAPI error detail into a single message. */
@@ -41,8 +46,10 @@ export const projectKeys = {
     list: () => [...projectKeys.all, 'list'] as const,
     detail: (id: number | string) => [...projectKeys.all, 'detail', id] as const,
     tasks: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'tasks'] as const,
+    allTasks: () => ['tasks', 'all'] as const,
     milestones: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'milestones'] as const,
     members: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'members'] as const,
+    loggedHours: (projectId?: string | null) => ['logged-hours', projectId ?? 'all'] as const,
 };
 
 export function useProjects() {
@@ -65,6 +72,45 @@ export function useProjectTasks(projectId: number | string | undefined | null) {
         queryKey: projectKeys.tasks(projectId!),
         queryFn: () => fetchProjectTasks(projectId!),
         enabled: projectId != null && projectId !== '',
+    });
+}
+
+/** All tasks across user's projects (for time-tracking task dropdown). No project_id filter. */
+export function useAllTasks() {
+    return useQuery({
+        queryKey: projectKeys.allTasks(),
+        queryFn: fetchAllTasks,
+    });
+}
+
+/** Logged hours for Recent Entries. Optional project_id; "all" / empty = no filter. Refetch after logging a new entry. */
+export function useLoggedHours(projectId?: string | null, options?: { limit?: number }) {
+    const limit = options?.limit ?? 50;
+    const projectIdParam = (projectId == null || projectId === '' || projectId === 'all') ? undefined : projectId;
+    return useQuery({
+        queryKey: projectKeys.loggedHours(projectIdParam),
+        queryFn: () => fetchLoggedHours({
+            ...(projectIdParam != null && { project_id: projectIdParam }),
+            limit,
+        }),
+    });
+}
+
+/** Create a logged hour (manual entry). Invalidates logged-hours so Recent Entries refetch. */
+export function useCreateLoggedHour() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateLoggedHourBody) => createLoggedHour(body),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['logged-hours'] });
+        },
+        onError: (err) => {
+            const res = (err as { response?: { status?: number; data?: { detail?: string } } })?.response;
+            const message = typeof res?.data?.detail === 'string'
+                ? res.data.detail
+                : getApiErrorMessage(err, 'Failed to log time. You may not have access to this project or task.');
+            toast.error(message);
+        },
     });
 }
 

@@ -6,6 +6,25 @@ import type { AttachmentAPIResponse } from '@/types/attachment';
 
 export type { Task, TaskStatus, TaskAPIResponse, TaskTimelineEntry };
 
+/** Dropdown task shape for time-tracking / task selector (id as string for Select value). */
+export interface TaskOption {
+    id: string;
+    title: string;
+    project: string;
+    project_id: number;
+}
+
+/** Fetch all tasks for the current user's projects (no project_id). For time log task dropdown. */
+export async function fetchAllTasks(): Promise<TaskOption[]> {
+    const { data } = await api.get<TaskAPIResponse[]>('/tasks/');
+    return (data ?? []).map((t) => ({
+        id: String(t.id),
+        title: t.title ?? '',
+        project: t.project_name ?? '',
+        project_id: t.project_id,
+    }));
+}
+
 /** Fetch a single task by ID. Returns raw API response. */
 export async function fetchTask(taskId: number | string): Promise<TaskAPIResponse> {
     const { data } = await api.get<TaskAPIResponse>(`/tasks/${taskId}`);

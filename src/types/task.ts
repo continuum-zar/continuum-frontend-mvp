@@ -26,6 +26,14 @@ export interface TaskAPIResponse {
     closure_summary?: string | null;
 }
 
+/** Attachment item for display (from API or after upload) */
+export interface TaskAttachmentItem {
+    id: number | string;
+    name: string;
+    size: string;
+    url?: string;
+}
+
 /** Task shape used by UI (e.g. ProjectBoard cards) */
 export interface Task {
     id: string;
