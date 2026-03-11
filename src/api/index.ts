@@ -14,6 +14,7 @@ export {
     fetchTaskComments,
     postTaskComment, fetchTaskAttachments, uploadTaskAttachment, deleteAttachment, getAttachmentDownloadUrl,
     fetchTaskTimeline,
+    assignTask,
 } from './projects';
 export type { Project, ProjectDetail, ProjectAPIResponse, Task, TaskStatus, Milestone, Member, TaskTimelineEntry } from './projects';
 export type { CommentAPIResponse } from '@/types/comment';
@@ -36,6 +37,7 @@ export {
     useUploadAttachment,
     useDeleteAttachment,
     useTaskTimeline,
+    useAssignTask,
     projectKeys,
 } from './hooks';
 export type { AttachmentAPIResponse, Attachment } from '@/types/attachment';

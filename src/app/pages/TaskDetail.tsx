@@ -31,7 +31,7 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, usePostComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, useTaskTimeline } from '@/api';
+import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, usePostComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, useTaskTimeline, useProjectMembers, useAssignTask } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { TaskAPIResponse } from '@/types/task';
@@ -148,6 +148,10 @@ export function TaskDetail() {
 
   // Timeline hook
   const { data: timeline, isLoading: timelineLoading } = useTaskTimeline(taskId);
+
+  // Members and Assign hook
+  const { data: members } = useProjectMembers(task?.project_id, { enabled: !!task?.project_id });
+  const assignTaskMutation = useAssignTask();
 
   useEffect(() => {
     const loadTask = async () => {
@@ -280,6 +284,19 @@ export function TaskDetail() {
     }
   };
 
+  const handleAssigneeChange = (userId: string) => {
+    if (!taskId) return;
+    const newUserId = userId === 'unassigned' ? null : Number(userId);
+
+    // Call API
+    assignTaskMutation.mutate({ taskId, userId: newUserId }, {
+      onSuccess: () => {
+        // Update local state so it reflects immediately
+        setTask(prev => prev ? { ...prev, assigned_to: newUserId } : prev);
+      }
+    });
+  };
+
   if (loading) return <TaskDetailSkeleton />;
   if (error || !task) return <TaskNotFound />;
 
@@ -343,329 +360,354 @@ export function TaskDetail() {
                     <span className="text-sm text-muted-foreground">TASK-{task.id}</span>
                   </div>
                 )}
+              </div>
             </div>
-        </div>
 
-        {/* Description */}
-        {task.description && (
-          <div className="mb-8 bg-card border border-border rounded-lg p-6">
-            <h3 className="mb-3">Description</h3>
-            <div className="text-muted-foreground space-y-2">
-              <p>{task.description}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Checklists */}
-        {task.checklists && task.checklists.length > 0 && (
-          <div className="mb-8 bg-card border border-border rounded-lg p-6">
-            <h3 className="mb-4">Checklist ({completedChecklists}/{totalChecklists})</h3>
-            <div className="space-y-3">
-              {task.checklists.map((checklist, idx) => (
-                <div key={idx} className="flex items-center space-x-3">
-                  {checklist.done ? (
-                    <div className="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center flex-shrink-0">
-                      <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                    </div>
-                  ) : (
-                    <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
-                  )}
-                  <span className={`text-sm ${checklist.done ? 'text-muted-foreground line-through' : ''}`}>
-                    {checklist.text}
-                  </span>
+            {/* Description */}
+            {task.description && (
+              <div className="mb-8 bg-card border border-border rounded-lg p-6">
+                <h3 className="mb-3">Description</h3>
+                <div className="text-muted-foreground space-y-2">
+                  <p>{task.description}</p>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* Attachments */}
-        <div className="mb-8 bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3>Attachments</h3>
-            <div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                className="hidden"
-                accept="*/*"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadAttachmentMutation.isPending}
-              >
-                <Paperclip className="mr-2 h-4 w-4" />
-                {uploadAttachmentMutation.isPending ? "Uploading..." : "Add File"}
-              </Button>
-            </div>
-          </div>
-          {attachmentsLoading ? (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Loading attachments...</p>
-            </div>
-          ) : attachments && attachments.length > 0 ? (
-            <div className="space-y-2">
-              {attachments.map((attachment) => (
-                <div key={attachment.id} className="flex items-center justify-between p-2 bg-input-background rounded">
-                  <a href={getAttachmentDownloadUrl(attachment.id)} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                    {attachment.original_filename}
-                  </a>
+            {/* Checklists */}
+            {task.checklists && task.checklists.length > 0 && (
+              <div className="mb-8 bg-card border border-border rounded-lg p-6">
+                <h3 className="mb-4">Checklist ({completedChecklists}/{totalChecklists})</h3>
+                <div className="space-y-3">
+                  {task.checklists.map((checklist, idx) => (
+                    <div key={idx} className="flex items-center space-x-3">
+                      {checklist.done ? (
+                        <div className="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
+                      )}
+                      <span className={`text-sm ${checklist.done ? 'text-muted-foreground line-through' : ''}`}>
+                        {checklist.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Attachments */}
+            <div className="mb-8 bg-card border border-border rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3>Attachments</h3>
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept="*/*"
+                  />
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    onClick={() => deleteAttachmentMutation.mutate(attachment.id)}
-                    disabled={deleteAttachmentMutation.isPending}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadAttachmentMutation.isPending}
                   >
-                    ×
+                    <Paperclip className="mr-2 h-4 w-4" />
+                    {uploadAttachmentMutation.isPending ? "Uploading..." : "Add File"}
                   </Button>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No attachments yet</p>
-          )}
-        </div>
-
-        {/* Comments */}
-        <div className="mb-8 bg-card border border-border rounded-lg p-6">
-          <h3 className="mb-6">Comments</h3>
-          <div className="space-y-6 mb-6">
-            {commentsLoading ? (
-              <p className="text-sm text-muted-foreground">Loading comments...</p>
-            ) : comments && comments.length > 0 ? (
-              <div className="space-y-4">
-                {comments.map((c) => (
-                  <div key={c.id} className="flex items-start space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>{(c.author?.display_name || c.author?.username || 'U').slice(0,2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium">{c.author?.display_name || c.author?.username || 'Unknown'}</div>
-                        <div className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</div>
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-1">{c.content}</div>
-                    </div>
-                  </div>
-                ))}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No comments yet</p>
-            )}
-          </div>
-
-          <Separator className="my-6" />
-
-          <form onSubmit={handleSubmitComment} className="flex space-x-3">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback>JD</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <Textarea
-                placeholder="Add a comment..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="mb-2 bg-input-background"
-              />
-              <div className="flex justify-end">
-                <Button type="submit" size="sm" disabled={!comment.trim() || postCommentMutation.isPending}>
-                  <Send className="mr-2 h-4 w-4" />
-                  Comment
-                </Button>
-              </div>
-            </div>
-          </form>
-        </div>
-
-        {/* Activity Timeline */}
-        <div className="mb-8 bg-card border border-border rounded-lg p-6">
-          <h3 className="mb-6 flex items-center">
-            <History className="mr-2 h-5 w-5 text-muted-foreground" />
-            Activity
-          </h3>
-          {timelineLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          ) : timeline && timeline.length > 0 ? (
-            <div className="relative space-y-6 before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border before:via-border before:to-transparent">
-              {timeline.map((entry) => {
-                const Icon = getActivityIcon(entry.activity_type);
-                return (
-                  <div key={entry.id} className="relative flex items-start space-x-4 pl-1">
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full border border-border shrink-0 z-10 ${getActivityColor(entry.activity_type)}`}>
-                      <Icon className="h-4 w-4" />
+              {attachmentsLoading ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Loading attachments...</p>
+                </div>
+              ) : attachments && attachments.length > 0 ? (
+                <div className="space-y-2">
+                  {attachments.map((attachment) => (
+                    <div key={attachment.id} className="flex items-center justify-between p-2 bg-input-background rounded">
+                      <a href={getAttachmentDownloadUrl(attachment.id)} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                        {attachment.original_filename}
+                      </a>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteAttachmentMutation.mutate(attachment.id)}
+                        disabled={deleteAttachmentMutation.isPending}
+                      >
+                        ×
+                      </Button>
                     </div>
-                    <div className="flex-1 pt-1">
-                      <div className="text-sm">
-                        <span className="font-semibold">{entry.user?.display_name || entry.user?.username || 'Someone'}</span>
-                        {' '}
-                        <span className="text-muted-foreground">{getActivityLabel(entry)}</span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No attachments yet</p>
+              )}
+            </div>
+
+            {/* Comments */}
+            <div className="mb-8 bg-card border border-border rounded-lg p-6">
+              <h3 className="mb-6">Comments</h3>
+              <div className="space-y-6 mb-6">
+                {commentsLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading comments...</p>
+                ) : comments && comments.length > 0 ? (
+                  <div className="space-y-4">
+                    {comments.map((c) => (
+                      <div key={c.id} className="flex items-start space-x-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>{(c.author?.display_name || c.author?.username || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-medium">{c.author?.display_name || c.author?.username || 'Unknown'}</div>
+                            <div className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</div>
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">{c.content}</div>
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                );
-              })}
+                ) : (
+                  <p className="text-sm text-muted-foreground">No comments yet</p>
+                )}
+              </div>
+
+              <Separator className="my-6" />
+
+              <form onSubmit={handleSubmitComment} className="flex space-x-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>JD</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <Textarea
+                    placeholder="Add a comment..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    className="mb-2 bg-input-background"
+                  />
+                  <div className="flex justify-end">
+                    <Button type="submit" size="sm" disabled={!comment.trim() || postCommentMutation.isPending}>
+                      <Send className="mr-2 h-4 w-4" />
+                      Comment
+                    </Button>
+                  </div>
+                </div>
+              </form>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No activity logged yet.</p>
-          )}
+
+            {/* Activity Timeline */}
+            <div className="mb-8 bg-card border border-border rounded-lg p-6">
+              <h3 className="mb-6 flex items-center">
+                <History className="mr-2 h-5 w-5 text-muted-foreground" />
+                Activity
+              </h3>
+              {timelineLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : timeline && timeline.length > 0 ? (
+                <div className="relative space-y-6 before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border before:via-border before:to-transparent">
+                  {timeline.map((entry) => {
+                    const Icon = getActivityIcon(entry.activity_type);
+                    return (
+                      <div key={entry.id} className="relative flex items-start space-x-4 pl-1">
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-full border border-border shrink-0 z-10 ${getActivityColor(entry.activity_type)}`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <div className="text-sm">
+                            <span className="font-semibold">{entry.user?.display_name || entry.user?.username || 'Someone'}</span>
+                            {' '}
+                            <span className="text-muted-foreground">{getActivityLabel(entry)}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No activity logged yet.</p>
+              )}
+            </div>
+          </motion.div>
         </div>
-      </motion.div>
-    </div>
       </div>
 
-    {/* Sidebar */}
-    <aside className="w-80 bg-card border-l border-border p-6 overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.2, delay: 0.1 }}
-        className="space-y-6"
-      >
-        <div>
-          <label className="text-sm text-muted-foreground mb-2 block">Status</label>
-          <Select value={status} onValueChange={handleStatusChange}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todo">To Do</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="done">Done</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="text-sm text-muted-foreground mb-2 block">Scope</label>
-          <Select value={scope} onValueChange={handleScopeChange}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="XS">Extra Small (XS)</SelectItem>
-              <SelectItem value="S">Small (S)</SelectItem>
-              <SelectItem value="M">Medium (M)</SelectItem>
-              <SelectItem value="L">Large (L)</SelectItem>
-              <SelectItem value="XL">Extra Large (XL)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Separator />
-
-        <div>
-          <div className="flex items-center text-sm text-muted-foreground mb-3">
-            <User className="h-4 w-4 mr-2" />
-            Assignees
+      {/* Sidebar */}
+      <aside className="w-80 bg-card border-l border-border p-6 overflow-y-auto">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.2, delay: 0.1 }}
+          className="space-y-6"
+        >
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Status</label>
+            <Select value={status} onValueChange={handleStatusChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todo">To Do</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="done">Done</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-2">
-            {task.assigned_to ? (
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>U{task.assigned_to}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium">User {task.assigned_to}</p>
+
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">Scope</label>
+            <Select value={scope} onValueChange={handleScopeChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="XS">Extra Small (XS)</SelectItem>
+                <SelectItem value="S">Small (S)</SelectItem>
+                <SelectItem value="M">Medium (M)</SelectItem>
+                <SelectItem value="L">Large (L)</SelectItem>
+                <SelectItem value="XL">Extra Large (XL)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator />
+
+          <div>
+            <div className="flex items-center text-sm text-muted-foreground mb-3">
+              <User className="h-4 w-4 mr-2" />
+              Assignees
+            </div>
+            <div className="space-y-2">
+              {task.assigned_to ? (
+                (() => {
+                  const member = members?.find(m => m.userId === task.assigned_to);
+                  return (
+                    <div className="flex items-center space-x-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>{member ? member.initials : `U${task.assigned_to}`}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{member ? member.name : `User ${task.assigned_to}`}</p>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <p className="text-sm text-muted-foreground">Not assigned</p>
+              )}
+
+              <Select
+                value={task.assigned_to?.toString() || 'unassigned'}
+                onValueChange={handleAssigneeChange}
+                disabled={assignTaskMutation.isPending}
+              >
+                <SelectTrigger className="w-full mt-2">
+                  <SelectValue placeholder="Add Assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {members?.map(m => (
+                    <SelectItem key={m.userId} value={m.userId.toString()}>
+                      <div className="flex items-center">
+                        <Avatar className="h-6 w-6 mr-2">
+                          <AvatarFallback className="text-[10px]">{m.initials}</AvatarFallback>
+                        </Avatar>
+                        <span>{m.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <div className="flex items-center text-sm text-muted-foreground mb-3">
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Dates
+            </div>
+            <div className="space-y-2 text-sm">
+              {task.created_at && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Created</span>
+                  <span>{formatDueDate(task.created_at)}</span>
                 </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Not assigned</p>
-            )}
+              )}
+              {task.updated_at && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Updated</span>
+                  <span>{formatDueDate(task.updated_at)}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <label className="text-sm text-muted-foreground block mb-2">Due date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    {dueDate ? formatDueDate(dueDate.toISOString()) : 'Set due date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={handleDueDateChange}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <div className="flex items-center text-sm text-muted-foreground mb-3">
+              <Tag className="h-4 w-4 mr-2" />
+              Labels
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {task.project_name && (
+                <Badge variant="secondary">{task.project_name}</Badge>
+              )}
+            </div>
             <Button variant="outline" size="sm" className="w-full mt-2">
-              Add Assignee
+              Add Label
             </Button>
           </div>
-        </div>
 
-        <Separator />
+          <Separator />
 
-        <div>
-          <div className="flex items-center text-sm text-muted-foreground mb-3">
-            <CalendarIcon className="h-4 w-4 mr-2" />
-            Dates
-          </div>
-          <div className="space-y-2 text-sm">
-            {task.created_at && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Created</span>
-                <span>{formatDueDate(task.created_at)}</span>
-              </div>
-            )}
-            {task.updated_at && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Updated</span>
-                <span>{formatDueDate(task.updated_at)}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-4">
-            <label className="text-sm text-muted-foreground block mb-2">Due date</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
-                  {dueDate ? formatDueDate(dueDate.toISOString()) : 'Set due date'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={handleDueDateChange}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-
-        <Separator />
-
-        <div>
-          <div className="flex items-center text-sm text-muted-foreground mb-3">
-            <Tag className="h-4 w-4 mr-2" />
-            Labels
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {task.project_name && (
-              <Badge variant="secondary">{task.project_name}</Badge>
-            )}
-          </div>
-          <Button variant="outline" size="sm" className="w-full mt-2">
-            Add Label
-          </Button>
-        </div>
-
-        <Separator />
-
-        <div>
-          <div className="flex items-center text-sm text-muted-foreground mb-3">
-            <Clock className="h-4 w-4 mr-2" />
-            Time Tracking
-          </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Estimated</span>
-              <span>—</span>
+          <div>
+            <div className="flex items-center text-sm text-muted-foreground mb-3">
+              <Clock className="h-4 w-4 mr-2" />
+              Time Tracking
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Logged</span>
-              <span>—</span>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Estimated</span>
+                <span>—</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Logged</span>
+                <span>—</span>
+              </div>
             </div>
+            <Button variant="outline" size="sm" className="w-full mt-2">
+              Log Time
+            </Button>
           </div>
-          <Button variant="outline" size="sm" className="w-full mt-2">
-            Log Time
-          </Button>
-        </div>
-      </motion.div>
+        </motion.div>
       </aside>
     </div>
   );
