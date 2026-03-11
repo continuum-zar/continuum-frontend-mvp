@@ -12,6 +12,9 @@ import {
   Tag,
   AlertCircle,
   Calendar as CalendarIcon,
+  MessageSquare,
+  ArrowRight,
+  History,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Calendar } from '../components/ui/calendar';
@@ -28,9 +31,9 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, usePostComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment } from '@/api';
+import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, usePostComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
-import type { TaskStatus, TaskStatusAPI, ScopeWeight } from '@/types/task';
+import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { TaskAPIResponse } from '@/types/task';
 
 function TaskDetailSkeleton() {
@@ -75,6 +78,51 @@ function TaskNotFound() {
   );
 }
 
+const getActivityLabel = (entry: TaskTimelineEntry) => {
+  const formatStatus = (status: string) => {
+    return status === 'in_progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  switch (entry.activity_type) {
+    case 'task_created':
+      return 'created this task';
+    case 'status_changed':
+      return `changed status from ${formatStatus(entry.data?.old_status as string || 'unknown')} to ${formatStatus(entry.data?.new_status as string || 'unknown')}`;
+    case 'comment_added':
+      return 'added a comment';
+    case 'attachment_uploaded':
+      return `added attachment ${entry.data?.original_filename || entry.data?.filename || 'a file'}`;
+    case 'hours_logged': {
+      const hours = Number(entry.data?.hours) || 0;
+      return `logged ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    }
+    default:
+      return 'performed an action';
+  }
+};
+
+const getActivityIcon = (type: string) => {
+  switch (type) {
+    case 'task_created': return CheckCircle2;
+    case 'status_changed': return ArrowRight;
+    case 'comment_added': return MessageSquare;
+    case 'attachment_uploaded': return Paperclip;
+    case 'hours_logged': return Clock;
+    default: return History;
+  }
+};
+
+const getActivityColor = (type: string) => {
+  switch (type) {
+    case 'task_created': return 'text-success bg-success/10';
+    case 'status_changed': return 'text-primary bg-primary/10';
+    case 'comment_added': return 'text-info bg-info/10';
+    case 'attachment_uploaded': return 'text-warning bg-warning/10';
+    case 'hours_logged': return 'text-secondary bg-secondary/10';
+    default: return 'text-muted-foreground bg-muted';
+  }
+};
+
 function taskStatusToDisplay(s: string): string {
   if (s === 'in_progress') return 'in-progress';
   return s === 'todo' || s === 'done' ? s : 'todo';
@@ -104,6 +152,9 @@ export function TaskDetail() {
   const { data: attachments, isLoading: attachmentsLoading } = useTaskAttachments(taskId);
   const uploadAttachmentMutation = useUploadAttachment(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
+
+  // Timeline hook
+  const { data: timeline, isLoading: timelineLoading } = useTaskTimeline(taskId);
 
   useEffect(() => {
     const loadTask = async () => {
@@ -395,6 +446,45 @@ export function TaskDetail() {
               </div>
             </div>
           </form>
+        </div>
+
+        {/* Activity Timeline */}
+        <div className="mb-8 bg-card border border-border rounded-lg p-6">
+          <h3 className="mb-6 flex items-center">
+            <History className="mr-2 h-5 w-5 text-muted-foreground" />
+            Activity
+          </h3>
+          {timelineLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : timeline && timeline.length > 0 ? (
+            <div className="relative space-y-6 before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border before:via-border before:to-transparent">
+              {timeline.map((entry) => {
+                const Icon = getActivityIcon(entry.activity_type);
+                return (
+                  <div key={entry.id} className="relative flex items-start space-x-4 pl-1">
+                    <div className={`flex items-center justify-center w-8 h-8 rounded-full border border-border shrink-0 z-10 ${getActivityColor(entry.activity_type)}`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 pt-1">
+                      <div className="text-sm">
+                        <span className="font-semibold">{entry.user?.display_name || entry.user?.username || 'Someone'}</span>
+                        {' '}
+                        <span className="text-muted-foreground">{getActivityLabel(entry)}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No activity logged yet.</p>
+          )}
         </div>
       </motion.div>
     </div>

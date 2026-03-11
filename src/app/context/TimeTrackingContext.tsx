@@ -86,7 +86,7 @@ const TimeTrackingContext = createContext<TimeTrackingContextProps | undefined>(
 
 export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     const { data: tasksData, isLoading: tasksLoading, isError: tasksError } = useAllTasks();
-    const tasks = tasksData ?? [];
+    const tasks = useMemo(() => tasksData ?? [], [tasksData]);
 
     const [projectFilterId, setProjectFilterId] = useState<string>('all');
     const { data: entriesData, isLoading: entriesLoading, isError: entriesError, refetch: refetchEntries } = useLoggedHours(projectFilterId, { limit: 50 });

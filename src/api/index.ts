@@ -14,8 +14,9 @@ export {
     addMember,
     fetchTaskComments,
     postTaskComment, fetchTaskAttachments, uploadTaskAttachment, deleteAttachment, getAttachmentDownloadUrl,
+    fetchTaskTimeline,
 } from './projects';
-export type { Project, ProjectDetail, ProjectAPIResponse, Task, TaskStatus, TaskOption, Milestone, Member } from './projects';
+export type { Project, ProjectDetail, ProjectAPIResponse, Task, TaskStatus, TaskOption, Milestone, Member, TaskTimelineEntry } from './projects';
 export type { CommentAPIResponse } from '@/types/comment';
 export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate, mapAttachment } from './mappers';
 export {
@@ -36,6 +37,7 @@ export {
     useTaskAttachments,
     useUploadAttachment,
     useDeleteAttachment,
+    useTaskTimeline,
     projectKeys,
 } from './hooks';
 export type { AttachmentAPIResponse, Attachment } from '@/types/attachment';
