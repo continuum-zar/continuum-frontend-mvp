@@ -16,6 +16,7 @@ import {
     updateProject,
     fetchTaskComments,
     postTaskComment,
+    assignTask,
 } from './projects';
 import { fetchLoggedHours, createLoggedHour } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
@@ -249,6 +250,25 @@ export function useUpdateTask() {
         },
         onSettled: () => {
             // Refetch all project task lists to ensure consistency
+            queryClient.invalidateQueries({ queryKey: projectKeys.all });
+        },
+    });
+}
+
+export function useAssignTask() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ taskId, userId }: { taskId: string | number; userId: number | null }) => assignTask(taskId, userId),
+        onSuccess: (_data, { taskId }) => {
+            toast.success('Assignee updated');
+            if (taskId) {
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            }
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to update assignee'));
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: projectKeys.all });
         },
     });

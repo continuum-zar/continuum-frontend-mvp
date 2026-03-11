@@ -197,7 +197,11 @@ export async function uploadTaskAttachment(taskId: number | string, file: File):
     const formData = new FormData();
     formData.append('file', file);
 
-    const { data } = await api.post<AttachmentAPIResponse>(`/tasks/${taskId}/attachments`, formData);
+    const { data } = await api.post<AttachmentAPIResponse>(`/tasks/${taskId}/attachments`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return data;
 }
 
@@ -215,4 +219,10 @@ export function getAttachmentDownloadUrl(attachmentId: number | string): string 
 export async function fetchTaskTimeline(taskId: number | string): Promise<TaskTimelineEntry[]> {
     const { data } = await api.get<TaskTimelineEntry[]>(`/tasks/${taskId}/timeline`);
     return data ?? [];
+}
+
+/** Assign a task to a user. PATCH /api/v1/tasks/{id}/assign. */
+export async function assignTask(taskId: number | string, userId: number | null): Promise<TaskAPIResponse> {
+    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { user_id: userId });
+    return data;
 }
