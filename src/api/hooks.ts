@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchTaskAttachments, uploadTaskAttachment, deleteAttachment, fetchTaskTimeline } from "./projects";
 import { toast } from 'sonner';
 import {
     fetchProjects,
@@ -14,10 +13,14 @@ import {
     createProject,
     updateProject,
     fetchTaskComments,
-    postTaskComment,
+    createTaskComment,
+    fetchTaskAttachments,
+    uploadTaskAttachment,
+    deleteAttachment,
+    fetchTaskTimeline,
     assignTask,
-} from './projects';
-import type { TaskStatus, ScopeWeight } from '@/types/task';
+} from '@/api';
+import type { Task, TaskStatus, ScopeWeight } from '@/types/task';
 
 /** Normalize FastAPI error detail into a single message. */
 function getApiErrorMessage(err: unknown, fallback: string): string {
@@ -125,7 +128,7 @@ export function useUpdateTaskStatus(projectId: number | string | undefined | nul
             if (!key) return {};
             await queryClient.cancelQueries({ queryKey: key });
             const prev = queryClient.getQueryData(key);
-            queryClient.setQueryData(key, (old: Awaited<ReturnType<typeof fetchProjectTasks>> | undefined) => {
+            queryClient.setQueryData(key, (old: Task[] | undefined) => {
                 if (!old) return old;
                 return old.map((t) => (t.id === taskId ? { ...t, status } : t));
             });
@@ -240,10 +243,10 @@ export function useTaskComments(taskId: number | string | undefined | null) {
     });
 }
 
-export function usePostComment(taskId: number | string | undefined | null) {
+export function useCreateTaskComment(taskId: number | string | undefined | null) {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (content: string) => postTaskComment(taskId!, { content }),
+        mutationFn: (content: string) => createTaskComment(taskId!, content),
         onSuccess: () => {
             if (taskId != null && taskId !== '') {
                 queryClient.invalidateQueries({ queryKey: taskCommentsKey(taskId!) });

@@ -3,20 +3,27 @@ export {
     createProject,
     updateProject,
     fetchProject,
-    fetchProjectTasks,
-    updateTaskStatus,
-    updateTask,
-    fetchTask,
     fetchMilestones,
     createMilestone,
     fetchMembers,
     addMember,
+} from './projects';
+export {
+    fetchTask,
+    updateTask,
+    fetchProjectTasks,
+    updateTaskStatus,
     fetchTaskComments,
-    postTaskComment, fetchTaskAttachments, uploadTaskAttachment, deleteAttachment, getAttachmentDownloadUrl,
+    createTaskComment,
+    fetchTaskAttachments,
+    uploadTaskAttachment,
+    deleteAttachment,
+    getAttachmentDownloadUrl,
     fetchTaskTimeline,
     assignTask,
-} from './projects';
-export type { Project, ProjectDetail, ProjectAPIResponse, Task, TaskStatus, Milestone, Member, TaskTimelineEntry } from './projects';
+} from './tasks';
+export type { Project, ProjectDetail, ProjectAPIResponse, Milestone, Member } from './projects';
+export type { Task, TaskStatus, TaskAPIResponse, TaskTimelineEntry } from './tasks';
 export type { CommentAPIResponse } from '@/types/comment';
 export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate, mapAttachment } from './mappers';
 export {
@@ -32,7 +39,7 @@ export {
     useCreateMilestone,
     useAddMember,
     useTaskComments,
-    usePostComment,
+    useCreateTaskComment,
     useTaskAttachments,
     useUploadAttachment,
     useDeleteAttachment,
