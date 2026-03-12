@@ -49,7 +49,7 @@ function mapLoggedHourToTimeEntry(row: LoggedHourResponse): LoggedHourEntry {
 
 /** GET /api/v1/logged-hours. Defaults to current user; optional project_id, start_date, end_date, limit (e.g. 50). */
 export async function fetchLoggedHours(params?: FetchLoggedHoursParams): Promise<LoggedHourEntry[]> {
-    const { data } = await api.get<LoggedHourResponse[]>('/logged-hours', {
+    const { data } = await api.get<LoggedHourResponse[]>('/logged-hours/', {
         params: {
             ...(params?.project_id != null && params.project_id !== '' && { project_id: params.project_id }),
             ...(params?.start_date && { start_date: params.start_date }),
