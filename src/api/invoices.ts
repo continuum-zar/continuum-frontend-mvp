@@ -14,18 +14,18 @@ export async function fetchInvoice(invoiceId: number | string): Promise<InvoiceW
     return res.data;
 }
 
-export async function downloadInvoice(invoiceId: number | string): Promise<Blob> {
+export async function downloadInvoicePdf(invoiceId: number | string): Promise<Blob> {
     const res = await api.get(`/invoices/${invoiceId}/download`, {
         responseType: 'blob',
     });
     return res.data;
 }
 
-export async function generateInvoicePDF(invoiceId: number | string): Promise<void> {
+export async function generateInvoicePdf(invoiceId: number | string): Promise<void> {
     await api.post(`/invoices/${invoiceId}/generate-pdf`);
 }
 
-export interface GenerateInvoiceBody {
+export interface InvoiceGenerate {
     project_id: number | string;
     billing_period_start: string;
     billing_period_end: string;
@@ -34,7 +34,7 @@ export interface GenerateInvoiceBody {
     hourly_rate_override?: number;
 }
 
-export async function generateInvoice(body: GenerateInvoiceBody): Promise<InvoiceAPIResponse> {
+export async function generateInvoice(body: InvoiceGenerate): Promise<InvoiceAPIResponse> {
     const res = await api.post<InvoiceAPIResponse>('/invoices/generate', body);
     return res.data;
 }

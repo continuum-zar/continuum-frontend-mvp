@@ -40,7 +40,7 @@ export async function createClient(client: ClientCreate): Promise<ClientAPIRespo
     return data;
 }
 
-export async function fetchClientDetail(clientId: number | string): Promise<ClientAPIResponse> {
+export async function fetchClient(clientId: number | string): Promise<ClientAPIResponse> {
     const { data } = await api.get<ClientAPIResponse>(`/clients/${clientId}`);
     return data;
 }
@@ -82,10 +82,10 @@ export function useClients() {
                 // 1. Get projects for this client
                 // We need to know which projects belong to this client.
                 // If ProjectAPIResponse has client_id, we can filter.
-                
+
                 // For now, let's use InvoiceAPIResponse.client_name to match if possible,
                 // or just default to 0 if we can't reliably aggregate.
-                
+
                 const clientInvoices = invoices.filter(inv => inv.client_name === c.name);
                 const totalInvoiced = clientInvoices.reduce((sum, inv) => sum + inv.total, 0);
                 const invoiceCount = clientInvoices.length;

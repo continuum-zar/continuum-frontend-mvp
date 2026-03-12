@@ -18,8 +18,11 @@ import {
     postTaskComment,
     assignTask,
 } from './projects';
-import { fetchClients, createClient, fetchClientDetail, clientKeys } from './clients';
+import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
+import { fetchLoggedHours, createLoggedHour } from './loggedHours';
+import type { CreateLoggedHourBody } from './loggedHours';
+import type { TaskStatus, ScopeWeight } from '@/types/task';
 
 /** Normalize FastAPI error detail into a single message. */
 function getApiErrorMessage(err: unknown, fallback: string): string {
@@ -372,8 +375,7 @@ export function useCreateClient() {
 export function useClientDetail(clientId: number | string | undefined | null) {
     return useQuery({
         queryKey: clientKeys.detail(clientId!),
-        queryFn: () => fetchClientDetail(clientId!),
+        queryFn: () => fetchClient(clientId!),
         enabled: clientId != null && clientId !== '',
     });
 }
-

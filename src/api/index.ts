@@ -106,17 +106,18 @@ export type {
 export {
     fetchInvoices,
     fetchInvoice,
-    downloadInvoice,
-    generateInvoicePDF,
+    downloadInvoicePdf,
+    generateInvoicePdf,
     generateInvoice,
     updateInvoiceStatus,
     useInvoices,
     invoiceKeys,
 } from './invoices';
+export type { InvoiceGenerate } from './invoices';
 export {
     fetchClients,
     createClient,
-    fetchClientDetail,
+    fetchClient,
     useClients,
     clientKeys,
 } from './clients';
