@@ -446,8 +446,8 @@ export function Invoices() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end space-x-2">
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             disabled={!!isProcessing[invoice.id]}
                             onClick={() => handleInvoiceAction(invoice.id, invoice.number, 'view')}
@@ -458,8 +458,8 @@ export function Invoices() {
                               'View'
                             )}
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             disabled={!!isProcessing[invoice.id]}
                             onClick={() => handleInvoiceAction(invoice.id, invoice.number, 'download')}
@@ -580,17 +580,17 @@ export function Invoices() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Billing Period Start</Label>
-                  <Input 
-                    type="date" 
-                    value={billingPeriodStart} 
+                  <Input
+                    type="date"
+                    value={billingPeriodStart}
                     onChange={(e) => setBillingPeriodStart(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Billing Period End</Label>
-                  <Input 
-                    type="date" 
-                    value={billingPeriodEnd} 
+                  <Input
+                    type="date"
+                    value={billingPeriodEnd}
                     onChange={(e) => setBillingPeriodEnd(e.target.value)}
                   />
                 </div>
@@ -713,7 +713,7 @@ export function Invoices() {
             <div className="flex items-center gap-6 pt-4 mt-2 border-t border-border">
               <div className="text-muted-foreground text-sm font-medium pt-2">Total (Preview)</div>
               <div className="flex-1 flex justify-end">
-                <Button 
+                <Button
                   onClick={handleGenerateInvoice}
                   disabled={isGenerating || !selectedProjectId || invoiceItems.length === 0}
                   className="h-12 px-6 rounded-lg font-medium text-base bg-[#2d81ff] hover:bg-[#2d81ff]/90 text-white shadow-md shadow-blue-500/20"
