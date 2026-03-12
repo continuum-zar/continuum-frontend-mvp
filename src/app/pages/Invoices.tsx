@@ -110,6 +110,7 @@ export function Invoices() {
     }
 
     const csvData = filteredInvoices.map((inv) => ({
+      'ID': inv.id,
       'Invoice Number': inv.number,
       'Client': inv.client,
       'Amount': inv.amount,
@@ -237,15 +238,15 @@ export function Invoices() {
 
   const subTotal = invoiceItems.reduce((acc, curr) => acc + (curr.qty * hourlyRate), 0);
   const selectedProject = projects.find((p) => String(p.apiId) === selectedProjectId);
-  
+
   // Find mapped client based on invoices or client name (if available on project)
   const mappedClient = useMemo(() => {
     if (!selectedProject) return null;
-    
+
     // Find any invoice for this project to get the client name
     // More robust: find by client name from invoices matching this project
     const clientName = invoices.find(inv => inv.client && invoices.some(i => i.id === inv.id))?.client;
-    
+
     return clients.find(c => c.name === clientName);
   }, [selectedProject, invoices, clients]);
 
@@ -468,8 +469,8 @@ export function Invoices() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end space-x-2">
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             disabled={!!isProcessing[invoice.id]}
                             onClick={() => handleInvoiceAction(invoice.id, invoice.number, 'view')}
@@ -480,8 +481,8 @@ export function Invoices() {
                               'View'
                             )}
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             disabled={!!isProcessing[invoice.id]}
                             onClick={() => handleInvoiceAction(invoice.id, invoice.number, 'download')}
@@ -551,8 +552,8 @@ export function Invoices() {
                   <Alert variant="destructive" className="max-w-md mx-auto">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      {clientsError instanceof AxiosError && clientsError.response?.status === 403 
-                        ? 'Admin access required to view clients.' 
+                      {clientsError instanceof AxiosError && clientsError.response?.status === 403
+                        ? 'Admin access required to view clients.'
                         : 'Failed to load clients. Please try again later.'}
                     </AlertDescription>
                   </Alert>
@@ -604,17 +605,17 @@ export function Invoices() {
                     </div>
 
                     <div className="mt-4 flex items-center space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="flex-1"
                         onClick={() => handleViewClientDetails(client.id)}
                       >
                         View Details
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="flex-1"
                         onClick={() => {
                           // Try to find a project for this client to pre-select
@@ -650,17 +651,17 @@ export function Invoices() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Billing Period Start</Label>
-                  <Input 
-                    type="date" 
-                    value={billingPeriodStart} 
+                  <Input
+                    type="date"
+                    value={billingPeriodStart}
                     onChange={(e) => setBillingPeriodStart(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Billing Period End</Label>
-                  <Input 
-                    type="date" 
-                    value={billingPeriodEnd} 
+                  <Input
+                    type="date"
+                    value={billingPeriodEnd}
                     onChange={(e) => setBillingPeriodEnd(e.target.value)}
                   />
                 </div>
@@ -783,7 +784,7 @@ export function Invoices() {
             <div className="flex items-center gap-6 pt-4 mt-2 border-t border-border">
               <div className="text-muted-foreground text-sm font-medium pt-2">Total (Preview)</div>
               <div className="flex-1 flex justify-end">
-                <Button 
+                <Button
                   onClick={handleGenerateInvoice}
                   disabled={isGenerating || !selectedProjectId || invoiceItems.length === 0}
                   className="h-12 px-6 rounded-lg font-medium text-base bg-[#2d81ff] hover:bg-[#2d81ff]/90 text-white shadow-md shadow-blue-500/20"
