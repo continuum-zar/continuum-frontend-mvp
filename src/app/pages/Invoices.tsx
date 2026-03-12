@@ -39,6 +39,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useState, useMemo } from 'react';
 import { useInvoices, downloadInvoice, generateInvoicePDF, generateInvoice } from '@/api/invoices';
+import { useClients } from '@/api/clients';
 import { fetchProjects } from '@/api/projects';
 import { fetchLoggedHours } from '@/api/loggedHours';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -46,6 +47,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AxiosError } from 'axios';
 
 const statusColors: Record<string, string> = {
   paid: 'bg-success/10 text-success border-success/20',
@@ -56,55 +58,10 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-muted text-muted-foreground border-border',
 };
 
-const clients = [
-  {
-    id: '1',
-    name: 'Acme Corporation',
-    contact: 'John Smith',
-    email: 'john@acme.com',
-    phone: '+1 (555) 123-4567',
-    totalInvoiced: 22300,
-    invoiceCount: 2,
-  },
-  {
-    id: '2',
-    name: 'TechStart Inc',
-    contact: 'Sarah Johnson',
-    email: 'sarah@techstart.com',
-    phone: '+1 (555) 234-5678',
-    totalInvoiced: 8750,
-    invoiceCount: 1,
-  },
-  {
-    id: '3',
-    name: 'Global Systems',
-    contact: 'Mike Chen',
-    email: 'mike@globalsystems.com',
-    phone: '+1 (555) 345-6789',
-    totalInvoiced: 15200,
-    invoiceCount: 1,
-  },
-  {
-    id: '4',
-    name: 'Innovation Labs',
-    contact: 'Emily Davis',
-    email: 'emily@innovationlabs.com',
-    phone: '+1 (555) 456-7890',
-    totalInvoiced: 6300,
-    invoiceCount: 1,
-  },
-];
-
-// Map Projects to Clients.
-const projectToClientMap: Record<string, typeof clients[0]> = {
-  'Mobile App Redesign': clients[0], // Acme Corporation
-  'Dashboard v2': clients[1],        // TechStart Inc
-  'Marketing Website': clients[2],   // Global Systems
-};
-
 export function Invoices() {
   const queryClient = useQueryClient();
   const { data: invoices = [], isLoading, error } = useInvoices();
+  const { data: clients = [], isLoading: isClientsLoading, error: clientsError } = useClients();
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: fetchProjects,
@@ -171,7 +128,7 @@ export function Invoices() {
       client.contact.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
       client.email.toLowerCase().includes(clientSearchQuery.toLowerCase())
     );
-  }, [clientSearchQuery]);
+  }, [clients, clientSearchQuery]);
 
   // New Invoice Form State (selectedProjectId is project_id as string for project selector)
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -225,7 +182,17 @@ export function Invoices() {
 
   const subTotal = invoiceItems.reduce((acc, curr) => acc + (curr.qty * hourlyRate), 0);
   const selectedProject = projects.find((p) => String(p.apiId) === selectedProjectId);
-  const mappedClient = selectedProject ? projectToClientMap[selectedProject.title] : null;
+  
+  // Find mapped client based on invoices or client name (if available on project)
+  const mappedClient = useMemo(() => {
+    if (!selectedProject) return null;
+    
+    // Find any invoice for this project to get the client name
+    // More robust: find by client name from invoices matching this project
+    const clientName = invoices.find(inv => inv.client && invoices.some(i => i.id === inv.id))?.client;
+    
+    return clients.find(c => c.name === clientName);
+  }, [selectedProject, invoices, clients]);
 
   const handleGenerateInvoice = async () => {
     if (!selectedProjectId || !billingPeriodStart || !billingPeriodEnd) {
@@ -504,7 +471,38 @@ export function Invoices() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredClients.length === 0 ? (
+              {isClientsLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-card border border-border rounded-lg p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <Skeleton className="w-12 h-12 rounded" />
+                      <div className="flex-1">
+                        <Skeleton className="h-5 w-32 mb-2" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </div>
+                    <div className="pt-4 border-t border-border grid grid-cols-2 gap-4">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  </div>
+                ))
+              ) : clientsError ? (
+                <div className="col-span-2 p-12 text-center bg-card border border-border rounded-lg">
+                  <Alert variant="destructive" className="max-w-md mx-auto">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {clientsError instanceof AxiosError && clientsError.response?.status === 403 
+                        ? 'Admin access required to view clients.' 
+                        : 'Failed to load clients. Please try again later.'}
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              ) : filteredClients.length === 0 ? (
                 <div className="col-span-2 p-12 text-center text-muted-foreground bg-card border border-border rounded-lg border-dashed">
                   {clientSearchQuery ? 'No clients match your search.' : 'No clients found.'}
                 </div>
