@@ -39,10 +39,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useState, useMemo } from 'react';
 import { useTimeTracking } from '../context/TimeTrackingContext';
-import { useInvoices } from '@/api/invoices';
+import { useInvoices, downloadInvoice, generateInvoicePDF } from '@/api/invoices';
 import { Skeleton } from '../components/ui/skeleton';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const statusColors = {
   paid: 'bg-success/10 text-success border-success/20',
@@ -104,6 +105,45 @@ export function Invoices() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clientSearchQuery, setClientSearchQuery] = useState('');
+  const [isProcessing, setIsProcessing] = useState<Record<string, 'view' | 'download' | null>>({});
+
+  const handleInvoiceAction = async (invoiceId: string | number, number: string, action: 'view' | 'download') => {
+    setIsProcessing(prev => ({ ...prev, [invoiceId]: action }));
+    try {
+      let blob: Blob;
+      try {
+        blob = await downloadInvoice(invoiceId);
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          toast.info(`Generating PDF for ${number}...`);
+          await generateInvoicePDF(invoiceId);
+          // Wait a bit for the generator to be sure it's done (optional, backend usually waits)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          blob = await downloadInvoice(invoiceId);
+        } else {
+          throw error;
+        }
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      if (action === 'view') {
+        window.open(url, '_blank');
+      } else {
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${number}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      console.error('Invoice PDF error:', error);
+      toast.error(`Failed to ${action} invoice PDF.`);
+    } finally {
+      setIsProcessing(prev => ({ ...prev, [invoiceId]: null }));
+    }
+  };
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter((invoice) => {
@@ -355,11 +395,29 @@ export function Invoices() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end space-x-2">
-                          <Button variant="ghost" size="sm">
-                            View
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            disabled={!!isProcessing[invoice.id]}
+                            onClick={() => handleInvoiceAction(invoice.id, invoice.number, 'view')}
+                          >
+                            {isProcessing[invoice.id] === 'view' ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              'View'
+                            )}
                           </Button>
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            disabled={!!isProcessing[invoice.id]}
+                            onClick={() => handleInvoiceAction(invoice.id, invoice.number, 'download')}
+                          >
+                            {isProcessing[invoice.id] === 'download' ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>

@@ -9,6 +9,17 @@ export async function fetchInvoices(params?: { project_id?: number | string }): 
     return res.data;
 }
 
+export async function downloadInvoice(invoiceId: number | string): Promise<Blob> {
+    const res = await api.get(`/invoices/${invoiceId}/download`, {
+        responseType: 'blob',
+    });
+    return res.data;
+}
+
+export async function generateInvoicePDF(invoiceId: number | string): Promise<void> {
+    await api.post(`/invoices/${invoiceId}/generate-pdf`);
+}
+
 export const invoiceKeys = {
     all: ['invoices'] as const,
     list: (params?: { project_id?: number | string }) => [...invoiceKeys.all, 'list', params ?? 'all'] as const,
