@@ -105,14 +105,21 @@ export type {
 } from './dashboard';
 export {
     fetchInvoices,
+    fetchInvoice,
+    downloadInvoice,
+    generateInvoicePDF,
+    generateInvoice,
+    updateInvoiceStatus,
     useInvoices,
     invoiceKeys,
 } from './invoices';
 export {
     fetchClients,
+    createClient,
+    fetchClientDetail,
     useClients,
     clientKeys,
 } from './clients';
-export type { Client, ClientAPIResponse } from './clients';
-export type { Invoice, InvoiceAPIResponse } from '@/types/invoice';
+export type { Client, ClientAPIResponse, ClientCreate } from './clients';
+export type { Invoice, InvoiceAPIResponse, InvoiceItem, InvoiceWithItems } from '@/types/invoice';
 export { mapInvoice } from './mappers';

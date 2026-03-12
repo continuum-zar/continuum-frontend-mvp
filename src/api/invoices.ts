@@ -1,11 +1,16 @@
 import api from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
-import type { InvoiceAPIResponse } from '@/types/invoice';
+import type { InvoiceAPIResponse, InvoiceWithItems } from '@/types/invoice';
 import { mapInvoice } from './mappers';
 import { fetchProjects } from './projects';
 
-export async function fetchInvoices(params?: { project_id?: number | string }): Promise<InvoiceAPIResponse[]> {
+export async function fetchInvoices(params?: { project_id?: number | string; status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' }): Promise<InvoiceAPIResponse[]> {
     const res = await api.get<InvoiceAPIResponse[]>('/invoices/', { params });
+    return res.data;
+}
+
+export async function fetchInvoice(invoiceId: number | string): Promise<InvoiceWithItems> {
+    const res = await api.get<InvoiceWithItems>(`/invoices/${invoiceId}`);
     return res.data;
 }
 
@@ -26,6 +31,7 @@ export interface GenerateInvoiceBody {
     billing_period_end: string;
     status: string;
     tax_rate: number;
+    hourly_rate_override?: number;
 }
 
 export async function generateInvoice(body: GenerateInvoiceBody): Promise<InvoiceAPIResponse> {
@@ -33,9 +39,18 @@ export async function generateInvoice(body: GenerateInvoiceBody): Promise<Invoic
     return res.data;
 }
 
+export async function updateInvoiceStatus(
+    invoiceId: number | string,
+    status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+): Promise<InvoiceAPIResponse> {
+    const res = await api.put<InvoiceAPIResponse>(`/invoices/${invoiceId}`, { status });
+    return res.data;
+}
+
 export const invoiceKeys = {
     all: ['invoices'] as const,
-    list: (params?: { project_id?: number | string }) => [...invoiceKeys.all, 'list', params ?? 'all'] as const,
+    list: (params?: { project_id?: number | string; status?: string }) => [...invoiceKeys.all, 'list', params ?? 'all'] as const,
+    detail: (id: number | string) => [...invoiceKeys.all, 'detail', id] as const,
 };
 
 export function useInvoices(params?: { project_id?: number | string }) {
