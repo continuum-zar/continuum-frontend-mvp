@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import { fetchAllTasks } from './projects';
+import { fetchAllTasks } from './tasks';
 
 /** Table row shape for Recent Entries (matches TimeEntry in TimeTrackingContext). */
 export interface LoggedHourEntry {
