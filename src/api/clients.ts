@@ -1,5 +1,6 @@
 import api from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
+import type { ProjectAPIResponse } from '@/types/project';
 import { fetchInvoices } from './invoices';
 
 export interface ClientAPIResponse {
@@ -36,18 +37,15 @@ export function useClients() {
     return useQuery({
         queryKey: clientKeys.all,
         queryFn: async () => {
-            const [clients, invoices] = await Promise.all([
+            const [clients, invoices, projectsRes] = await Promise.all([
                 fetchClients(),
                 fetchInvoices(),
+                api.get<ProjectAPIResponse[]>('/projects/'),
             ]);
-
-            // Aggregation logic if stats not in backend
-            // Note: Currently ProjectAPIResponse doesn't have client_id in our local types,
-            // but the TODO.md says "project has client_id".
-            // Let's assume the backend returns it now.
+            const projects = projectsRes.data ?? [];
 
             return clients.map((c) => {
-                // If backend already provides them, use them.
+                // If backend already provides stats (Ticket 13), use them.
                 if (c.total_invoiced !== undefined && c.invoice_count !== undefined) {
                     return {
                         id: String(c.id),
@@ -60,15 +58,16 @@ export function useClients() {
                     };
                 }
 
-                // Otherwise, aggregate on the frontend
-                // 1. Get projects for this client
-                // We need to know which projects belong to this client.
-                // If ProjectAPIResponse has client_id, we can filter.
-                
-                // For now, let's use InvoiceAPIResponse.client_name to match if possible,
-                // or just default to 0 if we can't reliably aggregate.
-                
-                const clientInvoices = invoices.filter(inv => inv.client_name === c.name);
+                // Aggregate on the frontend: projects have client_id; sum invoice totals per client.
+                const projectIdsForClient = new Set(
+                    projects
+                        .filter((p) => p.client_id != null && p.client_id === c.id)
+                        .map((p) => p.id)
+                );
+                const clientInvoices =
+                    projectIdsForClient.size > 0
+                        ? invoices.filter((inv) => projectIdsForClient.has(inv.project_id))
+                        : invoices.filter((inv) => inv.client_name === c.name);
                 const totalInvoiced = clientInvoices.reduce((sum, inv) => sum + inv.total, 0);
                 const invoiceCount = clientInvoices.length;
 
