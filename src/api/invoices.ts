@@ -38,6 +38,19 @@ export async function generateInvoicePDF(invoiceId: number | string): Promise<vo
     await api.post(`/invoices/${invoiceId}/generate-pdf`);
 }
 
+export interface GenerateInvoiceBody {
+    project_id: number | string;
+    billing_period_start: string;
+    billing_period_end: string;
+    status: string;
+    tax_rate: number;
+}
+
+export async function generateInvoice(body: GenerateInvoiceBody): Promise<InvoiceAPIResponse> {
+    const res = await api.post<InvoiceAPIResponse>('/invoices/generate', body);
+    return res.data;
+}
+
 export const invoiceKeys = {
     all: ['invoices'] as const,
     list: (params?: { project_id?: number | string }) => [...invoiceKeys.all, 'list', params ?? 'all'] as const,
