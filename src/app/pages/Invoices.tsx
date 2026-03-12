@@ -101,6 +101,27 @@ export function Invoices() {
   const { entries, tasks } = useTimeTracking();
   const { data: invoices = [], isLoading, error } = useInvoices();
   const [isNewInvoiceOpen, setIsNewInvoiceOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
+
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((invoice) => {
+      const matchesSearch =
+        invoice.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        invoice.client.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [invoices, searchQuery, statusFilter]);
+
+  const filteredClients = useMemo(() => {
+    return clients.filter((client) =>
+      client.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+      client.contact.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+      client.email.toLowerCase().includes(clientSearchQuery.toLowerCase())
+    );
+  }, [clientSearchQuery]);
 
   // New Invoice Form State (selectedProjectId is project_id as string for project selector)
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -232,9 +253,11 @@ export function Invoices() {
                   <Input
                     placeholder="Search invoices..."
                     className="pl-9 bg-input-background"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <Select defaultValue="all">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
@@ -295,14 +318,14 @@ export function Invoices() {
                       </Alert>
                     </TableCell>
                   </TableRow>
-                ) : invoices.length === 0 ? (
+                ) : filteredInvoices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                      No invoices found.
+                      {searchQuery || statusFilter !== 'all' ? 'No invoices match your filters.' : 'No invoices found.'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  invoices.map((invoice) => (
+                  filteredInvoices.map((invoice) => (
                     <TableRow key={invoice.id}>
                       <TableCell className="font-mono font-medium">
                         {invoice.number}
@@ -361,6 +384,8 @@ export function Invoices() {
                 <Input
                   placeholder="Search clients..."
                   className="pl-9 bg-input-background"
+                  value={clientSearchQuery}
+                  onChange={(e) => setClientSearchQuery(e.target.value)}
                 />
               </div>
               <Button>
@@ -370,57 +395,63 @@ export function Invoices() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {clients.map((client) => (
-                <div
-                  key={client.id}
-                  className="bg-card border border-border rounded-lg p-6 hover:shadow-sm transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-primary/10 rounded flex items-center justify-center">
-                        <Building2 className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium mb-1">{client.name}</h3>
-                        <p className="text-sm text-muted-foreground">{client.contact}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Mail className="h-4 w-4 mr-2" />
-                      {client.email}
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4 mr-2" />
-                      {client.phone}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-border">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground mb-1">Total Invoiced</p>
-                        <p className="font-semibold">${client.totalInvoiced.toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Invoices</p>
-                        <p className="font-semibold">{client.invoiceCount}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center space-x-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      View Details
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      New Invoice
-                    </Button>
-                  </div>
+              {filteredClients.length === 0 ? (
+                <div className="col-span-2 p-12 text-center text-muted-foreground bg-card border border-border rounded-lg border-dashed">
+                  {clientSearchQuery ? 'No clients match your search.' : 'No clients found.'}
                 </div>
-              ))}
+              ) : (
+                filteredClients.map((client) => (
+                  <div
+                    key={client.id}
+                    className="bg-card border border-border rounded-lg p-6 hover:shadow-sm transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-primary/10 rounded flex items-center justify-center">
+                          <Building2 className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium mb-1">{client.name}</h3>
+                          <p className="text-sm text-muted-foreground">{client.contact}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Mail className="h-4 w-4 mr-2" />
+                        {client.email}
+                      </div>
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Phone className="h-4 w-4 mr-2" />
+                        {client.phone}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-border">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground mb-1">Total Invoiced</p>
+                          <p className="font-semibold">${client.totalInvoiced.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground mb-1">Invoices</p>
+                          <p className="font-semibold">{client.invoiceCount}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center space-x-2">
+                      <Button variant="outline" size="sm" className="flex-1">
+                        View Details
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        New Invoice
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </motion.div>
         </TabsContent>
