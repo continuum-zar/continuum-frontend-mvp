@@ -57,7 +57,7 @@ export async function fetchActiveWorkSession(): Promise<ActiveWorkSessionRespons
  * Start a new work session. Fails if user already has an active session.
  */
 export async function startWorkSession(body: WorkSessionCreateBody): Promise<WorkSessionCreateResponse> {
-    const { data } = await api.post<WorkSessionCreateResponse>('/work-sessions', {
+    const { data } = await api.post<WorkSessionCreateResponse>('/work-sessions/', {
         project_id: body.project_id,
         ...(body.task_id != null && { task_id: body.task_id }),
         ...(body.note != null && body.note !== '' && { note: body.note }),
