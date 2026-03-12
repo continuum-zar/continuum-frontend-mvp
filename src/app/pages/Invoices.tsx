@@ -44,6 +44,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { isAxiosError } from 'axios';
 
 const statusColors = {
   paid: 'bg-success/10 text-success border-success/20',
@@ -113,8 +114,8 @@ export function Invoices() {
       let result: { blob: Blob; filename: string };
       try {
         result = await downloadInvoice(invoiceId);
-      } catch (error: any) {
-        if (error.response?.status === 404) {
+      } catch (error: unknown) {
+        if (isAxiosError(error) && error.response?.status === 404) {
           toast.info(`Generating PDF for ${number}...`);
           await generateInvoicePDF(invoiceId);
           await new Promise(resolve => setTimeout(resolve, 1000));
