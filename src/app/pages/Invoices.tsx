@@ -39,64 +39,17 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useState, useMemo } from 'react';
 import { useTimeTracking } from '../context/TimeTrackingContext';
+import { useInvoices } from '@/api/invoices';
+import { Skeleton } from '../components/ui/skeleton';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
-interface Invoice {
-  id: string;
-  number: string;
-  client: string;
-  amount: number;
-  status: 'paid' | 'pending' | 'overdue' | 'draft';
-  dueDate: string;
-  issueDate: string;
-}
-
-const invoices: Invoice[] = [
-  {
-    id: '1',
-    number: 'INV-1247',
-    client: 'Acme Corporation',
-    amount: 12500,
-    status: 'paid',
-    dueDate: '2026-02-15',
-    issueDate: '2026-02-01',
-  },
-  {
-    id: '2',
-    number: 'INV-1248',
-    client: 'TechStart Inc',
-    amount: 8750,
-    status: 'pending',
-    dueDate: '2026-02-28',
-    issueDate: '2026-02-14',
-  },
-  {
-    id: '3',
-    number: 'INV-1249',
-    client: 'Global Systems',
-    amount: 15200,
-    status: 'overdue',
-    dueDate: '2026-02-10',
-    issueDate: '2026-01-27',
-  },
-  {
-    id: '4',
-    number: 'INV-1250',
-    client: 'Innovation Labs',
-    amount: 6300,
-    status: 'draft',
-    dueDate: '2026-03-15',
-    issueDate: '2026-02-20',
-  },
-  {
-    id: '5',
-    number: 'INV-1246',
-    client: 'Acme Corporation',
-    amount: 9800,
-    status: 'paid',
-    dueDate: '2026-01-31',
-    issueDate: '2026-01-17',
-  },
-];
+const statusColors = {
+  paid: 'bg-success/10 text-success border-success/20',
+  pending: 'bg-info/10 text-info border-info/20',
+  overdue: 'bg-destructive/10 text-destructive border-destructive/20',
+  draft: 'bg-muted text-muted-foreground border-border',
+};
 
 const clients = [
   {
@@ -137,13 +90,6 @@ const clients = [
   },
 ];
 
-const statusColors = {
-  paid: 'bg-success/10 text-success border-success/20',
-  pending: 'bg-info/10 text-info border-info/20',
-  overdue: 'bg-destructive/10 text-destructive border-destructive/20',
-  draft: 'bg-muted text-muted-foreground border-border',
-};
-
 // Map Projects to Clients.
 const projectToClientMap: Record<string, typeof clients[0]> = {
   'Mobile App Redesign': clients[0], // Acme Corporation
@@ -153,6 +99,7 @@ const projectToClientMap: Record<string, typeof clients[0]> = {
 
 export function Invoices() {
   const { entries, tasks } = useTimeTracking();
+  const { data: invoices = [], isLoading, error } = useInvoices();
   const [isNewInvoiceOpen, setIsNewInvoiceOpen] = useState(false);
 
   // New Invoice Form State (selectedProjectId is project_id as string for project selector)
@@ -322,46 +269,77 @@ export function Invoices() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-mono font-medium">
-                      {invoice.number}
-                    </TableCell>
-                    <TableCell>{invoice.client}</TableCell>
-                    <TableCell className="font-semibold">
-                      ${invoice.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(invoice.issueDate).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(invoice.dueDate).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={statusColors[invoice.status]}>
-                        {invoice.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <Button variant="ghost" size="sm">
-                          View
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16 ml-auto" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      <Alert variant="destructive" className="max-w-md mx-auto">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          Failed to load invoices. Please try again later.
+                        </AlertDescription>
+                      </Alert>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : invoices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                      No invoices found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  invoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-mono font-medium">
+                        {invoice.number}
+                      </TableCell>
+                      <TableCell>{invoice.client}</TableCell>
+                      <TableCell className="font-semibold">
+                        ${invoice.amount.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(invoice.issueDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(invoice.dueDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={statusColors[invoice.status]}>
+                          {invoice.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          <Button variant="ghost" size="sm">
+                            View
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </motion.div>

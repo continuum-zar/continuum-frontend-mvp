@@ -5,6 +5,7 @@ import type { ProjectDetailAPIResponse, ProjectDetail } from '@/types/project';
 import type { TaskAPIResponse, Task, TaskStatus } from '@/types/task';
 import type { MilestoneAPIResponse, Milestone, MilestoneStatus } from '@/types/milestone';
 import type { MemberAPIResponse, Member } from '@/types/member';
+import type { InvoiceAPIResponse, Invoice } from '@/types/invoice';
 
 export function mapProjectListItem(p: ProjectAPIResponse): Project {
     const lastActiveRaw = p.last_active ?? p.updated_at;
@@ -126,5 +127,25 @@ export function mapAttachment(a: AttachmentAPIResponse): Attachment {
         mimeType: a.mime_type,
         createdAt: formatDistanceToNow(new Date(a.created_at), { addSuffix: true }),
         uploadedBy: a.uploaded_by?.display_name || a.uploaded_by?.username,
+    };
+}
+
+export function mapInvoice(inv: InvoiceAPIResponse, projectNameMap?: Map<number, string>): Invoice {
+    const statusMap: Record<InvoiceAPIResponse['status'], Invoice['status']> = {
+        draft: 'draft',
+        sent: 'pending',
+        paid: 'paid',
+        overdue: 'overdue',
+        cancelled: 'draft', // Mapping cancelled to draft or similar if no direct match
+    };
+
+    return {
+        id: String(inv.id),
+        number: inv.invoice_number,
+        client: inv.client_name || inv.project_name || (projectNameMap?.get(inv.project_id)) || `Project ${inv.project_id}`,
+        amount: inv.total,
+        status: statusMap[inv.status] || 'pending',
+        issueDate: inv.billing_period_start || inv.created_at,
+        dueDate: inv.billing_period_end,
     };
 }
