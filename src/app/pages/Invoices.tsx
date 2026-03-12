@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useInvoices, downloadInvoice, generateInvoicePDF, generateInvoice } from '@/api/invoices';
 import { useClients } from '@/api/clients';
 import { useCreateClient, useClientDetail } from '@/api/hooks';
@@ -49,6 +49,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
+import { exportToCSV } from '@/lib/utils/export';
 
 const statusColors: Record<string, string> = {
   paid: 'bg-success/10 text-success border-success/20',
@@ -87,6 +88,39 @@ export function Invoices() {
     contact: '',
     phone: '',
   });
+
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((invoice) => {
+      const matchesSearch =
+        invoice.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        invoice.client.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [invoices, searchQuery, statusFilter]);
+
+  /**
+   * Client-side CSV export of the currently filtered/visible invoices.
+   * This approach was chosen as there is currently no backend endpoint for bulk invoice export.
+   */
+  const handleExport = useCallback(() => {
+    if (filteredInvoices.length === 0) {
+      toast.info('No invoices to export.');
+      return;
+    }
+
+    const csvData = filteredInvoices.map((inv) => ({
+      'Invoice Number': inv.number,
+      'Client': inv.client,
+      'Amount': inv.amount,
+      'Issue Date': new Date(inv.issueDate).toLocaleDateString(),
+      'Due Date': inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : 'N/A',
+      'Status': inv.status,
+    }));
+
+    exportToCSV(csvData, `invoices-${new Date().toISOString().split('T')[0]}.csv`);
+    toast.success('Invoices exported successfully.');
+  }, [filteredInvoices]);
 
   const handleAddClient = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,16 +176,6 @@ export function Invoices() {
       setIsProcessing(prev => ({ ...prev, [invoiceId]: null }));
     }
   };
-
-  const filteredInvoices = useMemo(() => {
-    return invoices.filter((invoice) => {
-      const matchesSearch =
-        invoice.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        invoice.client.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [invoices, searchQuery, statusFilter]);
 
   const filteredClients = useMemo(() => {
     return clients.filter((client) =>
@@ -364,7 +388,7 @@ export function Invoices() {
                   <Filter className="mr-2 h-4 w-4" />
                   Filter
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleExport}>
                   <Download className="mr-2 h-4 w-4" />
                   Export
                 </Button>
