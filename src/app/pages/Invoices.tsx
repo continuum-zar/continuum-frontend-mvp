@@ -143,6 +143,9 @@ export function Invoices() {
   const selectedProjectName = tasks.find((t) => String(t.project_id) === selectedProjectId)?.project;
   const mappedClient = selectedProjectName ? projectToClientMap[selectedProjectName] : null;
 
+  const totalInvoiced = invoices
+    .reduce((sum, inv) => sum + inv.amount, 0);
+
   const totalPaid = invoices
     .filter((inv) => inv.status === 'paid')
     .reduce((sum, inv) => sum + inv.amount, 0);
@@ -178,7 +181,7 @@ export function Invoices() {
         >
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="text-2xl font-semibold mb-1">
-              ${(totalPaid + totalPending + totalOverdue).toLocaleString()}
+              ${totalInvoiced.toLocaleString()}
             </div>
             <div className="text-sm text-muted-foreground">Total Invoiced</div>
           </div>
