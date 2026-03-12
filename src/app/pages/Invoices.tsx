@@ -38,18 +38,22 @@ import {
 } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useState, useMemo } from 'react';
-import { useTimeTracking } from '../context/TimeTrackingContext';
-import { useInvoices, downloadInvoice, generateInvoicePDF } from '@/api/invoices';
+import { useInvoices, downloadInvoice, generateInvoicePDF, generateInvoice } from '@/api/invoices';
+import { fetchProjects } from '@/api/projects';
+import { fetchLoggedHours } from '@/api/loggedHours';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '../components/ui/skeleton';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   paid: 'bg-success/10 text-success border-success/20',
   pending: 'bg-info/10 text-info border-info/20',
   overdue: 'bg-destructive/10 text-destructive border-destructive/20',
   draft: 'bg-muted text-muted-foreground border-border',
+  sent: 'bg-info/10 text-info border-info/20',
+  cancelled: 'bg-muted text-muted-foreground border-border',
 };
 
 const clients = [
@@ -99,8 +103,13 @@ const projectToClientMap: Record<string, typeof clients[0]> = {
 };
 
 export function Invoices() {
-  const { entries, tasks } = useTimeTracking();
+  const queryClient = useQueryClient();
   const { data: invoices = [], isLoading, error } = useInvoices();
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: fetchProjects,
+  });
+
   const [isNewInvoiceOpen, setIsNewInvoiceOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -113,15 +122,16 @@ export function Invoices() {
       let blob: Blob;
       try {
         blob = await downloadInvoice(invoiceId);
-      } catch (error: any) {
-        if (error.response?.status === 404) {
+      } catch (err: unknown) {
+        const errorRes = err as { response?: { status: number } };
+        if (errorRes.response?.status === 404) {
           toast.info(`Generating PDF for ${number}...`);
           await generateInvoicePDF(invoiceId);
           // Wait a bit for the generator to be sure it's done (optional, backend usually waits)
           await new Promise(resolve => setTimeout(resolve, 1000));
           blob = await downloadInvoice(invoiceId);
         } else {
-          throw error;
+          throw err;
         }
       }
 
@@ -166,43 +176,84 @@ export function Invoices() {
   // New Invoice Form State (selectedProjectId is project_id as string for project selector)
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [hourlyRate, setHourlyRate] = useState<number>(200);
+  const [billingPeriodStart, setBillingPeriodStart] = useState<string>(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
+  );
+  const [billingPeriodEnd, setBillingPeriodEnd] = useState<string>(
+    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]
+  );
+  const [taxRate, setTaxRate] = useState<number>(0);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Distinct projects from tasks (by project_id) for dropdown
+  // Preview data from logged hours
+  const { data: previewHours = [], isLoading: isPreviewLoading } = useQuery({
+    queryKey: ['logged-hours', 'preview', selectedProjectId, billingPeriodStart, billingPeriodEnd],
+    queryFn: () => fetchLoggedHours({
+      project_id: selectedProjectId,
+      start_date: billingPeriodStart,
+      end_date: billingPeriodEnd,
+    }),
+    enabled: !!selectedProjectId && !!billingPeriodStart && !!billingPeriodEnd && isNewInvoiceOpen,
+  });
+
+  // Distinct projects from API for dropdown
   const projectOptions = useMemo(() => {
-    const byId = new Map<number, string>();
-    tasks.forEach((t) => byId.set(t.project_id, t.project));
-    return Array.from(byId.entries()).map(([project_id, project]) => ({ project_id, project }));
-  }, [tasks]);
+    return projects.map((p) => ({ project_id: p.apiId, project: p.title }));
+  }, [projects]);
 
   // Group entries by task and calculate duration sum where project matches
   const invoiceItems = useMemo(() => {
-    if (!selectedProjectId) return [];
-
-    const project = tasks.find((t) => String(t.project_id) === selectedProjectId)?.project ?? '';
+    if (!selectedProjectId || previewHours.length === 0) return [];
 
     // Grouping logic for matched entries
     const itemsMap = new Map<string, number>(); // Task Title -> Total Minutes
-    entries.forEach(entry => {
-      if (entry.project === project) {
-        const currentDuration = itemsMap.get(entry.task) || 0;
-        itemsMap.set(entry.task, currentDuration + entry.duration);
-      }
+    previewHours.forEach(entry => {
+      const currentDuration = itemsMap.get(entry.task) || 0;
+      itemsMap.set(entry.task, currentDuration + entry.duration);
     });
 
     // Convert map to array { item, qty (hours) }
     const formattedItems = Array.from(itemsMap.entries()).map(([taskTitle, totalMins]) => {
       return {
         item: taskTitle,
-        qty: Math.max(1, Math.round((totalMins / 60) * 10) / 10), // Hours rounded to 1 decimal, min 1
+        qty: Math.max(0.1, Math.round((totalMins / 60) * 10) / 10), // Hours rounded to 1 decimal
       };
     });
 
     return formattedItems;
-  }, [selectedProjectId, entries, tasks]);
+  }, [selectedProjectId, previewHours]);
 
   const subTotal = invoiceItems.reduce((acc, curr) => acc + (curr.qty * hourlyRate), 0);
-  const selectedProjectName = tasks.find((t) => String(t.project_id) === selectedProjectId)?.project;
-  const mappedClient = selectedProjectName ? projectToClientMap[selectedProjectName] : null;
+  const selectedProject = projects.find((p) => String(p.apiId) === selectedProjectId);
+  const mappedClient = selectedProject ? projectToClientMap[selectedProject.title] : null;
+
+  const handleGenerateInvoice = async () => {
+    if (!selectedProjectId || !billingPeriodStart || !billingPeriodEnd) {
+      toast.error('Please select a project and billing period.');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      await generateInvoice({
+        project_id: selectedProjectId,
+        billing_period_start: billingPeriodStart,
+        billing_period_end: billingPeriodEnd,
+        status: 'draft',
+        tax_rate: taxRate,
+      });
+      toast.success('Invoice generated successfully.');
+      setIsNewInvoiceOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    } catch (err: unknown) {
+      console.error('Failed to generate invoice:', err);
+      const errorRes = err as { response?: { data?: { detail?: string } }, message?: string };
+      const message = errorRes.response?.data?.detail || errorRes.message || 'Failed to generate invoice.';
+      toast.error(message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const totalInvoiced = invoices
     .reduce((sum, inv) => sum + inv.amount, 0);
@@ -389,7 +440,7 @@ export function Invoices() {
                         })}
                       </TableCell>
                       <TableCell>
-                        <Badge className={statusColors[invoice.status]}>
+                        <Badge className={statusColors[invoice.status.toLowerCase()] || statusColors.draft}>
                           {invoice.status}
                         </Badge>
                       </TableCell>
@@ -528,29 +579,32 @@ export function Invoices() {
             <div className="grid grid-cols-2 gap-12">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Invoice Number</Label>
-                  <Input defaultValue={`INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 100)}`} />
+                  <Label>Billing Period Start</Label>
+                  <Input 
+                    type="date" 
+                    value={billingPeriodStart} 
+                    onChange={(e) => setBillingPeriodStart(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>Issued on</Label>
-                  <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+                  <Label>Billing Period End</Label>
+                  <Input 
+                    type="date" 
+                    value={billingPeriodEnd} 
+                    onChange={(e) => setBillingPeriodEnd(e.target.value)}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Due</Label>
-                    <Select defaultValue="receipt">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="receipt">Upon Receipt</SelectItem>
-                        <SelectItem value="net15">Net 15</SelectItem>
-                        <SelectItem value="net30">Net 30</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Tax Rate (%)</Label>
+                    <Input
+                      type="number"
+                      value={taxRate}
+                      onChange={(e) => setTaxRate(Number(e.target.value))}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Rate (per hr)</Label>
+                    <Label>Default Rate (Preview only)</Label>
                     <Input
                       type="number"
                       value={hourlyRate}
@@ -600,7 +654,11 @@ export function Invoices() {
 
                 {/* Items List */}
                 <div className="mt-4 flex flex-col gap-4">
-                  {invoiceItems.length > 0 ? (
+                  {isPreviewLoading ? (
+                    <div className="flex items-center justify-center p-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : invoiceItems.length > 0 ? (
                     invoiceItems.map((itm, idx) => (
                       <div key={idx} className="flex flex-row items-center gap-4">
                         <div className="text-muted-foreground/40 pt-6 cursor-grab">
@@ -638,7 +696,7 @@ export function Invoices() {
                     ))
                   ) : (
                     <div className="p-8 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg">
-                      Select a project to auto-fill tracked time.
+                      {selectedProjectId ? 'No hours logged for this project in the selected period.' : 'Select a project to auto-fill tracked time.'}
                     </div>
                   )}
                 </div>
@@ -653,11 +711,21 @@ export function Invoices() {
 
             {/* Total Footer */}
             <div className="flex items-center gap-6 pt-4 mt-2 border-t border-border">
-              <div className="text-muted-foreground text-sm font-medium pt-2">Total</div>
+              <div className="text-muted-foreground text-sm font-medium pt-2">Total (Preview)</div>
               <div className="flex-1 flex justify-end">
-                <Button className="h-12 px-6 rounded-lg font-medium text-base bg-[#2d81ff] hover:bg-[#2d81ff]/90 text-white shadow-md shadow-blue-500/20">
-                  <span className="font-semibold mr-2">${subTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  <span className="opacity-60 text-xs mx-1 pb-0.5">•</span>
+                <Button 
+                  onClick={handleGenerateInvoice}
+                  disabled={isGenerating || !selectedProjectId || invoiceItems.length === 0}
+                  className="h-12 px-6 rounded-lg font-medium text-base bg-[#2d81ff] hover:bg-[#2d81ff]/90 text-white shadow-md shadow-blue-500/20"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <>
+                      <span className="font-semibold mr-2">${subTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="opacity-60 text-xs mx-1 pb-0.5">•</span>
+                    </>
+                  )}
                   <span className="ml-1">Generate invoice</span>
                 </Button>
               </div>
