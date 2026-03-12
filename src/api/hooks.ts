@@ -18,9 +18,8 @@ import {
     postTaskComment,
     assignTask,
 } from './projects';
-import { fetchLoggedHours, createLoggedHour } from './loggedHours';
-import type { CreateLoggedHourBody } from './loggedHours';
-import type { TaskStatus, ScopeWeight } from '@/types/task';
+import { fetchClients, createClient, fetchClientDetail, clientKeys } from './clients';
+import type { ClientCreate } from './clients';
 
 /** Normalize FastAPI error detail into a single message. */
 function getApiErrorMessage(err: unknown, fallback: string): string {
@@ -356,3 +355,25 @@ export function useTaskTimeline(taskId: number | string | undefined | null) {
         enabled: taskId != null && taskId !== '',
     });
 }
+
+export function useCreateClient() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: ClientCreate) => createClient(body),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: clientKeys.all });
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to create client'));
+        },
+    });
+}
+
+export function useClientDetail(clientId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: clientKeys.detail(clientId!),
+        queryFn: () => fetchClientDetail(clientId!),
+        enabled: clientId != null && clientId !== '',
+    });
+}
+

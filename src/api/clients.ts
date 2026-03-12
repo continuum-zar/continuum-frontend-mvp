@@ -23,13 +23,31 @@ export interface Client {
     invoiceCount: number;
 }
 
+export interface ClientCreate {
+    name: string;
+    email: string;
+    contact?: string;
+    phone?: string;
+}
+
 export async function fetchClients(): Promise<ClientAPIResponse[]> {
     const { data } = await api.get<ClientAPIResponse[]>('/clients/');
     return data ?? [];
 }
 
+export async function createClient(client: ClientCreate): Promise<ClientAPIResponse> {
+    const { data } = await api.post<ClientAPIResponse>('/clients/', client);
+    return data;
+}
+
+export async function fetchClientDetail(clientId: number | string): Promise<ClientAPIResponse> {
+    const { data } = await api.get<ClientAPIResponse>(`/clients/${clientId}`);
+    return data;
+}
+
 export const clientKeys = {
     all: ['clients'] as const,
+    detail: (id: string | number) => [...clientKeys.all, 'detail', id] as const,
 };
 
 export function useClients() {

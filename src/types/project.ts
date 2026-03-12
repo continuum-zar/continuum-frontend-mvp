@@ -3,6 +3,7 @@ export interface ProjectAPIResponse {
     name: string;
     description?: string;
     status: string;
+    client_id?: number;
     /** Backend list endpoint returns progress (float); some endpoints may use progress_percentage */
     progress?: number;
     progress_percentage?: number;
@@ -24,6 +25,7 @@ export interface Project {
     dueDate: string;
     teamSize: number;
     lastActive: string;
+    clientId?: number;
 }
 
 /** Raw project detail from API (GET /projects/:id) */

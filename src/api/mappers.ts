@@ -21,6 +21,7 @@ export function mapProjectListItem(p: ProjectAPIResponse): Project {
         lastActive: lastActiveRaw
             ? formatDistanceToNow(new Date(lastActiveRaw), { addSuffix: true })
             : 'Unknown',
+        clientId: p.client_id,
     };
 }
 
