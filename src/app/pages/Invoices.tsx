@@ -794,7 +794,7 @@ export function Invoices() {
                 <Button
                   onClick={handleGenerateInvoice}
                   disabled={isGenerating || !selectedProjectId || invoiceItems.length === 0}
-                  className="h-12 px-6 rounded-lg font-medium text-base bg-[#2d81ff] hover:bg-[#2d81ff]/90 text-white shadow-md shadow-blue-500/20"
+                  className="h-12 px-6 rounded-lg font-medium text-base bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
                 >
                   {isGenerating ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
