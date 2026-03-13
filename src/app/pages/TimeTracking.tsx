@@ -355,17 +355,17 @@ export function TimeTracking() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-4">
               <div className="space-y-2">
-                <Label>Project</Label>
-                <Input value={selectedTask?.project ?? ''} disabled className="bg-muted/50" />
+                <Label htmlFor="log-project">Project</Label>
+                <Input id="log-project" value={selectedTask?.project ?? ''} disabled className="bg-muted/50" />
               </div>
               <div className="grid grid-cols-[1fr,auto] gap-4">
                 <div className="space-y-2">
-                  <Label>Task</Label>
-                  <Input value={selectedTask?.title ?? ''} disabled className="bg-muted/50 truncate" />
+                  <Label htmlFor="log-task">Task</Label>
+                  <Input id="log-task" value={selectedTask?.title ?? ''} disabled className="bg-muted/50 truncate" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Time Tracked</Label>
-                  <Input value={formatTime(currentTime)} disabled className="font-mono bg-muted/50 w-[120px] text-center" />
+                  <Label htmlFor="log-time-tracked">Time Tracked</Label>
+                  <Input id="log-time-tracked" value={formatTime(currentTime)} disabled className="font-mono bg-muted/50 w-[120px] text-center" />
                 </div>
               </div>
             </div>
@@ -423,7 +423,7 @@ export function TimeTracking() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label>Project</Label>
+              <Label htmlFor="manual-project">Project</Label>
               <Select
                 value={manualProjectId}
                 onValueChange={(v) => {
@@ -431,7 +431,7 @@ export function TimeTracking() {
                   setManualTaskId('');
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger id="manual-project">
                   <SelectValue placeholder="Select project..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -444,13 +444,13 @@ export function TimeTracking() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Task (optional)</Label>
+              <Label htmlFor="manual-task">Task (optional)</Label>
               <Select
                 value={manualTaskId}
                 onValueChange={setManualTaskId}
                 disabled={!manualProjectId || tasksForManualProject.length === 0}
               >
-                <SelectTrigger>
+                <SelectTrigger id="manual-task">
                   <SelectValue placeholder="Select task (optional)..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -465,16 +465,18 @@ export function TimeTracking() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Date</Label>
+                <Label htmlFor="manual-date">Date</Label>
                 <Input
+                  id="manual-date"
                   type="date"
                   value={manualDate}
                   onChange={(e) => setManualDate(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Duration (minutes)</Label>
+                <Label htmlFor="manual-duration">Duration (minutes)</Label>
                 <Input
+                  id="manual-duration"
                   type="number"
                   min={1}
                   value={manualDurationMinutes}

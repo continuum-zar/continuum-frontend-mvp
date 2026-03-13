@@ -653,16 +653,18 @@ export function Invoices() {
             <div className="grid grid-cols-2 gap-12">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Billing Period Start</Label>
+                  <Label htmlFor="billing-period-start">Billing Period Start</Label>
                   <Input
+                    id="billing-period-start"
                     type="date"
                     value={billingPeriodStart}
                     onChange={(e) => setBillingPeriodStart(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Billing Period End</Label>
+                  <Label htmlFor="billing-period-end">Billing Period End</Label>
                   <Input
+                    id="billing-period-end"
                     type="date"
                     value={billingPeriodEnd}
                     onChange={(e) => setBillingPeriodEnd(e.target.value)}
@@ -670,16 +672,18 @@ export function Invoices() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Tax Rate (%)</Label>
+                    <Label htmlFor="tax-rate">Tax Rate (%)</Label>
                     <Input
+                      id="tax-rate"
                       type="number"
                       value={taxRate}
                       onChange={(e) => setTaxRate(Number(e.target.value))}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Default Rate (Preview only)</Label>
+                    <Label htmlFor="default-rate">Default Rate (Preview only)</Label>
                     <Input
+                      id="default-rate"
                       type="number"
                       value={hourlyRate}
                       onChange={(e) => setHourlyRate(Number(e.target.value))}
@@ -711,9 +715,9 @@ export function Invoices() {
             <div className="border-t border-border pt-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Project</Label>
+                  <Label htmlFor="invoice-project">Project</Label>
                     <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                    <SelectTrigger>
+                    <SelectTrigger id="invoice-project">
                       <SelectValue placeholder="Select a project..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -740,23 +744,23 @@ export function Invoices() {
                         </div>
 
                         <div className="flex-1 space-y-1.5">
-                          <Label className="text-xs font-normal text-muted-foreground ml-1">Items</Label>
-                          <Input value={itm.item} className="h-10 bg-background" readOnly />
+                          <Label htmlFor={`invoice-item-${idx}`} className="text-xs font-normal text-muted-foreground ml-1">Items</Label>
+                          <Input id={`invoice-item-${idx}`} value={itm.item} className="h-10 bg-background" readOnly />
                         </div>
 
                         <div className="w-[70px] space-y-1.5">
-                          <Label className="text-xs font-normal text-muted-foreground ml-1">Qty</Label>
-                          <Input value={itm.qty} className="h-10 text-center bg-background px-2" readOnly />
+                          <Label htmlFor={`invoice-qty-${idx}`} className="text-xs font-normal text-muted-foreground ml-1">Qty</Label>
+                          <Input id={`invoice-qty-${idx}`} value={itm.qty} className="h-10 text-center bg-background px-2" readOnly />
                         </div>
 
                         <div className="w-[110px] space-y-1.5">
-                          <Label className="text-xs font-normal text-muted-foreground ml-1">Rate</Label>
-                          <Input value={`$${hourlyRate.toFixed(2)}`} className="h-10 bg-background px-3" readOnly />
+                          <Label htmlFor={`invoice-rate-${idx}`} className="text-xs font-normal text-muted-foreground ml-1">Rate</Label>
+                          <Input id={`invoice-rate-${idx}`} value={`$${hourlyRate.toFixed(2)}`} className="h-10 bg-background px-3" readOnly />
                         </div>
 
                         <div className="w-[110px] space-y-1.5">
-                          <Label className="text-xs font-normal text-muted-foreground ml-1 block">Total</Label>
-                          <div className="h-10 flex items-center font-medium text-[15px]">
+                          <span id={`invoice-total-label-${idx}`} className="text-xs font-normal text-muted-foreground ml-1 block">Total</span>
+                          <div className="h-10 flex items-center font-medium text-[15px]" aria-labelledby={`invoice-total-label-${idx}`}>
                             ${(itm.qty * hourlyRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
                         </div>
