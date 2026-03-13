@@ -41,7 +41,7 @@ export async function createClient(client: ClientCreate): Promise<ClientAPIRespo
     return data;
 }
 
-export async function fetchClientDetail(clientId: number | string): Promise<ClientAPIResponse> {
+export async function fetchClient(clientId: number | string): Promise<ClientAPIResponse> {
     const { data } = await api.get<ClientAPIResponse>(`/clients/${clientId}`);
     return data;
 }

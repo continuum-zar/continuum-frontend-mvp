@@ -10,7 +10,7 @@ import {
     createProject,
     updateProject,
 } from './projects';
-import { createClient, fetchClientDetail, clientKeys } from './clients';
+import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
 import {
     fetchProjectTasks,
@@ -380,7 +380,7 @@ export function useCreateClient() {
 export function useClientDetail(clientId: number | string | undefined | null) {
     return useQuery({
         queryKey: clientKeys.detail(clientId!),
-        queryFn: () => fetchClientDetail(clientId!),
+        queryFn: () => fetchClient(clientId!),
         enabled: clientId != null && clientId !== '',
     });
 }

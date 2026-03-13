@@ -38,7 +38,7 @@ import {
 } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useState, useMemo, useCallback } from 'react';
-import { useInvoices, downloadInvoice, generateInvoicePDF, generateInvoice } from '@/api/invoices';
+import { useInvoices, downloadInvoice, generateInvoicePdf, generateInvoice } from '@/api/invoices';
 import { useClients } from '@/api/clients';
 import { useCreateClient, useClientDetail } from '@/api/hooks';
 import { useRole } from '@/app/context/RoleContext';
@@ -150,7 +150,7 @@ export function Invoices() {
       } catch (error: unknown) {
         if (isAxiosError(error) && error.response?.status === 404) {
           toast.info(`Generating PDF for ${number}...`);
-          await generateInvoicePDF(invoiceId);
+          await generateInvoicePdf(invoiceId);
           await new Promise(resolve => setTimeout(resolve, 1000));
           result = await downloadInvoice(invoiceId);
         } else {
