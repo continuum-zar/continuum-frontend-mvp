@@ -26,6 +26,7 @@ export interface Project {
     dueDate: string;
     teamSize: number;
     lastActive: string;
+    clientId?: number;
 }
 
 /** Raw project detail from API (GET /projects/:id) */

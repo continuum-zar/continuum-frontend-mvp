@@ -10,6 +10,8 @@ import {
     createProject,
     updateProject,
 } from './projects';
+import { createClient, fetchClientDetail, clientKeys } from './clients';
+import type { ClientCreate } from './clients';
 import {
     fetchProjectTasks,
     fetchAllTasks,
@@ -359,5 +361,26 @@ export function useTaskTimeline(taskId: number | string | undefined | null) {
         queryKey: taskTimelineKey(taskId!),
         queryFn: () => fetchTaskTimeline(taskId!),
         enabled: taskId != null && taskId !== '',
+    });
+}
+
+export function useCreateClient() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: ClientCreate) => createClient(body),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: clientKeys.all });
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to create client'));
+        },
+    });
+}
+
+export function useClientDetail(clientId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: clientKeys.detail(clientId!),
+        queryFn: () => fetchClientDetail(clientId!),
+        enabled: clientId != null && clientId !== '',
     });
 }

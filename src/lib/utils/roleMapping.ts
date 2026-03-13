@@ -4,6 +4,8 @@ export function mapBackendRole(backendRole: string | undefined): Role {
     if (!backendRole) return 'Project Manager';
 
     switch (backendRole.toLowerCase()) {
+        case 'admin':
+            return 'Admin';
         case 'project_manager':
             return 'Project Manager';
         case 'developer':

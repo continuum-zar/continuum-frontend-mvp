@@ -40,6 +40,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { useState, useMemo } from 'react';
 import { useInvoices, downloadInvoice, generateInvoicePDF, generateInvoice } from '@/api/invoices';
 import { useClients } from '@/api/clients';
+import { useCreateClient, useClientDetail } from '@/api/hooks';
+import { useRole } from '@/app/context/RoleContext';
 import { fetchProjects } from '@/api/projects';
 import { fetchLoggedHours } from '@/api/loggedHours';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -68,10 +70,41 @@ export function Invoices() {
   });
 
   const [isNewInvoiceOpen, setIsNewInvoiceOpen] = useState(false);
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [isClientDetailsOpen, setIsClientDetailsOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState<Record<string, 'view' | 'download' | null>>({});
+
+  const { role } = useRole();
+  const { mutate: createClient, isPending: isCreatingClient } = useCreateClient();
+  const { data: clientDetail, isLoading: isClientDetailLoading } = useClientDetail(selectedClientId);
+
+  const [newClient, setNewClient] = useState({
+    name: '',
+    email: '',
+    contact: '',
+    phone: '',
+  });
+
+  const handleAddClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    createClient(newClient, {
+      onSuccess: () => {
+        setIsAddClientOpen(false);
+        setNewClient({ name: '', email: '', contact: '', phone: '' });
+        toast.success('Client added successfully');
+      },
+    });
+  };
+
+  const handleViewClientDetails = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setIsClientDetailsOpen(true);
+  };
 
   const handleInvoiceAction = async (invoiceId: string | number, number: string, action: 'view' | 'download') => {
     setIsProcessing(prev => ({ ...prev, [invoiceId]: action }));
@@ -463,10 +496,12 @@ export function Invoices() {
                   onChange={(e) => setClientSearchQuery(e.target.value)}
                 />
               </div>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Client
-              </Button>
+              {role === 'Admin' && (
+                <Button onClick={() => setIsAddClientOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Client
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -548,10 +583,27 @@ export function Invoices() {
                     </div>
 
                     <div className="mt-4 flex items-center space-x-2">
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleViewClientDetails(client.id)}
+                      >
                         View Details
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          // Try to find a project for this client to pre-select
+                          const clientProject = projects.find(p => p.clientId === Number(client.id));
+                          if (clientProject) {
+                            setSelectedProjectId(String(clientProject.apiId));
+                          }
+                          setIsNewInvoiceOpen(true);
+                        }}
+                      >
                         New Invoice
                       </Button>
                     </div>
@@ -728,6 +780,138 @@ export function Invoices() {
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Client Modal (admin only) */}
+      {role === 'Admin' && (
+        <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Add New Client</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAddClient} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="client-name">Client Name</Label>
+              <Input
+                id="client-name"
+                required
+                value={newClient.name}
+                onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+                placeholder="e.g. Acme Corp"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client-email">Email Address</Label>
+              <Input
+                id="client-email"
+                type="email"
+                required
+                value={newClient.email}
+                onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                placeholder="e.g. billing@acme.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client-contact">Primary Contact</Label>
+              <Input
+                id="client-contact"
+                value={newClient.contact}
+                onChange={(e) => setNewClient({ ...newClient, contact: e.target.value })}
+                placeholder="e.g. John Doe"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client-phone">Phone Number</Label>
+              <Input
+                id="client-phone"
+                value={newClient.phone}
+                onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
+                placeholder="e.g. +1 (555) 000-0000"
+              />
+            </div>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsAddClientOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isCreatingClient}>
+                {isCreatingClient ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-2" />
+                )}
+                Create Client
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+      )}
+
+      {/* Client Details Modal */}
+      <Dialog open={isClientDetailsOpen} onOpenChange={setIsClientDetailsOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Client Details</DialogTitle>
+          </DialogHeader>
+          {isClientDetailLoading ? (
+            <div className="flex items-center justify-center p-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : clientDetail ? (
+            <div className="space-y-6 py-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-primary/10 rounded flex items-center justify-center">
+                  <Building2 className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">{clientDetail.name}</h2>
+                  <p className="text-muted-foreground">{clientDetail.contact || 'No contact specified'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium flex items-center">
+                    <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                    {clientDetail.email}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Phone</p>
+                  <p className="font-medium flex items-center">
+                    <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                    {clientDetail.phone || 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-6">
+                <h3 className="font-medium mb-4">Financial Summary</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Total Invoiced</p>
+                    <p className="text-lg font-semibold">${(clientDetail.total_invoiced ?? 0).toLocaleString()}</p>
+                  </div>
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Invoices</p>
+                    <p className="text-lg font-semibold">{clientDetail.invoice_count ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button variant="outline" onClick={() => setIsClientDetailsOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-8 text-center text-muted-foreground">
+              Failed to load client details.
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
