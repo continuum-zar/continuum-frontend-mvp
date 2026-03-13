@@ -353,7 +353,7 @@ export function ProjectsList() {
                             <div className="flex items-start justify-between mb-4">
                                 <div className="pr-8">
                                     <h3 className="text-lg font-bold mb-1 group-hover:text-primary transition-colors">{project.title}</h3>
-                                    <Badge variant={project.status === 'completed' ? 'secondary' : 'default'} className="font-mono text-[10px] tracking-wider uppercase">
+                                    <Badge variant={project.status === 'completed' ? 'success' : 'default'} className="font-mono text-[10px] tracking-wider uppercase">
                                         {project.status}
                                     </Badge>
                                 </div>

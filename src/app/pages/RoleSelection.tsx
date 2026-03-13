@@ -15,7 +15,7 @@ export function RoleSelection() {
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full max-w-md"
             >
-                <Card className="border-border">
+                <Card className="border-border border-t-4 border-t-primary">
                     <CardHeader className="text-center pb-4">
                         <CardTitle className="text-2xl">Your role</CardTitle>
                         <CardDescription className="text-base mt-2">

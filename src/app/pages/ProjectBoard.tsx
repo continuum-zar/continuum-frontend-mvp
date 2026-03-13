@@ -191,8 +191,15 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
     }),
   }));
 
+  const columnAccent =
+    status === 'todo'
+      ? 'border-muted-foreground/40'
+      : status === 'in-progress'
+        ? 'border-primary'
+        : 'border-success';
+
   return (
-    <div className="flex-1 min-w-[320px]">
+    <div className={`flex-1 min-w-[320px] border-l-4 rounded pl-3 ${columnAccent}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <h3>{title}</h3>
