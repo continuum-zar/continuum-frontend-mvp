@@ -31,7 +31,7 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, usePostComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask } from '@/api';
+import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { TaskAPIResponse } from '@/types/task';
@@ -147,7 +147,7 @@ export function TaskDetail() {
 
   // Comments hooks
   const { data: comments, isLoading: commentsLoading } = useTaskComments(taskId);
-  const postCommentMutation = usePostComment(taskId);
+  const postCommentMutation = useCreateTaskComment(taskId);
   // Attachments hooks
   const { data: attachments, isLoading: attachmentsLoading } = useTaskAttachments(taskId);
   const uploadAttachmentMutation = useUploadAttachment(taskId);

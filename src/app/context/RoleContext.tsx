@@ -2,7 +2,7 @@ import { createContext, useContext, useState, ReactNode, useEffect } from 'react
 import { useAuthStore } from '@/store/authStore';
 import { mapBackendRole } from '@/lib/utils/roleMapping';
 
-export type Role = 'Project Manager' | 'Developer' | 'Client';
+export type Role = 'Admin' | 'Project Manager' | 'Developer' | 'Client';
 
 interface RoleContextType {
     role: Role;

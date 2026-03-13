@@ -14,11 +14,29 @@ export async function fetchInvoice(invoiceId: number | string): Promise<InvoiceW
     return res.data;
 }
 
-export async function downloadInvoicePdf(invoiceId: number | string): Promise<Blob> {
-    const res = await api.get(`/invoices/${invoiceId}/download`, {
+export interface DownloadInvoiceResult {
+    blob: Blob;
+    filename: string;
+}
+
+function parseContentDispositionFilename(headers: Record<string, unknown>): string {
+    const contentDisposition = headers?.['content-disposition'];
+    let filename = 'invoice.pdf';
+    if (typeof contentDisposition === 'string') {
+        const match =
+            contentDisposition.match(/filename\*?=(?:UTF-8'')?["']?([^"'\s;]+)["']?/i) ??
+            contentDisposition.match(/filename=["']?([^"'\s;]+)["']?/i);
+        if (match?.[1]) filename = decodeURIComponent(match[1].trim());
+    }
+    return filename;
+}
+
+export async function downloadInvoice(invoiceId: number | string): Promise<DownloadInvoiceResult> {
+    const res = await api.get<Blob>(`/invoices/${invoiceId}/download`, {
         responseType: 'blob',
     });
-    return res.data;
+    const filename = parseContentDispositionFilename(res.headers as Record<string, unknown>);
+    return { blob: res.data, filename };
 }
 
 export async function generateInvoicePdf(invoiceId: number | string): Promise<void> {

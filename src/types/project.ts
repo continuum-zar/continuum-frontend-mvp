@@ -3,6 +3,7 @@ export interface ProjectAPIResponse {
     name: string;
     description?: string;
     status: string;
+    /** Backend: project belongs to this client (for client stats aggregation). */
     client_id?: number;
     /** Backend list endpoint returns progress (float); some endpoints may use progress_percentage */
     progress?: number;

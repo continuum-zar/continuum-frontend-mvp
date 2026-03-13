@@ -3,21 +3,28 @@ export {
     createProject,
     updateProject,
     fetchProject,
-    fetchProjectTasks,
-    fetchAllTasks,
-    updateTaskStatus,
-    updateTask,
-    fetchTask,
     fetchMilestones,
     createMilestone,
     fetchMembers,
     addMember,
+} from './projects';
+export {
+    fetchTask,
+    updateTask,
+    fetchProjectTasks,
+    fetchAllTasks,
+    updateTaskStatus,
     fetchTaskComments,
-    postTaskComment, fetchTaskAttachments, uploadTaskAttachment, deleteAttachment, getAttachmentDownloadUrl,
+    createTaskComment,
+    fetchTaskAttachments,
+    uploadTaskAttachment,
+    deleteAttachment,
+    getAttachmentDownloadUrl,
     fetchTaskTimeline,
     assignTask,
-} from './projects';
-export type { Project, ProjectDetail, ProjectAPIResponse, Task, TaskStatus, TaskOption, Milestone, Member, TaskTimelineEntry } from './projects';
+} from './tasks';
+export type { Project, ProjectDetail, ProjectAPIResponse, Milestone, Member } from './projects';
+export type { Task, TaskStatus, TaskAPIResponse, TaskTimelineEntry, TaskOption } from './tasks';
 export type { CommentAPIResponse } from '@/types/comment';
 export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate, mapAttachment } from './mappers';
 export {
@@ -34,7 +41,7 @@ export {
     useCreateMilestone,
     useAddMember,
     useTaskComments,
-    usePostComment,
+    useCreateTaskComment,
     useTaskAttachments,
     useUploadAttachment,
     useDeleteAttachment,
@@ -106,7 +113,7 @@ export type {
 export {
     fetchInvoices,
     fetchInvoice,
-    downloadInvoicePdf,
+    downloadInvoice,
     generateInvoicePdf,
     generateInvoice,
     updateInvoiceStatus,
