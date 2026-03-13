@@ -41,6 +41,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useInvoices, downloadInvoice, generateInvoicePDF, generateInvoice } from '@/api/invoices';
 import { useClients } from '@/api/clients';
 import { useCreateClient, useClientDetail } from '@/api/hooks';
+import { useRole } from '@/app/context/RoleContext';
 import { fetchProjects } from '@/api/projects';
 import { fetchLoggedHours } from '@/api/loggedHours';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -48,7 +49,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { AxiosError } from 'axios';
+import { AxiosError, isAxiosError } from 'axios';
 import { exportToCSV } from '@/lib/utils/export';
 
 const statusColors: Record<string, string> = {
@@ -79,6 +80,7 @@ export function Invoices() {
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState<Record<string, 'view' | 'download' | null>>({});
 
+  const { role } = useRole();
   const { mutate: createClient, isPending: isCreatingClient } = useCreateClient();
   const { data: clientDetail, isLoading: isClientDetailLoading } = useClientDetail(selectedClientId);
 
@@ -142,34 +144,33 @@ export function Invoices() {
   const handleInvoiceAction = async (invoiceId: string | number, number: string, action: 'view' | 'download') => {
     setIsProcessing(prev => ({ ...prev, [invoiceId]: action }));
     try {
-      let blob: Blob;
+      let result: { blob: Blob; filename: string };
       try {
-        blob = await downloadInvoice(invoiceId);
-      } catch (err: unknown) {
-        const errorRes = err as { response?: { status: number } };
-        if (errorRes.response?.status === 404) {
+        result = await downloadInvoice(invoiceId);
+      } catch (error: unknown) {
+        if (isAxiosError(error) && error.response?.status === 404) {
           toast.info(`Generating PDF for ${number}...`);
           await generateInvoicePDF(invoiceId);
-          // Wait a bit for the generator to be sure it's done (optional, backend usually waits)
           await new Promise(resolve => setTimeout(resolve, 1000));
-          blob = await downloadInvoice(invoiceId);
+          result = await downloadInvoice(invoiceId);
         } else {
-          throw err;
+          throw error;
         }
       }
 
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(result.blob);
       if (action === 'view') {
         window.open(url, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
       } else {
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `${number}.pdf`);
+        link.setAttribute('download', result.filename);
         document.body.appendChild(link);
         link.click();
         link.remove();
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
       }
-      setTimeout(() => window.URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error('Invoice PDF error:', error);
       toast.error(`Failed to ${action} invoice PDF.`);
@@ -520,10 +521,12 @@ export function Invoices() {
                   onChange={(e) => setClientSearchQuery(e.target.value)}
                 />
               </div>
-              <Button onClick={() => setIsAddClientOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Client
-              </Button>
+              {role === 'Admin' && (
+                <Button onClick={() => setIsAddClientOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Client
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -805,13 +808,14 @@ export function Invoices() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Client Modal */}
-      <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add New Client</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAddClient} className="space-y-4 py-4">
+      {/* Add Client Modal (admin only) */}
+      {role === 'Admin' && (
+        <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Add New Client</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAddClient} className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="client-name">Client Name</Label>
               <Input
@@ -867,6 +871,7 @@ export function Invoices() {
           </form>
         </DialogContent>
       </Dialog>
+      )}
 
       {/* Client Details Modal */}
       <Dialog open={isClientDetailsOpen} onOpenChange={setIsClientDetailsOpen}>
