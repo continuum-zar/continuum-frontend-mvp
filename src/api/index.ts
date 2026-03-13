@@ -115,5 +115,11 @@ export {
     useInvoices,
     invoiceKeys,
 } from './invoices';
+export {
+    fetchClients,
+    useClients,
+    clientKeys,
+} from './clients';
+export type { Client, ClientAPIResponse } from './clients';
 export type { Invoice, InvoiceAPIResponse } from '@/types/invoice';
 export { mapInvoice } from './mappers';
