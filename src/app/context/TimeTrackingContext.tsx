@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useAllTasks, useLoggedHours } from '@/api/hooks';
-import type { TaskOption } from '@/api/projects';
+import type { TaskOption } from '@/api';
 import {
     fetchActiveWorkSession,
     startWorkSession,

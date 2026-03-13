@@ -49,7 +49,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { AxiosError } from 'axios';
+import { AxiosError, isAxiosError } from 'axios';
 
 const statusColors: Record<string, string> = {
   paid: 'bg-success/10 text-success border-success/20',
@@ -109,34 +109,33 @@ export function Invoices() {
   const handleInvoiceAction = async (invoiceId: string | number, number: string, action: 'view' | 'download') => {
     setIsProcessing(prev => ({ ...prev, [invoiceId]: action }));
     try {
-      let blob: Blob;
+      let result: { blob: Blob; filename: string };
       try {
-        blob = await downloadInvoice(invoiceId);
-      } catch (err: unknown) {
-        const errorRes = err as { response?: { status: number } };
-        if (errorRes.response?.status === 404) {
+        result = await downloadInvoice(invoiceId);
+      } catch (error: unknown) {
+        if (isAxiosError(error) && error.response?.status === 404) {
           toast.info(`Generating PDF for ${number}...`);
           await generateInvoicePDF(invoiceId);
-          // Wait a bit for the generator to be sure it's done (optional, backend usually waits)
           await new Promise(resolve => setTimeout(resolve, 1000));
-          blob = await downloadInvoice(invoiceId);
+          result = await downloadInvoice(invoiceId);
         } else {
-          throw err;
+          throw error;
         }
       }
 
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(result.blob);
       if (action === 'view') {
         window.open(url, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
       } else {
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `${number}.pdf`);
+        link.setAttribute('download', result.filename);
         document.body.appendChild(link);
         link.click();
         link.remove();
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
       }
-      setTimeout(() => window.URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error('Invoice PDF error:', error);
       toast.error(`Failed to ${action} invoice PDF.`);
