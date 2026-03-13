@@ -516,7 +516,19 @@ export function TaskDetail() {
           className="space-y-6"
         >
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">Status</label>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-sm text-muted-foreground">Status</label>
+              <span
+                className={`inline-block w-2 h-2 rounded-full shrink-0 ${
+                  status === 'done'
+                    ? 'bg-success'
+                    : status === 'in_progress'
+                      ? 'bg-primary'
+                      : 'bg-muted-foreground'
+                }`}
+                aria-hidden
+              />
+            </div>
             <Select value={status} onValueChange={handleStatusChange}>
               <SelectTrigger>
                 <SelectValue />

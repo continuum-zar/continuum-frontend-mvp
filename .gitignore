@@ -6,6 +6,15 @@ dist/
 .gemini/
 .DS_Store
 
+# Skills (Impeccable / npx skills)
+.agent/
+.agents/
+skills-lock.json
+
+# AI / design context (local only)
+AUDIT-REPORT.md
+CLAUDE.md
+
 # Python
 .venv/
 __pycache__/

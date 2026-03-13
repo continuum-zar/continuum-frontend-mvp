@@ -318,7 +318,7 @@ export function CreateTask() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-8 right-8 w-72 p-4 bg-card border border-foreground rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-50"
+        className="fixed bottom-8 right-8 w-72 p-4 bg-card border border-foreground rounded-lg shadow-lg z-50"
       >
         <div className="mb-3 flex items-center justify-between">
           <div>
