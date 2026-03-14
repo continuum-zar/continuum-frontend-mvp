@@ -31,7 +31,7 @@ import type { CreateLoggedHourBody } from './loggedHours';
 import type { Task, TaskStatus, ScopeWeight } from '@/types/task';
 
 /** Normalize FastAPI error detail into a single message. */
-function getApiErrorMessage(err: unknown, fallback: string): string {
+export function getApiErrorMessage(err: unknown, fallback: string): string {
     const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
     const detail = data?.detail;
     if (typeof detail === 'string') return detail;
@@ -52,6 +52,7 @@ export const projectKeys = {
     allTasks: () => ['tasks', 'all'] as const,
     milestones: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'milestones'] as const,
     members: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'members'] as const,
+    repositories: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'repositories'] as const,
     loggedHours: (projectId?: string | null) => ['logged-hours', projectId ?? 'all'] as const,
 };
 
