@@ -12,7 +12,8 @@ import {
   Paperclip,
   MessageSquare,
   CheckCircle2,
-  CircleDot
+  CircleDot,
+  GripVertical,
 } from 'lucide-react';
 import type { Task, TaskStatus } from '@/types/task';
 import type { Milestone } from '@/types/milestone';
@@ -55,24 +56,29 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 
-const ALL_MILESTONES_ID = '';
-
 interface TaskCardProps {
   task: Task;
 }
 
 function TaskCard({ task }: TaskCardProps) {
-  const [{ isDragging }, drag] = useDrag(() => ({
+  const navigate = useNavigate();
+  const didDragRef = useRef(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const [{ isDragging }, drag, dragPreview] = useDrag(() => ({
     type: 'task',
     item: { id: task.id, status: task.status },
-    collect: (monitor) => {
-      const dragging = monitor.isDragging();
-      if (dragging) {
-        console.log(`Dragging task ${task.id}:`, task.title);
-      }
-      return { isDragging: dragging };
+    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
+    end: () => {
+      didDragRef.current = true;
+      setTimeout(() => { didDragRef.current = false; }, 100);
     },
   }));
+
+  const setCardRef = (node: HTMLDivElement | null) => {
+    (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    dragPreview(node);
+  };
 
   const scopeColors = {
     XS: 'bg-green-500/10 text-green-600 dark:text-green-400',
@@ -83,32 +89,34 @@ function TaskCard({ task }: TaskCardProps) {
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Prevent navigation if dragging or if click is on interactive element
-    if (isDragging || (e.target as HTMLElement).closest('button, [role="button"]')) {
+    if (didDragRef.current || (e.target as HTMLElement).closest('button, [role="button"], [data-drag-handle]')) {
       return;
     }
-    // Use router navigation instead of window.location
     const taskUrl = `/tasks/${task.id}`;
-    // Small delay to ensure drag operation completes
-    setTimeout(() => {
-      window.location.href = taskUrl;
-    }, 50);
+    navigate(taskUrl);
   };
 
   return (
     <div
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ref={drag as any}
-      onClick={handleCardClick}
-      className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:shadow-sm transition-shadow"
+      ref={setCardRef}
+      className="bg-card border border-border rounded-lg p-4 transition-shadow flex flex-col gap-3"
       style={{
         opacity: isDragging ? 0.5 : 1,
-        transform: isDragging ? 'scale(0.95)' : 'scale(1)',
-        transition: 'all 200ms ease-in-out',
+        cursor: isDragging ? 'grabbing' : undefined,
       }}
     >
-        <div className="flex items-start justify-between mb-3">
-          <h4 className="font-medium pr-2">{task.title}</h4>
+        <div className="flex items-start justify-between gap-2 mb-0">
+          <div
+            data-drag-handle
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ref={drag as any}
+            className="touch-none cursor-grab active:cursor-grab shrink-0 mt-0.5 p-1 -ml-1 rounded hover:bg-muted/50 text-muted-foreground"
+            onClick={(e) => e.stopPropagation()}
+            title="Drag to move"
+          >
+            <GripVertical className="h-4 w-4" />
+          </div>
+          <h4 className="font-medium flex-1 min-w-0 cursor-pointer pr-2" onClick={handleCardClick}>{task.title}</h4>
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
               <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0">
@@ -124,6 +132,7 @@ function TaskCard({ task }: TaskCardProps) {
           </DropdownMenu>
         </div>
 
+        <div className="cursor-pointer flex-1 min-h-0" onClick={handleCardClick}>
         <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
           {task.description}
         </p>
@@ -165,6 +174,7 @@ function TaskCard({ task }: TaskCardProps) {
             )}
           </div>
         )}
+        </div>
       </div>
   );
 }
@@ -199,7 +209,11 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
         : 'border-success';
 
   return (
-    <div className={`flex-1 min-w-[320px] border-l-4 rounded pl-3 ${columnAccent}`}>
+    <div
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ref={drop as any}
+      className={`flex-1 min-w-[320px] border-l-4 rounded pl-3 ${columnAccent} min-h-[640px] rounded-lg transition-colors ${isOver ? 'bg-accent/30' : ''}`}
+    >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <h3>{title}</h3>
@@ -209,12 +223,7 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
           <Plus className="h-4 w-4" />
         </Button>
       </div>
-      <div
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ref={drop as any}
-        className={`space-y-3 min-h-[600px] p-3 rounded-lg transition-colors ${isOver ? 'bg-accent/50' : 'bg-muted/30'
-          }`}
-      >
+      <div className="space-y-3 min-h-[560px] p-3 rounded-lg bg-muted/30">
         {tasks.map((task) => (
           <TaskCard key={task.id} task={task} />
         ))}
@@ -245,13 +254,17 @@ export function ProjectBoard() {
     : null;
 
   const tasks: Task[] = tasksQuery.data ?? [];
-  const milestonesList = useMemo<Milestone[]>(
-    () => [
-      { id: ALL_MILESTONES_ID, name: 'All tasks', date: '', status: 'active', desc: '' },
-      ...(milestonesQuery.data ?? []),
-    ],
-    [milestonesQuery.data]
-  );
+  const milestonesList = useMemo<Milestone[]>(() => {
+    const list = milestonesQuery.data ?? [];
+    return [...list].sort((a, b) => {
+      const tA = new Date(a.date).getTime();
+      const tB = new Date(b.date).getTime();
+      if (Number.isNaN(tA) && Number.isNaN(tB)) return 0;
+      if (Number.isNaN(tA)) return 1;
+      if (Number.isNaN(tB)) return -1;
+      return tA - tB;
+    });
+  }, [milestonesQuery.data]);
   const milestonesLoading = milestonesQuery.isLoading;
 
   useEffect(() => {
@@ -314,12 +327,17 @@ export function ProjectBoard() {
     );
   };
 
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState(ALL_MILESTONES_ID);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState('');
   const pendingMoveRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    setSelectedMilestoneId('');
+  }, [projectId]);
+
+  useEffect(() => {
     if (milestonesList.length > 0 && !selectedMilestoneId) {
-      const initial = milestonesList.find(m => m.status === 'active') || milestonesList[0];
+      const firstNonCompleted = milestonesList.find(m => m.status !== 'completed');
+      const initial = firstNonCompleted ?? milestonesList[0];
       setSelectedMilestoneId(initial.id);
     }
   }, [milestonesList, selectedMilestoneId]);
@@ -356,10 +374,9 @@ export function ProjectBoard() {
     );
   };
 
-  const filteredTasks =
-    selectedMilestoneId === ALL_MILESTONES_ID
-      ? tasks
-      : tasks.filter((t) => t.milestoneId === selectedMilestoneId);
+  const filteredTasks = selectedMilestoneId
+    ? tasks.filter((t) => t.milestoneId === selectedMilestoneId)
+    : [];
   const todoTasks = filteredTasks.filter((t) => t.status === 'todo');
   const inProgressTasks = filteredTasks.filter((t) => t.status === 'in-progress');
   const doneTasks = filteredTasks.filter((t) => t.status === 'done');

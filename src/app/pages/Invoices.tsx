@@ -42,6 +42,7 @@ import { useInvoices, downloadInvoice, generateInvoicePdf, generateInvoice } fro
 import { useClients } from '@/api/clients';
 import { useCreateClient, useClientDetail } from '@/api/hooks';
 import { useRole } from '@/app/context/RoleContext';
+import { useAuthStore } from '@/store/authStore';
 import { fetchProjects } from '@/api/projects';
 import { fetchLoggedHours } from '@/api/loggedHours';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -81,6 +82,7 @@ export function Invoices() {
   const [isProcessing, setIsProcessing] = useState<Record<string, 'view' | 'download' | null>>({});
 
   const { role } = useRole();
+  const user = useAuthStore((s) => s.user);
   const { mutate: createClient, isPending: isCreatingClient } = useCreateClient();
   const { data: clientDetail, isLoading: isClientDetailLoading } = useClientDetail(selectedClientId);
 
@@ -265,14 +267,21 @@ export function Invoices() {
         billing_period_end: billingPeriodEnd,
         status: 'draft',
         tax_rate: taxRate,
+        hourly_rate_override: hourlyRate,
       });
       toast.success('Invoice generated successfully.');
       setIsNewInvoiceOpen(false);
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
     } catch (err: unknown) {
       console.error('Failed to generate invoice:', err);
-      const errorRes = err as { response?: { data?: { detail?: string } }, message?: string };
-      const message = errorRes.response?.data?.detail || errorRes.message || 'Failed to generate invoice.';
+      const errorRes = err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } }; message?: string };
+      const rawDetail = errorRes.response?.data?.detail;
+      const message =
+        typeof rawDetail === 'string'
+          ? rawDetail
+          : Array.isArray(rawDetail) && rawDetail.length > 0
+            ? rawDetail.map((e) => e.msg ?? JSON.stringify(e)).join(' ')
+            : errorRes.message || 'Failed to generate invoice.';
       toast.error(message);
     } finally {
       setIsGenerating(false);
@@ -280,19 +289,19 @@ export function Invoices() {
   };
 
   const totalInvoiced = invoices
-    .reduce((sum, inv) => sum + inv.amount, 0);
+    .reduce((sum, inv) => sum + Number(inv.amount), 0);
 
   const totalPaid = invoices
     .filter((inv) => inv.status === 'paid')
-    .reduce((sum, inv) => sum + inv.amount, 0);
+    .reduce((sum, inv) => sum + Number(inv.amount), 0);
 
   const totalPending = invoices
     .filter((inv) => inv.status === 'pending')
-    .reduce((sum, inv) => sum + inv.amount, 0);
+    .reduce((sum, inv) => sum + Number(inv.amount), 0);
 
   const totalOverdue = invoices
     .filter((inv) => inv.status === 'overdue')
-    .reduce((sum, inv) => sum + inv.amount, 0);
+    .reduce((sum, inv) => sum + Number(inv.amount), 0);
 
   return (
     <div className="p-8">
@@ -317,25 +326,25 @@ export function Invoices() {
         >
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="text-2xl font-semibold mb-1">
-              ${totalInvoiced.toLocaleString()}
+              ${totalInvoiced.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-sm text-muted-foreground">Total Invoiced</div>
           </div>
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="text-2xl font-semibold mb-1 text-success">
-              ${totalPaid.toLocaleString()}
+              ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-sm text-muted-foreground">Paid</div>
           </div>
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="text-2xl font-semibold mb-1 text-info">
-              ${totalPending.toLocaleString()}
+              ${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-sm text-muted-foreground">Pending</div>
           </div>
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="text-2xl font-semibold mb-1 text-destructive">
-              ${totalOverdue.toLocaleString()}
+              ${totalOverdue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-sm text-muted-foreground">Overdue</div>
           </div>
@@ -695,8 +704,10 @@ export function Invoices() {
               <div className="space-y-6 pt-2">
                 <div>
                   <Label className="text-muted-foreground mb-1 block">From</Label>
-                  <div className="font-medium text-sm">Amukelani Shiringani</div>
-                  <div className="text-sm text-muted-foreground">amushiringani@gmail.com</div>
+                  <div className="font-medium text-sm">
+                    {user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email : '—'}
+                  </div>
+                  <div className="text-sm text-muted-foreground">{user?.email ?? '—'}</div>
                 </div>
                 <div>
                   <Label className="text-muted-foreground mb-1 block">Bill to</Label>

@@ -154,10 +154,10 @@ export function TimeTracking() {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // This Week (stat card): always current week
+  // This Week (stat card): API returns total_hours and daily_hours in hours
   const totalWeekHours =
     currentWeekByDay?.total_hours != null
-      ? currentWeekByDay.total_hours / 60
+      ? currentWeekByDay.total_hours
       : (currentWeekByDay?.daily_hours?.length ? currentWeekByDay.daily_hours.reduce((sum, d) => sum + d.hours, 0) : 0);
   // Chart: selected week from GET /api/v1/users/me/hours/by-day; map to { day, hours }[], fill missing days with 0
   const weekChartData = (() => {
@@ -173,11 +173,11 @@ export function TimeTracking() {
     });
   })();
 
-  // This Month: total_hours from /users/me/hours (assumed in minutes for formatDuration)
-  const totalMonthMinutes = monthHours?.total_hours ?? 0;
+  // This Month: API returns total_hours in hours; formatDuration expects minutes
+  const totalMonthHours = monthHours?.total_hours ?? 0;
   const daysElapsed = getDaysElapsedInMonth();
   const dailyAverageHours =
-    daysElapsed > 0 && totalMonthMinutes != null ? totalMonthMinutes / 60 / daysElapsed : null;
+    daysElapsed > 0 && totalMonthHours != null ? totalMonthHours / daysElapsed : null;
 
   const statsLoading = currentWeekLoading || monthLoading;
 
@@ -238,7 +238,7 @@ export function TimeTracking() {
             {statsLoading ? (
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             ) : (
-              formatDuration(totalMonthMinutes)
+              formatDuration(Math.round(totalMonthHours * 60))
             )}
           </div>
           <div className="text-sm text-muted-foreground">This Month</div>

@@ -52,6 +52,11 @@ export async function updateProject(
     return data;
 }
 
+/** Delete a project permanently. DELETE /api/v1/projects/{id}. Requires admin. */
+export async function deleteProject(projectId: number | string): Promise<void> {
+    await api.delete(`/projects/${projectId}`);
+}
+
 /** Fetch a single project by ID. Returns UI-shaped project detail. */
 export async function fetchProject(id: number | string): Promise<ProjectDetail> {
     const { data } = await api.get<ProjectDetailAPIResponse>(`/projects/${id}`);

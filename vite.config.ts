@@ -20,9 +20,9 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        // Proxy /api to backend (host.docker.internal:8001 when in Docker)
         target: process.env.VITE_PROXY_TARGET || 'http://localhost:8001',
         changeOrigin: true,
+        autoRewrite: true,
       },
     },
   },
