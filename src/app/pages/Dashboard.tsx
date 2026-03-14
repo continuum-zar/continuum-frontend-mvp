@@ -141,6 +141,7 @@ export function Dashboard() {
     queryKey: ['user-rhythm', rhythmUserId],
     queryFn: () => fetchUserRhythm(rhythmUserId!),
     enabled: rhythmUserId != null && userRole !== 'Client',
+    staleTime: 60 * 1000,
   });
 
   const rhythmChartData = useMemo(() => {
@@ -169,6 +170,7 @@ export function Dashboard() {
     queryKey: ['project-stats', selectedProject, snapshotMember],
     queryFn: () => fetchProjectStats(selectedProject, Number(snapshotMember)),
     enabled: needMemberStats,
+    staleTime: 30 * 1000,
   });
 
   const health = dashboardMetrics?.health;
@@ -309,6 +311,7 @@ export function Dashboard() {
     queryKey: ['milestone-burndown', milestoneId],
     queryFn: () => fetchMilestoneBurndown(milestoneId!),
     enabled: !!milestoneId && userRole === 'Project Manager',
+    staleTime: 60 * 1000,
   });
 
   const burndownChartData = useMemo(() => {
@@ -335,6 +338,7 @@ export function Dashboard() {
     queryKey: ['velocity-report', selectedProject],
     queryFn: () => fetchProjectVelocityReport(selectedProject),
     enabled: hasProjectSelected && userRole !== 'Client',
+    staleTime: 60 * 1000,
   });
 
   const velocityChartData =
