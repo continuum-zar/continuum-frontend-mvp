@@ -9,6 +9,7 @@ import {
     addMember,
     createProject,
     updateProject,
+    deleteProject,
 } from './projects';
 import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
@@ -163,6 +164,25 @@ export function useUpdateProject() {
         },
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to update project'));
+        },
+    });
+}
+
+export function useDeleteProject() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (projectId: number | string) => deleteProject(projectId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+            queryClient.invalidateQueries({ queryKey: projectKeys.all });
+            toast.success('Project deleted');
+        },
+        onError: (err) => {
+            const status = (err as { response?: { status?: number } })?.response?.status;
+            const message = status === 403
+                ? 'You do not have permission to delete projects.'
+                : getApiErrorMessage(err, 'Failed to delete project');
+            toast.error(message);
         },
     });
 }

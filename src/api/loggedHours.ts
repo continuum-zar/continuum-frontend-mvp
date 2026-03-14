@@ -17,7 +17,9 @@ export interface LoggedHourResponse {
     project_name: string;
     task_title: string;
     hours: number;
+    /** Backend may serialize the note field as "description" (Pydantic) or "note". */
     note?: string | null;
+    description?: string | null;
     /** Date of the log; backend may use `date` or `logged_at`. */
     date?: string;
     logged_at?: string;
@@ -41,7 +43,7 @@ function mapLoggedHourToTimeEntry(row: LoggedHourResponse): LoggedHourEntry {
         id: String(row.id),
         project: row.project_name ?? '',
         task: row.task_title ?? '',
-        description: row.note ?? undefined,
+        description: row.note ?? row.description ?? undefined,
         duration: Math.round((row.hours ?? 0) * 60),
         date: dateOnly || new Date().toISOString().split('T')[0],
     };
@@ -85,7 +87,7 @@ export async function createLoggedHour(body: CreateLoggedHourBody): Promise<Logg
         ...(body.description != null && body.description !== '' && { note: body.description }),
         ...(body.date && { date: body.date }),
     };
-    const { data } = await api.post<LoggedHourResponse>('/logged-hours', payload);
+    const { data } = await api.post<LoggedHourResponse>('/logged-hours/', payload);
     return data;
 }
 
@@ -94,7 +96,7 @@ export async function createLoggedHour(body: CreateLoggedHourBody): Promise<Logg
  * Uses response blob and Content-Disposition filename; triggers file download. Throws on error.
  */
 export async function downloadLoggedHoursCsv(params?: FetchLoggedHoursParams): Promise<void> {
-    const { data: blob, headers } = await api.get<Blob>('/logged-hours', {
+    const { data: blob, headers } = await api.get<Blob>('/logged-hours/', {
         params: {
             format: 'csv',
             ...(params?.project_id != null && params.project_id !== '' && { project_id: params.project_id }),

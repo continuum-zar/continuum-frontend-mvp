@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// When VITE_API_BASE_URL is unset, requests go to /api/v1 (same origin) and are proxied by Vite (see vite.config proxy).
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
     headers: {

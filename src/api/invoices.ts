@@ -53,7 +53,12 @@ export interface InvoiceGenerate {
 }
 
 export async function generateInvoice(body: InvoiceGenerate): Promise<InvoiceAPIResponse> {
-    const res = await api.post<InvoiceAPIResponse>('/invoices/generate', body);
+    const payload = {
+        ...body,
+        project_id: typeof body.project_id === 'string' ? Number(body.project_id) : body.project_id,
+        ...(body.hourly_rate_override != null && { hourly_rate_override: body.hourly_rate_override }),
+    };
+    const res = await api.post<InvoiceAPIResponse>('/invoices/generate', payload);
     return res.data;
 }
 

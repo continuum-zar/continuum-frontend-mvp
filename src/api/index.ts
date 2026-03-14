@@ -2,6 +2,7 @@ export {
     fetchProjects,
     createProject,
     updateProject,
+    deleteProject,
     fetchProject,
     fetchMilestones,
     createMilestone,
@@ -36,6 +37,7 @@ export {
     useProjectMembers,
     useCreateProject,
     useUpdateProject,
+    useDeleteProject,
     useUpdateTaskStatus,
     useUpdateTask,
     useCreateMilestone,
@@ -60,6 +62,7 @@ export {
     fetchClientProjects,
     fetchClientProjectProgress,
     postProjectQuery,
+    fetchProjectStats,
 } from './dashboard';
 export {
     fetchUserHours,

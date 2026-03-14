@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 
-/** GET /api/v1/users/me/hours - total hours in range (total_hours in minutes). */
+/** GET /api/v1/users/me/hours - total hours in range (total_hours in hours). */
 export interface UserHoursResponse {
     total_hours: number;
 }
@@ -13,7 +13,7 @@ export interface DailyHoursItem {
 }
 
 export interface UserHoursByDayResponse {
-    /** Total in minutes (same as /users/me/hours) when present. */
+    /** Total in hours (same as /users/me/hours) when present. */
     total_hours?: number;
     daily_hours?: DailyHoursItem[];
 }

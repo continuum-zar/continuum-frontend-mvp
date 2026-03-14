@@ -42,7 +42,7 @@ import {
     AlertDialogTitle,
 } from '../components/ui/alert-dialog';
 import { Skeleton } from '../components/ui/skeleton';
-import { useProjects, useCreateProject, useUpdateProject } from '@/api/hooks';
+import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '@/api/hooks';
 
 /** Normalize due_date for date input (YYYY-MM-DD) or empty. */
 function toDateInputValue(dueDate: string): string {
@@ -69,6 +69,11 @@ export function ProjectsList() {
         apiId: number;
         title: string;
     } | null>(null);
+    const [deleteConfirmProject, setDeleteConfirmProject] = useState<{
+        apiId: number;
+        title: string;
+    } | null>(null);
+    const deleteProjectMutation = useDeleteProject();
 
     const getProgressColor = (progress: number) => {
         if (progress < 40) return "bg-red-500";
@@ -112,12 +117,21 @@ export function ProjectsList() {
     const handleArchiveConfirm = async () => {
         if (!archiveConfirmProject) return;
         try {
-            // Archive = PUT project with status "completed" (backend has no separate archive endpoint).
             await updateProjectMutation.mutateAsync({
                 projectId: archiveConfirmProject.apiId,
                 body: { status: 'completed' },
             });
             setArchiveConfirmProject(null);
+        } catch {
+            // Toast handled in hook
+        }
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteConfirmProject) return;
+        try {
+            await deleteProjectMutation.mutateAsync(deleteConfirmProject.apiId);
+            setDeleteConfirmProject(null);
         } catch {
             // Toast handled in hook
         }
@@ -254,9 +268,27 @@ export function ProjectsList() {
             <AlertDialog open={archiveConfirmProject !== null} onOpenChange={(open) => !open && setArchiveConfirmProject(null)}>
                 <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Archive project?</AlertDialogTitle>
+                        <AlertDialogTitle>Mark as completed?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will mark &quot;{archiveConfirmProject?.title}&quot; as completed. You can still view it in the list.
+                            This will mark &quot;{archiveConfirmProject?.title}&quot; as completed. The project will remain in the list and can be viewed or reactivated later.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={(e) => { e.preventDefault(); handleArchiveConfirm(); }}>
+                            Mark completed
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Delete confirmation */}
+            <AlertDialog open={deleteConfirmProject !== null} onOpenChange={(open) => !open && setDeleteConfirmProject(null)}>
+                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete project permanently?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            &quot;{deleteConfirmProject?.title}&quot; and all its tasks, milestones, and data will be removed. This cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -264,11 +296,11 @@ export function ProjectsList() {
                         <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
-                                handleArchiveConfirm();
+                                handleDeleteConfirm();
                             }}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            Archive
+                            Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -383,9 +415,17 @@ export function ProjectsList() {
                                                 e.stopPropagation();
                                                 setArchiveConfirmProject({ apiId: project.apiId, title: project.title });
                                             }}
+                                        >
+                                            Mark as completed
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteConfirmProject({ apiId: project.apiId, title: project.title });
+                                            }}
                                             className="text-destructive"
                                         >
-                                            Archive Project
+                                            Delete project
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -399,7 +439,7 @@ export function ProjectsList() {
                                 <div>
                                     <div className="flex justify-between text-xs mb-1">
                                         <span className="font-medium text-foreground">Progress</span>
-                                        <span className="text-muted-foreground">{project.progress}%</span>
+                                        <span className="text-muted-foreground">{typeof project.progress === 'number' ? Number(project.progress).toFixed(1) : project.progress}%</span>
                                     </div>
                                     <Progress value={project.progress} className="h-1.5" indicatorClassName={getProgressColor(project.progress)} />
                                 </div>

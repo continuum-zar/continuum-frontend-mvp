@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, fetchClientProjects, fetchClientProjectProgress, postProjectQuery } from '@/api';
+import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, fetchClientProjects, fetchClientProjectProgress, postProjectQuery, fetchProjectStats } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import {
   Bar,
@@ -48,15 +48,6 @@ import {
   Cell,
   Legend
 } from 'recharts';
-
-// --- MOCK DATA ---
-
-const projectMembers = [
-  { id: 'all', name: 'All Members (Collective)' },
-  { id: '1', name: 'Sarah Chen' },
-  { id: '2', name: 'Mike Torres' },
-  { id: '3', name: 'Alex Johnson' },
-];
 
 // --- COMPONENTS ---
 
@@ -81,7 +72,7 @@ const getHeatmapColor = (value: number) => {
 
 export function Dashboard() {
   const { role: userRole } = useRole();
-  const [selectedProject, setSelectedProject] = useState("all");
+  const [selectedProject, setSelectedProject] = useState("");
   const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
   const [rhythmMember, setRhythmMember] = useState("all");
   const [snapshotMember, setSnapshotMember] = useState("all");
@@ -92,19 +83,59 @@ export function Dashboard() {
   const [chatSending, setChatSending] = useState(false);
   const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects();
   const user = useAuthStore((s) => s.user);
+  const hasProjectSelected = selectedProject !== "";
   const { data: rhythmMembers = [] } = useProjectMembers(
-    userRole === 'Project Manager' && selectedProject !== 'all' ? selectedProject : undefined
+    userRole === 'Project Manager' && hasProjectSelected ? selectedProject : undefined
   );
+  /** Only developers (backend role) for Team Productivity Rhythm dropdown */
+  const rhythmDeveloperMembers = useMemo(
+    () =>
+      rhythmMembers.filter(
+        (m) =>
+          (m.userRole ?? '').toLowerCase() === 'backend' ||
+          (m.userRole ?? '').toLowerCase() === 'developer'
+      ),
+    [rhythmMembers]
+  );
+
+  /** Options for Team Task Snapshot: All Developers + developers only (same filter as Team Productivity Rhythm). */
+  const snapshotMembersList = useMemo(
+    () => [
+      { id: 'all', name: 'All Developers (Collective)' },
+      ...rhythmDeveloperMembers.map((m) => ({ id: String(m.userId), name: m.name })),
+    ],
+    [rhythmDeveloperMembers]
+  );
+
+  // Default to first project when list loads; clear when no projects (no "All Projects" option)
+  useEffect(() => {
+    if (userRole === 'Client') return;
+    if (projects.length === 0) {
+      setSelectedProject("");
+      return;
+    }
+    const firstId = String(projects[0].id);
+    if (selectedProject === "" || !projects.some((p) => String(p.id) === selectedProject)) {
+      setSelectedProject(firstId);
+    }
+  }, [userRole, projects, selectedProject]);
+
+  // Reset Team Task Snapshot member to "all" when selected member is not in current project's list
+  useEffect(() => {
+    if (snapshotMember === 'all') return;
+    const validIds = new Set(snapshotMembersList.map((m) => m.id));
+    if (!validIds.has(snapshotMember)) setSnapshotMember('all');
+  }, [snapshotMember, snapshotMembersList]);
 
   const rhythmUserId = useMemo(() => {
     if (userRole === 'Developer') return user?.id ?? null;
     if (userRole === 'Project Manager') {
-      if (rhythmMember === 'all') return rhythmMembers[0]?.userId ?? null;
-      const m = rhythmMembers.find((x) => String(x.id) === rhythmMember);
+      if (rhythmMember === 'all') return rhythmDeveloperMembers[0]?.userId ?? null;
+      const m = rhythmDeveloperMembers.find((x) => String(x.id) === rhythmMember);
       return m?.userId ?? null;
     }
     return null;
-  }, [userRole, user?.id, rhythmMember, rhythmMembers]);
+  }, [userRole, user?.id, rhythmMember, rhythmDeveloperMembers]);
 
   const { data: rhythmResponse, isLoading: rhythmLoading, isError: rhythmError } = useQuery({
     queryKey: ['user-rhythm', rhythmUserId],
@@ -130,32 +161,46 @@ export function Dashboard() {
   const { data: dashboardMetrics, isLoading: dashboardLoading, isError: dashboardError } = useQuery({
     queryKey: ['project-dashboard', selectedProject],
     queryFn: () => fetchProjectDashboard(selectedProject),
-    enabled: selectedProject !== 'all' && userRole !== 'Client',
+    enabled: hasProjectSelected && userRole !== 'Client',
+  });
+
+  const needMemberStats = hasProjectSelected && userRole === 'Project Manager' && snapshotMember !== 'all';
+  const { data: memberStats, isLoading: memberStatsLoading, isError: memberStatsError } = useQuery({
+    queryKey: ['project-stats', selectedProject, snapshotMember],
+    queryFn: () => fetchProjectStats(selectedProject, Number(snapshotMember)),
+    enabled: needMemberStats,
   });
 
   const health = dashboardMetrics?.health;
   const velocity = dashboardMetrics?.velocity;
   const velocityScore = velocity?.trend?.velocity_score ?? (velocity?.weeks?.length ? velocity.weeks[velocity.weeks.length - 1].velocity_score : null);
-  const velocityDelta = velocity?.trend?.change_percentage != null ? `${velocity.trend.change_percentage > 0 ? '+' : ''}${velocity.trend.change_percentage}% from last period` : null;
+  const velocityDelta = velocity?.trend?.change_percentage != null ? `${velocity.trend.change_percentage > 0 ? '+' : ''}${Number(velocity.trend.change_percentage).toFixed(1)}% from last period` : null;
   const forecastScore = velocity?.forecast_next_week ?? null;
   const hpsRatio = health?.hps_ratio ?? null;
   const overdueCount = health?.overdue_count ?? 0;
   const unassignedCount = health?.unassigned_count ?? 0;
 
   const stats = dashboardMetrics?.stats;
-  const todoCount = stats?.total_todo_tasks ?? 0;
-  const inProgressCount = stats?.total_in_progress_tasks ?? 0;
-  const doneCount = stats?.total_completed_tasks ?? 0;
-  const snapshotOverdueCount = stats?.total_overdue_tasks ?? 0;
-  const totalTasks = (stats?.total_tasks ?? 0) || (todoCount + inProgressCount + doneCount + snapshotOverdueCount) || 0;
-  const snapshotLoading = dashboardLoading;
-  const snapshotError = dashboardError;
-  const completionPct = stats?.completion_percentage ?? (totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0);
+
+  /** For Team Task Snapshot card: use project-wide stats or member-scoped stats when a member is selected. */
+  const snapshotStats = snapshotMember === 'all' ? stats : memberStats;
+  const snapshotTodoCount = snapshotStats?.total_todo_tasks ?? 0;
+  const snapshotInProgressCount = snapshotStats?.total_in_progress_tasks ?? 0;
+  const snapshotDoneCount = snapshotStats?.total_completed_tasks ?? 0;
+  const snapshotOverdueCountFiltered = snapshotStats?.total_overdue_tasks ?? 0;
+  const snapshotTotalTasks = (snapshotStats?.total_tasks ?? 0) || (snapshotTodoCount + snapshotInProgressCount + snapshotDoneCount + snapshotOverdueCountFiltered) || 0;
+  const snapshotLoading = snapshotMember === 'all' ? dashboardLoading : memberStatsLoading;
+  const snapshotError = snapshotMember === 'all' ? dashboardError : memberStatsError;
+  const pctFromSnapshot =
+    snapshotStats && 'completion_percentage' in snapshotStats ? snapshotStats.completion_percentage
+    : snapshotStats && 'progress_percentage' in snapshotStats ? snapshotStats.progress_percentage
+    : undefined;
+  const snapshotCompletionPct = pctFromSnapshot ?? (snapshotTotalTasks > 0 ? Math.round((snapshotDoneCount / snapshotTotalTasks) * 100) : 0);
 
   const { data: classificationBreakdown, isLoading: classificationLoading, isError: classificationError } = useQuery({
     queryKey: ['classification-breakdown', selectedProject],
     queryFn: () => fetchClassificationBreakdown(selectedProject),
-    enabled: selectedProject !== 'all' && userRole === 'Project Manager',
+    enabled: hasProjectSelected && userRole === 'Project Manager',
   });
 
   const gitCommitsChartData = useMemo(() => {
@@ -176,10 +221,10 @@ export function Dashboard() {
   });
 
   const clientProjectId = userRole === 'Client' && clientProjectsList.length > 0
-    ? (selectedProject !== 'all' && clientProjectsList.some((p) => String(p.id) === selectedProject) ? selectedProject : String(clientProjectsList[0].id))
+    ? (hasProjectSelected && clientProjectsList.some((p) => String(p.id) === selectedProject) ? selectedProject : String(clientProjectsList[0].id))
     : selectedProject;
   useEffect(() => {
-    if (userRole === 'Client' && clientProjectsList.length > 0 && selectedProject === 'all') {
+    if (userRole === 'Client' && clientProjectsList.length > 0 && !selectedProject) {
       setSelectedProject(String(clientProjectsList[0].id));
     }
   }, [userRole, clientProjectsList, selectedProject]);
@@ -213,7 +258,7 @@ export function Dashboard() {
   const { data: staleWorkResponse, isLoading: staleWorkLoading, isError: staleWorkError } = useQuery({
     queryKey: ['stale-work', selectedProject],
     queryFn: () => fetchProjectStaleWork(selectedProject),
-    enabled: selectedProject !== 'all' && userRole === 'Project Manager',
+    enabled: hasProjectSelected && userRole === 'Project Manager',
   });
 
   const staleBranchesList = useMemo(() => {
@@ -231,7 +276,7 @@ export function Dashboard() {
   const handleSendChat = async () => {
     const msg = chatMessage.trim();
     if (!msg) return;
-    if (selectedProject === 'all') {
+    if (!hasProjectSelected) {
       setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Please select a project first.' }]);
       return;
     }
@@ -248,7 +293,7 @@ export function Dashboard() {
     }
   };
 
-  const { data: milestones = [] } = useProjectMilestones(selectedProject !== 'all' ? selectedProject : undefined);
+  const { data: milestones = [] } = useProjectMilestones(hasProjectSelected ? selectedProject : undefined);
   const activeMilestoneId = useMemo(() => {
     if (milestones.length === 0) return null;
     const active = milestones.find((m) => m.status === 'active');
@@ -289,7 +334,7 @@ export function Dashboard() {
   const { data: velocityReport, isLoading: velocityLoading, isError: velocityError } = useQuery({
     queryKey: ['velocity-report', selectedProject],
     queryFn: () => fetchProjectVelocityReport(selectedProject),
-    enabled: selectedProject !== 'all' && userRole !== 'Client',
+    enabled: hasProjectSelected && userRole !== 'Client',
   });
 
   const velocityChartData =
@@ -313,24 +358,25 @@ export function Dashboard() {
         </div>
         <div className="flex gap-2">
           <Select
-            value={userRole === 'Client' ? clientProjectId : selectedProject}
+            value={userRole === 'Client' ? clientProjectId : (hasProjects ? (selectedProject || String(projects[0]?.id ?? "")) : "__none__")}
             onValueChange={setSelectedProject}
             disabled={userRole === 'Client' ? clientProjectsList.length === 0 : (projectsLoading || projectsError || !hasProjects)}
           >
             <SelectTrigger className="w-[200px] border-border bg-card">
-              <SelectValue placeholder={userRole === 'Client' ? (clientProjectsList.length === 0 ? 'No projects' : 'Select project') : (projectsLoading ? 'Loading projects...' : 'Select project')} />
+              <SelectValue placeholder={userRole === 'Client' ? (clientProjectsList.length === 0 ? 'No projects' : 'Select project') : (projectsLoading ? 'Loading projects...' : hasProjects ? 'Select project' : 'No projects')} />
             </SelectTrigger>
             <SelectContent>
-              {userRole !== 'Client' && <SelectItem value="all">All Projects</SelectItem>}
               {userRole === 'Client'
                 ? clientProjectsList.map((p) => (
                     <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
                   ))
-                : projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.title}
-                    </SelectItem>
-                  ))}
+                : hasProjects
+                  ? projects.map((project) => (
+                      <SelectItem key={project.id} value={String(project.id)}>
+                        {project.title}
+                      </SelectItem>
+                    ))
+                  : [<SelectItem key="none" value="__none__">No projects</SelectItem>]}
             </SelectContent>
           </Select>
           {userRole !== 'Client' && (
@@ -343,7 +389,7 @@ export function Dashboard() {
       </div>
 
       {/* Row 1: KPI Velocity Cards (requires single project) */}
-      {userRole === 'Project Manager' && selectedProject !== 'all' && (
+      {userRole === 'Project Manager' && hasProjectSelected && (
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
           variants={container}
@@ -364,7 +410,7 @@ export function Dashboard() {
               </div>
             </div>
             <div>
-              <div className="text-3xl font-bold mb-1">{velocityScore ?? '—'}</div>
+              <div className="text-3xl font-bold mb-1">{velocityScore != null ? Number(velocityScore).toFixed(1) : '—'}</div>
               {velocityDelta != null && (
                 <div className={`flex items-center text-sm ${(velocity?.trend?.change_percentage ?? 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
                   {(velocity?.trend?.change_percentage ?? 0) >= 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
@@ -382,7 +428,7 @@ export function Dashboard() {
               </div>
             </div>
             <div>
-              <div className="text-3xl font-bold mb-1 text-muted-foreground">{forecastScore ?? '—'}</div>
+              <div className="text-3xl font-bold mb-1 text-muted-foreground">{forecastScore != null ? Number(forecastScore).toFixed(1) : '—'}</div>
               <div className="flex items-center text-sm text-success">
                 <ArrowUpRight className="h-4 w-4 mr-1" />
                 <span>Stable upward trend</span>
@@ -398,7 +444,7 @@ export function Dashboard() {
               </div>
             </div>
             <div>
-              <div className="text-3xl font-bold mb-1">{hpsRatio ?? '—'}</div>
+              <div className="text-3xl font-bold mb-1">{hpsRatio != null ? Number(hpsRatio).toFixed(2) : '—'}</div>
               <div className="flex items-center text-sm text-success">
                 <ArrowDownRight className="h-4 w-4 mr-1" />
                 <span>{health?.health_status ?? 'More efficient'}</span>
@@ -428,12 +474,12 @@ export function Dashboard() {
       )}
 
       {/* Row 2: Charts (Velocity & Burndown) — require single project */}
-      {userRole !== 'Client' && selectedProject === 'all' && (
+      {userRole !== 'Client' && !hasProjectSelected && (
         <div className="mb-6 rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
           Select a project to view velocity, burndown, and other metrics.
         </div>
       )}
-      {userRole !== 'Client' && selectedProject !== 'all' && (
+      {userRole !== 'Client' && hasProjectSelected && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -444,11 +490,11 @@ export function Dashboard() {
               <h3 className="mb-1">Weekly Velocity Composite</h3>
               <p className="text-sm text-muted-foreground">Weighted score vs. 4-week average</p>
             </div>
-            {velocityLoading && selectedProject !== 'all' ? (
+            {velocityLoading && hasProjectSelected ? (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Loading velocity...</div>
-            ) : velocityError && selectedProject !== 'all' ? (
+            ) : velocityError && hasProjectSelected ? (
               <div className="h-[300px] flex items-center justify-center text-destructive text-sm">Failed to load velocity</div>
-            ) : selectedProject === 'all' ? (
+            ) : !hasProjectSelected ? (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Select a project to view velocity</div>
             ) : velocityChartData.length === 0 ? (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">No velocity data yet</div>
@@ -460,6 +506,7 @@ export function Dashboard() {
                 <YAxis stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
+                  formatter={(value: number, name: string) => [typeof value === 'number' ? Number(value).toFixed(1) : value, name]}
                 />
                 <Legend iconType="circle" />
                 <Bar dataKey="score" name="Velocity Score" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={50} />
@@ -494,7 +541,7 @@ export function Dashboard() {
                   </Select>
                 )}
               </div>
-              {selectedProject === 'all' ? (
+              {!hasProjectSelected ? (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Select a project to view burndown</div>
               ) : burndownLoading ? (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Loading burndown...</div>
@@ -525,7 +572,7 @@ export function Dashboard() {
       )}
 
       {/* Row 3: User Rhythm Heatmap & Diagnostics (requires single project) */}
-      {userRole !== 'Client' && selectedProject !== 'all' && (
+      {userRole !== 'Client' && hasProjectSelected && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
           {/* Heatmap */}
@@ -547,8 +594,8 @@ export function Dashboard() {
                       <SelectValue placeholder="Filter member" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Members (Collective)</SelectItem>
-                      {rhythmMembers.map((m) => (
+                      <SelectItem value="all">All Developers (Collective)</SelectItem>
+                      {rhythmDeveloperMembers.map((m) => (
                         <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -578,7 +625,7 @@ export function Dashboard() {
                 </div>
 
                 {/* grid */}
-                {(userRole === 'Developer' && !user?.id) || (userRole === 'Project Manager' && selectedProject === 'all') ? (
+                {(userRole === 'Developer' && !user?.id) || (userRole === 'Project Manager' && !hasProjectSelected) ? (
                   <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
                     {userRole === 'Project Manager' ? 'Select a project to view rhythm' : 'Sign in to view your rhythm'}
                   </div>
@@ -586,8 +633,8 @@ export function Dashboard() {
                   <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">Loading rhythm...</div>
                 ) : rhythmError ? (
                   <div className="h-[200px] flex items-center justify-center text-destructive text-sm">Failed to load rhythm</div>
-                ) : userRole === 'Project Manager' && rhythmMember === 'all' && rhythmMembers.length === 0 ? (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No members in this project</div>
+                ) : userRole === 'Project Manager' && rhythmMember === 'all' && rhythmDeveloperMembers.length === 0 ? (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No developers in this project</div>
                 ) : rhythmChartData.length === 0 ? (
                   <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No rhythm data yet</div>
                 ) : (
@@ -627,12 +674,12 @@ export function Dashboard() {
                 <p className="text-sm text-muted-foreground">Current breakdown</p>
               </div>
               {userRole === 'Project Manager' && (
-                <Select value={snapshotMember} onValueChange={setSnapshotMember} disabled>
-                  <SelectTrigger className="w-[140px] h-8 text-xs border-border bg-card">
-                    <SelectValue placeholder="Filter member" />
+                <Select value={snapshotMember} onValueChange={setSnapshotMember}>
+                  <SelectTrigger className="w-[180px] h-8 text-xs border-border bg-card">
+                    <SelectValue placeholder="Filter developer" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projectMembers.map(m => (
+                    {snapshotMembersList.map((m) => (
                       <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -640,7 +687,7 @@ export function Dashboard() {
               )}
             </div>
 
-            {selectedProject === 'all' ? (
+            {!hasProjectSelected ? (
               <div className="py-8 text-center text-muted-foreground text-sm">Select a project to view task snapshot</div>
             ) : snapshotLoading ? (
               <div className="py-8 text-center text-muted-foreground text-sm">Loading snapshot...</div>
@@ -654,34 +701,34 @@ export function Dashboard() {
                   <Circle className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">To Do</span>
                 </div>
-                <span className="text-lg font-bold">{todoCount}</span>
+                <span className="text-lg font-bold">{snapshotTodoCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Activity className="h-4 w-4 text-primary" />
                   <span className="font-medium">In Progress</span>
                 </div>
-                <span className="text-lg font-bold">{inProgressCount}</span>
+                <span className="text-lg font-bold">{snapshotInProgressCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <CheckCircle2 className="h-4 w-4 text-success" />
                   <span className="font-medium">Done</span>
                 </div>
-                <span className="text-lg font-bold">{doneCount}</span>
+                <span className="text-lg font-bold">{snapshotDoneCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <AlertCircle className="h-4 w-4 text-destructive" />
                   <span className="font-medium">Overdue</span>
                 </div>
-                <span className="text-lg font-bold text-destructive">{snapshotOverdueCount}</span>
+                <span className="text-lg font-bold text-destructive">{snapshotOverdueCountFiltered}</span>
               </div>
             </div>
 
             <div className="mt-4 pt-4 border-t border-border">
-              <Progress value={completionPct} className="h-2 mb-2 bg-muted [&>div]:bg-success" />
-              <span className="text-xs text-muted-foreground">{completionPct}% Overall Completion</span>
+              <Progress value={snapshotCompletionPct} className="h-2 mb-2 bg-muted [&>div]:bg-success" />
+              <span className="text-xs text-muted-foreground">{snapshotCompletionPct}% Overall Completion</span>
             </div>
             </>
             )}
@@ -690,7 +737,7 @@ export function Dashboard() {
       )}
 
       {/* Row 4: Git Contribution & Stale Work (requires single project) */}
-      {userRole === 'Project Manager' && selectedProject !== 'all' && (
+      {userRole === 'Project Manager' && hasProjectSelected && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Git Donut */}
@@ -709,7 +756,7 @@ export function Dashboard() {
             </div>
 
             <div className="h-[250px] relative">
-              {selectedProject === 'all' ? (
+              {!hasProjectSelected ? (
                 <div className="h-full flex items-center justify-center text-muted-foreground text-sm">Select a project to view classification</div>
               ) : classificationLoading ? (
                 <div className="h-full flex items-center justify-center text-muted-foreground text-sm">Loading...</div>
@@ -764,7 +811,7 @@ export function Dashboard() {
               {staleBranchesList.length > 0 && <Badge variant="destructive">Action Required</Badge>}
             </div>
 
-            {selectedProject === 'all' ? (
+            {!hasProjectSelected ? (
               <div className="py-12 text-center text-muted-foreground text-sm">Select a project to view stale work</div>
             ) : staleWorkLoading ? (
               <div className="py-12 text-center text-muted-foreground text-sm">Loading stale work...</div>

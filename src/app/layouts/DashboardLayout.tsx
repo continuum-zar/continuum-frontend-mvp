@@ -42,8 +42,20 @@ export function DashboardLayout() {
     return true; // PM and Developer see all
   });
 
+  const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const isLoading = useAuthStore((state) => state.isLoading);
+
+  const displayName = user
+    ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email
+    : '—';
+  const initials = user
+    ? (user.first_name && user.last_name
+        ? `${user.first_name[0]}${user.last_name[0]}`
+        : user.email
+          ? user.email.slice(0, 2)
+          : '?')
+    : '?';
 
   const handleLogout = async () => {
     await logout();
@@ -138,14 +150,14 @@ export function DashboardLayout() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-10 px-2 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarFallback className="uppercase">{initials}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">JD</p>
-                  <p className="text-xs text-muted-foreground">Admin</p>
+                  <p className="text-sm font-medium">{displayName}</p>
+                  <p className="text-xs text-muted-foreground">{userRole}</p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Profile</DropdownMenuItem>

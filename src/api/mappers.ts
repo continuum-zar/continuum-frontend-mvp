@@ -108,6 +108,7 @@ export function mapMember(m: MemberAPIResponse): Member {
         name,
         email,
         role: m.role ?? 'member',
+        userRole: (m.user as { role?: string } | undefined)?.role,
         initials,
     };
 }

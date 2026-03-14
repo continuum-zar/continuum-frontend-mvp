@@ -159,6 +159,25 @@ export async function fetchClassificationBreakdown(projectId: number | string): 
     return data;
 }
 
+/** Project stats (project-wide or filtered by member). Used for Team Task Snapshot. */
+export interface ProjectStatsResponse {
+    total_todo_tasks: number;
+    total_in_progress_tasks: number;
+    total_completed_tasks: number;
+    total_overdue_tasks: number;
+    total_tasks?: number;
+    progress_percentage?: number;
+}
+
+export async function fetchProjectStats(
+    projectId: number | string,
+    memberId?: number | null
+): Promise<ProjectStatsResponse> {
+    const params = memberId != null ? { member_id: memberId } : undefined;
+    const { data } = await api.get<ProjectStatsResponse>(`/projects/${projectId}/stats`, { params });
+    return data;
+}
+
 export async function fetchClientProjects(): Promise<ClientProjectSummary[]> {
     const { data } = await api.get<ClientProjectSummary[]>('/users/me/client-projects');
     return data ?? [];
