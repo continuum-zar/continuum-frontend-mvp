@@ -33,6 +33,7 @@ export {
     useProject,
     useProjectTasks,
     useAllTasks,
+    useTask,
     useProjectMilestones,
     useProjectMembers,
     useCreateProject,

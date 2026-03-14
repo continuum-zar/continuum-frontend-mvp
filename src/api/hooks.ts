@@ -14,6 +14,7 @@ import {
 import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
 import {
+    fetchTask,
     fetchProjectTasks,
     fetchAllTasks,
     updateTaskStatus,
@@ -270,6 +271,7 @@ export function useUpdateTask() {
             toast.success('Task updated successfully');
             if (taskId) {
                 queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
             }
         },
         onError: (err) => {
@@ -281,7 +283,16 @@ export function useUpdateTask() {
         },
     });
 }
+// Task detail key and hook
+const taskDetailKey = (taskId: number | string) => ['tasks', 'detail', taskId] as const;
 
+export function useTask(taskId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: taskDetailKey(taskId!),
+        queryFn: () => fetchTask(taskId!),
+        enabled: taskId != null && taskId !== '',
+    });
+}
 export function useAssignTask() {
     const queryClient = useQueryClient();
     return useMutation({
@@ -290,6 +301,7 @@ export function useAssignTask() {
             toast.success('Assignee updated');
             if (taskId) {
                 queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
             }
         },
         onError: (err) => {
