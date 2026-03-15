@@ -60,7 +60,7 @@ export function useLinkRepository(projectId: number | string | undefined | null)
     return useMutation({
         mutationFn: (body: Omit<RepositoryCreateBody, 'project_id'>) =>
             linkRepository(projectId!, body),
-        onSuccess: (_data, _variables, _context) => {
+        onSuccess: () => {
             if (projectId != null && projectId !== '')
                 queryClient.invalidateQueries({ queryKey: projectKeys.repositories(projectId) });
             toast.success('Repository linked successfully');
@@ -80,7 +80,7 @@ export function useUnlinkRepository(projectId: number | string | undefined | nul
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (repositoryId: number) => unlinkRepository(repositoryId),
-        onSuccess: (_data, _variables, _context) => {
+        onSuccess: () => {
             if (projectId != null && projectId !== '')
                 queryClient.invalidateQueries({ queryKey: projectKeys.repositories(projectId) });
             toast.success('Repository unlinked');
