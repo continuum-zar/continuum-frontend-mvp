@@ -31,13 +31,15 @@ export async function fetchTask(taskId: number | string): Promise<TaskAPIRespons
     return data;
 }
 
-/** Update task with multiple fields (status, scope_weight, due_date). Returns updated task from API. */
+/** Update task with multiple fields (status, scope_weight, due_date, linked_repo, linked_branch). Returns updated task from API. */
 export async function updateTask(
     taskId: number | string,
     body: {
         status?: TaskStatus;
         scope_weight?: ScopeWeight;
         due_date?: string | null;
+        linked_repo?: string | null;
+        linked_branch?: string | null;
     }
 ): Promise<TaskAPIResponse> {
     const payload: Record<string, TaskStatus | ScopeWeight | string | null> = {};
@@ -50,6 +52,12 @@ export async function updateTask(
     }
     if (body.due_date !== undefined) {
         payload.due_date = body.due_date;
+    }
+    if (body.linked_repo !== undefined) {
+        payload.linked_repo = body.linked_repo;
+    }
+    if (body.linked_branch !== undefined) {
+        payload.linked_branch = body.linked_branch;
     }
 
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
