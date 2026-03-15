@@ -35,7 +35,7 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask } from '@/api';
+import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { TaskAPIResponse } from '@/types/task';
@@ -152,8 +152,8 @@ export function TaskDetail() {
   const [status, setStatus] = useState('');
   const [scope, setScope] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [linkedRepoInput, setLinkedRepoInput] = useState('');
-  const [linkedBranchInput, setLinkedBranchInput] = useState('');
+  const [selectedRepoId, setSelectedRepoId] = useState<number | ''>('');
+  const [selectedBranchName, setSelectedBranchName] = useState('');
 
   // Initialize the update task mutation
   const updateTaskMutation = useUpdateTask();
@@ -172,6 +172,13 @@ export function TaskDetail() {
   // Members and Assign hook
   const { data: members } = useProjectMembers(task?.project_id, { enabled: !!task?.project_id });
   const assignTaskMutation = useAssignTask();
+
+  // Repos and branches for linked-branch dropdowns
+  const { data: projectRepos } = useProjectRepositories(task?.project_id);
+  const { data: branches, isLoading: branchesLoading } = useRepositoryBranches(
+    task?.project_id,
+    selectedRepoId === '' ? undefined : selectedRepoId
+  );
 
   useEffect(() => {
     const loadTask = async () => {
@@ -276,16 +283,17 @@ export function TaskDetail() {
   };
 
   const handleAttachBranch = () => {
-    const repo = linkedRepoInput.trim();
-    const branch = linkedBranchInput.trim();
-    if (!taskId || !repo || !branch) return;
+    if (!taskId || selectedRepoId === '' || !selectedBranchName.trim()) return;
+    const repo = projectRepos?.find((r) => r.id === selectedRepoId);
+    const linkedRepo = repo?.fullName ?? repo?.repositoryName ?? '';
+    if (!linkedRepo) return;
     updateTaskMutation.mutate(
-      { taskId, linked_repo: repo, linked_branch: branch },
+      { taskId, linked_repo: linkedRepo, linked_branch: selectedBranchName.trim() },
       {
         onSuccess: (updated) => {
-          setTask(prev => prev ? { ...prev, linked_repo: updated.linked_repo ?? repo, linked_branch: updated.linked_branch ?? branch } : prev);
-          setLinkedRepoInput('');
-          setLinkedBranchInput('');
+          setTask(prev => prev ? { ...prev, linked_repo: updated.linked_repo ?? linkedRepo, linked_branch: updated.linked_branch ?? selectedBranchName } : prev);
+          setSelectedRepoId('');
+          setSelectedBranchName('');
         },
       }
     );
@@ -780,32 +788,64 @@ export function TaskDetail() {
               </div>
             ) : (
               <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="owner/repo"
-                  value={linkedRepoInput}
-                  onChange={(e) => setLinkedRepoInput(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-input-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  aria-label="Repository (owner/repo)"
-                />
-                <input
-                  type="text"
-                  placeholder="Branch name"
-                  value={linkedBranchInput}
-                  onChange={(e) => setLinkedBranchInput(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-input-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  aria-label="Branch name"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={handleAttachBranch}
-                  disabled={!linkedRepoInput.trim() || !linkedBranchInput.trim() || updateTaskMutation.isPending}
-                >
-                  <Link2 className="mr-2 h-4 w-4" />
-                  {updateTaskMutation.isPending ? 'Attaching…' : 'Attach'}
-                </Button>
+                {!projectRepos?.length ? (
+                  <p className="text-sm text-muted-foreground">No repositories linked to this project. Link a repo in project settings to attach a branch.</p>
+                ) : (
+                  <>
+                    <Select
+                      value={selectedRepoId === '' ? '__none__' : String(selectedRepoId)}
+                      onValueChange={(v) => {
+                        setSelectedRepoId(v === '__none__' ? '' : Number(v));
+                        setSelectedBranchName('');
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select repository" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Select repository</SelectItem>
+                        {projectRepos.map((r) => (
+                          <SelectItem key={r.id} value={String(r.id)}>
+                            {r.repositoryName}
+                            {r.fullName ? ` (${r.fullName})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedRepoId !== '' && (
+                      <Select
+                        value={selectedBranchName || '__none__'}
+                        onValueChange={(v) => setSelectedBranchName(v === '__none__' ? '' : v)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={branchesLoading ? 'Loading branches…' : 'Select branch'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Select branch</SelectItem>
+                          {(branches ?? []).map((b) => (
+                            <SelectItem key={b.name} value={b.name}>
+                              {b.name}
+                              {b.default ? ' (default)' : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {(selectedRepoId !== '' && !branchesLoading && (branches?.length ?? 0) === 0) && (
+                      <p className="text-xs text-muted-foreground">No branches found. Add an API token to the repo for private repos.</p>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={handleAttachBranch}
+                      disabled={selectedRepoId === '' || !selectedBranchName.trim() || updateTaskMutation.isPending}
+                    >
+                      <Link2 className="mr-2 h-4 w-4" />
+                      {updateTaskMutation.isPending ? 'Attaching…' : 'Attach'}
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </div>

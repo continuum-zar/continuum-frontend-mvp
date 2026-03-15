@@ -12,6 +12,8 @@ export interface RepositoryAPIResponse {
     webhook_secret?: string | null;
     created_at: string;
     updated_at: string;
+    /** Provider full_name (owner/repo) for linking tasks; matches webhook repo_full_name. */
+    full_name?: string;
 }
 
 /** Repository shape used by UI. */
@@ -25,6 +27,14 @@ export interface Repository {
     webhookSecret?: string | null;
     createdAt: string;
     updatedAt: string;
+    /** Provider full_name (owner/repo) for linking tasks. */
+    fullName?: string;
+}
+
+/** Branch item from GET /projects/:id/repositories/:repoId/branches */
+export interface BranchItem {
+    name: string;
+    default: boolean;
 }
 
 /** Body for linking a repository (POST /projects/:id/repositories). */
