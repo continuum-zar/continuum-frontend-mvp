@@ -24,6 +24,8 @@ export interface TaskAPIResponse {
     comment_count?: number;
     project_name?: string | null;
     closure_summary?: string | null;
+    linked_repo?: string | null;
+    linked_branch?: string | null;
 }
 
 /** Attachment item for display (from API or after upload) */
@@ -49,7 +51,7 @@ export interface Task {
     milestoneId: string;
 }
 
-export type ActivityType = | 'task_created' | 'status_changed' | 'comment_added' | 'attachment_uploaded' | 'hours_logged';
+export type ActivityType = | 'task_created' | 'status_changed' | 'comment_added' | 'attachment_uploaded' | 'hours_logged' | 'branch_push';
 
 export interface TaskTimelineEntry {
     id: number;

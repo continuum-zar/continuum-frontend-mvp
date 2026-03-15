@@ -260,12 +260,16 @@ export function useUpdateTask() {
             status,
             scope_weight,
             due_date,
+            linked_repo,
+            linked_branch,
         }: {
             taskId: string | number;
             status?: TaskStatus;
             scope_weight?: ScopeWeight;
             due_date?: string | null;
-        }) => updateTask(taskId, { status, scope_weight, due_date }),
+            linked_repo?: string | null;
+            linked_branch?: string | null;
+        }) => updateTask(taskId, { status, scope_weight, due_date, linked_repo, linked_branch }),
         onSuccess: (_data, { taskId }) => {
             // Show success toast
             toast.success('Task updated successfully');

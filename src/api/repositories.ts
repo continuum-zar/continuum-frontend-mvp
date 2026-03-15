@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { RepositoryAPIResponse, Repository, RepositoryCreateBody } from '@/types/repository';
+import type { BranchItem, RepositoryAPIResponse, Repository, RepositoryCreateBody } from '@/types/repository';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { projectKeys, getApiErrorMessage } from './hooks';
@@ -15,6 +15,7 @@ function mapRepository(res: RepositoryAPIResponse): Repository {
         webhookSecret: res.webhook_secret ?? null,
         createdAt: res.created_at,
         updatedAt: res.updated_at,
+        fullName: res.full_name,
     };
 }
 
@@ -45,6 +46,32 @@ export async function linkRepository(
 /** Unlink a repository. DELETE /repositories/:id. Requires admin. */
 export async function unlinkRepository(repositoryId: number): Promise<void> {
     await api.delete(`/repositories/${repositoryId}`);
+}
+
+/** Fetch branches for a repository. GET /projects/:id/repositories/:repoId/branches */
+export async function fetchRepositoryBranches(
+    projectId: number | string,
+    repositoryId: number
+): Promise<BranchItem[]> {
+    const { data } = await api.get<BranchItem[]>(
+        `/projects/${projectId}/repositories/${repositoryId}/branches`
+    );
+    return data ?? [];
+}
+
+export function useRepositoryBranches(
+    projectId: number | string | undefined | null,
+    repositoryId: number | undefined | null
+) {
+    return useQuery({
+        queryKey: ['projects', 'detail', projectId, 'repositories', repositoryId, 'branches'] as const,
+        queryFn: () => fetchRepositoryBranches(projectId!, repositoryId!),
+        enabled:
+            projectId != null &&
+            projectId !== '' &&
+            repositoryId != null &&
+            typeof repositoryId === 'number',
+    });
 }
 
 export function useProjectRepositories(projectId: number | string | undefined | null) {
