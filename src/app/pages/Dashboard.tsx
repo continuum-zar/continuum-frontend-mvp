@@ -23,6 +23,7 @@ import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Input } from '../components/ui/input';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
+import { Skeleton } from '../components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -397,7 +398,20 @@ export function Dashboard() {
           animate="show"
         >
           {dashboardLoading ? (
-            <div className="col-span-4 rounded-lg border border-border bg-card p-8 text-center text-muted-foreground text-sm">Loading KPIs...</div>
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-card border border-border rounded-lg p-6 flex flex-col justify-between h-[132px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-8 w-8 rounded" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-9 w-16 mb-2" />
+                    <Skeleton className="h-4 w-40" />
+                  </div>
+                </div>
+              ))}
+            </>
           ) : dashboardError ? (
             <div className="col-span-4 rounded-lg border border-border bg-card p-8 text-center text-destructive text-sm">Failed to load dashboard metrics</div>
           ) : (
@@ -491,7 +505,18 @@ export function Dashboard() {
               <p className="text-sm text-muted-foreground">Weighted score vs. 4-week average</p>
             </div>
             {velocityLoading && hasProjectSelected ? (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Loading velocity...</div>
+              <div className="h-[300px] flex flex-col gap-4">
+                <div className="flex items-end gap-2 flex-1 pt-4">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} className="flex-1" style={{ height: `${20 + Math.random() * 60}%` }} />
+                  ))}
+                </div>
+                <div className="flex gap-2 h-4">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} className="flex-1" />
+                  ))}
+                </div>
+              </div>
             ) : velocityError && hasProjectSelected ? (
               <div className="h-[300px] flex items-center justify-center text-destructive text-sm">Failed to load velocity</div>
             ) : !hasProjectSelected ? (
@@ -544,7 +569,23 @@ export function Dashboard() {
               {!hasProjectSelected ? (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Select a project to view burndown</div>
               ) : burndownLoading ? (
-                <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">Loading burndown...</div>
+                <div className="h-[300px] relative">
+                  <Skeleton className="absolute inset-x-0 bottom-0 h-[2px]" />
+                  <Skeleton className="absolute inset-y-0 left-0 w-[2px]" />
+                  <div className="h-full w-full flex items-center justify-center">
+                    <div className="w-[80%] h-[60%] border-l-2 border-b-2 border-dashed border-muted relative">
+                      <motion.div
+                        className="absolute top-0 left-0 w-full h-full"
+                        style={{
+                          background: 'linear-gradient(to bottom right, transparent 49.5%, var(--color-muted) 50%, transparent 50.5%)',
+                          backgroundSize: '100% 100%'
+                        }}
+                        animate={{ opacity: [0.2, 0.5, 0.2] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+                    </div>
+                  </div>
+                </div>
               ) : burndownError ? (
                 <div className="h-[300px] flex items-center justify-center text-destructive text-sm">Failed to load burndown</div>
               ) : milestones.length === 0 ? (
@@ -630,7 +671,15 @@ export function Dashboard() {
                     {userRole === 'Project Manager' ? 'Select a project to view rhythm' : 'Sign in to view your rhythm'}
                   </div>
                 ) : rhythmLoading ? (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">Loading rhythm...</div>
+                  <div className="h-[200px] flex flex-col gap-1 ml-[40px]">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="flex gap-1 h-6">
+                        {[...Array(11)].map((_, j) => (
+                          <Skeleton key={j} className="flex-1 rounded-sm" />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 ) : rhythmError ? (
                   <div className="h-[200px] flex items-center justify-center text-destructive text-sm">Failed to load rhythm</div>
                 ) : userRole === 'Project Manager' && rhythmMember === 'all' && rhythmDeveloperMembers.length === 0 ? (
@@ -690,7 +739,21 @@ export function Dashboard() {
             {!hasProjectSelected ? (
               <div className="py-8 text-center text-muted-foreground text-sm">Select a project to view task snapshot</div>
             ) : snapshotLoading ? (
-              <div className="py-8 text-center text-muted-foreground text-sm">Loading snapshot...</div>
+              <div className="py-8 space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-4 w-4 rounded-full" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                    <Skeleton className="h-6 w-8" />
+                  </div>
+                ))}
+                <div className="mt-4 pt-4 border-t border-border">
+                  <Skeleton className="h-2 w-full mb-2" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
             ) : snapshotError ? (
               <div className="py-8 text-center text-destructive text-sm">Failed to load snapshot</div>
             ) : (
@@ -759,7 +822,15 @@ export function Dashboard() {
               {!hasProjectSelected ? (
                 <div className="h-full flex items-center justify-center text-muted-foreground text-sm">Select a project to view classification</div>
               ) : classificationLoading ? (
-                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">Loading...</div>
+                <div className="h-full flex items-center justify-center">
+                  <div className="relative w-40 h-40">
+                    <Skeleton className="absolute inset-0 rounded-full border-8 border-muted" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <Skeleton className="h-8 w-12 mb-1" />
+                      <Skeleton className="h-3 w-8" />
+                    </div>
+                  </div>
+                </div>
               ) : classificationError ? (
                 <div className="h-full flex items-center justify-center text-destructive text-sm">Failed to load</div>
               ) : gitCommitsChartData.length === 0 ? (
@@ -814,7 +885,16 @@ export function Dashboard() {
             {!hasProjectSelected ? (
               <div className="py-12 text-center text-muted-foreground text-sm">Select a project to view stale work</div>
             ) : staleWorkLoading ? (
-              <div className="py-12 text-center text-muted-foreground text-sm">Loading stale work...</div>
+              <div className="py-6 space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 py-3 border-b border-border last:border-0">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-4 w-16 ml-auto" />
+                    <Skeleton className="h-8 w-8 rounded" />
+                  </div>
+                ))}
+              </div>
             ) : staleWorkError ? (
               <div className="py-12 text-center text-destructive text-sm">Failed to load stale work</div>
             ) : staleBranchesList.length === 0 ? (
@@ -872,7 +952,14 @@ export function Dashboard() {
                 <p className="text-sm text-muted-foreground">Overall status of tasks and deliverables.</p>
               </div>
               {clientProgressLoading ? (
-                <div className="text-sm text-muted-foreground">Loading...</div>
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-24 h-24 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
               ) : clientProgressError ? (
                 <div className="text-sm text-destructive">Unable to load (you may not have access)</div>
               ) : clientHealthChartData.length === 0 ? (
@@ -907,7 +994,17 @@ export function Dashboard() {
             <motion.div variants={item} initial="hidden" animate="show" className="bg-card border border-border rounded-lg p-6">
               <h3 className="text-lg font-semibold mb-6">Recent Activity</h3>
               {clientProgressLoading ? (
-                <div className="text-sm text-muted-foreground">Loading...</div>
+                <div className="space-y-6">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex gap-4">
+                      <Skeleton className="w-8 h-8 rounded-full shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-64" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : clientProgressError ? (
                 <div className="text-sm text-destructive">Unable to load activity</div>
               ) : activityFeedFromApi.length === 0 ? (
