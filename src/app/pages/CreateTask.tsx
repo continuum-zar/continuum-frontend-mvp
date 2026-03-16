@@ -20,6 +20,7 @@ import {
 } from '../components/ui/select';
 import { Label } from '../components/ui/label';
 import api from '../../lib/api';
+import { generateTasks } from '@/api';
 
 interface LocationState {
   projectId?: string | number;
@@ -63,28 +64,41 @@ export function CreateTask() {
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
+    if (!projectId) {
+      toast.error('Select a project first (e.g. from the project board) to use AI generation.');
+      return;
+    }
 
     setIsGenerating(true);
-
-    // Simulate AI generation
-    setTimeout(() => {
-      setFormData({
-        title: 'Add Playwright E2E tests',
-        description: 'Set up Playwright and write initial end-to-end tests for the main user flows including authentication and dashboard navigation.',
-        status: 'todo',
-        scope: 'L',
-        estimatedHours: '8',
-        dueDate: '2026-03-01',
+    try {
+      const res = await generateTasks(Number(projectId), {
+        prompt: prompt.trim(),
+        max_tasks: 1,
       });
-      setChecklists([
-        'Install playwright dependencies',
-        'Configure playwright.config.ts',
-        'Write authentication test suite',
-        'Write dashboard navigation test suite',
-        'Add test scripts to package.json'
-      ]);
+      const task = res.tasks?.[0];
+      if (!task) {
+        toast.error('No task suggestions returned. Try a different prompt or ensure the project is indexed.');
+        return;
+      }
+      setFormData({
+        title: task.title,
+        description: task.description ?? '',
+        status: 'todo',
+        scope: task.scope_weight,
+        estimatedHours: '',
+        dueDate: '',
+      });
+      setChecklists((task.checklist ?? []).map((c) => c.title));
+      toast.success('Task details filled from AI. Edit as needed and create.');
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        (err as { message?: string })?.message ??
+        'AI generation failed';
+      toast.error(String(msg));
+    } finally {
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -324,7 +338,9 @@ export function CreateTask() {
           <div>
             <h3 className="font-medium text-foreground text-sm mb-1">AI Assistant</h3>
             <p className="text-xs text-muted-foreground">
-              Describe the task and let AI fill in the details.
+              {projectId
+                ? 'Describe the task and let AI fill in the details.'
+                : 'Select a project first (e.g. from the project board) to use AI.'}
             </p>
           </div>
         </div>
@@ -344,7 +360,7 @@ export function CreateTask() {
           />
           <Button
             onClick={handleGenerate}
-            disabled={isGenerating || !prompt.trim()}
+            disabled={isGenerating || !prompt.trim() || !projectId}
             size="sm"
             className="w-full bg-foreground text-background hover:bg-foreground/90 transition-colors"
           >

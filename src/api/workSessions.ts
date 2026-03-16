@@ -82,6 +82,23 @@ export async function resumeWorkSession(sessionId: string): Promise<ActiveWorkSe
 }
 
 /**
+ * POST /api/v1/work-sessions/{id}/suggest-description
+ * Suggests a work description from recent git commits for this session (AI Fill from Commits).
+ */
+export interface SuggestDescriptionResponse {
+    suggested_description: string;
+}
+
+export async function suggestSessionDescription(
+    sessionId: string
+): Promise<SuggestDescriptionResponse> {
+    const { data } = await api.post<SuggestDescriptionResponse>(
+        `/work-sessions/${sessionId}/suggest-description`
+    );
+    return data;
+}
+
+/**
  * POST /api/v1/work-sessions/{id}/stop
  * Stops the session and creates a LoggedHour with the given note.
  */
