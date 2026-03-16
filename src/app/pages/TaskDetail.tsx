@@ -15,6 +15,10 @@ import {
   MessageSquare,
   ArrowRight,
   History,
+  GitBranch,
+  Link2,
+  Unlink,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Calendar } from '../components/ui/calendar';
@@ -31,7 +35,7 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask } from '@/api';
+import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { TaskAPIResponse } from '@/types/task';
@@ -96,6 +100,11 @@ const getActivityLabel = (entry: TaskTimelineEntry) => {
       const hours = Number(entry.data?.hours) || 0;
       return `logged ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
     }
+    case 'branch_push': {
+      const branch = (entry.data?.branch as string) || 'branch';
+      const msg = (entry.data?.commit_message as string) || '';
+      return msg ? `pushed to ${branch}: ${msg}` : `pushed to ${branch}`;
+    }
     default:
       return 'performed an action';
   }
@@ -108,6 +117,7 @@ const getActivityIcon = (type: string) => {
     case 'comment_added': return MessageSquare;
     case 'attachment_uploaded': return Paperclip;
     case 'hours_logged': return Clock;
+    case 'branch_push': return GitBranch;
     default: return History;
   }
 };
@@ -119,6 +129,7 @@ const getActivityColor = (type: string) => {
     case 'comment_added': return 'text-info bg-info/10';
     case 'attachment_uploaded': return 'text-warning bg-warning/10';
     case 'hours_logged': return 'text-secondary bg-secondary/10';
+    case 'branch_push': return 'text-info bg-info/10';
     default: return 'text-muted-foreground bg-muted';
   }
 };
@@ -141,6 +152,8 @@ export function TaskDetail() {
   const [status, setStatus] = useState('');
   const [scope, setScope] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [selectedRepoId, setSelectedRepoId] = useState<number | ''>('');
+  const [selectedBranchName, setSelectedBranchName] = useState('');
 
   // Initialize the update task mutation
   const updateTaskMutation = useUpdateTask();
@@ -159,6 +172,13 @@ export function TaskDetail() {
   // Members and Assign hook
   const { data: members } = useProjectMembers(task?.project_id, { enabled: !!task?.project_id });
   const assignTaskMutation = useAssignTask();
+
+  // Repos and branches for linked-branch dropdowns
+  const { data: projectRepos } = useProjectRepositories(task?.project_id);
+  const { data: branches, isLoading: branchesLoading } = useRepositoryBranches(
+    task?.project_id,
+    selectedRepoId === '' ? undefined : selectedRepoId
+  );
 
   useEffect(() => {
     const loadTask = async () => {
@@ -260,6 +280,35 @@ export function TaskDetail() {
         setTask(prev => prev ? { ...prev, assigned_to: newUserId } : prev);
       }
     });
+  };
+
+  const handleAttachBranch = () => {
+    if (!taskId || selectedRepoId === '' || !selectedBranchName.trim()) return;
+    const repo = projectRepos?.find((r) => r.id === selectedRepoId);
+    const linkedRepo = repo?.fullName ?? repo?.repositoryName ?? '';
+    if (!linkedRepo) return;
+    updateTaskMutation.mutate(
+      { taskId, linked_repo: linkedRepo, linked_branch: selectedBranchName.trim() },
+      {
+        onSuccess: (updated) => {
+          setTask(prev => prev ? { ...prev, linked_repo: updated.linked_repo ?? linkedRepo, linked_branch: updated.linked_branch ?? selectedBranchName } : prev);
+          setSelectedRepoId('');
+          setSelectedBranchName('');
+        },
+      }
+    );
+  };
+
+  const handleDetachBranch = () => {
+    if (!taskId) return;
+    updateTaskMutation.mutate(
+      { taskId, linked_repo: null, linked_branch: null },
+      {
+        onSuccess: () => {
+          setTask(prev => prev ? { ...prev, linked_repo: null, linked_branch: null } : prev);
+        },
+      }
+    );
   };
 
   if (loading) return <TaskDetailSkeleton />;
@@ -479,6 +528,53 @@ export function TaskDetail() {
               ) : timeline && timeline.length > 0 ? (
                 <div className="relative space-y-6 before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border before:via-border before:to-transparent">
                   {timeline.map((entry) => {
+                    if (entry.activity_type === 'branch_push') {
+                      const branch = (entry.data?.branch as string) || 'branch';
+                      const commitMessage = (entry.data?.commit_message as string) || '';
+                      const commitUrlRaw = entry.data?.commit_url as string | undefined;
+                      const repo = entry.data?.repo as string | undefined;
+                      const sha = entry.data?.commit_sha as string | undefined;
+                      const commitUrl =
+                        commitUrlRaw || (repo && sha ? `https://github.com/${repo}/commit/${sha}` : null);
+                      return (
+                        <div key={entry.id} className="relative flex items-start space-x-4 pl-1">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-full border border-border shrink-0 z-10 ${getActivityColor(entry.activity_type)}`}>
+                            <GitBranch className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 pt-1">
+                            <div className="rounded-lg border border-border bg-card p-3">
+                              <div className="text-sm">
+                                <span className="font-semibold">{entry.user?.display_name || entry.user?.username || 'Someone'}</span>
+                                <span className="text-muted-foreground"> pushed to </span>
+                                <span className="font-mono text-xs font-medium">{branch}</span>
+                                {commitMessage && (
+                                  <>
+                                    <span className="text-muted-foreground">: </span>
+                                    <span className="text-foreground">{commitMessage}</span>
+                                  </>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                {commitUrl && (
+                                  <a
+                                    href={commitUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    View commit
+                                  </a>
+                                )}
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
                     const Icon = getActivityIcon(entry.activity_type);
                     return (
                       <div key={entry.id} className="relative flex items-start space-x-4 pl-1">
@@ -664,6 +760,94 @@ export function TaskDetail() {
             <Button variant="outline" size="sm" className="w-full mt-2">
               Add Label
             </Button>
+          </div>
+
+          <Separator />
+
+          <div>
+            <div className="flex items-center text-sm text-muted-foreground mb-3">
+              <GitBranch className="h-4 w-4 mr-2" />
+              Linked branch
+            </div>
+            {task.linked_repo && task.linked_branch ? (
+              <div className="space-y-2">
+                <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
+                  <p className="font-medium font-mono truncate" title={task.linked_repo}>{task.linked_repo}</p>
+                  <p className="text-muted-foreground font-mono text-xs truncate" title={task.linked_branch}>{task.linked_branch}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={handleDetachBranch}
+                  disabled={updateTaskMutation.isPending}
+                >
+                  <Unlink className="mr-2 h-4 w-4" />
+                  Detach
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {!projectRepos?.length ? (
+                  <p className="text-sm text-muted-foreground">No repositories linked to this project. Link a repo in project settings to attach a branch.</p>
+                ) : (
+                  <>
+                    <Select
+                      value={selectedRepoId === '' ? '__none__' : String(selectedRepoId)}
+                      onValueChange={(v) => {
+                        setSelectedRepoId(v === '__none__' ? '' : Number(v));
+                        setSelectedBranchName('');
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select repository" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Select repository</SelectItem>
+                        {projectRepos.map((r) => (
+                          <SelectItem key={r.id} value={String(r.id)}>
+                            {r.repositoryName}
+                            {r.fullName ? ` (${r.fullName})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedRepoId !== '' && (
+                      <Select
+                        value={selectedBranchName || '__none__'}
+                        onValueChange={(v) => setSelectedBranchName(v === '__none__' ? '' : v)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={branchesLoading ? 'Loading branches…' : 'Select branch'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Select branch</SelectItem>
+                          {(branches ?? []).map((b) => (
+                            <SelectItem key={b.name} value={b.name}>
+                              {b.name}
+                              {b.default ? ' (default)' : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {(selectedRepoId !== '' && !branchesLoading && (branches?.length ?? 0) === 0) && (
+                      <p className="text-xs text-muted-foreground">No branches found. Add an API token to the repo for private repos.</p>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={handleAttachBranch}
+                      disabled={selectedRepoId === '' || !selectedBranchName.trim() || updateTaskMutation.isPending}
+                    >
+                      <Link2 className="mr-2 h-4 w-4" />
+                      {updateTaskMutation.isPending ? 'Attaching…' : 'Attach'}
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <Separator />

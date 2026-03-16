@@ -26,6 +26,17 @@ export {
 } from './tasks';
 export type { Project, ProjectDetail, ProjectAPIResponse, Milestone, Member } from './projects';
 export type { Task, TaskStatus, TaskAPIResponse, TaskTimelineEntry, TaskOption } from './tasks';
+export {
+    fetchRepositories,
+    fetchRepositoryBranches,
+    linkRepository,
+    unlinkRepository,
+    useProjectRepositories,
+    useRepositoryBranches,
+    useLinkRepository,
+    useUnlinkRepository,
+} from './repositories';
+export type { Repository, RepositoryCreateBody, RepositoryProvider, BranchItem } from '@/types/repository';
 export type { CommentAPIResponse } from '@/types/comment';
 export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate, mapAttachment } from './mappers';
 export {
