@@ -40,6 +40,7 @@ import {
   mapMilestone,
 } from '@/api';
 import { useRole } from '@/app/context/RoleContext';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import {
@@ -367,6 +368,24 @@ export function ProjectBoard() {
 
   const [selectedMilestoneId, setSelectedMilestoneId] = useState('');
   const pendingMoveRef = useRef<Set<string>>(new Set());
+  const previouslyScanningRepoIdsRef = useRef<Set<number>>(new Set());
+
+  // Toast when a repo finishes indexing (polling sees is_scanning flip to false)
+  useEffect(() => {
+    const data = wikiScanStatusQuery.data;
+    if (!data) return;
+    const nowScanning = new Set(data.filter((s) => s.is_scanning).map((s) => s.repository_id));
+    const prev = previouslyScanningRepoIdsRef.current;
+    const finished = [...prev].filter((id) => !nowScanning.has(id));
+    if (finished.length > 0) {
+      toast.success(
+        finished.length === 1
+          ? 'Repository indexing complete. You can create tasks from AI with code context.'
+          : `${finished.length} repositories finished indexing.`
+      );
+    }
+    previouslyScanningRepoIdsRef.current = nowScanning;
+  }, [wikiScanStatusQuery.data]);
 
   useEffect(() => {
     setSelectedMilestoneId('');
@@ -832,8 +851,9 @@ export function ProjectBoard() {
               {(repositoriesQuery.data ?? []).map((repo: Repository) => {
                 const scanStatus = wikiScanStatusQuery.data?.find((s) => s.repository_id === repo.id);
                 const isScanning =
-                  scanRepositoryMutation.isPending &&
-                  scanRepositoryMutation.variables?.repository_id === repo.id;
+                  (scanStatus?.is_scanning ?? false) ||
+                  (scanRepositoryMutation.isPending &&
+                    scanRepositoryMutation.variables?.repository_id === repo.id);
                 const filesIndexed = scanStatus?.files_indexed ?? 0;
                 const lastScanned = scanStatus?.last_scanned_at
                   ? new Date(scanStatus.last_scanned_at).toLocaleString()

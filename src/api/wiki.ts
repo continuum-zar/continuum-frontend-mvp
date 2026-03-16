@@ -102,16 +102,18 @@ export async function confirmTasks(
 export const wikiScanStatusKey = (projectId: number | string) =>
     [...projectKeys.detail(projectId), 'wiki', 'scan-status'] as const;
 
-/** Fetch scan status for all repos in a project. Use for "X files indexed" and "Last scanned". */
+/** Fetch scan status for all repos in a project. Polls every 3s while any repo is scanning. */
 export function useWikiScanStatus(projectId: number | string | undefined | null) {
     return useQuery({
         queryKey: projectId != null ? wikiScanStatusKey(projectId) : ['wiki', 'scan-status', 'disabled'],
         queryFn: () => getWikiScanStatus(projectId!),
         enabled: projectId != null && projectId !== '',
+        refetchInterval: (query) =>
+            query.state.data?.some((s) => s.is_scanning) ? 3000 : false,
     });
 }
 
-/** Trigger repo indexing (scan). Invalidates wiki scan status on success. */
+/** Start repo indexing (scan runs in background). Poll wiki scan status to see progress. */
 export function useScanRepository(projectId: number | string | undefined | null) {
     const queryClient = useQueryClient();
     return useMutation({
@@ -119,7 +121,7 @@ export function useScanRepository(projectId: number | string | undefined | null)
         onSuccess: () => {
             if (projectId != null)
                 queryClient.invalidateQueries({ queryKey: wikiScanStatusKey(projectId) });
-            toast.success('Repository indexed. You can now create tasks from AI with code context.');
+            toast.success('Indexing started. This may take a few minutes — the page will update when done.');
         },
         onError: (err: unknown) => {
             toast.error(getApiErrorMessage(err, 'Indexing failed. Check repo URL and API token (for private repos).'));
