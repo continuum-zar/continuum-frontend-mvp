@@ -80,15 +80,16 @@ export function useProjectTasks(projectId: number | string | undefined | null) {
 }
 
 /** All tasks across user's projects (for time-tracking task dropdown). No project_id filter. */
-export function useAllTasks() {
+export function useAllTasks(options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: projectKeys.allTasks(),
         queryFn: fetchAllTasks,
+        enabled: options?.enabled,
     });
 }
 
 /** Logged hours for Recent Entries. Optional project_id; "all" / empty = no filter. Refetch after logging a new entry. */
-export function useLoggedHours(projectId?: string | null, options?: { limit?: number }) {
+export function useLoggedHours(projectId?: string | null, options?: { limit?: number; enabled?: boolean }) {
     const limit = options?.limit ?? 50;
     const projectIdParam = (projectId == null || projectId === '' || projectId === 'all') ? undefined : projectId;
     return useQuery({
@@ -97,6 +98,7 @@ export function useLoggedHours(projectId?: string | null, options?: { limit?: nu
             ...(projectIdParam != null && { project_id: projectIdParam }),
             limit,
         }),
+        enabled: options?.enabled,
     });
 }
 
