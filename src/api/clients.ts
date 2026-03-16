@@ -1,7 +1,7 @@
 import api from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
-import type { ProjectAPIResponse } from '@/types/project';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchInvoices } from './invoices';
+import { fetchProjects, projectKeys } from './projects';
 
 export interface ClientAPIResponse {
     id: number;
@@ -52,15 +52,18 @@ export const clientKeys = {
 };
 
 export function useClients() {
+    const queryClient = useQueryClient();
     return useQuery({
         queryKey: clientKeys.all,
         queryFn: async () => {
-            const [clients, invoices, projectsRes] = await Promise.all([
+            const [clients, invoices, projects] = await Promise.all([
                 fetchClients(),
                 fetchInvoices(),
-                api.get<ProjectAPIResponse[]>('/projects/'),
+                queryClient.ensureQueryData({
+                    queryKey: projectKeys.list(),
+                    queryFn: fetchProjects,
+                }),
             ]);
-            const projects = projectsRes.data ?? [];
 
             return clients.map((c) => {
                 // If backend already provides stats (Ticket 13), use them.
@@ -79,8 +82,8 @@ export function useClients() {
                 // Aggregate on the frontend: projects have client_id; sum invoice totals per client.
                 const projectIdsForClient = new Set(
                     projects
-                        .filter((p) => p.client_id != null && p.client_id === c.id)
-                        .map((p) => p.id)
+                        .filter((p) => p.clientId != null && p.clientId === c.id)
+                        .map((p) => p.apiId)
                 );
                 const clientInvoices =
                     projectIdsForClient.size > 0
