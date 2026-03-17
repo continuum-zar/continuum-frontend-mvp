@@ -1,4 +1,11 @@
 import { Outlet, NavLink, useNavigate } from 'react-router';
+import { PrefetchLink } from '../components/PrefetchLink';
+import {
+  projectKeys, fetchProjects,
+  invoiceKeys, fetchInvoices,
+  userHoursKeys, fetchUserHours,
+  getCurrentWeekRange
+} from '../../api';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -81,10 +88,20 @@ export function DashboardLayout() {
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {filteredNavigation.map((item) => (
-            <NavLink
+            <PrefetchLink
               key={item.name}
               to={item.href}
               end={item.href === '/dashboard'}
+              onPrefetch={(queryClient) => {
+                if (item.href === '/projects') {
+                  queryClient.prefetchQuery({ queryKey: projectKeys.all, queryFn: () => fetchProjects() });
+                } else if (item.href === '/invoices') {
+                  queryClient.prefetchQuery({ queryKey: invoiceKeys.all, queryFn: () => fetchInvoices() });
+                } else if (item.href === '/time') {
+                  const { start, end } = getCurrentWeekRange();
+                  queryClient.prefetchQuery({ queryKey: userHoursKeys.range(start, end), queryFn: () => fetchUserHours(start, end) });
+                }
+              }}
               className={({ isActive }) =>
                 `flex items-center px-3 py-2 rounded-md transition-colors ${isActive
                   ? 'bg-primary text-primary-foreground'
@@ -94,7 +111,7 @@ export function DashboardLayout() {
             >
               <item.icon className="h-5 w-5 mr-3" />
               <span>{item.name}</span>
-            </NavLink>
+            </PrefetchLink>
           ))}
         </nav>
 
