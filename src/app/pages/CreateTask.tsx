@@ -50,6 +50,7 @@ export function CreateTask() {
 
   const [checklists, setChecklists] = useState<string[]>([]);
   const [newChecklist, setNewChecklist] = useState('');
+  const [labels, setLabels] = useState<string[]>([]);
 
   const handleAddChecklist = () => {
     if (newChecklist.trim()) {
@@ -89,6 +90,7 @@ export function CreateTask() {
         dueDate: '',
       });
       setChecklists((task.checklist ?? []).map((c) => c.title));
+      setLabels(Array.isArray(task.labels) ? task.labels.filter((l) => l && String(l).trim()) : []);
       toast.success('Task details filled from AI. Edit as needed and create.');
     } catch (err: unknown) {
       const msg =
@@ -126,6 +128,7 @@ export function CreateTask() {
         estimated_hours?: number;
         due_date?: string;
         checklists?: Array<{ text: string; done: boolean }>;
+        labels?: string[];
       } = {
         title: formData.title,
         description: formData.description,
@@ -138,6 +141,7 @@ export function CreateTask() {
         ...(checklists.length > 0 && {
           checklists: checklists.map((text) => ({ text, done: false })),
         }),
+        ...(labels.length > 0 && { labels }),
       };
 
       // Call the API
@@ -304,6 +308,31 @@ export function CreateTask() {
                 </div>
               )}
             </div>
+
+            {/* Labels (AI-populated or empty) */}
+            {labels.length > 0 && (
+              <div className="space-y-2">
+                <Label>Labels</Label>
+                <div className="flex flex-wrap gap-2">
+                  {labels.map((label, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-sm"
+                    >
+                      {label}
+                      <button
+                        type="button"
+                        onClick={() => setLabels(labels.filter((_, i) => i !== index))}
+                        className="rounded hover:bg-muted-foreground/20 p-0.5"
+                        aria-label={`Remove ${label}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <p className="text-xs text-muted-foreground">
               You can add attachments on the task page after creating it.

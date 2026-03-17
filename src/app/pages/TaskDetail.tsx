@@ -35,7 +35,8 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches } from '@/api';
+import { Input } from '../components/ui/input';
+import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, downloadTaskAttachment, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches, useAddTaskLabel, useRemoveTaskLabel } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { TaskAPIResponse } from '@/types/task';
@@ -154,6 +155,8 @@ export function TaskDetail() {
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [selectedRepoId, setSelectedRepoId] = useState<number | ''>('');
   const [selectedBranchName, setSelectedBranchName] = useState('');
+  const [newLabelValue, setNewLabelValue] = useState('');
+  const [isAddLabelOpen, setIsAddLabelOpen] = useState(false);
 
   // Initialize the update task mutation
   const updateTaskMutation = useUpdateTask();
@@ -172,6 +175,8 @@ export function TaskDetail() {
   // Members and Assign hook
   const { data: members } = useProjectMembers(task?.project_id, { enabled: !!task?.project_id });
   const assignTaskMutation = useAssignTask();
+  const addTaskLabelMutation = useAddTaskLabel(taskId);
+  const removeTaskLabelMutation = useRemoveTaskLabel(taskId);
 
   // Repos and branches for linked-branch dropdowns
   const { data: projectRepos } = useProjectRepositories(task?.project_id);
@@ -392,20 +397,38 @@ export function TaskDetail() {
               <div className="mb-8 bg-card border border-border rounded-lg p-6">
                 <h3 className="mb-4">Checklist ({completedChecklists}/{totalChecklists})</h3>
                 <div className="space-y-3">
-                  {task.checklists.map((checklist, idx) => (
-                    <div key={idx} className="flex items-center space-x-3">
-                      {checklist.done ? (
-                        <div className="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center flex-shrink-0">
-                          <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                        </div>
-                      ) : (
-                        <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
-                      )}
-                      <span className={`text-sm ${checklist.done ? 'text-muted-foreground line-through' : ''}`}>
-                        {checklist.text}
-                      </span>
-                    </div>
-                  ))}
+                  {task.checklists.map((checklist, idx) => {
+                    const handleToggle = () => {
+                      if (!taskId) return;
+                      const next = (task.checklists ?? []).map((c, i) =>
+                        i === idx ? { ...c, done: !c.done } : c
+                      );
+                      updateTaskMutation.mutate(
+                        { taskId, checklists: next },
+                        { onSuccess: (data) => setTask(data) }
+                      );
+                    };
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={handleToggle}
+                        className="flex items-center space-x-3 w-full text-left rounded p-1 -m-1 hover:bg-muted/50 transition-colors"
+                        disabled={updateTaskMutation.isPending}
+                      >
+                        {checklist.done ? (
+                          <div className="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center flex-shrink-0">
+                            <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
+                        )}
+                        <span className={`text-sm ${checklist.done ? 'text-muted-foreground line-through' : ''}`}>
+                          {checklist.text}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -442,9 +465,25 @@ export function TaskDetail() {
                   {(attachments ?? []).map(mapAttachment).map((attachment) => (
                     <div key={attachment.id} className="flex items-center justify-between p-2 bg-input-background rounded">
                       <div className="min-w-0 flex-1">
-                        <a href={getAttachmentDownloadUrl(attachment.id)} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const { blob, filename } = await downloadTaskAttachment(attachment.id);
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = filename || attachment.filename;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            } catch {
+                              // Error toast can be added here if needed
+                            }
+                          }}
+                          className="text-sm text-primary hover:underline text-left"
+                        >
                           {attachment.filename}
-                        </a>
+                        </button>
                         <span className="text-sm text-muted-foreground ml-2">{attachment.size}</span>
                       </div>
                       <Button
@@ -753,13 +792,61 @@ export function TaskDetail() {
               Labels
             </div>
             <div className="flex flex-wrap gap-2">
-              {task.project_name && (
-                <Badge variant="secondary">{task.project_name}</Badge>
-              )}
+              {(task.labels ?? []).map((label) => (
+                <Badge key={label} variant="secondary" className="pr-1 gap-1">
+                  {label}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!taskId) return;
+                      removeTaskLabelMutation.mutate(label, {
+                        onSuccess: (data) => setTask((prev) => prev ? { ...prev, labels: data.labels } : prev),
+                      });
+                    }}
+                    className="rounded-full hover:bg-muted-foreground/20 p-0.5"
+                    disabled={removeTaskLabelMutation.isPending}
+                    aria-label={`Remove label ${label}`}
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
             </div>
-            <Button variant="outline" size="sm" className="w-full mt-2">
-              Add Label
-            </Button>
+            <Popover open={isAddLabelOpen} onOpenChange={setIsAddLabelOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full mt-2">
+                  Add Label
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3" align="start">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const value = newLabelValue.trim();
+                    if (!value || !taskId) return;
+                    addTaskLabelMutation.mutate(value, {
+                      onSuccess: (data) => {
+                        setTask((prev) => prev ? { ...prev, labels: data.labels } : prev);
+                        setNewLabelValue('');
+                        setIsAddLabelOpen(false);
+                      },
+                    });
+                  }}
+                  className="flex gap-2"
+                >
+                  <Input
+                    placeholder="Label name"
+                    value={newLabelValue}
+                    onChange={(e) => setNewLabelValue(e.target.value)}
+                    maxLength={64}
+                    className="w-40"
+                  />
+                  <Button type="submit" size="sm" disabled={!newLabelValue.trim() || addTaskLabelMutation.isPending}>
+                    Add
+                  </Button>
+                </form>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <Separator />

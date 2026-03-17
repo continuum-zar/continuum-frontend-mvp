@@ -6,12 +6,15 @@ export {
     fetchProject,
     fetchMilestones,
     createMilestone,
+    updateMilestone,
+    deleteMilestone,
     fetchMembers,
     addMember,
 } from './projects';
 export {
     fetchTask,
     updateTask,
+    deleteTask,
     fetchProjectTasks,
     fetchAllTasks,
     updateTaskStatus,
@@ -21,11 +24,14 @@ export {
     uploadTaskAttachment,
     deleteAttachment,
     getAttachmentDownloadUrl,
+    downloadTaskAttachment,
     fetchTaskTimeline,
     assignTask,
     getTaskContext,
     getRelatedTasks,
     regenerateTaskSummary,
+    addTaskLabel,
+    removeTaskLabel,
 } from './tasks';
 export type { Project, ProjectDetail, ProjectAPIResponse, Milestone, Member } from './projects';
 export type {
@@ -64,6 +70,8 @@ export {
     useUpdateTaskStatus,
     useUpdateTask,
     useCreateMilestone,
+    useUpdateMilestone,
+    useDeleteMilestone,
     useAddMember,
     useTaskComments,
     useCreateTaskComment,
@@ -72,6 +80,9 @@ export {
     useDeleteAttachment,
     useTaskTimeline,
     useAssignTask,
+    useDeleteTask,
+    useAddTaskLabel,
+    useRemoveTaskLabel,
     projectKeys,
 } from './hooks';
 export type { AttachmentAPIResponse, Attachment } from '@/types/attachment';

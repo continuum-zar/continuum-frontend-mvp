@@ -5,10 +5,18 @@ export interface AttachmentAPIResponse {
     file_size: number;
     mime_type: string;
     created_at: string;
+    /** Some APIs return uploaded_by */
     uploaded_by?: {
         id: number;
-        username: string;
+        username?: string;
         display_name?: string;
+    };
+    /** Backend list returns uploader */
+    uploader?: {
+        id: number;
+        display_name?: string | null;
+        first_name?: string;
+        last_name?: string;
     };
 }
 

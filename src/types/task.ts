@@ -26,6 +26,7 @@ export interface TaskAPIResponse {
     closure_summary?: string | null;
     linked_repo?: string | null;
     linked_branch?: string | null;
+    labels?: string[];
 }
 
 /** Attachment item for display (from API or after upload) */

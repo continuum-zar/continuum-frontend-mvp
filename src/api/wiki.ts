@@ -27,6 +27,7 @@ export interface GeneratedTask {
     rationale: string;
     relevant_files: string[];
     checklist: GeneratedTaskChecklistItem[];
+    labels?: string[];
 }
 
 export interface GenerateTasksResponse {
@@ -49,6 +50,7 @@ export interface WikiConfirmTaskItem {
     scope_weight: 'XS' | 'S' | 'M' | 'L' | 'XL';
     estimated_hours?: number | null;
     checklists?: Array<{ text: string; done?: boolean }> | null;
+    labels?: string[] | null;
 }
 
 export interface ConfirmTasksResponse {

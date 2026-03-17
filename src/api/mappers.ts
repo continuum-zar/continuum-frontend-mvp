@@ -122,13 +122,20 @@ function formatFileSize(bytes: number): string {
 }
 
 export function mapAttachment(a: AttachmentAPIResponse): Attachment {
+    const uploadedBy =
+        a.uploaded_by?.display_name ||
+        a.uploaded_by?.username ||
+        a.uploader?.display_name ||
+        (a.uploader?.first_name && a.uploader?.last_name
+            ? `${a.uploader.first_name} ${a.uploader.last_name}`.trim()
+            : undefined);
     return {
         id: String(a.id),
         filename: a.original_filename,
         size: formatFileSize(a.file_size),
         mimeType: a.mime_type,
         createdAt: formatDistanceToNow(new Date(a.created_at), { addSuffix: true }),
-        uploadedBy: a.uploaded_by?.display_name || a.uploaded_by?.username,
+        uploadedBy: uploadedBy || undefined,
     };
 }
 

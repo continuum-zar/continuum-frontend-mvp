@@ -31,7 +31,10 @@ export async function fetchTask(taskId: number | string): Promise<TaskAPIRespons
     return data;
 }
 
-/** Update task with multiple fields (status, scope_weight, due_date, linked_repo, linked_branch). Returns updated task from API. */
+/** Checklist item shape for task update (matches API TaskChecklistItem). */
+export type TaskChecklistItemUpdate = { id?: string; text: string; done: boolean };
+
+/** Update task with multiple fields (status, scope_weight, due_date, linked_repo, linked_branch, checklists). Returns updated task from API. */
 export async function updateTask(
     taskId: number | string,
     body: {
@@ -40,9 +43,10 @@ export async function updateTask(
         due_date?: string | null;
         linked_repo?: string | null;
         linked_branch?: string | null;
+        checklists?: TaskChecklistItemUpdate[];
     }
 ): Promise<TaskAPIResponse> {
-    const payload: Record<string, TaskStatus | ScopeWeight | string | null> = {};
+    const payload: Record<string, TaskStatus | ScopeWeight | string | null | TaskChecklistItemUpdate[] | undefined> = {};
 
     if (body.status !== undefined) {
         payload.status = body.status === 'in-progress' ? 'in_progress' : body.status;
@@ -58,6 +62,9 @@ export async function updateTask(
     }
     if (body.linked_branch !== undefined) {
         payload.linked_branch = body.linked_branch;
+    }
+    if (body.checklists !== undefined) {
+        payload.checklists = body.checklists;
     }
 
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
@@ -96,10 +103,16 @@ export async function createTaskComment(taskId: number | string, content: string
     return data;
 }
 
+/** List attachments response: backend returns { attachments, total }. */
+export interface TaskAttachmentsListResponse {
+    attachments: AttachmentAPIResponse[];
+    total: number;
+}
+
 /** Fetch attachments for a task. Returns raw API attachment objects. */
 export async function fetchTaskAttachments(taskId: number | string): Promise<AttachmentAPIResponse[]> {
-    const { data } = await api.get<AttachmentAPIResponse[]>(`/tasks/${taskId}/attachments`);
-    return data ?? [];
+    const { data } = await api.get<TaskAttachmentsListResponse>(`/tasks/${taskId}/attachments`);
+    return data?.attachments ?? [];
 }
 
 /** Upload an attachment to a task. Returns the created attachment. */
@@ -120,9 +133,36 @@ export async function deleteAttachment(attachmentId: number | string): Promise<v
     await api.delete(`/attachments/${attachmentId}`);
 }
 
-/** Download an attachment. Returns the download URL. */
+/** Download an attachment. Returns the download URL (for display only; use downloadTaskAttachment for actual download with auth). */
 export function getAttachmentDownloadUrl(attachmentId: number | string): string {
     return `/api/v1/attachments/${attachmentId}/download`;
+}
+
+function parseContentDispositionFilename(headers: Record<string, unknown>): string {
+    const contentDisposition = headers?.['content-disposition'];
+    let filename = 'attachment';
+    if (typeof contentDisposition === 'string') {
+        const match =
+            contentDisposition.match(/filename\*?=(?:UTF-8'')?["']?([^"'\s;]+)["']?/i) ??
+            contentDisposition.match(/filename=["']?([^"'\s;]+)["']?/i);
+        if (match?.[1]) filename = decodeURIComponent(match[1].trim());
+    }
+    return filename;
+}
+
+/** Result of downloading an attachment (blob + suggested filename). */
+export interface DownloadAttachmentResult {
+    blob: Blob;
+    filename: string;
+}
+
+/** Download an attachment via API (sends auth). Call this then trigger save with the blob/filename. */
+export async function downloadTaskAttachment(attachmentId: number | string): Promise<DownloadAttachmentResult> {
+    const res = await api.get<Blob>(`/attachments/${attachmentId}/download`, {
+        responseType: 'blob',
+    });
+    const filename = parseContentDispositionFilename(res.headers as Record<string, unknown>);
+    return { blob: res.data, filename };
 }
 
 /** Fetch timeline for a task. Returns raw API timeline objects. */
@@ -174,5 +214,35 @@ export async function getRelatedTasks(
 /** Regenerate AI closure summary for a task. POST /tasks/{id}/generate-summary */
 export async function regenerateTaskSummary(taskId: number | string): Promise<TaskAPIResponse> {
     const { data } = await api.post<TaskAPIResponse>(`/tasks/${taskId}/generate-summary`);
+    return data;
+}
+
+/** Delete a task. DELETE /tasks/{id}. Requires project admin. */
+export async function deleteTask(taskId: number | string): Promise<void> {
+    await api.delete(`/tasks/${taskId}`);
+}
+
+/** Response shape for task labels endpoints. */
+export interface TaskLabelsResponse {
+    labels: string[];
+}
+
+/** Fetch labels for a task. GET /tasks/{id}/labels */
+export async function fetchTaskLabels(taskId: number | string): Promise<TaskLabelsResponse> {
+    const { data } = await api.get<TaskLabelsResponse>(`/tasks/${taskId}/labels`);
+    return data;
+}
+
+/** Add a label to a task. POST /tasks/{id}/labels. Returns updated labels list. */
+export async function addTaskLabel(taskId: number | string, label: string): Promise<TaskLabelsResponse> {
+    const { data } = await api.post<TaskLabelsResponse>(`/tasks/${taskId}/labels`, { label: label.trim() });
+    return data;
+}
+
+/** Remove a label from a task. DELETE /tasks/{id}/labels?label=... Returns updated labels list. */
+export async function removeTaskLabel(taskId: number | string, label: string): Promise<TaskLabelsResponse> {
+    const { data } = await api.delete<TaskLabelsResponse>(`/tasks/${taskId}/labels`, {
+        params: { label },
+    });
     return data;
 }

@@ -5,6 +5,8 @@ import {
     fetchProject,
     fetchMilestones,
     createMilestone,
+    updateMilestone,
+    deleteMilestone,
     fetchMembers,
     addMember,
     createProject,
@@ -18,6 +20,7 @@ import {
     fetchAllTasks,
     updateTaskStatus,
     updateTask,
+    deleteTask,
     fetchTaskComments,
     createTaskComment,
     fetchTaskAttachments,
@@ -25,6 +28,8 @@ import {
     deleteAttachment,
     fetchTaskTimeline,
     assignTask,
+    addTaskLabel,
+    removeTaskLabel,
 } from './tasks';
 import { fetchLoggedHours, createLoggedHour } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
@@ -230,6 +235,42 @@ export function useCreateMilestone(projectId: number | string | undefined | null
     });
 }
 
+export function useUpdateMilestone(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            milestoneId,
+            body,
+        }: {
+            milestoneId: number | string;
+            body: { name?: string; due_date?: string; description?: string };
+        }) => updateMilestone(milestoneId, body),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '')
+                queryClient.invalidateQueries({ queryKey: projectKeys.milestones(projectId) });
+            toast.success('Milestone updated successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to update milestone'));
+        },
+    });
+}
+
+export function useDeleteMilestone(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (milestoneId: number | string) => deleteMilestone(milestoneId),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '')
+                queryClient.invalidateQueries({ queryKey: projectKeys.milestones(projectId) });
+            toast.success('Milestone deleted');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to delete milestone'));
+        },
+    });
+}
+
 export function useAddMember(projectId: number | string | undefined | null) {
     const queryClient = useQueryClient();
     return useMutation({
@@ -262,6 +303,7 @@ export function useUpdateTask() {
             due_date,
             linked_repo,
             linked_branch,
+            checklists,
         }: {
             taskId: string | number;
             status?: TaskStatus;
@@ -269,7 +311,8 @@ export function useUpdateTask() {
             due_date?: string | null;
             linked_repo?: string | null;
             linked_branch?: string | null;
-        }) => updateTask(taskId, { status, scope_weight, due_date, linked_repo, linked_branch }),
+            checklists?: Array<{ id?: string; text: string; done: boolean }>;
+        }) => updateTask(taskId, { status, scope_weight, due_date, linked_repo, linked_branch, checklists }),
         onSuccess: (_data, { taskId }) => {
             // Show success toast
             toast.success('Task updated successfully');
@@ -302,6 +345,58 @@ export function useAssignTask() {
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: projectKeys.all });
+        },
+    });
+}
+
+export function useDeleteTask(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (taskId: number | string) => deleteTask(taskId),
+        onSuccess: (_data, taskId) => {
+            queryClient.invalidateQueries({ queryKey: projectKeys.all });
+            if (projectId != null && projectId !== '') {
+                queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+            }
+            queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            toast.success('Task deleted');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to delete task'));
+        },
+    });
+}
+
+export function useAddTaskLabel(taskId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (label: string) => addTaskLabel(taskId!, label),
+        onSuccess: () => {
+            if (taskId != null && taskId !== '') {
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            }
+            queryClient.invalidateQueries({ queryKey: projectKeys.all });
+            toast.success('Label added');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to add label'));
+        },
+    });
+}
+
+export function useRemoveTaskLabel(taskId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (label: string) => removeTaskLabel(taskId!, label),
+        onSuccess: () => {
+            if (taskId != null && taskId !== '') {
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            }
+            queryClient.invalidateQueries({ queryKey: projectKeys.all });
+            toast.success('Label removed');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to remove label'));
         },
     });
 }
