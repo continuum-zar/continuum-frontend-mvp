@@ -119,7 +119,7 @@ export const useAuthStore = create<AuthStore>()(
 
             checkAuth: async (force = false) => {
                 const { accessToken, isLoading } = get();
-                
+
                 // If no token, we are effectively "checked" and not authenticated
                 if (!accessToken) {
                     set({ isInitialized: true, isAuthenticated: false, user: null });
