@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTimeTracking } from '../context/TimeTrackingContext';
@@ -71,6 +71,7 @@ export function TimeTracking() {
   const { data: weekByDay, isLoading: weekLoading } = useUserHoursByDay(weekRange.start, weekRange.end);
 
   const {
+    activate,
     entries,
     entriesLoading,
     entriesError,
@@ -99,6 +100,9 @@ export function TimeTracking() {
     handleStop,
     isSessionActionLoading,
   } = useTimeTracking();
+
+  // Activate the time-tracking provider when this page mounts (enables lazy queries)
+  useEffect(() => { activate(); }, [activate]);
 
   const { data: projects = [] } = useProjects();
   const createLoggedHour = useCreateLoggedHour();
