@@ -260,7 +260,7 @@ export function Dashboard() {
   const { data: clientProgress, isLoading: clientProgressLoading, isError: clientProgressError } = useQuery({
     queryKey: ['client-progress', clientProjectId],
     queryFn: () => fetchClientProjectProgress(clientProjectId),
-    enabled: userRole === 'Client' && clientProjectId !== 'all',
+    enabled: userRole === 'Client' && !!clientProjectId && clientProjectId !== 'all',
   });
 
   const clientHealthChartData = useMemo(() => {
