@@ -40,10 +40,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { useState, useMemo, useCallback } from 'react';
 import { useInvoices, downloadInvoice, generateInvoicePdf, generateInvoice } from '@/api/invoices';
 import { useClients } from '@/api/clients';
-import { useCreateClient, useClientDetail } from '@/api/hooks';
+import { useCreateClient, useClientDetail, useProjects } from '@/api/hooks';
 import { useRole } from '@/app/context/RoleContext';
 import { useAuthStore } from '@/store/authStore';
-import { fetchProjects } from '@/api/projects';
 import { fetchLoggedHours } from '@/api/loggedHours';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '../components/ui/skeleton';
@@ -66,10 +65,7 @@ export function Invoices() {
   const queryClient = useQueryClient();
   const { data: invoices = [], isLoading, error } = useInvoices();
   const { data: clients = [], isLoading: isClientsLoading, error: clientsError } = useClients();
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: fetchProjects,
-  });
+  const { data: projects = [] } = useProjects();
 
   const [isNewInvoiceOpen, setIsNewInvoiceOpen] = useState(false);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
