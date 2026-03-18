@@ -100,5 +100,8 @@ export function useClients() {
                 };
             });
         },
+        // Reference data: keep longer in cache and avoid refetch on window focus
+        staleTime: 3 * 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 }

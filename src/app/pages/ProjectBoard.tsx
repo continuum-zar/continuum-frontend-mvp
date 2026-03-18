@@ -16,6 +16,8 @@ import {
   GripVertical,
   GitBranch,
   Trash2,
+  Loader2,
+  Search,
 } from 'lucide-react';
 import type { Task, TaskStatus } from '@/types/task';
 import type { Milestone } from '@/types/milestone';
@@ -32,10 +34,13 @@ import {
   useProjectRepositories,
   useLinkRepository,
   useUnlinkRepository,
+  useWikiScanStatus,
+  useScanRepository,
   projectKeys,
   mapMilestone,
 } from '@/api';
 import { useRole } from '@/app/context/RoleContext';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import {
@@ -266,6 +271,8 @@ export function ProjectBoard() {
   const repositoriesQuery = useProjectRepositories(projectId);
   const linkRepositoryMutation = useLinkRepository(projectId);
   const unlinkRepositoryMutation = useUnlinkRepository(projectId);
+  const wikiScanStatusQuery = useWikiScanStatus(projectId);
+  const scanRepositoryMutation = useScanRepository(projectId);
 
   const project = projectQuery.data ?? null;
   const isLoading = projectQuery.isLoading || tasksQuery.isLoading;
@@ -361,6 +368,24 @@ export function ProjectBoard() {
 
   const [selectedMilestoneId, setSelectedMilestoneId] = useState('');
   const pendingMoveRef = useRef<Set<string>>(new Set());
+  const previouslyScanningRepoIdsRef = useRef<Set<number>>(new Set());
+
+  // Toast when a repo finishes indexing (polling sees is_scanning flip to false)
+  useEffect(() => {
+    const data = wikiScanStatusQuery.data;
+    if (!data) return;
+    const nowScanning = new Set(data.filter((s) => s.is_scanning).map((s) => s.repository_id));
+    const prev = previouslyScanningRepoIdsRef.current;
+    const finished = [...prev].filter((id) => !nowScanning.has(id));
+    if (finished.length > 0) {
+      toast.success(
+        finished.length === 1
+          ? 'Repository indexing complete. You can create tasks from AI with code context.'
+          : `${finished.length} repositories finished indexing.`
+      );
+    }
+    previouslyScanningRepoIdsRef.current = nowScanning;
+  }, [wikiScanStatusQuery.data]);
 
   useEffect(() => {
     setSelectedMilestoneId('');
@@ -718,7 +743,7 @@ export function ProjectBoard() {
 
       {/* Repositories */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="text-muted-foreground text-sm font-bold tracking-widest uppercase">Repositories</h3>
           {(role === 'Admin' || role === 'Project Manager') && (
             <Dialog open={isAddRepoOpen} onOpenChange={setIsAddRepoOpen}>
@@ -808,6 +833,9 @@ export function ProjectBoard() {
             </Dialog>
           )}
         </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Index a repository so the AI can use code context when generating tasks (Create Task → AI Assistant).
+        </p>
         <div className="bg-card border border-border rounded-lg p-6">
           {repositoriesQuery.isLoading && (
             <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading repositories…</div>
@@ -820,29 +848,71 @@ export function ProjectBoard() {
           )}
           {!repositoriesQuery.isLoading && (repositoriesQuery.data?.length ?? 0) > 0 && (
             <ul className="space-y-3">
-              {(repositoriesQuery.data ?? []).map((repo: Repository) => (
-                <li
-                  key={repo.id}
-                  className="flex items-center justify-between gap-4 py-2 px-3 rounded-md bg-muted/30 border border-border"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{repo.repositoryName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{repo.repositoryUrl}</p>
-                  </div>
-                  <Badge variant="secondary" className="shrink-0 capitalize">{repo.provider}</Badge>
-                  {(role === 'Admin' || role === 'Project Manager') && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-destructive hover:text-destructive"
-                      onClick={() => setUnlinkRepoId(repo.id)}
-                      title="Unlink repository"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </li>
-              ))}
+              {(repositoriesQuery.data ?? []).map((repo: Repository) => {
+                const scanStatus = wikiScanStatusQuery.data?.find((s) => s.repository_id === repo.id);
+                const isScanning =
+                  (scanStatus?.is_scanning ?? false) ||
+                  (scanRepositoryMutation.isPending &&
+                    scanRepositoryMutation.variables?.repository_id === repo.id);
+                const filesIndexed = scanStatus?.files_indexed ?? 0;
+                const lastScanned = scanStatus?.last_scanned_at
+                  ? new Date(scanStatus.last_scanned_at).toLocaleString()
+                  : null;
+                return (
+                  <li
+                    key={repo.id}
+                    className="flex flex-col gap-2 py-3 px-3 rounded-md bg-muted/30 border border-border"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{repo.repositoryName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{repo.repositoryUrl}</p>
+                      </div>
+                      <Badge variant="secondary" className="shrink-0 capitalize">
+                        {repo.provider}
+                      </Badge>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {(role === 'Admin' || role === 'Project Manager') && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0"
+                              onClick={() => scanRepositoryMutation.mutate({ repository_id: repo.id })}
+                              disabled={isScanning}
+                              title="Index this repo so AI can use code context when generating tasks"
+                            >
+                              {isScanning ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Search className="h-4 w-4 mr-1" />
+                              )}
+                              {isScanning ? 'Indexing…' : 'Index'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="shrink-0 text-destructive hover:text-destructive"
+                              onClick={() => setUnlinkRepoId(repo.id)}
+                              title="Unlink repository"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-0">
+                      <span>
+                        {filesIndexed > 0
+                          ? `${filesIndexed} file${filesIndexed === 1 ? '' : 's'} indexed`
+                          : 'Not indexed yet'}
+                      </span>
+                      {lastScanned && <span>Last scanned: {lastScanned}</span>}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
