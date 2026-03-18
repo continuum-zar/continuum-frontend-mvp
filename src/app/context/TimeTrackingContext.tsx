@@ -8,6 +8,7 @@ import {
     pauseWorkSession,
     resumeWorkSession,
     stopWorkSession,
+    suggestSessionDescription,
 } from '@/api/workSessions';
 export interface TimeEntry {
     id: string;
@@ -215,16 +216,26 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         setIsLoggingModalOpen(true);
     };
 
-    const simulateAiGeneration = () => {
+    const simulateAiGeneration = useCallback(async () => {
+        if (!activeSessionId) {
+            toast.error('Start a session first to use AI Fill from Commits.');
+            return;
+        }
         setIsAiGenerating(true);
-        setTimeout(() => {
-            setLogForm((prev) => ({
-                ...prev,
-                description: "Implemented Time Tracking Session Logging feature. Added modal overlay state management, configured AI Generator button to spoof commit history parsing, updated mock DB schema to accept descriptions, and wired form submission to native state append."
-            }));
+        try {
+            const res = await suggestSessionDescription(activeSessionId);
+            const text = res?.suggested_description?.trim();
+            if (text) {
+                setLogForm((prev) => ({ ...prev, description: text }));
+            } else {
+                toast.error('No description suggested. There may be no recent commits for this project.');
+            }
+        } catch (err) {
+            toast.error(getApiErrorMessage(err, 'AI Fill from Commits failed. Try again or enter a description manually.'));
+        } finally {
             setIsAiGenerating(false);
-        }, 1500); // 1.5s simulated backend delay
-    };
+        }
+    }, [activeSessionId]);
 
     const handleLogSubmit = useCallback(async () => {
         if (!activeSessionId) {
