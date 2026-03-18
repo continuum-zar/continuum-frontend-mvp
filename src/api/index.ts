@@ -23,9 +23,21 @@ export {
     getAttachmentDownloadUrl,
     fetchTaskTimeline,
     assignTask,
+    getTaskContext,
+    getRelatedTasks,
+    regenerateTaskSummary,
 } from './tasks';
 export type { Project, ProjectDetail, ProjectAPIResponse, Milestone, Member } from './projects';
-export type { Task, TaskStatus, TaskAPIResponse, TaskTimelineEntry, TaskOption } from './tasks';
+export type {
+    Task,
+    TaskStatus,
+    TaskAPIResponse,
+    TaskTimelineEntry,
+    TaskOption,
+    TaskContextResponse,
+    RelatedTasksResponse,
+    RelatedTaskItem,
+} from './tasks';
 export {
     fetchRepositories,
     fetchRepositoryBranches,
@@ -44,6 +56,7 @@ export {
     useProject,
     useProjectTasks,
     useAllTasks,
+    useTask,
     useProjectMilestones,
     useProjectMembers,
     useCreateProject,
@@ -99,6 +112,7 @@ export {
     pauseWorkSession,
     resumeWorkSession,
     stopWorkSession,
+    suggestSessionDescription,
 } from './workSessions';
 export type {
     WorkSessionOut,
@@ -107,7 +121,23 @@ export type {
     WorkSessionCreateResponse,
     WorkSessionCreateBody,
     WorkSessionStopBody,
+    SuggestDescriptionResponse,
 } from './workSessions';
+export {
+    scanRepository,
+    getWikiScanStatus,
+    generateTasks,
+    confirmTasks,
+    useWikiScanStatus,
+    useScanRepository,
+} from './wiki';
+export type {
+    ScanStatusResponse,
+    GenerateTasksResponse,
+    GeneratedTask,
+    WikiConfirmTaskItem,
+    ConfirmTasksResponse,
+} from './wiki';
 export type {
     DashboardMetricsResponse,
     ProjectVelocityResponse,

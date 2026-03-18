@@ -136,3 +136,43 @@ export async function assignTask(taskId: number | string, userId: number | null)
     const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { user_id: userId });
     return data;
 }
+
+/** Task context: top relevant source file paths for this task (RAG). GET /tasks/{id}/context */
+export interface TaskContextResponse {
+    task_id: number;
+    relevant_files: string[];
+}
+
+export async function getTaskContext(taskId: number | string): Promise<TaskContextResponse> {
+    const { data } = await api.get<TaskContextResponse>(`/tasks/${taskId}/context`);
+    return data;
+}
+
+/** Related tasks (semantically similar). GET /tasks/{id}/related */
+export interface RelatedTaskItem {
+    task_id: number;
+    title: string;
+    status: string;
+    score: number;
+    project_id?: number | null;
+}
+
+export interface RelatedTasksResponse {
+    task_id: number;
+    related: RelatedTaskItem[];
+    cross_project: boolean;
+}
+
+export async function getRelatedTasks(
+    taskId: number | string,
+    params?: { limit?: number; cross_project?: boolean }
+): Promise<RelatedTasksResponse> {
+    const { data } = await api.get<RelatedTasksResponse>(`/tasks/${taskId}/related`, { params });
+    return data;
+}
+
+/** Regenerate AI closure summary for a task. POST /tasks/{id}/generate-summary */
+export async function regenerateTaskSummary(taskId: number | string): Promise<TaskAPIResponse> {
+    const { data } = await api.post<TaskAPIResponse>(`/tasks/${taskId}/generate-summary`);
+    return data;
+}

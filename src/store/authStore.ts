@@ -9,7 +9,7 @@ interface AuthActions {
     login: (credentials: Required<Pick<RegisterPayload, 'email' | 'password'>>) => Promise<void>;
     register: (payload: RegisterPayload) => Promise<void>;
     logout: () => Promise<void>;
-    checkAuth: () => Promise<void>;
+    checkAuth: (force?: boolean) => Promise<void>;
     setTokens: (accessToken: string, refreshToken: string) => void;
     clearError: () => void;
 }
@@ -24,6 +24,7 @@ export const useAuthStore = create<AuthStore>()(
             accessToken: null,
             refreshToken: null,
             isLoading: false,
+            isInitialized: false,
             error: null,
 
             login: async (credentials) => {
@@ -40,20 +41,22 @@ export const useAuthStore = create<AuthStore>()(
 
                     // Fetch user info after login
                     try {
-                        await get().checkAuth();
+                        await get().checkAuth(true);
                     } catch (err) {
                         set({
                             accessToken: null,
                             refreshToken: null,
                             isAuthenticated: false,
-                            user: null
+                            user: null,
+                            isInitialized: true,
+                            isLoading: false
                         });
                         throw err;
                     }
                 } catch (error) {
                     set({
                         error: isAxiosError(error) ? (error.response?.data?.message || 'Login failed') : 'Login failed',
-                        isLoading: false
+                        isLoading: false,
                     });
                     throw error;
                 }
@@ -73,20 +76,22 @@ export const useAuthStore = create<AuthStore>()(
 
                     // Fetch user info after registration
                     try {
-                        await get().checkAuth();
+                        await get().checkAuth(true);
                     } catch (err) {
                         set({
                             accessToken: null,
                             refreshToken: null,
                             isAuthenticated: false,
-                            user: null
+                            user: null,
+                            isInitialized: true,
+                            isLoading: false
                         });
                         throw err;
                     }
                 } catch (error) {
                     set({
                         error: isAxiosError(error) ? (error.response?.data?.message || 'Registration failed') : 'Registration failed',
-                        isLoading: false
+                        isLoading: false,
                     });
                     throw error;
                 }
@@ -105,15 +110,24 @@ export const useAuthStore = create<AuthStore>()(
                         accessToken: null,
                         refreshToken: null,
                         isLoading: false,
+                        isInitialized: true,
                         error: null
                     });
                     localStorage.removeItem('auth-storage');
                 }
             },
 
-            checkAuth: async () => {
-                const { accessToken } = get();
-                if (!accessToken) return;
+            checkAuth: async (force = false) => {
+                const { accessToken, isLoading } = get();
+
+                // If no token, we are effectively "checked" and not authenticated
+                if (!accessToken) {
+                    set({ isInitialized: true, isAuthenticated: false, user: null });
+                    return;
+                }
+
+                // If check is already in progress, avoid double call unless forced
+                if (isLoading && !force) return;
 
                 set({ isLoading: true });
                 try {
@@ -121,7 +135,8 @@ export const useAuthStore = create<AuthStore>()(
                     set({
                         user: response.data,
                         isAuthenticated: true,
-                        isLoading: false
+                        isLoading: false,
+                        isInitialized: true
                     });
                 } catch (error) {
                     if (isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
@@ -130,10 +145,11 @@ export const useAuthStore = create<AuthStore>()(
                             isAuthenticated: false,
                             accessToken: null,
                             refreshToken: null,
-                            isLoading: false
+                            isLoading: false,
+                            isInitialized: true
                         });
                     } else {
-                        set({ isLoading: false });
+                        set({ isLoading: false, isInitialized: true });
                     }
                     throw error;
                 }
