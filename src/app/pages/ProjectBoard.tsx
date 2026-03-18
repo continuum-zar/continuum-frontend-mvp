@@ -14,9 +14,15 @@ import {
   CheckCircle2,
   CircleDot,
   GripVertical,
+  GitBranch,
+  Trash2,
+  Loader2,
+  Search,
 } from 'lucide-react';
 import type { Task, TaskStatus } from '@/types/task';
 import type { Milestone } from '@/types/milestone';
+import type { Repository } from '@/types/repository';
+import type { RepositoryProvider } from '@/types/repository';
 import {
   useProject,
   useProjectTasks,
@@ -25,9 +31,16 @@ import {
   useUpdateTaskStatus,
   useCreateMilestone,
   useAddMember,
+  useProjectRepositories,
+  useLinkRepository,
+  useUnlinkRepository,
+  useWikiScanStatus,
+  useScanRepository,
   projectKeys,
   mapMilestone,
 } from '@/api';
+import { useRole } from '@/app/context/RoleContext';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import {
@@ -55,6 +68,16 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 
 interface TaskCardProps {
   task: Task;
@@ -238,12 +261,18 @@ export function ProjectBoard() {
   const location = useLocation();
   const queryClient = useQueryClient();
 
+  const { role } = useRole();
   const projectQuery = useProject(projectId);
   const tasksQuery = useProjectTasks(projectId);
   const milestonesQuery = useProjectMilestones(projectId);
   const updateStatusMutation = useUpdateTaskStatus(projectId);
   const createMilestoneMutation = useCreateMilestone(projectId);
   const addMemberMutation = useAddMember(projectId);
+  const repositoriesQuery = useProjectRepositories(projectId);
+  const linkRepositoryMutation = useLinkRepository(projectId);
+  const unlinkRepositoryMutation = useUnlinkRepository(projectId);
+  const wikiScanStatusQuery = useWikiScanStatus(projectId);
+  const scanRepositoryMutation = useScanRepository(projectId);
 
   const project = projectQuery.data ?? null;
   const isLoading = projectQuery.isLoading || tasksQuery.isLoading;
@@ -284,6 +313,16 @@ export function ProjectBoard() {
 
   const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ name: '', desc: '', date: '' });
+
+  const [isAddRepoOpen, setIsAddRepoOpen] = useState(false);
+  const [newRepo, setNewRepo] = useState({
+    repository_url: '',
+    repository_name: '',
+    provider: 'github' as RepositoryProvider,
+    webhook_secret: '',
+    api_token: '',
+  });
+  const [unlinkRepoId, setUnlinkRepoId] = useState<number | null>(null);
 
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -329,6 +368,24 @@ export function ProjectBoard() {
 
   const [selectedMilestoneId, setSelectedMilestoneId] = useState('');
   const pendingMoveRef = useRef<Set<string>>(new Set());
+  const previouslyScanningRepoIdsRef = useRef<Set<number>>(new Set());
+
+  // Toast when a repo finishes indexing (polling sees is_scanning flip to false)
+  useEffect(() => {
+    const data = wikiScanStatusQuery.data;
+    if (!data) return;
+    const nowScanning = new Set(data.filter((s) => s.is_scanning).map((s) => s.repository_id));
+    const prev = previouslyScanningRepoIdsRef.current;
+    const finished = [...prev].filter((id) => !nowScanning.has(id));
+    if (finished.length > 0) {
+      toast.success(
+        finished.length === 1
+          ? 'Repository indexing complete. You can create tasks from AI with code context.'
+          : `${finished.length} repositories finished indexing.`
+      );
+    }
+    previouslyScanningRepoIdsRef.current = nowScanning;
+  }, [wikiScanStatusQuery.data]);
 
   useEffect(() => {
     setSelectedMilestoneId('');
@@ -357,6 +414,38 @@ export function ProjectBoard() {
     } catch {
       // Toast handled in hook
     }
+  };
+
+  const handleLinkRepository = () => {
+    if (!newRepo.repository_url.trim() || !newRepo.repository_name.trim() || !projectId) return;
+    linkRepositoryMutation.mutate(
+      {
+        repository_url: newRepo.repository_url.trim(),
+        repository_name: newRepo.repository_name.trim(),
+        provider: newRepo.provider,
+        webhook_secret: newRepo.webhook_secret.trim() || undefined,
+        api_token: newRepo.api_token.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          setIsAddRepoOpen(false);
+          setNewRepo({
+            repository_url: '',
+            repository_name: '',
+            provider: 'github',
+            webhook_secret: '',
+            api_token: '',
+          });
+        },
+      }
+    );
+  };
+
+  const handleUnlinkRepository = () => {
+    if (unlinkRepoId == null) return;
+    unlinkRepositoryMutation.mutate(unlinkRepoId, {
+      onSettled: () => setUnlinkRepoId(null),
+    });
   };
 
   const handleMove = (taskId: string, newStatus: TaskStatus) => {
@@ -651,6 +740,200 @@ export function ProjectBoard() {
           )}
         </div>
       </div>
+
+      {/* Repositories */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-muted-foreground text-sm font-bold tracking-widest uppercase">Repositories</h3>
+          {(role === 'Admin' || role === 'Project Manager') && (
+            <Dialog open={isAddRepoOpen} onOpenChange={setIsAddRepoOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <GitBranch className="w-4 h-4 mr-2" />
+                  Add repository
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Link repository</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="repo-url">Repository URL</Label>
+                    <Input
+                      id="repo-url"
+                      placeholder="https://github.com/org/repo"
+                      value={newRepo.repository_url}
+                      onChange={(e) => setNewRepo({ ...newRepo, repository_url: e.target.value })}
+                      className="bg-input-background"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repo-name">Repository name</Label>
+                    <Input
+                      id="repo-name"
+                      placeholder="org/repo"
+                      value={newRepo.repository_name}
+                      onChange={(e) => setNewRepo({ ...newRepo, repository_name: e.target.value })}
+                      className="bg-input-background"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repo-provider">Provider</Label>
+                    <Select
+                      value={newRepo.provider}
+                      onValueChange={(v) => setNewRepo({ ...newRepo, provider: v as RepositoryProvider })}
+                    >
+                      <SelectTrigger id="repo-provider" className="bg-input-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="github">GitHub</SelectItem>
+                        <SelectItem value="gitlab">GitLab</SelectItem>
+                        <SelectItem value="bitbucket">Bitbucket</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="webhook-secret">Webhook secret (optional)</Label>
+                    <Input
+                      id="webhook-secret"
+                      type="password"
+                      placeholder="Secret from GitHub/GitLab/Bitbucket webhook"
+                      value={newRepo.webhook_secret}
+                      onChange={(e) => setNewRepo({ ...newRepo, webhook_secret: e.target.value })}
+                      className="bg-input-background"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="api-token">API token (optional, for private repos / scanning)</Label>
+                    <Input
+                      id="api-token"
+                      type="password"
+                      placeholder="Personal access token"
+                      value={newRepo.api_token}
+                      onChange={(e) => setNewRepo({ ...newRepo, api_token: e.target.value })}
+                      className="bg-input-background"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">
+                  After linking, add a webhook in your repo settings pointing to this app with the same URL and secret.
+                </p>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsAddRepoOpen(false)}>Cancel</Button>
+                  <Button
+                    onClick={handleLinkRepository}
+                    disabled={!newRepo.repository_url.trim() || !newRepo.repository_name.trim() || linkRepositoryMutation.isPending}
+                  >
+                    {linkRepositoryMutation.isPending ? 'Linking…' : 'Link repository'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Index a repository so the AI can use code context when generating tasks (Create Task → AI Assistant).
+        </p>
+        <div className="bg-card border border-border rounded-lg p-6">
+          {repositoriesQuery.isLoading && (
+            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading repositories…</div>
+          )}
+          {!repositoriesQuery.isLoading && (repositoriesQuery.data?.length ?? 0) === 0 && (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground text-sm">
+              <GitBranch className="w-8 h-8 mb-2 opacity-40" />
+              <p>No repositories linked. Connect a repo to enable webhooks and code insights.</p>
+            </div>
+          )}
+          {!repositoriesQuery.isLoading && (repositoriesQuery.data?.length ?? 0) > 0 && (
+            <ul className="space-y-3">
+              {(repositoriesQuery.data ?? []).map((repo: Repository) => {
+                const scanStatus = wikiScanStatusQuery.data?.find((s) => s.repository_id === repo.id);
+                const isScanning =
+                  (scanStatus?.is_scanning ?? false) ||
+                  (scanRepositoryMutation.isPending &&
+                    scanRepositoryMutation.variables?.repository_id === repo.id);
+                const filesIndexed = scanStatus?.files_indexed ?? 0;
+                const lastScanned = scanStatus?.last_scanned_at
+                  ? new Date(scanStatus.last_scanned_at).toLocaleString()
+                  : null;
+                return (
+                  <li
+                    key={repo.id}
+                    className="flex flex-col gap-2 py-3 px-3 rounded-md bg-muted/30 border border-border"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{repo.repositoryName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{repo.repositoryUrl}</p>
+                      </div>
+                      <Badge variant="secondary" className="shrink-0 capitalize">
+                        {repo.provider}
+                      </Badge>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {(role === 'Admin' || role === 'Project Manager') && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0"
+                              onClick={() => scanRepositoryMutation.mutate({ repository_id: repo.id })}
+                              disabled={isScanning}
+                              title="Index this repo so AI can use code context when generating tasks"
+                            >
+                              {isScanning ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Search className="h-4 w-4 mr-1" />
+                              )}
+                              {isScanning ? 'Indexing…' : 'Index'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="shrink-0 text-destructive hover:text-destructive"
+                              onClick={() => setUnlinkRepoId(repo.id)}
+                              title="Unlink repository"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-0">
+                      <span>
+                        {filesIndexed > 0
+                          ? `${filesIndexed} file${filesIndexed === 1 ? '' : 's'} indexed`
+                          : 'Not indexed yet'}
+                      </span>
+                      {lastScanned && <span>Last scanned: {lastScanned}</span>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <AlertDialog open={unlinkRepoId !== null} onOpenChange={(open) => !open && setUnlinkRepoId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unlink repository?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the repository link from the project. Webhooks and code insights for this repo will stop. You can link it again later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnlinkRepository} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Unlink
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Kanban Board */}
       <DndProvider backend={HTML5Backend}>

@@ -31,13 +31,15 @@ export async function fetchTask(taskId: number | string): Promise<TaskAPIRespons
     return data;
 }
 
-/** Update task with multiple fields (status, scope_weight, due_date). Returns updated task from API. */
+/** Update task with multiple fields (status, scope_weight, due_date, linked_repo, linked_branch). Returns updated task from API. */
 export async function updateTask(
     taskId: number | string,
     body: {
         status?: TaskStatus;
         scope_weight?: ScopeWeight;
         due_date?: string | null;
+        linked_repo?: string | null;
+        linked_branch?: string | null;
     }
 ): Promise<TaskAPIResponse> {
     const payload: Record<string, TaskStatus | ScopeWeight | string | null> = {};
@@ -50,6 +52,12 @@ export async function updateTask(
     }
     if (body.due_date !== undefined) {
         payload.due_date = body.due_date;
+    }
+    if (body.linked_repo !== undefined) {
+        payload.linked_repo = body.linked_repo;
+    }
+    if (body.linked_branch !== undefined) {
+        payload.linked_branch = body.linked_branch;
     }
 
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
@@ -126,5 +134,45 @@ export async function fetchTaskTimeline(taskId: number | string): Promise<TaskTi
 /** Assign a task to a user. PATCH /api/v1/tasks/{id}/assign. */
 export async function assignTask(taskId: number | string, userId: number | null): Promise<TaskAPIResponse> {
     const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { user_id: userId });
+    return data;
+}
+
+/** Task context: top relevant source file paths for this task (RAG). GET /tasks/{id}/context */
+export interface TaskContextResponse {
+    task_id: number;
+    relevant_files: string[];
+}
+
+export async function getTaskContext(taskId: number | string): Promise<TaskContextResponse> {
+    const { data } = await api.get<TaskContextResponse>(`/tasks/${taskId}/context`);
+    return data;
+}
+
+/** Related tasks (semantically similar). GET /tasks/{id}/related */
+export interface RelatedTaskItem {
+    task_id: number;
+    title: string;
+    status: string;
+    score: number;
+    project_id?: number | null;
+}
+
+export interface RelatedTasksResponse {
+    task_id: number;
+    related: RelatedTaskItem[];
+    cross_project: boolean;
+}
+
+export async function getRelatedTasks(
+    taskId: number | string,
+    params?: { limit?: number; cross_project?: boolean }
+): Promise<RelatedTasksResponse> {
+    const { data } = await api.get<RelatedTasksResponse>(`/tasks/${taskId}/related`, { params });
+    return data;
+}
+
+/** Regenerate AI closure summary for a task. POST /tasks/{id}/generate-summary */
+export async function regenerateTaskSummary(taskId: number | string): Promise<TaskAPIResponse> {
+    const { data } = await api.post<TaskAPIResponse>(`/tasks/${taskId}/generate-summary`);
     return data;
 }
