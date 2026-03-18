@@ -7,6 +7,7 @@ import { DashboardLayout } from "./layouts/DashboardLayout";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { RouteSkeleton } from "./components/ui/RouteSkeleton";
 
+// Lazy-loaded pages
 const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
 const ProjectsList = lazy(() => import("./pages/ProjectsList").then(m => ({ default: m.ProjectsList })));
 const ProjectBoard = lazy(() => import("./pages/ProjectBoard").then(m => ({ default: m.ProjectBoard })));
