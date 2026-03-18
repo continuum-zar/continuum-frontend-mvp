@@ -196,6 +196,7 @@ export function Dashboard() {
     queryKey: ['project-stats', selectedProject, snapshotMember],
     queryFn: () => fetchProjectStats(selectedProject, Number(snapshotMember)),
     enabled: needMemberStats,
+    staleTime: 30 * 1000,
   });
 
   const health = dashboardMetrics?.health;

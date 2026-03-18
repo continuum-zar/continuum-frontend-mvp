@@ -35,10 +35,9 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { fetchTask, formatDueDate, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches } from '@/api';
+import { formatDueDate, useTask, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
-import type { TaskAPIResponse } from '@/types/task';
 
 function TaskDetailSkeleton() {
   return (
@@ -144,9 +143,6 @@ export function TaskDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const state = (location.state as { projectId?: string | number } | undefined) || {};
-  const [task, setTask] = useState<TaskAPIResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [comment, setComment] = useState('');
   const [status, setStatus] = useState('');
@@ -154,6 +150,10 @@ export function TaskDetail() {
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [selectedRepoId, setSelectedRepoId] = useState<number | ''>('');
   const [selectedBranchName, setSelectedBranchName] = useState('');
+
+  // Use the new useTask hook for main task data
+  const { data: task, isLoading: loading, error: taskError } = useTask(taskId);
+  const error = taskError ? 'Failed to load task' : null;
 
   // Initialize the update task mutation
   const updateTaskMutation = useUpdateTask();
@@ -180,38 +180,16 @@ export function TaskDetail() {
     selectedRepoId === '' ? undefined : selectedRepoId
   );
 
+  // Initialize state when task is loaded
   useEffect(() => {
-    const loadTask = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        if (!taskId || isNaN(Number(taskId))) {
-          setError('Invalid task ID');
-          return;
-        }
-
-        const taskData = await fetchTask(taskId);
-        if (!taskData) {
-          setError('Task not found');
-          return;
-        }
-
-        setTask(taskData);
-        setStatus(taskStatusToDisplay(taskData.status ?? 'todo'));
-        setScope((taskData.scope_weight ?? 'M') as ScopeWeight);
-        if (taskData.due_date) {
-          setDueDate(new Date(taskData.due_date));
-        }
-      } catch (err) {
-        console.error('Failed to load task:', err);
-        setError('Failed to load task. Please try again.');
-      } finally {
-        setLoading(false);
+    if (task) {
+      setStatus(taskStatusToDisplay(task.status ?? 'todo'));
+      setScope((task.scope_weight ?? 'M') as ScopeWeight);
+      if (task.due_date) {
+        setDueDate(new Date(task.due_date));
       }
-    };
-    loadTask();
-  }, [taskId]);
+    }
+  }, [task]);
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,7 +197,6 @@ export function TaskDetail() {
       postCommentMutation.mutate(comment, {
         onSuccess: () => {
           setComment('');
-          setTask((prev) => (prev ? { ...prev, comment_count: (prev.comment_count ?? 0) + 1 } : prev));
         },
       });
     }
@@ -273,13 +250,8 @@ export function TaskDetail() {
     if (!taskId) return;
     const newUserId = userId === 'unassigned' ? null : Number(userId);
 
-    // Call API
-    assignTaskMutation.mutate({ taskId, userId: newUserId }, {
-      onSuccess: () => {
-        // Update local state so it reflects immediately
-        setTask(prev => prev ? { ...prev, assigned_to: newUserId } : prev);
-      }
-    });
+    // Call API - mutation will invalidate task cache automatically
+    assignTaskMutation.mutate({ taskId, userId: newUserId });
   };
 
   const handleAttachBranch = () => {
@@ -290,8 +262,7 @@ export function TaskDetail() {
     updateTaskMutation.mutate(
       { taskId, linked_repo: linkedRepo, linked_branch: selectedBranchName.trim() },
       {
-        onSuccess: (updated) => {
-          setTask(prev => prev ? { ...prev, linked_repo: updated.linked_repo ?? linkedRepo, linked_branch: updated.linked_branch ?? selectedBranchName } : prev);
+        onSuccess: () => {
           setSelectedRepoId('');
           setSelectedBranchName('');
         },
@@ -302,12 +273,7 @@ export function TaskDetail() {
   const handleDetachBranch = () => {
     if (!taskId) return;
     updateTaskMutation.mutate(
-      { taskId, linked_repo: null, linked_branch: null },
-      {
-        onSuccess: () => {
-          setTask(prev => prev ? { ...prev, linked_repo: null, linked_branch: null } : prev);
-        },
-      }
+      { taskId, linked_repo: null, linked_branch: null }
     );
   };
 
