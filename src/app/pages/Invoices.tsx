@@ -37,7 +37,8 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useInvoices, downloadInvoice, generateInvoicePdf, generateInvoice } from '@/api/invoices';
 import { useClients } from '@/api/clients';
 import { useCreateClient, useClientDetail, useProjects } from '@/api/hooks';
@@ -98,6 +99,14 @@ export function Invoices() {
       return matchesSearch && matchesStatus;
     });
   }, [invoices, searchQuery, statusFilter]);
+
+  const invoiceScrollRef = useRef<HTMLDivElement>(null);
+  const invoiceRowVirtualizer = useVirtualizer({
+    count: filteredInvoices.length,
+    getScrollElement: () => invoiceScrollRef.current,
+    estimateSize: () => 56,
+    overscan: 5,
+  });
 
   /**
    * Client-side CSV export of the currently filtered/visible invoices.
@@ -402,110 +411,138 @@ export function Invoices() {
               </div>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Issue Date</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-28" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-28" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-16 ml-auto" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : error ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                      <Alert variant="destructive" className="max-w-md mx-auto">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          Failed to load invoices. Please try again later.
-                        </AlertDescription>
-                      </Alert>
-                    </TableCell>
+            <div
+              ref={invoiceScrollRef}
+              className="overflow-auto rounded-md border border-border"
+              style={filteredInvoices.length > 0 ? { maxHeight: 500 } : undefined}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="sticky top-0 z-10 bg-card border-b hover:bg-transparent">
+                    <TableHead>Invoice</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Issue Date</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : filteredInvoices.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                      {searchQuery || statusFilter !== 'all' ? 'No invoices match your filters.' : 'No invoices found.'}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredInvoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-mono font-medium">
-                        {invoice.number}
-                      </TableCell>
-                      <TableCell>{invoice.client}</TableCell>
-                      <TableCell className="font-semibold">
-                        ${invoice.amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(invoice.issueDate).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(invoice.dueDate).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[invoice.status.toLowerCase()] || statusColors.draft}>
-                          {invoice.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={!!isProcessing[invoice.id]}
-                            onClick={() => handleInvoiceAction(invoice.id, invoice.number, 'view')}
-                          >
-                            {isProcessing[invoice.id] === 'view' ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              'View'
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={!!isProcessing[invoice.id]}
-                            onClick={() => handleInvoiceAction(invoice.id, invoice.number, 'download')}
-                          >
-                            {isProcessing[invoice.id] === 'download' ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Download className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody
+                  style={
+                    filteredInvoices.length > 0
+                      ? {
+                          height: `${invoiceRowVirtualizer.getTotalSize()}px`,
+                          position: 'relative',
+                        }
+                      : undefined
+                  }
+                >
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-28" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-28" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-16 ml-auto" /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : error ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        <Alert variant="destructive" className="max-w-md mx-auto">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            Failed to load invoices. Please try again later.
+                          </AlertDescription>
+                        </Alert>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : filteredInvoices.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                        {searchQuery || statusFilter !== 'all' ? 'No invoices match your filters.' : 'No invoices found.'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    invoiceRowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const invoice = filteredInvoices[virtualRow.index];
+                      return (
+                        <TableRow
+                          key={invoice.id}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            transform: `translateY(${virtualRow.start}px)`,
+                            height: `${virtualRow.size}px`,
+                          }}
+                        >
+                          <TableCell className="font-mono font-medium">
+                            {invoice.number}
+                          </TableCell>
+                          <TableCell>{invoice.client}</TableCell>
+                          <TableCell className="font-semibold">
+                            ${invoice.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(invoice.issueDate).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(invoice.dueDate).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={statusColors[invoice.status.toLowerCase()] || statusColors.draft}>
+                              {invoice.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={!!isProcessing[invoice.id]}
+                                onClick={() => handleInvoiceAction(invoice.id, invoice.number, 'view')}
+                              >
+                                {isProcessing[invoice.id] === 'view' ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  'View'
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={!!isProcessing[invoice.id]}
+                                onClick={() => handleInvoiceAction(invoice.id, invoice.number, 'download')}
+                              >
+                                {isProcessing[invoice.id] === 'download' ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Download className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </motion.div>
         </TabsContent>
 
