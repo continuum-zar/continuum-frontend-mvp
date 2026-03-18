@@ -12,10 +12,13 @@ import {
     createProject,
     updateProject,
     deleteProject,
+    projectKeys,
 } from './projects';
+export { projectKeys };
 import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
 import {
+    fetchTask,
     fetchProjectTasks,
     fetchAllTasks,
     updateTaskStatus,
@@ -49,22 +52,14 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
     return fallback;
 }
 
-export const projectKeys = {
-    all: ['projects'] as const,
-    list: () => [...projectKeys.all, 'list'] as const,
-    detail: (id: number | string) => [...projectKeys.all, 'detail', id] as const,
-    tasks: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'tasks'] as const,
-    allTasks: () => ['tasks', 'all'] as const,
-    milestones: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'milestones'] as const,
-    members: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'members'] as const,
-    repositories: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'repositories'] as const,
-    loggedHours: (projectId?: string | null) => ['logged-hours', projectId ?? 'all'] as const,
-};
 
 export function useProjects() {
     return useQuery({
         queryKey: projectKeys.list(),
         queryFn: fetchProjects,
+        // Reference data: keep longer in cache and avoid refetch on window focus
+        staleTime: 3 * 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -85,15 +80,16 @@ export function useProjectTasks(projectId: number | string | undefined | null) {
 }
 
 /** All tasks across user's projects (for time-tracking task dropdown). No project_id filter. */
-export function useAllTasks() {
+export function useAllTasks(options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: projectKeys.allTasks(),
         queryFn: fetchAllTasks,
+        enabled: options?.enabled,
     });
 }
 
 /** Logged hours for Recent Entries. Optional project_id; "all" / empty = no filter. Refetch after logging a new entry. */
-export function useLoggedHours(projectId?: string | null, options?: { limit?: number }) {
+export function useLoggedHours(projectId?: string | null, options?: { limit?: number; enabled?: boolean }) {
     const limit = options?.limit ?? 50;
     const projectIdParam = (projectId == null || projectId === '' || projectId === 'all') ? undefined : projectId;
     return useQuery({
@@ -102,6 +98,7 @@ export function useLoggedHours(projectId?: string | null, options?: { limit?: nu
             ...(projectIdParam != null && { project_id: projectIdParam }),
             limit,
         }),
+        enabled: options?.enabled,
     });
 }
 
@@ -136,6 +133,9 @@ export function useProjectMembers(projectId: number | string | undefined | null,
         queryKey: projectKeys.members(projectId!),
         queryFn: () => fetchMembers(projectId!),
         enabled: (projectId != null && projectId !== '' && options?.enabled !== false) ?? false,
+        // Members are reference-ish data; keep slightly longer cached and avoid refetch on focus
+        staleTime: 3 * 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -318,6 +318,7 @@ export function useUpdateTask() {
             toast.success('Task updated successfully');
             if (taskId) {
                 queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
             }
         },
         onError: (err) => {
@@ -329,7 +330,16 @@ export function useUpdateTask() {
         },
     });
 }
+// Task detail key and hook
+const taskDetailKey = (taskId: number | string) => ['tasks', 'detail', taskId] as const;
 
+export function useTask(taskId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: taskDetailKey(taskId!),
+        queryFn: () => fetchTask(taskId!),
+        enabled: taskId != null && taskId !== '',
+    });
+}
 export function useAssignTask() {
     const queryClient = useQueryClient();
     return useMutation({
@@ -338,6 +348,7 @@ export function useAssignTask() {
             toast.success('Assignee updated');
             if (taskId) {
                 queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
             }
         },
         onError: (err) => {
@@ -502,5 +513,7 @@ export function useClientDetail(clientId: number | string | undefined | null) {
         queryKey: clientKeys.detail(clientId!),
         queryFn: () => fetchClient(clientId!),
         enabled: clientId != null && clientId !== '',
+        staleTime: 3 * 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 }

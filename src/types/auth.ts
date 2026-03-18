@@ -11,5 +11,6 @@ export interface AuthState {
     accessToken: string | null;
     refreshToken: string | null;
     isLoading: boolean;
+    isInitialized: boolean;
     error: string | null;
 }

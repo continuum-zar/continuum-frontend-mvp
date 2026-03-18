@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useParams, useNavigate, useLocation } from 'react-router';
@@ -42,6 +43,7 @@ import {
   useScanRepository,
   projectKeys,
   mapMilestone,
+  fetchTask,
 } from '@/api';
 import { useRole } from '@/app/context/RoleContext';
 import { toast } from 'sonner';
@@ -88,10 +90,24 @@ interface TaskCardProps {
   onRequestDelete?: (taskId: string) => void;
 }
 
+const TASK_DETAIL_QUERY_KEY = ['tasks', 'detail'] as const;
+
 function TaskCard({ task, onRequestDelete }: TaskCardProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const didDragRef = useRef(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const prefetchTaskDetail = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: [...TASK_DETAIL_QUERY_KEY, task.id],
+      queryFn: () => fetchTask(task.id),
+    });
+  }, [queryClient, task.id]);
+
+  useEffect(() => {
+    prefetchTaskDetail();
+  }, [prefetchTaskDetail]);
 
   const [{ isDragging }, drag, dragPreview] = useDrag(() => ({
     type: 'task',
@@ -132,6 +148,7 @@ function TaskCard({ task, onRequestDelete }: TaskCardProps) {
         opacity: isDragging ? 0.5 : 1,
         cursor: isDragging ? 'grabbing' : undefined,
       }}
+      onMouseEnter={prefetchTaskDetail}
     >
         <div className="flex items-start justify-between gap-2 mb-0">
           <div
@@ -220,7 +237,11 @@ interface ColumnProps {
   onRequestDelete?: (taskId: string) => void;
 }
 
+const TASK_CARD_ESTIMATE_HEIGHT = 140;
+const COLUMN_LIST_HEIGHT = 560;
+
 function Column({ title, status, tasks, onMove, onRequestDelete }: ColumnProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'task',
     drop: (item: { id: string; status: TaskStatus }) => {
@@ -234,6 +255,13 @@ function Column({ title, status, tasks, onMove, onRequestDelete }: ColumnProps) 
       isOver: monitor.isOver(),
     }),
   }));
+
+  const virtualizer = useVirtualizer({
+    count: tasks.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => TASK_CARD_ESTIMATE_HEIGHT,
+    overscan: 3,
+  });
 
   const columnAccent =
     status === 'todo'
@@ -257,10 +285,37 @@ function Column({ title, status, tasks, onMove, onRequestDelete }: ColumnProps) 
           <Plus className="h-4 w-4" />
         </Button>
       </div>
-      <div className="space-y-3 min-h-[560px] p-3 rounded-lg bg-muted/30">
-        {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onRequestDelete={onRequestDelete} />
-        ))}
+      <div
+        ref={scrollRef}
+        className="overflow-auto p-3 rounded-lg bg-muted/30 space-y-3"
+        style={{ height: COLUMN_LIST_HEIGHT }}
+      >
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualItem) => {
+            const task = tasks[virtualItem.index];
+            return (
+              <div
+                key={task.id}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualItem.start}px)`,
+                }}
+                className="pb-3"
+              >
+                <TaskCard task={task} onRequestDelete={onRequestDelete} />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -321,6 +376,19 @@ export function ProjectBoard() {
       window.history.replaceState({}, document.title);
     }
   }, [location.state, projectId, queryClient]);
+
+  const PREFETCH_TASK_DETAIL_COUNT = 5;
+  useEffect(() => {
+    const taskList = tasksQuery.data;
+    if (!taskList?.length) return;
+    const firstFew = taskList.slice(0, PREFETCH_TASK_DETAIL_COUNT);
+    firstFew.forEach((t) => {
+      queryClient.prefetchQuery({
+        queryKey: ['tasks', 'detail', t.id],
+        queryFn: () => fetchTask(t.id),
+      });
+    });
+  }, [tasksQuery.data, queryClient]);
 
   const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ name: '', desc: '', date: '' });

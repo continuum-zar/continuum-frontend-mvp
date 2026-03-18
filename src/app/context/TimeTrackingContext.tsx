@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useAllTasks, useLoggedHours } from '@/api/hooks';
 import type { TaskOption } from '@/api';
@@ -40,7 +40,11 @@ function getApiErrorMessage(err: unknown, fallback: string): string {
     return fallback;
 }
 
+const SESSION_HINT_KEY = 'continuum_active_session_hint';
+
 interface TimeTrackingContextProps {
+    /** Activate the provider (triggers data fetching). Called automatically on /time or when a session hint exists. */
+    activate: () => void;
     /** Recent entries from GET /api/v1/logged-hours (filtered by project when set). */
     entries: TimeEntry[];
     entriesLoading: boolean;
@@ -86,11 +90,22 @@ interface TimeTrackingContextProps {
 const TimeTrackingContext = createContext<TimeTrackingContextProps | undefined>(undefined);
 
 export function TimeTrackingProvider({ children }: { children: ReactNode }) {
-    const { data: tasksData, isLoading: tasksLoading, isError: tasksError } = useAllTasks();
+    // Lazy-activation gate: only fetch data when on /time or when a localStorage hint says there's an active session.
+    const [isActivated, setIsActivated] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            if (window.localStorage.getItem(SESSION_HINT_KEY) === 'true') return true;
+            if (window.location.pathname === '/time') return true;
+        }
+        return false;
+    });
+
+    const activate = useCallback(() => setIsActivated(true), []);
+
+    const { data: tasksData, isLoading: tasksLoading, isError: tasksError } = useAllTasks({ enabled: isActivated });
     const tasks = useMemo(() => tasksData ?? [], [tasksData]);
 
     const [projectFilterId, setProjectFilterId] = useState<string>('all');
-    const { data: entriesData, isLoading: entriesLoading, isError: entriesError, refetch: refetchEntries } = useLoggedHours(projectFilterId, { limit: 50 });
+    const { data: entriesData, isLoading: entriesLoading, isError: entriesError, refetch: refetchEntries } = useLoggedHours(projectFilterId, { limit: 50, enabled: isActivated });
     const entries = (entriesData ?? []) as TimeEntry[];
 
     const [sessionState, setSessionState] = useState<SessionState>('idle');
@@ -116,8 +131,11 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     const [logForm, setLogForm] = useState<LogForm>({ task: '', description: '' });
     const [isAiGenerating, setIsAiGenerating] = useState(false);
 
-    // On mount: fetch active work session and restore state; entries come from useLoggedHours
+    // Only fetch active work session when the provider is activated
+    const hasRestoredSession = useRef(false);
     useEffect(() => {
+        if (!isActivated || hasRestoredSession.current) return;
+        hasRestoredSession.current = true;
         let cancelled = false;
         fetchActiveWorkSession()
             .then((session) => {
@@ -131,7 +149,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
             })
             .catch(() => {});
         return () => { cancelled = true; };
-    }, []);
+    }, [isActivated]);
 
     // Local timer: increment every second when running
     useEffect(() => {
@@ -176,6 +194,8 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
             setActiveSessionId(data.id);
             setSessionState('running');
             setCurrentTime(data.current_duration_seconds ?? 0);
+            // Set localStorage hint so next page load activates the provider immediately
+            try { localStorage.setItem(SESSION_HINT_KEY, 'true'); } catch { /* noop */ }
         } catch (err) {
             toast.error(getApiErrorMessage(err, 'Failed to start session. You may already have an active session.'));
         } finally {
@@ -250,6 +270,8 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
             setCurrentTime(0);
             setActiveSessionId(null);
             setLogForm({ task: '', description: '' });
+            // Clear localStorage hint since session is over
+            try { localStorage.removeItem(SESSION_HINT_KEY); } catch { /* noop */ }
             refetchEntries();
         } catch (err) {
             toast.error(getApiErrorMessage(err, 'Failed to log session.'));
@@ -266,6 +288,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     return (
         <TimeTrackingContext.Provider
             value={{
+                activate,
                 entries,
                 entriesLoading,
                 entriesError,

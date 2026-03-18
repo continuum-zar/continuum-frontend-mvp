@@ -42,7 +42,9 @@ import {
     AlertDialogTitle,
 } from '../components/ui/alert-dialog';
 import { Skeleton } from '../components/ui/skeleton';
+import { useQueryClient } from '@tanstack/react-query';
 import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '@/api/hooks';
+import { projectKeys, fetchProject, fetchProjectTasks } from '@/api';
 
 /** Normalize due_date for date input (YYYY-MM-DD) or empty. */
 function toDateInputValue(dueDate: string): string {
@@ -52,6 +54,7 @@ function toDateInputValue(dueDate: string): string {
 
 export function ProjectsList() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { data: projects = [], isLoading, error, refetch } = useProjects();
     const createProjectMutation = useCreateProject();
     const updateProjectMutation = useUpdateProject();
@@ -380,6 +383,16 @@ export function ProjectsList() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.05 }}
                             onClick={() => navigate(`/projects/${project.id}`)}
+                            onMouseEnter={() => {
+                                queryClient.prefetchQuery({
+                                    queryKey: projectKeys.detail(project.id),
+                                    queryFn: () => fetchProject(project.id)
+                                });
+                                queryClient.prefetchQuery({
+                                    queryKey: projectKeys.tasks(project.id),
+                                    queryFn: () => fetchProjectTasks(project.id)
+                                });
+                            }}
                             className="group bg-card border border-border rounded-lg p-6 cursor-pointer hover:border-foreground/50 transition-all hover:shadow-md relative overflow-hidden"
                         >
                             <div className="flex items-start justify-between mb-4">
