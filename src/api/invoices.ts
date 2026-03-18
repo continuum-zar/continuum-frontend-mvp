@@ -1,8 +1,8 @@
 import api from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InvoiceAPIResponse, InvoiceWithItems } from '@/types/invoice';
 import { mapInvoice } from './mappers';
-import { fetchProjects } from './projects';
+import { fetchProjects, projectKeys } from './projects';
 
 export async function fetchInvoices(params?: { project_id?: number | string; status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' }): Promise<InvoiceAPIResponse[]> {
     const res = await api.get<InvoiceAPIResponse[]>('/invoices/', { params });
@@ -77,12 +77,16 @@ export const invoiceKeys = {
 };
 
 export function useInvoices(params?: { project_id?: number | string }) {
+    const queryClient = useQueryClient();
     return useQuery({
         queryKey: invoiceKeys.list(params),
         queryFn: async () => {
             const [invoices, projects] = await Promise.all([
                 fetchInvoices(params),
-                fetchProjects(),
+                queryClient.ensureQueryData({
+                    queryKey: projectKeys.list(),
+                    queryFn: fetchProjects,
+                }),
             ]);
 
             const projectNameMap = new Map<number, string>(

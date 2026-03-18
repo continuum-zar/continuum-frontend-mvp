@@ -102,3 +102,15 @@ export async function addMember(
     });
     return data;
 }
+
+export const projectKeys = {
+    all: ['projects'] as const,
+    list: () => [...projectKeys.all, 'list'] as const,
+    detail: (id: number | string) => [...projectKeys.all, 'detail', id] as const,
+    tasks: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'tasks'] as const,
+    allTasks: () => ['tasks', 'all'] as const,
+    milestones: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'milestones'] as const,
+    members: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'members'] as const,
+    repositories: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'repositories'] as const,
+    loggedHours: (projectId?: string | null) => ['logged-hours', projectId ?? 'all'] as const,
+};

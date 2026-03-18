@@ -3,10 +3,9 @@ import { createBrowserRouter } from "react-router";
 import { Login } from "./pages/auth/Login";
 import { SignUp } from "./pages/auth/SignUp";
 import { ResetPassword } from "./pages/auth/ResetPassword";
-import { RoleSelection } from "./pages/RoleSelection";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { AuthGuard } from "./components/auth/AuthGuard";
-import { Skeleton } from "./components/ui/skeleton";
+import { RouteSkeleton } from "./components/ui/RouteSkeleton";
 
 // Lazy-loaded pages
 const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
@@ -17,14 +16,8 @@ const TimeTracking = lazy(() => import("./pages/TimeTracking").then(m => ({ defa
 const CreateTask = lazy(() => import("./pages/CreateTask").then(m => ({ default: m.CreateTask })));
 const Invoices = lazy(() => import("./pages/Invoices").then(m => ({ default: m.Invoices })));
 const ClientPortal = lazy(() => import("./pages/ClientPortal").then(m => ({ default: m.ClientPortal })));
+const RoleSelection = lazy(() => import("./pages/RoleSelection").then(m => ({ default: m.RoleSelection })));
 const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
-
-const RouteLoading = () => (
-  <div className="p-8 space-y-4">
-    <Skeleton className="h-8 w-1/4" />
-    <Skeleton className="h-[400px] w-full" />
-  </div>
-);
 
 export const router = createBrowserRouter([
   {
@@ -43,7 +36,9 @@ export const router = createBrowserRouter([
     path: "/role-selection",
     element: (
       <AuthGuard>
-        <RoleSelection />
+        <Suspense fallback={<RouteSkeleton />}>
+          <RoleSelection />
+        </Suspense>
       </AuthGuard>
     ),
   },
@@ -55,76 +50,84 @@ export const router = createBrowserRouter([
       </AuthGuard>
     ),
     children: [
-      { 
-        path: "dashboard", 
+      {
+        path: "/",
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={<RouteSkeleton />}>
             <Dashboard />
           </Suspense>
-        ) 
+        ),
       },
-      { 
-        path: "projects", 
+      {
+        path: "dashboard",
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={<RouteSkeleton />}>
+            <Dashboard />
+          </Suspense>
+        ),
+      },
+      {
+        path: "projects",
+        element: (
+          <Suspense fallback={<RouteSkeleton />}>
             <ProjectsList />
           </Suspense>
-        ) 
+        ),
       },
-      { 
-        path: "projects/:projectId", 
+      {
+        path: "projects/:projectId",
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={<RouteSkeleton />}>
             <ProjectBoard />
           </Suspense>
-        ) 
+        ),
       },
-      { 
-        path: "tasks/:taskId", 
+      {
+        path: "tasks/:taskId",
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={<RouteSkeleton />}>
             <TaskDetail />
           </Suspense>
-        ) 
+        ),
       },
-      { 
-        path: "tasks/new", 
+      {
+        path: "tasks/new",
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={<RouteSkeleton />}>
             <CreateTask />
           </Suspense>
-        ) 
+        ),
       },
-      { 
-        path: "time", 
+      {
+        path: "time",
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={<RouteSkeleton />}>
             <TimeTracking />
           </Suspense>
-        ) 
+        ),
       },
-      { 
-        path: "invoices", 
+      {
+        path: "invoices",
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={<RouteSkeleton />}>
             <Invoices />
           </Suspense>
-        ) 
+        ),
       },
-      { 
-        path: "client", 
+      {
+        path: "client",
         element: (
-          <Suspense fallback={<RouteLoading />}>
+          <Suspense fallback={<RouteSkeleton />}>
             <ClientPortal />
           </Suspense>
-        ) 
+        ),
       },
     ],
   },
   {
     path: "*",
     element: (
-      <Suspense fallback={<RouteLoading />}>
+      <Suspense fallback={<RouteSkeleton />}>
         <NotFound />
       </Suspense>
     ),
