@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
-import { useProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, fetchClientProjects, fetchClientProjectProgress, postProjectQuery, fetchProjectStats } from '@/api';
+import { fetchProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, fetchClientProjects, fetchClientProjectProgress, postProjectQuery, fetchProjectStats } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import {
   Bar,
@@ -81,7 +81,32 @@ export function Dashboard() {
     { role: 'assistant', content: "Hello! I'm your Continuum assistant. Ask me anything about the project's progress, invoices, or recent activities." },
   ]);
   const [chatSending, setChatSending] = useState(false);
-  const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects();
+
+  /*
+   * ── Query dependency tree ──────────────────────────────────────────────
+   * Role → queries that fire
+   *
+   * Project Manager (+ project selected):
+   *   useProjects, useProjectMembers, project-dashboard, velocity-report,
+   *   user-rhythm, classification-breakdown, stale-work,
+   *   milestones → milestone-burndown, project-stats (per-member)
+   *
+   * Developer (+ project selected):
+   *   useProjects, project-dashboard, velocity-report, user-rhythm
+   *
+   * Client:
+   *   client-projects → client-progress
+   *
+   * On-demand (any role): postProjectQuery (chat)
+   * ─────────────────────────────────────────────────────────────────────── */
+
+  // Projects list – only PM/Developer need the full project list;
+  // Client role uses client-projects instead.
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useQuery({
+    queryKey: ['projects', 'list'],
+    queryFn: fetchProjects,
+    enabled: userRole !== 'Client',
+  });
   const user = useAuthStore((s) => s.user);
   const hasProjectSelected = selectedProject !== "";
   const { data: rhythmMembers = [] } = useProjectMembers(
@@ -141,6 +166,7 @@ export function Dashboard() {
     queryKey: ['user-rhythm', rhythmUserId],
     queryFn: () => fetchUserRhythm(rhythmUserId!),
     enabled: rhythmUserId != null && userRole !== 'Client',
+    staleTime: 5 * 60_000, // 5 min – rhythm data is slow-changing
   });
 
   const rhythmChartData = useMemo(() => {
@@ -162,6 +188,7 @@ export function Dashboard() {
     queryKey: ['project-dashboard', selectedProject],
     queryFn: () => fetchProjectDashboard(selectedProject),
     enabled: hasProjectSelected && userRole !== 'Client',
+    staleTime: 2 * 60_000, // 2 min – avoid refetch on tab switch
   });
 
   const needMemberStats = hasProjectSelected && userRole === 'Project Manager' && snapshotMember !== 'all';
@@ -169,6 +196,7 @@ export function Dashboard() {
     queryKey: ['project-stats', selectedProject, snapshotMember],
     queryFn: () => fetchProjectStats(selectedProject, Number(snapshotMember)),
     enabled: needMemberStats,
+    staleTime: 30 * 1000,
   });
 
   const health = dashboardMetrics?.health;
@@ -201,6 +229,7 @@ export function Dashboard() {
     queryKey: ['classification-breakdown', selectedProject],
     queryFn: () => fetchClassificationBreakdown(selectedProject),
     enabled: hasProjectSelected && userRole === 'Project Manager',
+    staleTime: 2 * 60_000,
   });
 
   const gitCommitsChartData = useMemo(() => {
@@ -232,7 +261,7 @@ export function Dashboard() {
   const { data: clientProgress, isLoading: clientProgressLoading, isError: clientProgressError } = useQuery({
     queryKey: ['client-progress', clientProjectId],
     queryFn: () => fetchClientProjectProgress(clientProjectId),
-    enabled: userRole === 'Client' && clientProjectId !== 'all',
+    enabled: userRole === 'Client' && !!clientProjectId && clientProjectId !== 'all',
   });
 
   const clientHealthChartData = useMemo(() => {
@@ -259,6 +288,7 @@ export function Dashboard() {
     queryKey: ['stale-work', selectedProject],
     queryFn: () => fetchProjectStaleWork(selectedProject),
     enabled: hasProjectSelected && userRole === 'Project Manager',
+    staleTime: 5 * 60_000, // 5 min – stale branch data changes infrequently
   });
 
   const staleBranchesList = useMemo(() => {
@@ -293,7 +323,10 @@ export function Dashboard() {
     }
   };
 
-  const { data: milestones = [] } = useProjectMilestones(hasProjectSelected ? selectedProject : undefined);
+  // Milestones – only PM renders the burndown chart & milestone selector on the dashboard
+  const { data: milestones = [] } = useProjectMilestones(
+    userRole === 'Project Manager' && hasProjectSelected ? selectedProject : undefined
+  );
   const activeMilestoneId = useMemo(() => {
     if (milestones.length === 0) return null;
     const active = milestones.find((m) => m.status === 'active');
@@ -309,6 +342,7 @@ export function Dashboard() {
     queryKey: ['milestone-burndown', milestoneId],
     queryFn: () => fetchMilestoneBurndown(milestoneId!),
     enabled: !!milestoneId && userRole === 'Project Manager',
+    staleTime: 2 * 60_000,
   });
 
   const burndownChartData = useMemo(() => {
@@ -335,6 +369,7 @@ export function Dashboard() {
     queryKey: ['velocity-report', selectedProject],
     queryFn: () => fetchProjectVelocityReport(selectedProject),
     enabled: hasProjectSelected && userRole !== 'Client',
+    staleTime: 2 * 60_000,
   });
 
   const velocityChartData =
