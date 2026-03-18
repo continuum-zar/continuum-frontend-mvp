@@ -61,6 +61,9 @@ export function useProjects() {
     return useQuery({
         queryKey: projectKeys.list(),
         queryFn: fetchProjects,
+        // Reference data: keep longer in cache and avoid refetch on window focus
+        staleTime: 3 * 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -134,6 +137,9 @@ export function useProjectMembers(projectId: number | string | undefined | null,
         queryKey: projectKeys.members(projectId!),
         queryFn: () => fetchMembers(projectId!),
         enabled: (projectId != null && projectId !== '' && options?.enabled !== false) ?? false,
+        // Members are reference-ish data; keep slightly longer cached and avoid refetch on focus
+        staleTime: 3 * 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -421,5 +427,7 @@ export function useClientDetail(clientId: number | string | undefined | null) {
         queryKey: clientKeys.detail(clientId!),
         queryFn: () => fetchClient(clientId!),
         enabled: clientId != null && clientId !== '',
+        staleTime: 3 * 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 }
