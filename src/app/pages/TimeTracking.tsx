@@ -37,7 +37,8 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTimeTracking } from '../context/TimeTrackingContext';
@@ -100,6 +101,14 @@ export function TimeTracking() {
     handleStop,
     isSessionActionLoading,
   } = useTimeTracking();
+
+  const timeEntriesScrollRef = useRef<HTMLDivElement>(null);
+  const timeEntriesVirtualizer = useVirtualizer({
+    count: entries.length,
+    getScrollElement: () => timeEntriesScrollRef.current,
+    estimateSize: () => 52,
+    overscan: 5,
+  });
 
   // Activate the time-tracking provider when this page mounts (enables lazy queries)
   useEffect(() => { activate(); }, [activate]);
@@ -617,65 +626,93 @@ export function TimeTracking() {
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Project</TableHead>
-              <TableHead>Task</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="text-right">Duration</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {entriesLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={5} className="h-12">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Loading entries...</span>
-                    </div>
+        <div
+          ref={timeEntriesScrollRef}
+          className="overflow-auto rounded-md border border-border"
+          style={entries.length > 0 ? { maxHeight: 500 } : undefined}
+        >
+          <Table>
+            <TableHeader>
+              <TableRow className="sticky top-0 z-10 bg-card border-b hover:bg-transparent">
+                <TableHead>Date</TableHead>
+                <TableHead>Project</TableHead>
+                <TableHead>Task</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="text-right">Duration</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody
+              style={
+                entries.length > 0
+                  ? {
+                      height: `${timeEntriesVirtualizer.getTotalSize()}px`,
+                      position: 'relative',
+                    }
+                  : undefined
+              }
+            >
+              {entriesLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={5} className="h-12">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Loading entries...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : entriesError ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    Failed to load entries. Please try again later.
                   </TableCell>
                 </TableRow>
-              ))
-            ) : entriesError ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  Failed to load entries. Please try again later.
-                </TableCell>
-              </TableRow>
-            ) : entries.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  No logged hours yet. Start a session or log time manually to see entries here.
-                </TableCell>
-              </TableRow>
-            ) : (
-              entries.map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell>
-                    {new Date(entry.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{entry.project}</Badge>
-                  </TableCell>
-                  <TableCell className="font-medium max-w-[200px] truncate" title={entry.task}>{entry.task}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm max-w-[250px] truncate" title={entry.description}>
-                    {entry.description || '-'}
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {formatDuration(entry.duration)}
+              ) : entries.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    No logged hours yet. Start a session or log time manually to see entries here.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                timeEntriesVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const entry = entries[virtualRow.index];
+                  return (
+                    <TableRow
+                      key={entry.id}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualRow.start}px)`,
+                        height: `${virtualRow.size}px`,
+                      }}
+                    >
+                      <TableCell>
+                        {new Date(entry.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{entry.project}</Badge>
+                      </TableCell>
+                      <TableCell className="font-medium max-w-[200px] truncate" title={entry.task}>{entry.task}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm max-w-[250px] truncate" title={entry.description}>
+                        {entry.description || '-'}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatDuration(entry.duration)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </motion.div>
     </div>
   );
