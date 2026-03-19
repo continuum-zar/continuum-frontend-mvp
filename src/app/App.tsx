@@ -6,6 +6,8 @@ import { TimeTrackingProvider } from './context/TimeTrackingContext';
 import { RoleProvider } from './context/RoleContext';
 import { useAuthStore } from '@/store/authStore';
 
+import { ErrorBoundary } from './ErrorBoundary';
+
 function App() {
   const { checkAuth } = useAuthStore();
   useEffect(() => {
@@ -15,12 +17,14 @@ function App() {
   }, [checkAuth]);
 
   return (
-    <RoleProvider>
-      <TimeTrackingProvider>
-        <RouterProvider router={router} />
-        <Toaster />
-      </TimeTrackingProvider>
-    </RoleProvider>
+    <ErrorBoundary>
+      <RoleProvider>
+        <TimeTrackingProvider>
+          <RouterProvider router={router} />
+          <Toaster />
+        </TimeTrackingProvider>
+      </RoleProvider>
+    </ErrorBoundary>
   );
 }
 
