@@ -14,14 +14,57 @@ export function SignUp() {
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [errors, setErrors] = useState<{
+        email?: string;
+        password?: string;
+        confirmPassword?: string;
+    }>({});
 
     useEffect(() => {
         // Clear errors when navigating away or unmounting
         return () => clearError();
     }, [clearError]);
 
+    const validateForm = () => {
+        const newErrors: typeof errors = {};
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email) {
+            newErrors.email = 'Email is required';
+        } else if (!emailRegex.test(email)) {
+            newErrors.email = 'Please enter a valid email address';
+        }
+
+        // Password validation
+        if (!password) {
+            newErrors.password = 'Password is required';
+        } else if (password.length < 8) {
+            newErrors.password = 'Password must be at least 8 characters long';
+        } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+            newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+        }
+
+        // Confirm password validation
+        if (!confirmPassword) {
+            newErrors.confirmPassword = 'Please confirm your password';
+        } else if (password !== confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        clearError();
+
+        if (!validateForm()) {
+            return;
+        }
+
         setLocalLoading(true);
 
         try {
@@ -36,6 +79,17 @@ export function SignUp() {
             console.error('Registration failed:', error);
         } finally {
             setLocalLoading(false);
+        }
+    };
+
+    const handleInputChange = (field: keyof typeof errors, value: string) => {
+        if (field === 'email') setEmail(value);
+        if (field === 'password') setPassword(value);
+        if (field === 'confirmPassword') setConfirmPassword(value);
+
+        // Clear error for the field being edited
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: undefined }));
         }
     };
 
@@ -82,14 +136,16 @@ export function SignUp() {
                             <p className="text-muted-foreground">Start your 14-day free trial. No credit card required.</p>
                         </div>
 
-                        {error && (
+                        {(error || Object.keys(errors).length > 0) && (
                             <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <AlertCircle className="h-5 w-5 shrink-0" />
-                                <p className="text-sm font-medium">{error}</p>
+                                <p className="text-sm font-medium">
+                                    {error || 'Please correct the highlighted errors below.'}
+                                </p>
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="firstName" className="text-foreground">First Name</Label>
@@ -101,7 +157,7 @@ export function SignUp() {
                                         onChange={(e) => setFirstName(e.target.value)}
                                         required
                                         disabled={isLoading || localLoading}
-                                        className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
+                                        className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-11 disabled:opacity-50"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -114,42 +170,65 @@ export function SignUp() {
                                         onChange={(e) => setLastName(e.target.value)}
                                         required
                                         disabled={isLoading || localLoading}
-                                        className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
+                                        className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-11 disabled:opacity-50"
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="email" className="text-foreground">Email address</Label>
+                                <Label htmlFor="email" className={`${errors.email ? 'text-destructive' : 'text-foreground'}`}>Email address</Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     placeholder="you@company.com"
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    onChange={(e) => handleInputChange('email', e.target.value)}
                                     required
                                     disabled={isLoading || localLoading}
-                                    className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
+                                    className={`bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-11 disabled:opacity-50 ${errors.email ? 'border-destructive ring-destructive/20' : ''}`}
                                 />
+                                {errors.email && (
+                                    <p className="text-xs font-medium text-destructive mt-1 animate-in fade-in slide-in-from-top-1">{errors.email}</p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="password" className="text-foreground">Password</Label>
+                                <Label htmlFor="password" className={`${errors.password ? 'text-destructive' : 'text-foreground'}`}>Password</Label>
                                 <Input
                                     id="password"
                                     type="password"
                                     placeholder="••••••••"
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => handleInputChange('password', e.target.value)}
                                     required
                                     disabled={isLoading || localLoading}
-                                    className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
+                                    className={`bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-11 disabled:opacity-50 ${errors.password ? 'border-destructive ring-destructive/20' : ''}`}
                                 />
+                                {errors.password && (
+                                    <p className="text-xs font-medium text-destructive mt-1 animate-in fade-in slide-in-from-top-1">{errors.password}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="confirmPassword" className={`${errors.confirmPassword ? 'text-destructive' : 'text-foreground'}`}>Confirm Password</Label>
+                                <Input
+                                    id="confirmPassword"
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={confirmPassword}
+                                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                                    required
+                                    disabled={isLoading || localLoading}
+                                    className={`bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-11 disabled:opacity-50 ${errors.confirmPassword ? 'border-destructive ring-destructive/20' : ''}`}
+                                />
+                                {errors.confirmPassword && (
+                                    <p className="text-xs font-medium text-destructive mt-1 animate-in fade-in slide-in-from-top-1">{errors.confirmPassword}</p>
+                                )}
                             </div>
 
                             <Button
                                 type="submit"
-                                className="w-full h-12 text-md font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-xl mt-2"
+                                className="w-full h-12 text-md font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-xl mt-4"
                                 disabled={isLoading || localLoading}
                             >
                                 {isLoading || localLoading ? (
