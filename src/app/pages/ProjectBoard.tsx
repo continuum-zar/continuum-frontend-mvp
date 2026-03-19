@@ -45,6 +45,8 @@ import { useRole } from '@/app/context/RoleContext';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Progress } from '../components/ui/progress';
+import { getProgressColor } from '@/lib/utils/progressColor';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -675,7 +677,12 @@ export function ProjectBoard() {
               ? Math.round((doneTasks.length / filteredTasks.length) * 100)
               : 0}%
           </div>
-          <div className="text-sm text-muted-foreground">Milestone Progress</div>
+          <div className="text-sm text-muted-foreground mb-3">Milestone Progress</div>
+          <Progress
+            value={filteredTasks.length > 0 ? (doneTasks.length / filteredTasks.length) * 100 : 0}
+            className="h-1.5"
+            indicatorClassName={getProgressColor(filteredTasks.length > 0 ? (doneTasks.length / filteredTasks.length) * 100 : 0)}
+          />
         </div>
       </div>
 

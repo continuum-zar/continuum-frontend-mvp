@@ -45,6 +45,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import { useQueryClient } from '@tanstack/react-query';
 import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '@/api/hooks';
 import { projectKeys, fetchProject, fetchProjectTasks } from '@/api';
+import { getProgressColor } from '@/lib/utils/progressColor';
 
 /** Normalize due_date for date input (YYYY-MM-DD) or empty. */
 function toDateInputValue(dueDate: string): string {
@@ -78,11 +79,6 @@ export function ProjectsList() {
     } | null>(null);
     const deleteProjectMutation = useDeleteProject();
 
-    const getProgressColor = (progress: number) => {
-        if (progress < 40) return "bg-red-500";
-        if (progress < 75) return "bg-blue-500";
-        return "bg-green-500";
-    };
 
     const handleCreateProject = async () => {
         if (!newProject.title) return;
