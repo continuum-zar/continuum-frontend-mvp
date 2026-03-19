@@ -7,6 +7,7 @@ import {
   Loader2,
   Plus,
   X,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -50,6 +51,33 @@ export function CreateTask() {
 
   const [checklists, setChecklists] = useState<string[]>([]);
   const [newChecklist, setNewChecklist] = useState('');
+  const [errors, setErrors] = useState<{
+    estimatedHours?: string;
+    dueDate?: string;
+  }>({});
+
+  const validate = () => {
+    const newErrors: typeof errors = {};
+
+    // Validate estimatedHours
+    if (formData.estimatedHours) {
+      const hours = Number(formData.estimatedHours);
+      if (isNaN(hours) || hours < 0) {
+        newErrors.estimatedHours = 'Must be a non-negative number';
+      }
+    }
+
+    // Validate dueDate
+    if (formData.dueDate) {
+      const today = new Date().toISOString().split('T')[0];
+      if (formData.dueDate < today) {
+        newErrors.dueDate = 'Due date cannot be in the past';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleAddChecklist = () => {
     if (newChecklist.trim()) {
@@ -106,6 +134,11 @@ export function CreateTask() {
 
     if (!formData.title.trim()) {
       toast.error('Task title is required');
+      return;
+    }
+
+    if (!validate()) {
+      toast.error('Please correct the errors in the form');
       return;
     }
 
@@ -250,9 +283,19 @@ export function CreateTask() {
                   min="0"
                   step="0.5"
                   value={formData.estimatedHours}
-                  onChange={(e) => setFormData({ ...formData, estimatedHours: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, estimatedHours: e.target.value });
+                    if (errors.estimatedHours) setErrors({ ...errors, estimatedHours: undefined });
+                  }}
                   placeholder="e.g., 4"
+                  className={errors.estimatedHours ? 'border-destructive focus-visible:ring-destructive' : ''}
                 />
+                {errors.estimatedHours && (
+                  <p className="text-xs text-destructive flex items-center mt-1">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {errors.estimatedHours}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -261,8 +304,18 @@ export function CreateTask() {
                   id="dueDate"
                   type="date"
                   value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, dueDate: e.target.value });
+                    if (errors.dueDate) setErrors({ ...errors, dueDate: undefined });
+                  }}
+                  className={errors.dueDate ? 'border-destructive focus-visible:ring-destructive' : ''}
                 />
+                {errors.dueDate && (
+                  <p className="text-xs text-destructive flex items-center mt-1">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {errors.dueDate}
+                  </p>
+                )}
               </div>
             </div>
 
