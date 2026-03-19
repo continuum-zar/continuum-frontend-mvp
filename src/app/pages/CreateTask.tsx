@@ -21,6 +21,7 @@ import {
 import { Label } from '../components/ui/label';
 import api from '../../lib/api';
 import { generateTasks } from '@/api';
+import { getApiErrorMessage } from '../../api/hooks';
 
 interface LocationState {
   projectId?: string | number;
@@ -91,11 +92,7 @@ export function CreateTask() {
       setChecklists((task.checklist ?? []).map((c) => c.title));
       toast.success('Task details filled from AI. Edit as needed and create.');
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-        (err as { message?: string })?.message ??
-        'AI generation failed';
-      toast.error(String(msg));
+      toast.error(getApiErrorMessage(err, 'AI generation failed'));
     } finally {
       setIsGenerating(false);
     }
@@ -151,11 +148,7 @@ export function CreateTask() {
       });
     } catch (err: unknown) {
       console.error('Failed to create task:', err);
-      const errorMessage =
-        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
-        (err as { message?: string })?.message ||
-        'Failed to create task';
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(err, 'Failed to create task'));
       setIsSubmitting(false);
     }
   };
