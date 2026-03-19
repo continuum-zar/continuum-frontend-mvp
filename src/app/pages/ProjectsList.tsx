@@ -10,7 +10,10 @@ import {
     ArrowRight,
     AlertCircle,
     RefreshCw,
-    Search
+    Search,
+    ArrowUpDown,
+    Check,
+    ChevronDown
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -80,6 +83,8 @@ export function ProjectsList() {
     const deleteProjectMutation = useDeleteProject();
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [sortBy, setSortBy] = useState<'title' | 'dueDate' | 'progress' | 'status'>('title');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     const getProgressColor = (progress: number) => {
         if (progress < 40) return "bg-red-500";
@@ -148,6 +153,22 @@ export function ProjectsList() {
         const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()));
         return matchesStatus && matchesSearch;
+    });
+
+    const sortedProjects = [...filteredProjects].sort((a, b) => {
+        let comparison = 0;
+        if (sortBy === 'title') {
+            comparison = a.title.localeCompare(b.title);
+        } else if (sortBy === 'dueDate') {
+            const dateA = a.dueDate === 'No Date' ? '9999-12-31' : a.dueDate;
+            const dateB = b.dueDate === 'No Date' ? '9999-12-31' : b.dueDate;
+            comparison = dateA.localeCompare(dateB);
+        } else if (sortBy === 'progress') {
+            comparison = Number(a.progress) - Number(b.progress);
+        } else if (sortBy === 'status') {
+            comparison = a.status.localeCompare(b.status);
+        }
+        return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return (
@@ -370,6 +391,51 @@ export function ProjectsList() {
                             </Button>
                         ))}
                     </div>
+
+                    <div className="flex gap-2 shrink-0">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="h-11 px-4 border-border/60 bg-card hover:bg-muted/50 transition-all font-medium gap-2">
+                                    <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-muted-foreground font-normal">Sort by:</span>
+                                    <span className="capitalize">{sortBy === 'title' ? 'Name' : sortBy.replace(/([A-Z])/g, ' $1')}</span>
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-[180px]">
+                                {[
+                                    { id: 'title', label: 'Name' },
+                                    { id: 'dueDate', label: 'Due Date' },
+                                    { id: 'progress', label: 'Progress' },
+                                    { id: 'status', label: 'Status' }
+                                ].map((option) => (
+                                    <DropdownMenuItem
+                                        key={option.id}
+                                        onClick={() => setSortBy(option.id as any)}
+                                        className="flex items-center justify-between"
+                                    >
+                                        {option.label}
+                                        {sortBy === option.id && <Check className="h-4 w-4" />}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-11 w-11 border-border/60 bg-card hover:bg-muted/50 transition-all"
+                            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                            title={sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
+                        >
+                            <motion.div
+                                animate={{ rotate: sortOrder === 'desc' ? 180 : 0 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                            >
+                                <ArrowUpDown className="h-4 w-4" />
+                            </motion.div>
+                        </Button>
+                    </div>
                 </div>
             )}
 
@@ -427,7 +493,7 @@ export function ProjectsList() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {filteredProjects.map((project, index) => (
+                    {sortedProjects.map((project, index) => (
                         <motion.div
                             key={project.id}
                             initial={{ opacity: 0, y: 20 }}
