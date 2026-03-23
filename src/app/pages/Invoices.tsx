@@ -178,9 +178,9 @@ export function Invoices() {
         link.remove();
         setTimeout(() => window.URL.revokeObjectURL(url), 100);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Invoice PDF error:', error);
-      toast.error(`Failed to ${action} invoice PDF.`);
+      toast.error(getApiErrorMessage(error, `Failed to ${action} invoice PDF.`));
     } finally {
       setIsProcessing(prev => ({ ...prev, [invoiceId]: null }));
     }
