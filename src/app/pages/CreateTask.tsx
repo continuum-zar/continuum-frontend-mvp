@@ -56,20 +56,27 @@ export function CreateTask() {
     dueDate?: string;
   }>({});
 
+  const localDateString = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   const validate = () => {
     const newErrors: typeof errors = {};
 
-    // Validate estimatedHours
-    if (formData.estimatedHours) {
+    // Validate estimatedHours (non-negative, finite)
+    if (formData.estimatedHours.trim() !== '') {
       const hours = Number(formData.estimatedHours);
-      if (isNaN(hours) || hours < 0) {
-        newErrors.estimatedHours = 'Must be a non-negative number';
+      if (!Number.isFinite(hours) || hours < 0) {
+        newErrors.estimatedHours = 'Must be a non-negative finite number';
       }
     }
 
-    // Validate dueDate
+    // Validate dueDate (compare with local calendar day; matches <input type="date">)
     if (formData.dueDate) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = localDateString(new Date());
       if (formData.dueDate < today) {
         newErrors.dueDate = 'Due date cannot be in the past';
       }
