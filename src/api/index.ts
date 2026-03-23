@@ -74,6 +74,7 @@ export {
     useTaskTimeline,
     useAssignTask,
     projectKeys,
+    getApiErrorMessage,
 } from './hooks';
 export type { AttachmentAPIResponse, Attachment } from '@/types/attachment';
 export {

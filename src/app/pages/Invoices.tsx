@@ -41,7 +41,7 @@ import { useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useInvoices, downloadInvoice, generateInvoicePdf, generateInvoice } from '@/api/invoices';
 import { useClients } from '@/api/clients';
-import { useCreateClient, useClientDetail, useProjects } from '@/api/hooks';
+import { useCreateClient, useClientDetail, useProjects, getApiErrorMessage } from '@/api/hooks';
 import { useRole } from '@/app/context/RoleContext';
 import { useAuthStore } from '@/store/authStore';
 import { fetchLoggedHours } from '@/api/loggedHours';
@@ -178,9 +178,9 @@ export function Invoices() {
         link.remove();
         setTimeout(() => window.URL.revokeObjectURL(url), 100);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Invoice PDF error:', error);
-      toast.error(`Failed to ${action} invoice PDF.`);
+      toast.error(getApiErrorMessage(error, `Failed to ${action} invoice PDF.`));
     } finally {
       setIsProcessing(prev => ({ ...prev, [invoiceId]: null }));
     }
@@ -279,15 +279,7 @@ export function Invoices() {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
     } catch (err: unknown) {
       console.error('Failed to generate invoice:', err);
-      const errorRes = err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } }; message?: string };
-      const rawDetail = errorRes.response?.data?.detail;
-      const message =
-        typeof rawDetail === 'string'
-          ? rawDetail
-          : Array.isArray(rawDetail) && rawDetail.length > 0
-            ? rawDetail.map((e) => e.msg ?? JSON.stringify(e)).join(' ')
-            : errorRes.message || 'Failed to generate invoice.';
-      toast.error(message);
+      toast.error(getApiErrorMessage(err, 'Failed to generate invoice.'));
     } finally {
       setIsGenerating(false);
     }
