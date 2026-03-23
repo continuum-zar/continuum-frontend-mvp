@@ -9,7 +9,8 @@ import {
     MoreVertical,
     ArrowRight,
     AlertCircle,
-    RefreshCw
+    RefreshCw,
+    Search
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -78,6 +79,8 @@ export function ProjectsList() {
         title: string;
     } | null>(null);
     const deleteProjectMutation = useDeleteProject();
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
 
     const handleCreateProject = async () => {
@@ -135,6 +138,13 @@ export function ProjectsList() {
             // Toast handled in hook
         }
     };
+
+    const filteredProjects = projects.filter(project => {
+        const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+        const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        return matchesStatus && matchesSearch;
+    });
 
     return (
         <div className="p-8">
@@ -327,6 +337,38 @@ export function ProjectsList() {
                 )}
             </div>
 
+            {/* Filters */}
+            {!isLoading && !error && projects.length > 0 && (
+                <div className="flex flex-col md:flex-row gap-4 mb-8">
+                    <div className="relative flex-1 group">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                        <Input
+                            placeholder="Search projects by title or description..."
+                            className="pl-10 h-11 bg-card border-border/60 hover:border-border transition-all focus:ring-1 focus:ring-primary/20"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex bg-muted/30 p-1 rounded-xl border border-border/50 shrink-0 backdrop-blur-sm self-start">
+                        {['all', 'active', 'completed', 'on_hold'].map((status) => (
+                            <Button
+                                key={status}
+                                variant="ghost"
+                                size="sm"
+                                className={`px-5 h-9 rounded-lg capitalize transition-all duration-200 ${
+                                    statusFilter === status
+                                    ? 'bg-background text-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                }`}
+                                onClick={() => setStatusFilter(status)}
+                            >
+                                {status.replace('_', ' ')}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Project Grid / Error / Empty States */}
             {isLoading ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -370,9 +412,18 @@ export function ProjectsList() {
                         New Project
                     </Button>
                 </div>
+            ) : filteredProjects.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-border rounded-lg bg-muted/10">
+                    <Search className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                    <h2 className="text-xl font-semibold mb-2">No matching projects</h2>
+                    <p className="text-muted-foreground mb-6 max-w-md">Try adjusting your filters or search terms to find what you&apos;re looking for.</p>
+                    <Button variant="outline" onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}>
+                        Clear All Filters
+                    </Button>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {projects.map((project, index) => (
+                    {filteredProjects.map((project, index) => (
                         <motion.div
                             key={project.id}
                             initial={{ opacity: 0, y: 20 }}
