@@ -360,8 +360,8 @@ export function ProjectsList() {
                                 variant="ghost"
                                 size="sm"
                                 className={`px-5 h-9 rounded-lg capitalize transition-all duration-200 ${
-                                    statusFilter === status 
-                                    ? 'bg-background text-foreground shadow-sm' 
+                                    statusFilter === status
+                                    ? 'bg-background text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                 }`}
                                 onClick={() => setStatusFilter(status)}
