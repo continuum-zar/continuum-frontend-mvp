@@ -381,8 +381,8 @@ export function ProjectsList() {
                                 variant="ghost"
                                 size="sm"
                                 className={`px-5 h-9 rounded-lg capitalize transition-all duration-200 ${
-                                    statusFilter === status 
-                                    ? 'bg-background text-foreground shadow-sm' 
+                                    statusFilter === status
+                                    ? 'bg-background text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                 }`}
                                 onClick={() => setStatusFilter(status)}
@@ -403,15 +403,15 @@ export function ProjectsList() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-[180px]">
-                                {[
+                                {([
                                     { id: 'title', label: 'Name' },
                                     { id: 'dueDate', label: 'Due Date' },
                                     { id: 'progress', label: 'Progress' },
-                                    { id: 'status', label: 'Status' }
-                                ].map((option) => (
+                                    { id: 'status', label: 'Status' },
+                                ] as const).map((option) => (
                                     <DropdownMenuItem
                                         key={option.id}
-                                        onClick={() => setSortBy(option.id as any)}
+                                        onClick={() => setSortBy(option.id)}
                                         className="flex items-center justify-between"
                                     >
                                         {option.label}
