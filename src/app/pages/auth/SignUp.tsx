@@ -87,9 +87,13 @@ export function SignUp() {
         if (field === 'password') setPassword(value);
         if (field === 'confirmPassword') setConfirmPassword(value);
 
-        // Clear error for the field being edited
+        // Clear error for the field being edited (omit key so banner/keys stay in sync)
         if (errors[field]) {
-            setErrors(prev => ({ ...prev, [field]: undefined }));
+            setErrors(prev => {
+                const next = { ...prev };
+                delete next[field];
+                return next;
+            });
         }
     };
 
