@@ -156,6 +156,7 @@ export function CreateTask() {
         (err as { message?: string })?.message ||
         'Failed to create task';
       toast.error(errorMessage);
+    } finally {
       setIsSubmitting(false);
     }
   };
