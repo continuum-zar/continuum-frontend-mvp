@@ -36,6 +36,7 @@ const navigation = [
   { name: 'Invoices', href: '/invoices', icon: FileText },
 ];
 import { useRole } from '../context/RoleContext';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 export function DashboardLayout() {
   const navigate = useNavigate();
@@ -192,7 +193,9 @@ export function DashboardLayout() {
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>
