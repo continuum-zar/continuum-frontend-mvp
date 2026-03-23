@@ -116,7 +116,7 @@ export async function addMember(
 ): Promise<MemberAPIResponse> {
     const { data } = await api.post<MemberAPIResponse>(`/projects/${projectId}/members`, {
         email: body.email,
-        role: body.role ?? 'member',
+        role: body.role ?? 'developer',
     });
     return data;
 }

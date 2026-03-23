@@ -107,7 +107,7 @@ export function mapMember(m: MemberAPIResponse): Member {
         userId: m.user_id,
         name,
         email,
-        role: m.role ?? 'member',
+        role: m.role ?? 'developer',
         userRole: (m.user as { role?: string } | undefined)?.role,
         initials,
     };
@@ -129,11 +129,13 @@ export function mapAttachment(a: AttachmentAPIResponse): Attachment {
         (a.uploader?.first_name && a.uploader?.last_name
             ? `${a.uploader.first_name} ${a.uploader.last_name}`.trim()
             : undefined);
+    const isLink = !!a.url || a.mime_type === 'application/link';
     return {
         id: String(a.id),
         filename: a.original_filename,
-        size: formatFileSize(a.file_size),
+        size: isLink ? 'Link' : formatFileSize(a.file_size),
         mimeType: a.mime_type,
+        url: a.url ?? undefined,
         createdAt: formatDistanceToNow(new Date(a.created_at), { addSuffix: true }),
         uploadedBy: uploadedBy || undefined,
     };

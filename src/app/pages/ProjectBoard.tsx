@@ -12,6 +12,7 @@ import {
   Users,
   Paperclip,
   MessageSquare,
+  Check,
   CheckCircle2,
   CircleDot,
   GripVertical,
@@ -19,7 +20,6 @@ import {
   Trash2,
   Loader2,
   Search,
-  Pencil,
 } from 'lucide-react';
 import type { Task, TaskStatus } from '@/types/task';
 import type { Milestone } from '@/types/milestone';
@@ -205,8 +205,8 @@ function TaskCard({ task, onRequestDelete }: TaskCardProps) {
         {(task.attachments > 0 || task.comments > 0 || task.checklists.total > 0) && (
           <div className="flex items-center space-x-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
             {task.checklists.total > 0 && (
-              <div className="flex items-center">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
+              <div className="flex items-center text-blue-500">
+                <Check className="h-3 w-3 mr-1 stroke-[2.5]" />
                 {task.checklists.completed}/{task.checklists.total}
               </div>
             )}
@@ -413,7 +413,7 @@ export function ProjectBoard() {
 
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('Member');
+  const [inviteRole, setInviteRole] = useState('Developer');
   const [inviteError, setInviteError] = useState<string | null>(null);
 
   const membersQuery = useProjectMembers(projectId, { enabled: isTeamModalOpen });
@@ -424,9 +424,9 @@ export function ProjectBoard() {
     : null;
 
   const inviteRoleToBackend = (label: string): string => {
-    if (label === 'Project Manager') return 'manager';
+    if (label === 'Project Manager') return 'project_manager';
     if (label === 'Client') return 'client';
-    return 'member';
+    return 'developer';
   };
 
   const handleInvite = () => {
@@ -438,7 +438,7 @@ export function ProjectBoard() {
       {
         onSuccess: () => {
           setInviteEmail('');
-          setInviteRole('Member');
+          setInviteRole('Developer');
         },
         onError: (err: unknown) => {
           const res = (err as { response?: { data?: { detail?: string }; status?: number } })?.response;
@@ -652,11 +652,9 @@ export function ProjectBoard() {
                           <SelectValue placeholder="Role" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Member">Member</SelectItem>
-                          <SelectItem value="Project Manager">Project Manager</SelectItem>
-                          <SelectItem value="Developer">Developer</SelectItem>
-                          <SelectItem value="Designer">Designer</SelectItem>
                           <SelectItem value="Client">Client</SelectItem>
+                          <SelectItem value="Developer">Developer</SelectItem>
+                          <SelectItem value="Project Manager">Project Manager</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button onClick={handleInvite} disabled={!inviteEmail?.trim() || addMemberMutation.isPending}>
@@ -698,7 +696,9 @@ export function ProjectBoard() {
                                 <p className="text-xs text-muted-foreground">{member.email}</p>
                               </div>
                             </div>
-                            <Badge variant="secondary" className="text-[10px] font-normal">{member.role}</Badge>
+                            <Badge variant="secondary" className="text-[10px] font-normal">
+                                {member.role === 'project_manager' ? 'Project Manager' : member.role === 'developer' ? 'Developer' : member.role === 'client' ? 'Client' : member.role}
+                              </Badge>
                           </div>
                         ))
                       )}
@@ -835,10 +835,16 @@ export function ProjectBoard() {
                   >
                     <div
                       className="flex flex-col items-center w-full cursor-pointer"
-                      onClick={() => setSelectedMilestoneId(milestone.id)}
+                      onClick={() => {
+                        if (milestone.id === selectedMilestoneId && (role === 'Admin' || role === 'Project Manager')) {
+                          openEditMilestone(milestone);
+                        } else {
+                          setSelectedMilestoneId(milestone.id);
+                        }
+                      }}
                     >
-                      {/* Timeline Node with actions */}
-                      <div className="flex items-center gap-1 mb-4">
+                      {/* Timeline Node */}
+                      <div className="mb-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors relative bg-card ${isCompleted
                           ? 'border-2 border-foreground text-foreground'
                           : isOverdue
@@ -855,28 +861,6 @@ export function ProjectBoard() {
                             <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
                           )}
                         </div>
-                        {(role === 'Admin' || role === 'Project Manager') && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditMilestone(milestone); }}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={(e) => { e.stopPropagation(); setMilestoneToDeleteId(milestone.id); }}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
                       </div>
 
                       {/* Content */}

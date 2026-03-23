@@ -4,6 +4,8 @@ export interface AttachmentAPIResponse {
     original_filename: string;
     file_size: number;
     mime_type: string;
+    /** Set for link attachments */
+    url?: string | null;
     created_at: string;
     /** Some APIs return uploaded_by */
     uploaded_by?: {
@@ -24,8 +26,10 @@ export interface AttachmentAPIResponse {
 export interface Attachment {
     id: string;
     filename: string;
-    size: string; // formatted size like "2.4 MB"
+    size: string; // formatted size like "2.4 MB" or "Link"
     mimeType: string;
+    /** Set for link attachments; open in new tab */
+    url?: string | null;
     createdAt: string;
     uploadedBy?: string;
 }

@@ -28,6 +28,7 @@ import {
     createTaskComment,
     fetchTaskAttachments,
     uploadTaskAttachment,
+    addTaskAttachmentLink,
     deleteAttachment,
     fetchTaskTimeline,
     assignTask,
@@ -463,6 +464,24 @@ export function useUploadAttachment(taskId: number | string | undefined | null) 
         },
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to upload attachment'));
+        },
+    });
+}
+
+export function useAddAttachmentLink(taskId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: { url: string; name?: string | null }) =>
+            addTaskAttachmentLink(taskId!, payload),
+        onSuccess: () => {
+            if (taskId != null && taskId !== '') {
+                queryClient.invalidateQueries({ queryKey: taskAttachmentsKey(taskId!) });
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId!) });
+            }
+            toast.success('Link added');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to add link'));
         },
     });
 }

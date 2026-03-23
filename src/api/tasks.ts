@@ -128,6 +128,15 @@ export async function uploadTaskAttachment(taskId: number | string, file: File):
     return data;
 }
 
+/** Add a link (URL) attachment to a task. Returns the created attachment. */
+export async function addTaskAttachmentLink(
+    taskId: number | string,
+    payload: { url: string; name?: string | null }
+): Promise<AttachmentAPIResponse> {
+    const { data } = await api.post<AttachmentAPIResponse>(`/tasks/${taskId}/attachments/link`, payload);
+    return data;
+}
+
 /** Delete an attachment. */
 export async function deleteAttachment(attachmentId: number | string): Promise<void> {
     await api.delete(`/attachments/${attachmentId}`);
