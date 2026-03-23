@@ -20,12 +20,13 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         setFetchError(null);
         try {
             await checkAuth();
-        } catch (err: any) {
+        } catch (err: unknown) {
             // If it's a 401/403, the store clears state and we'll redirect to /login
             if (isAxiosError(err) && (err.response?.status === 401 || err.response?.status === 403)) {
                 return;
             }
-            setFetchError(err.message || 'Failed to authenticate. Please try again.');
+            const fallback = 'Failed to authenticate. Please try again.';
+            setFetchError(err instanceof Error ? err.message || fallback : fallback);
         }
     }, [checkAuth]);
 
@@ -45,8 +46,8 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                         {fetchError}
                     </AlertDescription>
                 </Alert>
-                <Button 
-                    onClick={handleCheckAuth} 
+                <Button
+                    onClick={handleCheckAuth}
                     variant="outline"
                     className="flex items-center gap-2"
                 >
