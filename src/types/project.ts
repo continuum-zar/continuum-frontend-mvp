@@ -21,7 +21,7 @@ export interface Project {
     apiId: number; // Numeric ID from backend
     title: string;
     description: string;
-    status: 'active' | 'completed' | 'on-hold' | string;
+    status: 'active' | 'completed' | 'on_hold' | string;
     progress: number;
     dueDate: string;
     teamSize: number;
