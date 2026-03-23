@@ -1,6 +1,6 @@
 /**
  * Returns a Tailwind background color class based on progress percentage.
- * 
+ *
  * @param progress - Progress value from 0 to 100
  * @returns Tailwind CSS class for background color
  */
