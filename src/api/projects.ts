@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { PaginatedResponse } from '@/types/api';
 import type { ProjectAPIResponse, ProjectDetailAPIResponse } from '@/types/project';
 import type { MilestoneAPIResponse } from '@/types/milestone';
 import type { MemberAPIResponse } from '@/types/member';
@@ -18,8 +19,8 @@ export type { Member };
 
 /** Fetch all projects (list). Returns UI-shaped projects. */
 export async function fetchProjects(): Promise<Project[]> {
-    const { data } = await api.get<ProjectAPIResponse[]>('/projects/');
-    return (data ?? []).map(mapProjectListItem);
+    const { data } = await api.get<PaginatedResponse<ProjectAPIResponse>>('/projects/');
+    return (data.data ?? []).map(mapProjectListItem);
 }
 
 /** Create a project. Returns raw API response; call fetchProjects() to refresh list. */
