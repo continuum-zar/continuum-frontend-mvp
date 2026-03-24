@@ -9,6 +9,8 @@ export function mapBackendRole(backendRole: string | undefined): Role {
         case 'project_manager':
             return 'Project Manager';
         case 'backend':
+        case 'frontend':
+        case 'designer':
         case 'developer':
             return 'Developer';
         case 'client':

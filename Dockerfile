@@ -14,7 +14,8 @@ WORKDIR /app
 # Copy package files first to leverage cache
 COPY package*.json ./
 
-# Install dependencies
+# Install all dependencies (including devDependencies for vite)
+ENV NODE_ENV=development
 RUN npm ci
 
 # Copy the rest of the application code

@@ -86,6 +86,24 @@ export async function createMilestone(body: {
     return data;
 }
 
+/** Update a milestone. PUT /api/v1/milestones/{id}. */
+export async function updateMilestone(
+    milestoneId: number | string,
+    body: { name?: string; due_date?: string; description?: string }
+): Promise<MilestoneAPIResponse> {
+    const payload: Record<string, string | undefined> = {};
+    if (body.name !== undefined) payload.name = body.name;
+    if (body.due_date !== undefined) payload.due_date = body.due_date;
+    if (body.description !== undefined) payload.description = body.description;
+    const { data } = await api.put<MilestoneAPIResponse>(`/milestones/${milestoneId}`, payload);
+    return data;
+}
+
+/** Delete a milestone. DELETE /api/v1/milestones/{id}. */
+export async function deleteMilestone(milestoneId: number | string): Promise<void> {
+    await api.delete(`/milestones/${milestoneId}`);
+}
+
 /** Fetch members for a project. Returns UI-shaped members. */
 export async function fetchMembers(projectId: number | string): Promise<Member[]> {
     const { data } = await api.get<MemberAPIResponse[]>(`/projects/${projectId}/members`);
@@ -99,7 +117,7 @@ export async function addMember(
 ): Promise<MemberAPIResponse> {
     const { data } = await api.post<MemberAPIResponse>(`/projects/${projectId}/members`, {
         email: body.email,
-        role: body.role ?? 'member',
+        role: body.role ?? 'developer',
     });
     return data;
 }
