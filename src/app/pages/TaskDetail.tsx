@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import { useNavigate, useLocation, useParams } from 'react-router';
 import {
@@ -7,6 +8,7 @@ import {
   Paperclip,
   MoreVertical,
   Send,
+  Check,
   CheckCircle2,
   Clock,
   Tag,
@@ -19,6 +21,7 @@ import {
   Link2,
   Unlink,
   ExternalLink,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Calendar } from '../components/ui/calendar';
@@ -35,7 +38,14 @@ import {
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
-import { formatDueDate, useTask, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useDeleteAttachment, getAttachmentDownloadUrl, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches } from '@/api';
+import { Input } from '../components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import { formatDueDate, useTask, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useAddAttachmentLink, useDeleteAttachment, downloadTaskAttachment, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches, useAddTaskLabel, useRemoveTaskLabel } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 
@@ -142,14 +152,22 @@ export function TaskDetail() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const state = (location.state as { projectId?: string | number } | undefined) || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const taskDetailQueryKey = ['tasks', 'detail', taskId] as const;
   const [comment, setComment] = useState('');
   const [status, setStatus] = useState('');
   const [scope, setScope] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [selectedRepoId, setSelectedRepoId] = useState<number | ''>('');
   const [selectedBranchName, setSelectedBranchName] = useState('');
+  const [newLabelValue, setNewLabelValue] = useState('');
+  const [isAddLabelOpen, setIsAddLabelOpen] = useState(false);
+  const [attachDialogOpen, setAttachDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkName, setLinkName] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   // Use the new useTask hook for main task data
   const { data: task, isLoading: loading, error: taskError } = useTask(taskId);
@@ -164,6 +182,7 @@ export function TaskDetail() {
   // Attachments hooks
   const { data: attachments, isLoading: attachmentsLoading } = useTaskAttachments(taskId);
   const uploadAttachmentMutation = useUploadAttachment(taskId);
+  const addAttachmentLinkMutation = useAddAttachmentLink(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
 
   // Timeline hook
@@ -172,6 +191,8 @@ export function TaskDetail() {
   // Members and Assign hook
   const { data: members } = useProjectMembers(task?.project_id, { enabled: !!task?.project_id });
   const assignTaskMutation = useAssignTask();
+  const addTaskLabelMutation = useAddTaskLabel(taskId);
+  const removeTaskLabelMutation = useRemoveTaskLabel(taskId);
 
   // Repos and branches for linked-branch dropdowns
   const { data: projectRepos } = useProjectRepositories(task?.project_id);
@@ -290,14 +311,33 @@ export function TaskDetail() {
       const file = files[0];
       uploadAttachmentMutation.mutate(file, {
         onSuccess: () => {
-          // Reset file input
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          setAttachDialogOpen(false);
         },
       });
     }
   };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      uploadAttachmentMutation.mutate(file, {
+        onSuccess: () => {
+          setAttachDialogOpen(false);
+        },
+      });
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
   return (
     <div className="flex h-full">
       {/* Main Content */}
@@ -343,35 +383,42 @@ export function TaskDetail() {
               </div>
             </div>
 
-            {/* Description */}
-            {task.description && (
-              <div className="mb-8 bg-card border border-border rounded-lg p-6">
-                <h3 className="mb-3">Description</h3>
-                <div className="text-muted-foreground space-y-2">
-                  <p>{task.description}</p>
-                </div>
-              </div>
-            )}
-
             {/* Checklists */}
             {task.checklists && task.checklists.length > 0 && (
               <div className="mb-8 bg-card border border-border rounded-lg p-6">
                 <h3 className="mb-4">Checklist ({completedChecklists}/{totalChecklists})</h3>
                 <div className="space-y-3">
-                  {task.checklists.map((checklist, idx) => (
-                    <div key={idx} className="flex items-center space-x-3">
-                      {checklist.done ? (
-                        <div className="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center flex-shrink-0">
-                          <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                        </div>
-                      ) : (
-                        <div className="w-5 h-5 rounded border border-border flex items-center justify-center flex-shrink-0" />
-                      )}
-                      <span className={`text-sm ${checklist.done ? 'text-muted-foreground line-through' : ''}`}>
-                        {checklist.text}
-                      </span>
-                    </div>
-                  ))}
+                  {task.checklists.map((checklist, idx) => {
+                    const handleToggle = () => {
+                      if (!taskId) return;
+                      const next = (task.checklists ?? []).map((c, i) =>
+                        i === idx ? { ...c, done: !c.done } : c
+                      );
+                      updateTaskMutation.mutate(
+                        { taskId, checklists: next }
+                      );
+                    };
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={handleToggle}
+                        className="flex items-center space-x-3 w-full text-left rounded p-1 -m-1 hover:bg-muted/50 transition-colors"
+                        disabled={updateTaskMutation.isPending}
+                      >
+                        {checklist.done ? (
+                          <div className="w-5 h-5 rounded border-2 border-blue-500 bg-blue-500 flex items-center justify-center flex-shrink-0">
+                            <Check className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded border-2 border-muted-foreground/30 flex items-center justify-center flex-shrink-0" />
+                        )}
+                        <span className={`text-sm ${checklist.done ? 'text-muted-foreground line-through' : ''}`}>
+                          {checklist.text}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -391,12 +438,99 @@ export function TaskDetail() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadAttachmentMutation.isPending}
+                    onClick={() => setAttachDialogOpen(true)}
+                    disabled={uploadAttachmentMutation.isPending || addAttachmentLinkMutation.isPending}
                   >
-                    <Paperclip className="mr-2 h-4 w-4" />
-                    {uploadAttachmentMutation.isPending ? "Uploading..." : "Add File"}
+                    {uploadAttachmentMutation.isPending
+                      ? "Uploading..."
+                      : addAttachmentLinkMutation.isPending
+                        ? "Adding..."
+                        : "Add"}
                   </Button>
+                  <Dialog open={attachDialogOpen} onOpenChange={setAttachDialogOpen}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold">Attach</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-6 pt-2">
+                        {/* File section */}
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold">Attach a file from your computer</h4>
+                          <p className="text-sm text-muted-foreground">
+                            You can also drag and drop files to upload them
+                          </p>
+                          <div
+                            onDrop={handleDrop}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                              isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 bg-muted/30'
+                            }`}
+                          >
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className="w-full"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={uploadAttachmentMutation.isPending}
+                            >
+                              Choose a file
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="border-t border-border" />
+                        {/* Link section */}
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-semibold mb-1.5 block">
+                              Search or paste a link <span className="text-destructive">*</span>
+                            </label>
+                            <Input
+                              placeholder="Find recent links or paste a new link."
+                              value={linkUrl}
+                              onChange={(e) => setLinkUrl(e.target.value)}
+                              className="w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-semibold mb-1.5 block">
+                              Display text (optional)
+                            </label>
+                            <Input
+                              placeholder="Text to display."
+                              value={linkName}
+                              onChange={(e) => setLinkName(e.target.value)}
+                              className="w-full"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1.5">
+                              Give this link a title or description.
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => {
+                              const url = linkUrl?.trim();
+                              if (!url) return;
+                              addAttachmentLinkMutation.mutate(
+                                { url, name: linkName?.trim() || undefined },
+                                {
+                                  onSuccess: () => {
+                                    setLinkUrl('');
+                                    setLinkName('');
+                                    setAttachDialogOpen(false);
+                                  },
+                                }
+                              );
+                            }}
+                            disabled={!linkUrl?.trim() || addAttachmentLinkMutation.isPending}
+                            className="w-full"
+                          >
+                            <LinkIcon className="mr-2 h-4 w-4" />
+                            Add link
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
               {attachmentsLoading ? (
@@ -408,9 +542,36 @@ export function TaskDetail() {
                   {(attachments ?? []).map(mapAttachment).map((attachment) => (
                     <div key={attachment.id} className="flex items-center justify-between p-2 bg-input-background rounded">
                       <div className="min-w-0 flex-1">
-                        <a href={getAttachmentDownloadUrl(attachment.id)} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                          {attachment.filename}
-                        </a>
+                        {attachment.url ? (
+                          <a
+                            href={attachment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline truncate block"
+                          >
+                            {attachment.filename}
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const { blob, filename } = await downloadTaskAttachment(attachment.id);
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = filename || attachment.filename;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              } catch {
+                                // Error toast can be added here if needed
+                              }
+                            }}
+                            className="text-sm text-primary hover:underline text-left"
+                          >
+                            {attachment.filename}
+                          </button>
+                        )}
                         <span className="text-sm text-muted-foreground ml-2">{attachment.size}</span>
                       </div>
                       <Button
@@ -719,13 +880,63 @@ export function TaskDetail() {
               Labels
             </div>
             <div className="flex flex-wrap gap-2">
-              {task.project_name && (
-                <Badge variant="secondary">{task.project_name}</Badge>
-              )}
+              {(task.labels ?? []).map((label) => (
+                <Badge key={label} variant="secondary" className="pr-1 gap-1">
+                  {label}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!taskId) return;
+                      removeTaskLabelMutation.mutate(label, {
+                        onSuccess: () => {
+                          if (taskId) queryClient.invalidateQueries({ queryKey: taskDetailQueryKey });
+                        },
+                      });
+                    }}
+                    className="rounded-full hover:bg-muted-foreground/20 p-0.5"
+                    disabled={removeTaskLabelMutation.isPending}
+                    aria-label={`Remove label ${label}`}
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
             </div>
-            <Button variant="outline" size="sm" className="w-full mt-2">
-              Add Label
-            </Button>
+            <Popover open={isAddLabelOpen} onOpenChange={setIsAddLabelOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full mt-2">
+                  Add Label
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3" align="start">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const value = newLabelValue.trim();
+                    if (!value || !taskId) return;
+                    addTaskLabelMutation.mutate(value, {
+                      onSuccess: () => {
+                        if (taskId) queryClient.invalidateQueries({ queryKey: taskDetailQueryKey });
+                        setNewLabelValue('');
+                        setIsAddLabelOpen(false);
+                      },
+                    });
+                  }}
+                  className="flex gap-2"
+                >
+                  <Input
+                    placeholder="Label name"
+                    value={newLabelValue}
+                    onChange={(e) => setNewLabelValue(e.target.value)}
+                    maxLength={64}
+                    className="w-40"
+                  />
+                  <Button type="submit" size="sm" disabled={!newLabelValue.trim() || addTaskLabelMutation.isPending}>
+                    Add
+                  </Button>
+                </form>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <Separator />

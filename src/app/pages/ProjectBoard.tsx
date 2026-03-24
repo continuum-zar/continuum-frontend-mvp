@@ -12,6 +12,7 @@ import {
   Users,
   Paperclip,
   MessageSquare,
+  Check,
   CheckCircle2,
   CircleDot,
   GripVertical,
@@ -31,6 +32,9 @@ import {
   useProjectMembers,
   useUpdateTaskStatus,
   useCreateMilestone,
+  useUpdateMilestone,
+  useDeleteMilestone,
+  useDeleteTask,
   useAddMember,
   useProjectRepositories,
   useLinkRepository,
@@ -86,11 +90,12 @@ import {
 
 interface TaskCardProps {
   task: Task;
+  onRequestDelete?: (taskId: string) => void;
 }
 
 const TASK_DETAIL_QUERY_KEY = ['tasks', 'detail'] as const;
 
-function TaskCard({ task }: TaskCardProps) {
+function TaskCard({ task, onRequestDelete }: TaskCardProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const didDragRef = useRef(false);
@@ -170,7 +175,12 @@ function TaskCard({ task }: TaskCardProps) {
               <DropdownMenuItem>Edit</DropdownMenuItem>
               <DropdownMenuItem>Duplicate</DropdownMenuItem>
               <DropdownMenuItem>Archive</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={(e) => { e.stopPropagation(); onRequestDelete?.(task.id); }}
+              >
+                Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -198,8 +208,8 @@ function TaskCard({ task }: TaskCardProps) {
         {(task.attachments > 0 || task.comments > 0 || task.checklists.total > 0) && (
           <div className="flex items-center space-x-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
             {task.checklists.total > 0 && (
-              <div className="flex items-center">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
+              <div className="flex items-center text-blue-500">
+                <Check className="h-3 w-3 mr-1 stroke-[2.5]" />
                 {task.checklists.completed}/{task.checklists.total}
               </div>
             )}
@@ -227,12 +237,13 @@ interface ColumnProps {
   status: TaskStatus;
   tasks: Task[];
   onMove: (taskId: string, newStatus: TaskStatus) => void;
+  onRequestDelete?: (taskId: string) => void;
 }
 
 const TASK_CARD_ESTIMATE_HEIGHT = 140;
 const COLUMN_LIST_HEIGHT = 560;
 
-function Column({ title, status, tasks, onMove }: ColumnProps) {
+function Column({ title, status, tasks, onMove, onRequestDelete }: ColumnProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'task',
@@ -301,7 +312,7 @@ function Column({ title, status, tasks, onMove }: ColumnProps) {
                 }}
                 className="pb-3"
               >
-                <TaskCard task={task} />
+                <TaskCard task={task} onRequestDelete={onRequestDelete} />
               </div>
             );
           })}
@@ -382,6 +393,14 @@ export function ProjectBoard() {
 
   const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ name: '', desc: '', date: '' });
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
+  const [editMilestoneForm, setEditMilestoneForm] = useState({ name: '', desc: '', date: '' });
+  const [milestoneToDeleteId, setMilestoneToDeleteId] = useState<string | null>(null);
+  const [taskToDeleteId, setTaskToDeleteId] = useState<string | null>(null);
+
+  const updateMilestoneMutation = useUpdateMilestone(projectId);
+  const deleteMilestoneMutation = useDeleteMilestone(projectId);
+  const deleteTaskMutation = useDeleteTask(projectId);
 
   const [isAddRepoOpen, setIsAddRepoOpen] = useState(false);
   const [newRepo, setNewRepo] = useState({
@@ -395,7 +414,7 @@ export function ProjectBoard() {
 
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('Member');
+  const [inviteRole, setInviteRole] = useState('Developer');
   const [inviteError, setInviteError] = useState<string | null>(null);
 
   const membersQuery = useProjectMembers(projectId, { enabled: isTeamModalOpen });
@@ -406,9 +425,9 @@ export function ProjectBoard() {
     : null;
 
   const inviteRoleToBackend = (label: string): string => {
-    if (label === 'Project Manager') return 'manager';
+    if (label === 'Project Manager') return 'project_manager';
     if (label === 'Client') return 'client';
-    return 'member';
+    return 'developer';
   };
 
   const handleInvite = () => {
@@ -420,7 +439,7 @@ export function ProjectBoard() {
       {
         onSuccess: () => {
           setInviteEmail('');
-          setInviteRole('Member');
+          setInviteRole('Developer');
         },
         onError: (err: unknown) => {
           const status = (err as { response?: { status?: number } })?.response?.status;
@@ -481,6 +500,49 @@ export function ProjectBoard() {
     } catch {
       // Toast handled in hook
     }
+  };
+
+  const openEditMilestone = (m: Milestone) => {
+    setEditingMilestoneId(m.id);
+    setEditMilestoneForm({ name: m.name, desc: m.desc ?? '', date: m.date });
+  };
+
+  const handleUpdateMilestone = async () => {
+    if (!editingMilestoneId || !editMilestoneForm.name || !editMilestoneForm.date) return;
+    try {
+      await updateMilestoneMutation.mutateAsync({
+        milestoneId: editingMilestoneId,
+        body: {
+          name: editMilestoneForm.name,
+          due_date: editMilestoneForm.date,
+          description: editMilestoneForm.desc || undefined,
+        },
+      });
+      setEditingMilestoneId(null);
+      setEditMilestoneForm({ name: '', desc: '', date: '' });
+    } catch {
+      // Toast handled in hook
+    }
+  };
+
+  const handleDeleteMilestone = () => {
+    if (milestoneToDeleteId == null) return;
+    deleteMilestoneMutation.mutate(milestoneToDeleteId, {
+      onSuccess: () => {
+        if (selectedMilestoneId === milestoneToDeleteId) {
+          const remaining = milestonesList.filter((m) => m.id !== milestoneToDeleteId);
+          setSelectedMilestoneId(remaining.length > 0 ? remaining[0].id : '');
+        }
+        setMilestoneToDeleteId(null);
+      },
+    });
+  };
+
+  const handleDeleteTask = () => {
+    if (taskToDeleteId == null) return;
+    deleteTaskMutation.mutate(taskToDeleteId, {
+      onSuccess: () => setTaskToDeleteId(null),
+    });
   };
 
   const handleLinkRepository = () => {
@@ -589,11 +651,9 @@ export function ProjectBoard() {
                           <SelectValue placeholder="Role" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Member">Member</SelectItem>
-                          <SelectItem value="Project Manager">Project Manager</SelectItem>
-                          <SelectItem value="Developer">Developer</SelectItem>
-                          <SelectItem value="Designer">Designer</SelectItem>
                           <SelectItem value="Client">Client</SelectItem>
+                          <SelectItem value="Developer">Developer</SelectItem>
+                          <SelectItem value="Project Manager">Project Manager</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button onClick={handleInvite} disabled={!inviteEmail?.trim() || addMemberMutation.isPending}>
@@ -635,7 +695,9 @@ export function ProjectBoard() {
                                 <p className="text-xs text-muted-foreground">{member.email}</p>
                               </div>
                             </div>
-                            <Badge variant="secondary" className="text-[10px] font-normal">{member.role}</Badge>
+                            <Badge variant="secondary" className="text-[10px] font-normal">
+                                {member.role === 'project_manager' ? 'Project Manager' : member.role === 'developer' ? 'Developer' : member.role === 'client' ? 'Client' : member.role}
+                              </Badge>
                           </div>
                         ))
                       )}
@@ -773,38 +835,50 @@ export function ProjectBoard() {
                 return (
                   <div
                     key={milestone.id}
-                    className={`flex-1 flex flex-col items-center relative z-10 cursor-pointer group px-2 text-center transition-all ${isSelected ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
-                    onClick={() => setSelectedMilestoneId(milestone.id)}
+                    className={`flex-1 flex flex-col items-center relative z-10 group px-2 text-center transition-all ${isSelected ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
                   >
-                    {/* Timeline Node */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 transition-colors relative bg-card ${isCompleted
-                      ? 'border-2 border-foreground text-foreground'
-                      : isOverdue
-                        ? 'border-2 border-destructive text-destructive'
-                        : isActive || isSelected
-                          ? 'border-2 border-foreground bg-card text-foreground'
-                          : 'border-2 border-muted bg-card text-muted-foreground'
-                      }`}>
-                      {isCompleted ? (
-                        <CheckCircle2 className="w-5 h-5" />
-                      ) : isActive || isSelected ? (
-                        <CircleDot className="w-5 h-5" />
-                      ) : (
-                        <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
-                      )}
-                    </div>
+                    <div
+                      className="flex flex-col items-center w-full cursor-pointer"
+                      onClick={() => {
+                        if (milestone.id === selectedMilestoneId && (role === 'Admin' || role === 'Project Manager')) {
+                          openEditMilestone(milestone);
+                        } else {
+                          setSelectedMilestoneId(milestone.id);
+                        }
+                      }}
+                    >
+                      {/* Timeline Node */}
+                      <div className="mb-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors relative bg-card ${isCompleted
+                          ? 'border-2 border-foreground text-foreground'
+                          : isOverdue
+                            ? 'border-2 border-destructive text-destructive'
+                            : isActive || isSelected
+                              ? 'border-2 border-foreground bg-card text-foreground'
+                              : 'border-2 border-muted bg-card text-muted-foreground'
+                          }`}>
+                          {isCompleted ? (
+                            <CheckCircle2 className="w-5 h-5" />
+                          ) : isActive || isSelected ? (
+                            <CircleDot className="w-5 h-5" />
+                          ) : (
+                            <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
+                          )}
+                        </div>
+                      </div>
 
-                    {/* Content */}
-                    <h4 className="text-sm font-semibold mb-1 text-foreground">
-                      {milestone.name}
-                    </h4>
-                    <div className={`text-xs mb-2 flex items-center justify-center gap-1 font-mono ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}>
-                      <Calendar className="w-3 h-3" />
-                      {milestone.date}
+                      {/* Content */}
+                      <h4 className="text-sm font-semibold mb-1 text-foreground">
+                        {milestone.name}
+                      </h4>
+                      <div className={`text-xs mb-2 flex items-center justify-center gap-1 font-mono ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        <Calendar className="w-3 h-3" />
+                        {milestone.date}
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2 px-4">
+                        {milestone.desc || 'No description provided.'}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2 px-4">
-                      {milestone.desc || 'No description provided.'}
-                    </p>
                   </div>
                 );
               })}
@@ -812,6 +886,92 @@ export function ProjectBoard() {
           )}
         </div>
       </div>
+
+      {/* Edit Milestone Dialog */}
+      <Dialog open={editingMilestoneId != null} onOpenChange={(open) => !open && setEditingMilestoneId(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Milestone</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-ms-name">Milestone Name</Label>
+              <Input
+                id="edit-ms-name"
+                placeholder="e.g. Phase 2: Beta Launch"
+                value={editMilestoneForm.name}
+                onChange={(e) => setEditMilestoneForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-ms-date">Target Date</Label>
+              <Input
+                id="edit-ms-date"
+                type="date"
+                value={editMilestoneForm.date}
+                onChange={(e) => setEditMilestoneForm((f) => ({ ...f, date: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-ms-desc">Description (Optional)</Label>
+              <Textarea
+                id="edit-ms-desc"
+                placeholder="Brief objective summary..."
+                value={editMilestoneForm.desc}
+                onChange={(e) => setEditMilestoneForm((f) => ({ ...f, desc: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMilestoneId(null)}>Cancel</Button>
+            <Button onClick={handleUpdateMilestone} disabled={!editMilestoneForm.name || !editMilestoneForm.date || updateMilestoneMutation.isPending}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Milestone Confirmation */}
+      <AlertDialog open={milestoneToDeleteId != null} onOpenChange={(open) => !open && setMilestoneToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete milestone?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the milestone. Tasks linked to it will be unlinked. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteMilestone}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Task Confirmation */}
+      <AlertDialog open={taskToDeleteId != null} onOpenChange={(open) => !open && setTaskToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete task?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This task will be permanently deleted. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteTask}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Repositories */}
       <div className="mb-8">
@@ -1015,18 +1175,21 @@ export function ProjectBoard() {
             status="todo"
             tasks={todoTasks}
             onMove={handleMove}
+            onRequestDelete={(id) => setTaskToDeleteId(id)}
           />
           <Column
             title="In Progress"
             status="in-progress"
             tasks={inProgressTasks}
             onMove={handleMove}
+            onRequestDelete={(id) => setTaskToDeleteId(id)}
           />
           <Column
             title="Done"
             status="done"
             tasks={doneTasks}
             onMove={handleMove}
+            onRequestDelete={(id) => setTaskToDeleteId(id)}
           />
         </div>
       </DndProvider>
