@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, ReactNode } from 'react';
 import { toast } from 'sonner';
-import { useAllTasks, useLoggedHours } from '@/api/hooks';
+import { useAllTasks, useLoggedHours, getApiErrorMessage } from '@/api/hooks';
 import type { TaskOption } from '@/api';
 import {
     fetchActiveWorkSession,
@@ -26,19 +26,7 @@ interface LogForm {
     description: string;
 }
 
-/** Normalize API error to a single message for toasts. */
-function getApiErrorMessage(err: unknown, fallback: string): string {
-    const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
-    const detail = data?.detail;
-    if (typeof detail === 'string') return detail;
-    if (Array.isArray(detail) && detail.length > 0) {
-        const messages = detail
-            .map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d)))
-            .filter(Boolean);
-        return messages.length > 0 ? messages.join('. ') : fallback;
-    }
-    return fallback;
-}
+
 
 const SESSION_HINT_KEY = 'continuum_active_session_hint';
 

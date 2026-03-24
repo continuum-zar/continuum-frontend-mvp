@@ -7,6 +7,7 @@ import {
   Loader2,
   Plus,
   X,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -21,6 +22,7 @@ import {
 import { Label } from '../components/ui/label';
 import api from '../../lib/api';
 import { generateTasks } from '@/api';
+import { getApiErrorMessage } from '../../api/hooks';
 
 interface LocationState {
   projectId?: string | number;
@@ -51,6 +53,40 @@ export function CreateTask() {
   const [checklists, setChecklists] = useState<string[]>([]);
   const [newChecklist, setNewChecklist] = useState('');
   const [labels, setLabels] = useState<string[]>([]);
+  const [errors, setErrors] = useState<{
+    estimatedHours?: string;
+    dueDate?: string;
+  }>({});
+
+  const localDateString = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const validate = () => {
+    const newErrors: typeof errors = {};
+
+    // Validate estimatedHours (non-negative, finite)
+    if (formData.estimatedHours.trim() !== '') {
+      const hours = Number(formData.estimatedHours);
+      if (!Number.isFinite(hours) || hours < 0) {
+        newErrors.estimatedHours = 'Must be a non-negative finite number';
+      }
+    }
+
+    // Validate dueDate (compare with local calendar day; matches <input type="date">)
+    if (formData.dueDate) {
+      const today = localDateString(new Date());
+      if (formData.dueDate < today) {
+        newErrors.dueDate = 'Due date cannot be in the past';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleAddChecklist = () => {
     if (newChecklist.trim()) {
@@ -93,11 +129,7 @@ export function CreateTask() {
       setLabels(Array.isArray(task.labels) ? task.labels.filter((l) => l && String(l).trim()) : []);
       toast.success('Task details filled from AI. Edit as needed and create.');
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-        (err as { message?: string })?.message ??
-        'AI generation failed';
-      toast.error(String(msg));
+      toast.error(getApiErrorMessage(err, 'AI generation failed'));
     } finally {
       setIsGenerating(false);
     }
@@ -108,6 +140,11 @@ export function CreateTask() {
 
     if (!formData.title.trim()) {
       toast.error('Task title is required');
+      return;
+    }
+
+    if (!validate()) {
+      toast.error('Please correct the errors in the form');
       return;
     }
 
@@ -155,11 +192,8 @@ export function CreateTask() {
       });
     } catch (err: unknown) {
       console.error('Failed to create task:', err);
-      const errorMessage =
-        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
-        (err as { message?: string })?.message ||
-        'Failed to create task';
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(err, 'Failed to create task'));
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -254,9 +288,19 @@ export function CreateTask() {
                   min="0"
                   step="0.5"
                   value={formData.estimatedHours}
-                  onChange={(e) => setFormData({ ...formData, estimatedHours: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, estimatedHours: e.target.value });
+                    if (errors.estimatedHours) setErrors({ ...errors, estimatedHours: undefined });
+                  }}
                   placeholder="e.g., 4"
+                  className={errors.estimatedHours ? 'border-destructive focus-visible:ring-destructive' : ''}
                 />
+                {errors.estimatedHours && (
+                  <p className="text-xs text-destructive flex items-center mt-1">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {errors.estimatedHours}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -265,8 +309,18 @@ export function CreateTask() {
                   id="dueDate"
                   type="date"
                   value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, dueDate: e.target.value });
+                    if (errors.dueDate) setErrors({ ...errors, dueDate: undefined });
+                  }}
+                  className={errors.dueDate ? 'border-destructive focus-visible:ring-destructive' : ''}
                 />
+                {errors.dueDate && (
+                  <p className="text-xs text-destructive flex items-center mt-1">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {errors.dueDate}
+                  </p>
+                )}
               </div>
             </div>
 

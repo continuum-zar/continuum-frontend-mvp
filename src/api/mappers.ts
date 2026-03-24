@@ -7,6 +7,16 @@ import type { MilestoneAPIResponse, Milestone, MilestoneStatus } from '@/types/m
 import type { MemberAPIResponse, Member } from '@/types/member';
 import type { InvoiceAPIResponse, Invoice } from '@/types/invoice';
 
+/** Canonical project status for list UI (matches filter keys and PUT body). */
+export function normalizeProjectStatus(raw: string | undefined | null): Project['status'] {
+    const s = (raw ?? 'active').trim();
+    const key = s.toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
+    if (key === 'active') return 'active';
+    if (key === 'completed') return 'completed';
+    if (key === 'on_hold' || key === 'onhold') return 'on_hold';
+    return s;
+}
+
 export function mapProjectListItem(p: ProjectAPIResponse): Project {
     const lastActiveRaw = p.last_active ?? p.updated_at;
     return {
@@ -14,7 +24,7 @@ export function mapProjectListItem(p: ProjectAPIResponse): Project {
         apiId: p.id,
         title: p.name,
         description: p.description ?? 'No description provided.',
-        status: p.status,
+        status: normalizeProjectStatus(p.status),
         progress: p.progress ?? p.progress_percentage ?? 0,
         dueDate: p.due_date ?? 'No Date',
         teamSize: p.team_size ?? p.member_count ?? 1,

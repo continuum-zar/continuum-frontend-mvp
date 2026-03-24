@@ -57,7 +57,7 @@ export {
 } from './repositories';
 export type { Repository, RepositoryCreateBody, RepositoryProvider, BranchItem } from '@/types/repository';
 export type { CommentAPIResponse } from '@/types/comment';
-export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate, mapAttachment } from './mappers';
+export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate, mapAttachment, normalizeProjectStatus } from './mappers';
 export {
     useProjects,
     useProject,
@@ -87,6 +87,7 @@ export {
     useAddTaskLabel,
     useRemoveTaskLabel,
     projectKeys,
+    getApiErrorMessage,
 } from './hooks';
 export type { AttachmentAPIResponse, Attachment } from '@/types/attachment';
 export {

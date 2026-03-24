@@ -112,11 +112,7 @@ export function useCreateLoggedHour() {
             queryClient.invalidateQueries({ queryKey: ['logged-hours'] });
         },
         onError: (err) => {
-            const res = (err as { response?: { status?: number; data?: { detail?: string } } })?.response;
-            const message = typeof res?.data?.detail === 'string'
-                ? res.data.detail
-                : getApiErrorMessage(err, 'Failed to log time. You may not have access to this project or task.');
-            toast.error(message);
+            toast.error(getApiErrorMessage(err, 'Failed to log time. You may not have access to this project or task.'));
         },
     });
 }
@@ -209,9 +205,9 @@ export function useUpdateTaskStatus(projectId: number | string | undefined | nul
             });
             return { prev };
         },
-        onError: (_err, _vars, ctx) => {
+        onError: (err, _vars, ctx) => {
             if (key && ctx?.prev != null) queryClient.setQueryData(key, ctx.prev);
-            toast.error('Failed to update task status. Please try again.');
+            toast.error(getApiErrorMessage(err, 'Failed to update task status. Please try again.'));
         },
         onSettled: () => {
             if (key) queryClient.invalidateQueries({ queryKey: key });
@@ -282,13 +278,11 @@ export function useAddMember(projectId: number | string | undefined | null) {
             toast.success('Member added to project');
         },
         onError: (err: unknown) => {
-            const res = (err as { response?: { data?: { detail?: string }; status?: number } })?.response;
-            const detail = res?.data?.detail;
-            const status = res?.status;
-            let message = typeof detail === 'string' ? detail : (err as { message?: string })?.message ?? 'Failed to add member';
-            if (status === 404) message = 'User not found. They must have an account with this email.';
-            else if (status === 409) message = 'User is already a member of this project.';
-            toast.error(message);
+            const status = (err as { response?: { status?: number } })?.response?.status;
+            let fallback = 'Failed to add member';
+            if (status === 404) fallback = 'User not found. They must have an account with this email.';
+            else if (status === 409) fallback = 'User is already a member of this project.';
+            toast.error(getApiErrorMessage(err, fallback));
         },
     });
 }

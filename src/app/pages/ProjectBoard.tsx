@@ -44,11 +44,14 @@ import {
   projectKeys,
   mapMilestone,
   fetchTask,
+  getApiErrorMessage,
 } from '@/api';
 import { useRole } from '@/app/context/RoleContext';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Progress } from '../components/ui/progress';
+import { getProgressColor } from '@/lib/utils/progressColor';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -164,7 +167,7 @@ function TaskCard({ task, onRequestDelete }: TaskCardProps) {
           <h4 className="font-medium flex-1 min-w-0 cursor-pointer pr-2" onClick={handleCardClick}>{task.title}</h4>
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-              <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0">
+              <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" aria-label="Task menu">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -245,9 +248,7 @@ function Column({ title, status, tasks, onMove, onRequestDelete }: ColumnProps) 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'task',
     drop: (item: { id: string; status: TaskStatus }) => {
-      console.log(`Dropped task ${item.id} from ${item.status} to ${status}`);
       if (item.status !== status) {
-        console.log(`Moving task ${item.id} to ${status}`);
         onMove(item.id, status);
       }
     },
@@ -281,7 +282,7 @@ function Column({ title, status, tasks, onMove, onRequestDelete }: ColumnProps) 
           <h3>{title}</h3>
           <Badge variant="secondary">{tasks.length}</Badge>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Add task">
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -441,13 +442,11 @@ export function ProjectBoard() {
           setInviteRole('Developer');
         },
         onError: (err: unknown) => {
-          const res = (err as { response?: { data?: { detail?: string }; status?: number } })?.response;
-          const detail = res?.data?.detail;
-          const status = res?.status;
-          let message = typeof detail === 'string' ? detail : (err as { message?: string })?.message ?? 'Failed to add member';
-          if (status === 404) message = 'User not found. They must have an account with this email.';
-          else if (status === 409) message = 'User is already a member of this project.';
-          setInviteError(message);
+          const status = (err as { response?: { status?: number } })?.response?.status;
+          let fallback = 'Failed to add member';
+          if (status === 404) fallback = 'User not found. They must have an account with this email.';
+          else if (status === 409) fallback = 'User is already a member of this project.';
+          setInviteError(getApiErrorMessage(err, fallback));
         },
       }
     );
@@ -737,7 +736,12 @@ export function ProjectBoard() {
               ? Math.round((doneTasks.length / filteredTasks.length) * 100)
               : 0}%
           </div>
-          <div className="text-sm text-muted-foreground">Milestone Progress</div>
+          <div className="text-sm text-muted-foreground mb-3">Milestone Progress</div>
+          <Progress
+            value={filteredTasks.length > 0 ? (doneTasks.length / filteredTasks.length) * 100 : 0}
+            className="h-1.5"
+            indicatorClassName={getProgressColor(filteredTasks.length > 0 ? (doneTasks.length / filteredTasks.length) * 100 : 0)}
+          />
         </div>
       </div>
 
