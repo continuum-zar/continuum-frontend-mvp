@@ -47,6 +47,7 @@ import {
   getApiErrorMessage,
 } from '@/api';
 import { useRole } from '@/app/context/RoleContext';
+import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -329,6 +330,7 @@ export function ProjectBoard() {
   const queryClient = useQueryClient();
 
   const { role } = useRole();
+  const currentUser = useAuthStore((s) => s.user);
   const projectQuery = useProject(projectId);
   const tasksQuery = useProjectTasks(projectId);
   const milestonesQuery = useProjectMilestones(projectId);
@@ -417,12 +419,19 @@ export function ProjectBoard() {
   const [inviteRole, setInviteRole] = useState('Developer');
   const [inviteError, setInviteError] = useState<string | null>(null);
 
-  const membersQuery = useProjectMembers(projectId, { enabled: isTeamModalOpen });
+  const membersQuery = useProjectMembers(projectId);
   const teamMembers = membersQuery.data ?? [];
   const teamMembersLoading = membersQuery.isLoading;
   const teamMembersError = membersQuery.error
     ? String((membersQuery.error as { message?: string })?.message ?? 'Failed to load team members')
     : null;
+
+  const myMemberRole = useMemo(() => {
+    if (!currentUser?.id) return undefined;
+    return teamMembers.find((m) => String(m.userId) === String(currentUser.id))?.role;
+  }, [teamMembers, currentUser?.id]);
+
+  const canManage = role === 'Admin' || myMemberRole === 'project_manager';
 
   const inviteRoleToBackend = (label: string): string => {
     if (label === 'Project Manager') return 'project_manager';
@@ -840,7 +849,7 @@ export function ProjectBoard() {
                     <div
                       className="flex flex-col items-center w-full cursor-pointer"
                       onClick={() => {
-                        if (milestone.id === selectedMilestoneId && (role === 'Admin' || role === 'Project Manager')) {
+                        if (milestone.id === selectedMilestoneId && canManage) {
                           openEditMilestone(milestone);
                         } else {
                           setSelectedMilestoneId(milestone.id);
@@ -977,7 +986,7 @@ export function ProjectBoard() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-muted-foreground text-sm font-bold tracking-widest uppercase">Repositories</h3>
-          {(role === 'Admin' || role === 'Project Manager') && (
+          {canManage && (
             <Dialog open={isAddRepoOpen} onOpenChange={setIsAddRepoOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -1104,7 +1113,7 @@ export function ProjectBoard() {
                         {repo.provider}
                       </Badge>
                       <div className="flex items-center gap-1 shrink-0">
-                        {(role === 'Admin' || role === 'Project Manager') && (
+                        {canManage && (
                           <>
                             <Button
                               variant="outline"
