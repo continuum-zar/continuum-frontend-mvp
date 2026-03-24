@@ -14,6 +14,8 @@ export interface ProjectAPIResponse {
     /** Backend list endpoint returns last_active (datetime); some endpoints may use updated_at */
     last_active?: string;
     updated_at?: string;
+    /** Current user's role on this project (from ProjectMember). */
+    member_role?: string;
 }
 
 export interface Project {
@@ -27,6 +29,8 @@ export interface Project {
     teamSize: number;
     lastActive: string;
     clientId?: number;
+    /** Current user's membership role on this project (e.g. 'developer', 'project_manager', 'client'). */
+    memberRole?: string;
 }
 
 /** Raw project detail from API (GET /projects/:id) */

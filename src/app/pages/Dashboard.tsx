@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
+import { effectiveDashboardRole } from '@/lib/utils/roleMapping';
 import { fetchProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, fetchClientProjects, fetchClientProjectProgress, postProjectQuery, fetchProjectStats } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import {
@@ -95,8 +96,8 @@ export function Dashboard() {
    * Developer (+ project selected):
    *   useProjects, project-dashboard, velocity-report, user-rhythm
    *
-   * Client:
-   *   client-projects → client-progress
+   * Client (global role or project member_role client):
+   *   client-projects → client-progress (global Client), or client-progress for selected project (mixed)
    *
    * On-demand (any role): postProjectQuery (chat)
    * ─────────────────────────────────────────────────────────────────────── */
@@ -110,8 +111,23 @@ export function Dashboard() {
   });
   const user = useAuthStore((s) => s.user);
   const hasProjectSelected = selectedProject !== "";
+
+  const selectedProjectObj = useMemo(
+    () => projects.find((p) => String(p.id) === selectedProject),
+    [projects, selectedProject]
+  );
+
+  const effectiveRole = useMemo(
+    () => effectiveDashboardRole(userRole, selectedProjectObj?.memberRole),
+    [userRole, selectedProjectObj?.memberRole]
+  );
+
+  const isProjectPM =
+    effectiveRole !== 'Client' &&
+    (userRole === 'Admin' || selectedProjectObj?.memberRole === 'project_manager');
+
   const { data: rhythmMembers = [] } = useProjectMembers(
-    userRole === 'Project Manager' && hasProjectSelected ? selectedProject : undefined
+    isProjectPM && hasProjectSelected ? selectedProject : undefined
   );
   /** Only developers (backend role) for Team Productivity Rhythm dropdown */
   const rhythmDeveloperMembers = useMemo(
@@ -154,19 +170,19 @@ export function Dashboard() {
   }, [snapshotMember, snapshotMembersList]);
 
   const rhythmUserId = useMemo(() => {
-    if (userRole === 'Developer') return user?.id ?? null;
-    if (userRole === 'Project Manager') {
+    if (!isProjectPM) return user?.id ?? null;
+    if (isProjectPM) {
       if (rhythmMember === 'all') return rhythmDeveloperMembers[0]?.userId ?? null;
       const m = rhythmDeveloperMembers.find((x) => String(x.id) === rhythmMember);
       return m?.userId ?? null;
     }
     return null;
-  }, [userRole, user?.id, rhythmMember, rhythmDeveloperMembers]);
+  }, [isProjectPM, user?.id, rhythmMember, rhythmDeveloperMembers]);
 
   const { data: rhythmResponse, isLoading: rhythmLoading, isError: rhythmError } = useQuery({
     queryKey: ['user-rhythm', rhythmUserId],
     queryFn: () => fetchUserRhythm(rhythmUserId!),
-    enabled: rhythmUserId != null && userRole !== 'Client',
+    enabled: rhythmUserId != null && effectiveRole !== 'Client',
     staleTime: 5 * 60_000, // 5 min – rhythm data is slow-changing
   });
 
@@ -188,11 +204,11 @@ export function Dashboard() {
   const { data: dashboardMetrics, isLoading: dashboardLoading, isError: dashboardError } = useQuery({
     queryKey: ['project-dashboard', selectedProject],
     queryFn: () => fetchProjectDashboard(selectedProject),
-    enabled: hasProjectSelected && userRole !== 'Client',
+    enabled: hasProjectSelected && effectiveRole !== 'Client',
     staleTime: 2 * 60_000, // 2 min – avoid refetch on tab switch
   });
 
-  const needMemberStats = hasProjectSelected && userRole === 'Project Manager' && snapshotMember !== 'all';
+  const needMemberStats = hasProjectSelected && isProjectPM && snapshotMember !== 'all';
   const { data: memberStats, isLoading: memberStatsLoading, isError: memberStatsError } = useQuery({
     queryKey: ['project-stats', selectedProject, snapshotMember],
     queryFn: () => fetchProjectStats(selectedProject, Number(snapshotMember)),
@@ -229,7 +245,7 @@ export function Dashboard() {
   const { data: classificationBreakdown, isLoading: classificationLoading, isError: classificationError } = useQuery({
     queryKey: ['classification-breakdown', selectedProject],
     queryFn: () => fetchClassificationBreakdown(selectedProject),
-    enabled: hasProjectSelected && userRole === 'Project Manager',
+    enabled: hasProjectSelected && isProjectPM,
     staleTime: 2 * 60_000,
   });
 
@@ -262,7 +278,7 @@ export function Dashboard() {
   const { data: clientProgress, isLoading: clientProgressLoading, isError: clientProgressError } = useQuery({
     queryKey: ['client-progress', clientProjectId],
     queryFn: () => fetchClientProjectProgress(clientProjectId),
-    enabled: userRole === 'Client' && !!clientProjectId && clientProjectId !== 'all',
+    enabled: effectiveRole === 'Client' && !!clientProjectId && clientProjectId !== 'all',
   });
 
   const clientHealthChartData = useMemo(() => {
@@ -288,7 +304,7 @@ export function Dashboard() {
   const { data: staleWorkResponse, isLoading: staleWorkLoading, isError: staleWorkError } = useQuery({
     queryKey: ['stale-work', selectedProject],
     queryFn: () => fetchProjectStaleWork(selectedProject),
-    enabled: hasProjectSelected && userRole === 'Project Manager',
+    enabled: hasProjectSelected && isProjectPM,
     staleTime: 5 * 60_000, // 5 min – stale branch data changes infrequently
   });
 
@@ -326,7 +342,7 @@ export function Dashboard() {
 
   // Milestones – only PM renders the burndown chart & milestone selector on the dashboard
   const { data: milestones = [] } = useProjectMilestones(
-    userRole === 'Project Manager' && hasProjectSelected ? selectedProject : undefined
+    isProjectPM && hasProjectSelected ? selectedProject : undefined
   );
   const activeMilestoneId = useMemo(() => {
     if (milestones.length === 0) return null;
@@ -342,7 +358,7 @@ export function Dashboard() {
   const { data: burndown, isLoading: burndownLoading, isError: burndownError } = useQuery({
     queryKey: ['milestone-burndown', milestoneId],
     queryFn: () => fetchMilestoneBurndown(milestoneId!),
-    enabled: !!milestoneId && userRole === 'Project Manager',
+    enabled: !!milestoneId && isProjectPM,
     staleTime: 2 * 60_000,
   });
 
@@ -369,7 +385,7 @@ export function Dashboard() {
   const { data: velocityReport, isLoading: velocityLoading, isError: velocityError } = useQuery({
     queryKey: ['velocity-report', selectedProject],
     queryFn: () => fetchProjectVelocityReport(selectedProject),
-    enabled: hasProjectSelected && userRole !== 'Client',
+    enabled: hasProjectSelected && effectiveRole !== 'Client',
     staleTime: 2 * 60_000,
   });
 
@@ -387,9 +403,9 @@ export function Dashboard() {
     <div className="p-8 pb-20">
       <div className="mb-8 flex justify-between items-end">
         <div>
-          <h1 className="text-2xl mb-2">{userRole === 'Client' ? 'Project Dashboard' : 'Metrics & Diagnostics'}</h1>
+          <h1 className="text-2xl mb-2">{effectiveRole === 'Client' ? 'Project Dashboard' : 'Metrics & Diagnostics'}</h1>
           <p className="text-muted-foreground">
-            {userRole === 'Client' ? 'Real-time project updates and health.' : 'Team velocity, health, and efficiency insights.'}
+            {effectiveRole === 'Client' ? 'Real-time project updates and health.' : 'Team velocity, health, and efficiency insights.'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -415,17 +431,17 @@ export function Dashboard() {
                   : [<SelectItem key="none" value="__none__">No projects</SelectItem>]}
             </SelectContent>
           </Select>
-          {userRole !== 'Client' && (
+          {effectiveRole !== 'Client' && (
             <Button variant="outline"><Clock className="mr-2 h-4 w-4" /> Last 30 Days</Button>
           )}
-          {userRole === 'Project Manager' && (
+          {isProjectPM && (
             <Button variant="outline"><UserX className="mr-2 h-4 w-4" /> Team View</Button>
           )}
         </div>
       </div>
 
       {/* Row 1: KPI Velocity Cards (requires single project) */}
-      {userRole === 'Project Manager' && hasProjectSelected && (
+      {isProjectPM && hasProjectSelected && (
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
           variants={container}
@@ -523,17 +539,17 @@ export function Dashboard() {
       )}
 
       {/* Row 2: Charts (Velocity & Burndown) — require single project */}
-      {userRole !== 'Client' && !hasProjectSelected && (
+      {effectiveRole !== 'Client' && !hasProjectSelected && (
         <div className="mb-6 rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
           Select a project to view velocity, burndown, and other metrics.
         </div>
       )}
-      {userRole !== 'Client' && hasProjectSelected && (
+      {effectiveRole !== 'Client' && hasProjectSelected && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`bg-card border border-border rounded-lg p-6 ${userRole === 'Developer' ? 'lg:col-span-2' : ''}`}
+            className={`bg-card border border-border rounded-lg p-6 ${effectiveRole === 'Developer' ? 'lg:col-span-2' : ''}`}
           >
             <div className="mb-4">
               <h3 className="mb-1">Weekly Velocity Composite</h3>
@@ -576,7 +592,7 @@ export function Dashboard() {
             )}
           </motion.div>
 
-          {userRole === 'Project Manager' && (
+          {isProjectPM && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -648,7 +664,7 @@ export function Dashboard() {
       )}
 
       {/* Row 3: User Rhythm Heatmap & Diagnostics (requires single project) */}
-      {userRole !== 'Client' && hasProjectSelected && (
+      {effectiveRole !== 'Client' && hasProjectSelected && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
           {/* Heatmap */}
@@ -660,11 +676,11 @@ export function Dashboard() {
           >
             <div className="mb-6 flex justify-between items-center">
               <div>
-                <h3 className="mb-1">{userRole === 'Developer' ? 'My Productivity Rhythm' : 'Team Productivity Rhythm'}</h3>
+                <h3 className="mb-1">{effectiveRole === 'Developer' ? 'My Productivity Rhythm' : 'Team Productivity Rhythm'}</h3>
                 <p className="text-sm text-muted-foreground">Active minutes by hour block</p>
               </div>
               <div className="flex items-center gap-4">
-                {userRole === 'Project Manager' && (
+                {isProjectPM && (
                   <Select value={rhythmMember} onValueChange={setRhythmMember}>
                     <SelectTrigger className="w-[180px] h-8 text-xs border-border bg-card">
                       <SelectValue placeholder="Filter member" />
@@ -701,9 +717,9 @@ export function Dashboard() {
                 </div>
 
                 {/* grid */}
-                {(userRole === 'Developer' && !user?.id) || (userRole === 'Project Manager' && !hasProjectSelected) ? (
+                {(effectiveRole === 'Developer' && !user?.id) || (isProjectPM && !hasProjectSelected) ? (
                   <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
-                    {userRole === 'Project Manager' ? 'Select a project to view rhythm' : 'Sign in to view your rhythm'}
+                    {isProjectPM ? 'Select a project to view rhythm' : 'Sign in to view your rhythm'}
                   </div>
                 ) : rhythmLoading ? (
                   <div className="h-[200px] flex flex-col gap-1 ml-[40px]">
@@ -717,7 +733,7 @@ export function Dashboard() {
                   </div>
                 ) : rhythmError ? (
                   <div className="h-[200px] flex items-center justify-center text-destructive text-sm">Failed to load rhythm</div>
-                ) : userRole === 'Project Manager' && rhythmMember === 'all' && rhythmDeveloperMembers.length === 0 ? (
+                ) : isProjectPM && rhythmMember === 'all' && rhythmDeveloperMembers.length === 0 ? (
                   <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No developers in this project</div>
                 ) : rhythmChartData.length === 0 ? (
                   <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No rhythm data yet</div>
@@ -754,10 +770,10 @@ export function Dashboard() {
           >
             <div className="mb-6 flex justify-between items-start">
               <div>
-                <h3 className="mb-1">{userRole === 'Developer' ? 'My Task Snapshot' : 'Team Task Snapshot'}</h3>
+                <h3 className="mb-1">{effectiveRole === 'Developer' ? 'My Task Snapshot' : 'Team Task Snapshot'}</h3>
                 <p className="text-sm text-muted-foreground">Current breakdown</p>
               </div>
-              {userRole === 'Project Manager' && (
+              {isProjectPM && (
                 <Select value={snapshotMember} onValueChange={setSnapshotMember}>
                   <SelectTrigger className="w-[180px] h-8 text-xs border-border bg-card">
                     <SelectValue placeholder="Filter developer" />
@@ -835,7 +851,7 @@ export function Dashboard() {
       )}
 
       {/* Row 4: Git Contribution & Stale Work (requires single project) */}
-      {userRole === 'Project Manager' && hasProjectSelected && (
+      {isProjectPM && hasProjectSelected && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Git Donut */}
@@ -977,7 +993,7 @@ export function Dashboard() {
       )}
 
       {/* Client View Components */}
-      {userRole === 'Client' && (
+      {effectiveRole === 'Client' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             {/* Project Health */}

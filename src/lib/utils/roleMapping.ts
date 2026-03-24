@@ -19,3 +19,16 @@ export function mapBackendRole(backendRole: string | undefined): Role {
             return 'Project Manager';
     }
 }
+
+/**
+ * Role for dashboard UI: global Client accounts stay Client; otherwise prefer the
+ * current project's membership role (e.g. project-member client vs developer).
+ */
+export function effectiveDashboardRole(
+    globalRole: Role,
+    selectedProjectMemberRole: string | undefined
+): Role {
+    if (globalRole === 'Client') return 'Client';
+    if (selectedProjectMemberRole) return mapBackendRole(selectedProjectMemberRole);
+    return globalRole;
+}

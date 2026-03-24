@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { PaginatedResponse } from '@/types/api';
 import { mapTask } from '@/api/mappers';
 import type { TaskAPIResponse, Task, TaskStatus, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { CommentAPIResponse } from '@/types/comment';
@@ -16,8 +17,8 @@ export interface TaskOption {
 
 /** Fetch all tasks for the current user's projects (no project_id). For time log task dropdown. */
 export async function fetchAllTasks(): Promise<TaskOption[]> {
-    const { data } = await api.get<TaskAPIResponse[]>('/tasks/');
-    return (data ?? []).map((t) => ({
+    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/');
+    return (data.data ?? []).map((t) => ({
         id: String(t.id),
         title: t.title ?? '',
         project: t.project_name ?? '',
@@ -73,10 +74,10 @@ export async function updateTask(
 
 /** Fetch tasks for a project. Returns UI-shaped tasks. */
 export async function fetchProjectTasks(projectId: number | string): Promise<Task[]> {
-    const { data } = await api.get<TaskAPIResponse[]>(`/tasks/`, {
+    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>(`/tasks/`, {
         params: { project_id: projectId },
     });
-    return (data ?? []).map(mapTask);
+    return (data.data ?? []).map(mapTask);
 }
 
 /** Update task status. Returns updated task from API. */
