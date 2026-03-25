@@ -78,7 +78,7 @@ export function MobileDesktopOnlyScreen() {
 }
 
 /**
- * At or below `DESKTOP_ONLY_MAX_BREAKPOINT` (1024px), show the desktop-only message instead of the app.
+ * At or below `DESKTOP_ONLY_MAX_BREAKPOINT` (1366px width), show the desktop-only message instead of the app.
  */
 export function MobileDesktopOnlyGate({ children }: { children: React.ReactNode }) {
   const showDesktopOnly = useSyncDesktopOnlyViewport();
