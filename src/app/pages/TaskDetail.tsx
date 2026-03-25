@@ -5,7 +5,6 @@ import { useNavigate, useLocation, useParams } from 'react-router';
 import {
   ArrowLeft,
   User,
-  Paperclip,
   MoreVertical,
   Send,
   Check,
@@ -14,8 +13,6 @@ import {
   Tag,
   AlertCircle,
   Calendar as CalendarIcon,
-  MessageSquare,
-  ArrowRight,
   History,
   GitBranch,
   Link2,
@@ -48,6 +45,7 @@ import {
 import { formatDueDate, useTask, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useAddAttachmentLink, useDeleteAttachment, downloadTaskAttachment, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches, useAddTaskLabel, useRemoveTaskLabel } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
+import type { Member } from '@/types/member';
 
 function TaskDetailSkeleton() {
   return (
@@ -91,7 +89,26 @@ function TaskNotFound() {
   );
 }
 
-const getActivityLabel = (entry: TaskTimelineEntry) => {
+function resolveAssigneeLabel(idStr: string | null | undefined, members: Member[] | undefined): string {
+  if (idStr == null || idStr === '') return 'Unassigned';
+  const id = Number(idStr);
+  if (Number.isNaN(id)) return String(idStr);
+  const m = members?.find((mem) => mem.userId === id);
+  return m?.name || `User #${id}`;
+}
+
+function timelineActorName(entry: TaskTimelineEntry): string {
+  const u = entry.user;
+  if (u) {
+    return u.name || u.display_name || u.username || 'Someone';
+  }
+  if (entry.activity_type === 'branch_push' && entry.data?.author) {
+    return String(entry.data.author);
+  }
+  return 'Someone';
+}
+
+const getActivityLabel = (entry: TaskTimelineEntry, members?: Member[]) => {
   const formatStatus = (status: string) => {
     return status === 'in_progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1);
   };
@@ -101,13 +118,23 @@ const getActivityLabel = (entry: TaskTimelineEntry) => {
       return 'created this task';
     case 'status_changed':
       return `changed status from ${formatStatus(entry.data?.old_status as string || 'unknown')} to ${formatStatus(entry.data?.new_status as string || 'unknown')}`;
-    case 'comment_added':
-      return 'added a comment';
+    case 'assignment_changed':
+      return `changed assignee from ${resolveAssigneeLabel(entry.data?.old_assignee_id as string | undefined, members)} to ${resolveAssigneeLabel(entry.data?.new_assignee_id as string | undefined, members)}`;
+    case 'comment_added': {
+      const preview = (entry.data?.content as string) || '';
+      return preview ? `commented: ${preview}` : 'added a comment';
+    }
     case 'attachment_uploaded':
       return `added attachment ${entry.data?.original_filename || entry.data?.filename || 'a file'}`;
     case 'hours_logged': {
       const hours = Number(entry.data?.hours) || 0;
       return `logged ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    }
+    case 'commit_linked': {
+      const hash = (entry.data?.commit_hash as string) || '';
+      const short = hash.length > 7 ? hash.slice(0, 7) : hash;
+      const br = (entry.data?.branch as string) || 'branch';
+      return short ? `linked commit ${short} on ${br}` : `linked a commit on ${br}`;
     }
     case 'branch_push': {
       const branch = (entry.data?.branch as string) || 'branch';
@@ -119,25 +146,15 @@ const getActivityLabel = (entry: TaskTimelineEntry) => {
   }
 };
 
-const getActivityIcon = (type: string) => {
-  switch (type) {
-    case 'task_created': return CheckCircle2;
-    case 'status_changed': return ArrowRight;
-    case 'comment_added': return MessageSquare;
-    case 'attachment_uploaded': return Paperclip;
-    case 'hours_logged': return Clock;
-    case 'branch_push': return GitBranch;
-    default: return History;
-  }
-};
-
 const getActivityColor = (type: string) => {
   switch (type) {
     case 'task_created': return 'text-success bg-success/10';
     case 'status_changed': return 'text-primary bg-primary/10';
+    case 'assignment_changed': return 'text-primary bg-primary/10';
     case 'comment_added': return 'text-info bg-info/10';
     case 'attachment_uploaded': return 'text-warning bg-warning/10';
     case 'hours_logged': return 'text-secondary bg-secondary/10';
+    case 'commit_linked': return 'text-muted-foreground bg-muted';
     case 'branch_push': return 'text-info bg-info/10';
     default: return 'text-muted-foreground bg-muted';
   }
@@ -652,26 +669,28 @@ export function TaskDetail() {
                   <Skeleton className="h-12 w-full" />
                   <Skeleton className="h-12 w-full" />
                 </div>
-              ) : timeline && timeline.length > 0 ? (
+              ) : (timeline && timeline.length > 0) || task?.status === 'done' ? (
                 <div className="relative space-y-6 before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border before:via-border before:to-transparent">
-                  {timeline.map((entry) => {
+                  {(timeline ?? []).map((entry) => {
                     if (entry.activity_type === 'branch_push') {
                       const branch = (entry.data?.branch as string) || 'branch';
                       const commitMessage = (entry.data?.commit_message as string) || '';
                       const commitUrlRaw = entry.data?.commit_url as string | undefined;
                       const repo = entry.data?.repo as string | undefined;
-                      const sha = entry.data?.commit_sha as string | undefined;
-                      const commitUrl =
-                        commitUrlRaw || (repo && sha ? `https://github.com/${repo}/commit/${sha}` : null);
+                      const sha = (entry.data?.commit_sha as string | undefined) || '';
+                      const provider = (entry.data?.provider as string) || 'github';
+                      const githubFallback =
+                        provider === 'github' && repo && sha ? `https://github.com/${repo}/commit/${sha}` : null;
+                      const commitUrl = commitUrlRaw || githubFallback;
                       return (
                         <div key={entry.id} className="relative flex items-start space-x-4 pl-1">
                           <div className={`flex items-center justify-center w-8 h-8 rounded-full border border-border shrink-0 z-10 ${getActivityColor(entry.activity_type)}`}>
-                            <GitBranch className="h-4 w-4" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-current" />
                           </div>
                           <div className="flex-1 pt-1">
                             <div className="rounded-lg border border-border bg-card p-3">
                               <div className="text-sm">
-                                <span className="font-semibold">{entry.user?.display_name || entry.user?.username || 'Someone'}</span>
+                                <span className="font-semibold">{timelineActorName(entry)}</span>
                                 <span className="text-muted-foreground"> pushed to </span>
                                 <span className="font-mono text-xs font-medium">{branch}</span>
                                 {commitMessage && (
@@ -702,17 +721,16 @@ export function TaskDetail() {
                         </div>
                       );
                     }
-                    const Icon = getActivityIcon(entry.activity_type);
                     return (
                       <div key={entry.id} className="relative flex items-start space-x-4 pl-1">
                         <div className={`flex items-center justify-center w-8 h-8 rounded-full border border-border shrink-0 z-10 ${getActivityColor(entry.activity_type)}`}>
-                          <Icon className="h-4 w-4" />
+                          <span className="h-2.5 w-2.5 rounded-full bg-current" />
                         </div>
                         <div className="flex-1 pt-1">
                           <div className="text-sm">
-                            <span className="font-semibold">{entry.user?.display_name || entry.user?.username || 'Someone'}</span>
+                            <span className="font-semibold">{timelineActorName(entry)}</span>
                             {' '}
-                            <span className="text-muted-foreground">{getActivityLabel(entry)}</span>
+                            <span className="text-muted-foreground">{getActivityLabel(entry, members)}</span>
                           </div>
                           <div className="text-xs text-muted-foreground mt-0.5">
                             {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
@@ -721,6 +739,17 @@ export function TaskDetail() {
                       </div>
                     );
                   })}
+                  {task?.status === 'done' && (
+                    <div className="relative flex items-start space-x-4 pl-1">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full border border-border shrink-0 z-10 text-success bg-success/10">
+                        <span className="h-2.5 w-2.5 rounded-full bg-current" />
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <div className="text-sm font-medium text-foreground">Task completed</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">This task reached Done.</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No activity logged yet.</p>

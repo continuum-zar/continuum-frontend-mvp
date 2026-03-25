@@ -94,8 +94,11 @@ export async function updateTaskStatus(
 
 /** Fetch comments for a task. Returns raw API comment objects. */
 export async function fetchTaskComments(taskId: number | string): Promise<CommentAPIResponse[]> {
-    const { data } = await api.get<CommentAPIResponse[]>(`/tasks/${taskId}/comments`);
-    return data ?? [];
+    const { data } = await api.get<
+        CommentAPIResponse[] | { comments?: CommentAPIResponse[] }
+    >(`/tasks/${taskId}/comments`);
+    if (Array.isArray(data)) return data;
+    return data?.comments ?? [];
 }
 
 /** Post a comment to a task. Returns the created comment. */
@@ -177,8 +180,11 @@ export async function downloadTaskAttachment(attachmentId: number | string): Pro
 
 /** Fetch timeline for a task. Returns raw API timeline objects. */
 export async function fetchTaskTimeline(taskId: number | string): Promise<TaskTimelineEntry[]> {
-    const { data } = await api.get<TaskTimelineEntry[]>(`/tasks/${taskId}/timeline`);
-    return data ?? [];
+    const { data } = await api.get<
+        TaskTimelineEntry[] | { activities?: TaskTimelineEntry[]; total?: number; skip?: number; limit?: number }
+    >(`/tasks/${taskId}/timeline`);
+    if (Array.isArray(data)) return data;
+    return data?.activities ?? [];
 }
 
 /** Assign a task to a user. PATCH /api/v1/tasks/{id}/assign. */
