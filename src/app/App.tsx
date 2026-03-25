@@ -7,6 +7,7 @@ import { RoleProvider } from './context/RoleContext';
 import { useAuthStore } from '@/store/authStore';
 
 import { ErrorBoundary } from './ErrorBoundary';
+import { MobileDesktopOnlyGate } from './components/MobileDesktopOnlyGate';
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -20,7 +21,9 @@ function App() {
     <ErrorBoundary>
       <RoleProvider>
         <TimeTrackingProvider>
-          <RouterProvider router={router} />
+          <MobileDesktopOnlyGate>
+            <RouterProvider router={router} />
+          </MobileDesktopOnlyGate>
           <Toaster />
         </TimeTrackingProvider>
       </RoleProvider>
