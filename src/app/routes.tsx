@@ -6,6 +6,7 @@ import { ResetPassword } from "./pages/auth/ResetPassword";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { RouteSkeleton } from "./components/ui/RouteSkeleton";
+import { LandingRoute } from "./pages/public/LandingRoute";
 
 // Lazy-loaded pages
 const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
@@ -20,6 +21,10 @@ const RoleSelection = lazy(() => import("./pages/RoleSelection").then(m => ({ de
 const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 
 export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <LandingRoute />,
+  },
   {
     path: "/login",
     Component: Login,
@@ -43,21 +48,12 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/",
     element: (
       <AuthGuard>
         <DashboardLayout />
       </AuthGuard>
     ),
     children: [
-      {
-        path: "/",
-        element: (
-          <Suspense fallback={<RouteSkeleton />}>
-            <Dashboard />
-          </Suspense>
-        ),
-      },
       {
         path: "dashboard",
         element: (
