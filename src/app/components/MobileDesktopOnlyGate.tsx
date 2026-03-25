@@ -1,34 +1,34 @@
 import * as React from "react";
 import { LaptopMinimalCheck } from "lucide-react";
-import { MOBILE_BREAKPOINT } from "@/app/components/ui/use-mobile";
+import { DESKTOP_ONLY_MAX_BREAKPOINT } from "@/app/components/ui/use-mobile";
 
 const HEADLINE_GRADIENT =
   "linear-gradient(151.67deg, rgb(36, 181, 248) 4.62%, rgb(85, 33, 254) 148.53%)";
 
-function getIsMobileViewport(): boolean {
+function getShouldShowDesktopOnlyScreen(): boolean {
   if (typeof window === "undefined") return false;
-  return window.innerWidth < MOBILE_BREAKPOINT;
+  return window.matchMedia(`(max-width: ${DESKTOP_ONLY_MAX_BREAKPOINT}px)`).matches;
 }
 
-function useSyncMobileViewport(): boolean {
-  const [isMobile, setIsMobile] = React.useState(getIsMobileViewport);
+function useSyncDesktopOnlyViewport(): boolean {
+  const [showDesktopOnly, setShowDesktopOnly] = React.useState(getShouldShowDesktopOnlyScreen);
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const query = `(max-width: ${DESKTOP_ONLY_MAX_BREAKPOINT}px)`;
+    const mql = window.matchMedia(query);
     const sync = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+      setShowDesktopOnly(mql.matches);
     };
     mql.addEventListener("change", sync);
     sync();
     return () => mql.removeEventListener("change", sync);
   }, []);
 
-  return isMobile;
+  return showDesktopOnly;
 }
 
 /**
- * Full-viewport message when the viewport is narrow: ask users to use desktop,
- * per product design (Figma mobile frame).
+ * Full-viewport message on phone / tablet widths: ask users to use desktop.
  */
 export function MobileDesktopOnlyScreen() {
   return (
@@ -78,11 +78,11 @@ export function MobileDesktopOnlyScreen() {
 }
 
 /**
- * On narrow viewports, show the desktop-only message instead of the app shell.
+ * At or below `DESKTOP_ONLY_MAX_BREAKPOINT` (1024px), show the desktop-only message instead of the app.
  */
 export function MobileDesktopOnlyGate({ children }: { children: React.ReactNode }) {
-  const isMobile = useSyncMobileViewport();
-  if (isMobile) {
+  const showDesktopOnly = useSyncDesktopOnlyViewport();
+  if (showDesktopOnly) {
     return <MobileDesktopOnlyScreen />;
   }
   return children;
