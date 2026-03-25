@@ -10,6 +10,9 @@ import {
   AlertCircle,
   Clock,
   GitCommit,
+  GitBranch,
+  MessageSquare,
+  Paperclip,
   UserX,
   Zap,
   CheckCircle2,
@@ -294,8 +297,24 @@ export function Dashboard() {
   const activityFeedFromApi = useMemo(() => {
     const list = clientProgress?.recent_activity ?? [];
     return list.map((a, idx) => {
-      const actionLabel = a.type === 'task_complete' ? 'Task Completed' : a.type === 'commit' ? 'Commit Pushed' : a.type === 'logged_hour' ? 'Logged hours' : a.type === 'task_started' ? 'Task Started' : (a.description?.slice(0, 30) ?? 'Activity');
-      const icon = a.type === 'task_complete' ? CheckCircle2 : a.type === 'commit' ? GitCommit : a.type === 'logged_hour' ? Clock : Activity;
+      const actionLabel =
+        a.type === 'task_complete' ? 'Task Completed'
+          : a.type === 'commit' ? 'Commit Pushed'
+            : a.type === 'logged_hour' ? 'Logged hours'
+              : a.type === 'task_status' ? (a.description || 'Status Changed')
+                : a.type === 'task_assignment' ? 'Assignee Changed'
+                  : a.type === 'comment_added' ? 'Comment Added'
+                    : a.type === 'attachment_uploaded' ? 'Attachment Added'
+                      : a.type === 'branch_push' ? 'Branch Push'
+                        : (a.description?.slice(0, 30) ?? 'Activity');
+      const icon =
+        a.type === 'task_complete' ? CheckCircle2
+          : a.type === 'commit' ? GitCommit
+            : a.type === 'logged_hour' ? Clock
+              : a.type === 'comment_added' ? MessageSquare
+                : a.type === 'attachment_uploaded' ? Paperclip
+                  : a.type === 'branch_push' ? GitBranch
+                    : Activity;
       const timeStr = a.date ? formatDistanceToNow(new Date(a.date), { addSuffix: true }) : '';
       return { id: idx, action: actionLabel, target: a.target_title ?? '', user: a.user_name, time: timeStr, icon, color: 'text-muted-foreground', bg: 'bg-muted' };
     });

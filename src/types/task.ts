@@ -52,16 +52,26 @@ export interface Task {
     milestoneId: string;
 }
 
-export type ActivityType = | 'task_created' | 'status_changed' | 'comment_added' | 'attachment_uploaded' | 'hours_logged' | 'branch_push';
+export type ActivityType =
+    | 'task_created'
+    | 'status_changed'
+    | 'assignment_changed'
+    | 'comment_added'
+    | 'attachment_uploaded'
+    | 'hours_logged'
+    | 'commit_linked'
+    | 'branch_push';
 
 export interface TaskTimelineEntry {
-    id: number;
+    id: string;
     activity_type: ActivityType;
-    user: {
+    user?: {
         id: number;
-        username: string;
-        display_name: string | null;
-    };
+        username?: string;
+        display_name?: string | null;
+        name?: string;
+        email?: string | null;
+    } | null;
     timestamp: string;
     data: Record<string, unknown>;
 }
