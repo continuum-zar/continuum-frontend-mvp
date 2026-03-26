@@ -1,0 +1,78 @@
+name: Release Frontend Image
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Tag to publish (optional override)'
+        required: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  release-image:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: continuum-frontend
+      PROD_REPO: continuum-frontend-prod
+      PROD_EVENT_TYPE: frontend_release_ready
+      PROD_OWNER: ${{ vars.PROD_REPO_OWNER || github.repository_owner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release tag
+        id: release_tag
+        run: |
+          if [ -n "${{ github.event.inputs.release_tag }}" ]; then
+            TAG="${{ github.event.inputs.release_tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "value=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: ACR login
+        run: az acr login --name "${{ secrets.ACR_NAME }}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        id: build_push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ steps.release_tag.outputs.value }}
+            ${{ secrets.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+
+      - name: Dispatch frontend release to prod repo
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PROD_DISPATCH_TOKEN }}
+          repository: ${{ env.PROD_OWNER }}/${{ env.PROD_REPO }}
+          event-type: ${{ env.PROD_EVENT_TYPE }}
+          client-payload: |
+            {
+              "service": "frontend",
+              "tag": "${{ steps.release_tag.outputs.value }}",
+              "image": "${{ secrets.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}",
+              "digest": "${{ steps.build_push.outputs.digest }}",
+              "source_repo": "${{ github.repository }}",
+              "source_sha": "${{ github.sha }}",
+              "source_ref": "${{ github.ref }}"
+            }
