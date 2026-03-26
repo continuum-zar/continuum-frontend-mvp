@@ -18,6 +18,7 @@ const CreateTask = lazy(() => import("./pages/CreateTask").then(m => ({ default:
 const Invoices = lazy(() => import("./pages/Invoices").then(m => ({ default: m.Invoices })));
 const ClientPortal = lazy(() => import("./pages/ClientPortal").then(m => ({ default: m.ClientPortal })));
 const RoleSelection = lazy(() => import("./pages/RoleSelection").then(m => ({ default: m.RoleSelection })));
+const AIProjectPlanner = lazy(() => import("./pages/AIProjectPlanner").then(m => ({ default: m.AIProjectPlanner })));
 const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 
 export const router = createBrowserRouter([
@@ -67,6 +68,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteSkeleton />}>
             <ProjectsList />
+          </Suspense>
+        ),
+      },
+      {
+        path: "projects/ai-planner",
+        element: (
+          <Suspense fallback={<RouteSkeleton />}>
+            <AIProjectPlanner />
           </Suspense>
         ),
       },

@@ -13,7 +13,8 @@ import {
     Search,
     ArrowUpDown,
     Check,
-    ChevronDown
+    ChevronDown,
+    Sparkles,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -23,7 +24,6 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
     DialogFooter,
 } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
@@ -183,13 +183,26 @@ export function ProjectsList() {
                     <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading}>
                         <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
-                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                        <DialogTrigger asChild>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" />
                                 New Project
+                                <ChevronDown className="ml-2 h-3 w-3" />
                             </Button>
-                        </DialogTrigger>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setIsAddOpen(true)}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Create Manually
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate('/projects/ai-planner')}>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Create with AI
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                         <DialogContent className="sm:max-w-[425px]">
                             <DialogHeader>
                                 <DialogTitle>Create New Project</DialogTitle>
@@ -473,10 +486,16 @@ export function ProjectsList() {
                     <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
                     <h2 className="text-xl font-semibold mb-2">No projects found</h2>
                     <p className="text-muted-foreground mb-6 max-w-md">Get started by creating your first project to track tasks and progress.</p>
-                    <Button onClick={() => setIsAddOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Project
-                    </Button>
+                    <div className="flex gap-3">
+                        <Button onClick={() => setIsAddOpen(true)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create Manually
+                        </Button>
+                        <Button variant="outline" onClick={() => navigate('/projects/ai-planner')}>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Create with AI
+                        </Button>
+                    </div>
                 </div>
             ) : filteredProjects.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-border rounded-lg bg-muted/10">
