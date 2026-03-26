@@ -132,8 +132,7 @@ function ComponentBackgroundImageAndText1({ text }: ComponentBackgroundImageAndT
   return (
     <Link
       to="/register"
-      style={{ backgroundImage: "linear-gradient(167.275deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)" }}
-      className="content-stretch flex gap-[6px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 no-underline"
+      className="content-stretch flex gap-[6px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 no-underline bg-[#24b5f8] hover:bg-[#297ccb] transition-colors"
     >
       <div aria-hidden="true" className="absolute border border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none rounded-[8px] shadow-[0px_12px_3px_0px_rgba(45,154,249,0),0px_8px_3px_0px_rgba(45,154,249,0.03),0px_4px_3px_0px_rgba(45,154,249,0.11),0px_2px_2px_0px_rgba(45,154,249,0.19),0px_0px_1px_0px_rgba(45,154,249,0.21)]" />
       <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap">{text}</p>
@@ -463,9 +462,8 @@ export default function LandingPage() {
           <div className="content-stretch flex gap-[8px] h-[40px] items-center relative shrink-0">
             <Link
               to="/register"
-              className="h-full relative rounded-[8px] shrink-0 no-underline"
+              className="h-full relative rounded-[8px] shrink-0 no-underline bg-[#24b5f8] hover:bg-[#297ccb] transition-colors"
               data-name="Component 7"
-              style={{ backgroundImage: "linear-gradient(164.237deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)" }}
             >
               <div aria-hidden="true" className="absolute border border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none rounded-[8px] shadow-[0px_12px_3px_0px_rgba(45,154,249,0),0px_8px_3px_0px_rgba(45,154,249,0.03),0px_4px_3px_0px_rgba(45,154,249,0.11),0px_2px_2px_0px_rgba(45,154,249,0.19),0px_0px_1px_0px_rgba(45,154,249,0.21)]" />
               <div className="flex flex-row items-center justify-center size-full">
@@ -1192,18 +1190,18 @@ export default function LandingPage() {
           aria-label="Page sections"
           className="content-stretch flex font-['Satoshi:Medium',sans-serif] gap-[51px] items-center leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] text-center whitespace-nowrap"
         >
-          <a className="relative shrink-0 hover:text-[#0b191f] transition-colors" href="#landing-hero">
+          <span className="relative shrink-0 cursor-default select-none">
             Overview
-          </a>
-          <a className="relative shrink-0 hover:text-[#0b191f] transition-colors" href="#landing-waitlist">
+          </span>
+          <span className="relative shrink-0 cursor-default select-none">
             Waitlist
-          </a>
-          <a className="relative shrink-0 hover:text-[#0b191f] transition-colors" href="#landing-features">
+          </span>
+          <span className="relative shrink-0 cursor-default select-none">
             Features
-          </a>
-          <a className="relative shrink-0 hover:text-[#0b191f] transition-colors" href="#landing-footer">
+          </span>
+          <span className="relative shrink-0 cursor-default select-none">
             Contact
-          </a>
+          </span>
         </nav>
         <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
           <ComponentBackgroundImageAndText1 text="Join Waitlist" />
