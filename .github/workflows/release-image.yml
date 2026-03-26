@@ -17,6 +17,8 @@ permissions:
 jobs:
   release-image:
     runs-on: ubuntu-latest
+    # OIDC subject: repo:<owner>/<repo>:environment:release (stable for all tags; add matching federated credential in Entra)
+    environment: release
     env:
       IMAGE_NAME: continuum-frontend
       PROD_REPO: continuum-frontend-prod
