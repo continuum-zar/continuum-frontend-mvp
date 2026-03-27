@@ -131,7 +131,7 @@ type ComponentBackgroundImageAndText1Props = {
 function ComponentBackgroundImageAndText1({ text }: ComponentBackgroundImageAndText1Props) {
   return (
     <Link
-      to="/register"
+      to="/sign-up"
       style={{ backgroundImage: "linear-gradient(167.275deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)" }}
       className="content-stretch flex gap-[6px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 no-underline"
     >
@@ -324,7 +324,7 @@ function ComponentBackgroundImageAndText({ text, additionalClassNames = "", asLi
     return <div className={className}>{inner}</div>;
   }
   return (
-    <Link to="/register" className={className}>
+    <Link to="/sign-up" className={className}>
       {inner}
     </Link>
   );
@@ -462,7 +462,7 @@ export default function LandingPage() {
           </div>
           <div className="content-stretch flex gap-[8px] h-[40px] items-center relative shrink-0">
             <Link
-              to="/register"
+              to="/sign-up"
               className="h-full relative rounded-[8px] shrink-0 no-underline"
               data-name="Component 7"
               style={{ backgroundImage: "linear-gradient(164.237deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)" }}

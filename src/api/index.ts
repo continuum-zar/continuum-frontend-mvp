@@ -186,6 +186,8 @@ export {
     useClients,
     clientKeys,
 } from './clients';
+export { checkEmailExists } from './auth';
+export type { EmailExistsResponse } from './auth';
 export type { Client, ClientAPIResponse, ClientCreate } from './clients';
 export type { Invoice, InvoiceAPIResponse, InvoiceItem, InvoiceWithItems } from '@/types/invoice';
 export { mapInvoice } from './mappers';

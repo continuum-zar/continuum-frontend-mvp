@@ -1,7 +1,9 @@
 import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
 import { Login } from "./pages/auth/Login";
+import { WaitlistSignUp } from "./pages/auth/WaitlistSignUp";
 import { SignUp } from "./pages/auth/SignUp";
+import { Loading } from "./pages/auth/Loading";
 import { ResetPassword } from "./pages/auth/ResetPassword";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { AuthGuard } from "./components/auth/AuthGuard";
@@ -35,8 +37,16 @@ export const router = createBrowserRouter([
     Component: SignUp,
   },
   {
+    path: "/sign-up",
+    Component: WaitlistSignUp,
+  },
+  {
     path: "/reset-password",
     Component: ResetPassword,
+  },
+  {
+    path: "/loading",
+    Component: Loading,
   },
   {
     path: "/role-selection",

@@ -1,154 +1,172 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Label } from '../../components/ui/label';
-import { Checkbox } from '../../components/ui/checkbox';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import { toast } from 'sonner';
 
 export function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, isLoading, error, clearError } = useAuthStore();
-  const [email, setEmail] = useState('');
+  const prefilledEmail = (location.state as { email?: string } | null)?.email ?? '';
+  const [email, setEmail] = useState(prefilledEmail);
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [touched, setTouched] = useState({
+    email: false,
+    password: false,
+  });
 
   useEffect(() => {
     return () => clearError();
   }, [clearError]);
 
+  const validateEmail = (value: string) => {
+    if (!value.trim()) return 'Email is required';
+    if (!/\S+@\S+\.\S+/.test(value)) return 'Please enter a valid email address';
+    return '';
+  };
+
+  const validatePassword = (value: string) => {
+    if (!value) return 'Password is required';
+    if (value.length < 8) return 'Password must be at least 8 characters';
+    return '';
+  };
+
+  const errors = {
+    email: touched.email ? validateEmail(email) : '',
+    password: touched.password ? validatePassword(password) : '',
+  };
+
+  const handleBlur = (field: keyof typeof touched) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const validateForm = () => {
+    setTouched({ email: true, password: true });
+    return !validateEmail(email) && !validatePassword(password);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
     try {
       await login({ email, password });
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      navigate('/loading', { state: { from: 'login' } });
     } catch (err) {
       console.error('Login error:', err);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden text-foreground">
-      {/* Background dynamic blobs */}
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full mix-blend-multiply dark:mix-blend-screen pointer-events-none animate-pulse" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-info/10 blur-[120px] rounded-full mix-blend-multiply dark:mix-blend-screen pointer-events-none animate-pulse" style={{ animationDelay: '1s' }} />
-
-      <div className="w-full max-w-5xl grid lg:grid-cols-2 bg-card/90 backdrop-blur-xl border border-border rounded-3xl overflow-hidden shadow-xl relative z-10 transition-all duration-500 hover:shadow-primary/5">
-
-        {/* Left Side - Visuals */}
-        <div className="hidden lg:flex flex-col justify-between p-12 bg-muted/50 relative overflow-hidden border-r border-border order-2 lg:order-1">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2670&auto=format&fit=crop')] opacity-[0.03] dark:opacity-10 bg-cover bg-center mix-blend-overlay"></div>
-
-          <div className="relative z-10">
-            <h2 className="text-3xl font-bold text-foreground mb-2">Continuum</h2>
-            <p className="text-muted-foreground font-medium">Welcome back.</p>
-          </div>
-
-          <div className="relative z-10 space-y-6">
-            <div className="flex flex-col items-start gap-3">
-              <div className="h-1 bg-primary w-12 rounded-full mb-2"></div>
-              <h3 className="text-2xl font-semibold text-foreground">Streamline your deep work</h3>
-              <p className="text-muted-foreground leading-relaxed text-sm">
-                Log in to experience our revolutionary suite of powerful tools designed to help you stay focused, connected, and endlessly productive.
-              </p>
-            </div>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[#A8E5FE] to-[#FAF8F4] p-10">
+      <div className="w-[345px] overflow-hidden rounded-2xl shadow-[0px_4px_24px_rgba(0,0,0,0.1)]">
+        <div className="flex h-[118px] w-[345px] flex-col items-center gap-4 border-b border-[#F5F5F5] bg-white px-6 pb-6 pt-9">
+          <div className="flex h-[58px] w-[219px] flex-col items-center gap-3">
+            <img src="/auth/Continuum.svg" alt="Continuum Logo" className="h-[37px] w-[219px]" />
+            <p className="text-center text-xs font-medium leading-[100%] tracking-[-0.12px] text-[#252014] opacity-80">
+              Time track with one click.
+            </p>
           </div>
         </div>
 
-        {/* Right Side - Form */}
-        <div className="p-8 lg:p-12 flex flex-col justify-center relative bg-card order-1 lg:order-2">
-          <div className="max-w-md w-full mx-auto space-y-8">
-            <div className="text-center lg:text-left">
-              <h1 className="text-3xl font-bold text-foreground mb-2 tracking-tight">Sign in</h1>
-              <p className="text-muted-foreground">Enter your credentials to access the dashboard</p>
+        <div className="flex w-[345px] flex-col gap-6 bg-[#F8F9F9] px-6 pb-6 pt-6">
+          <div className="flex h-[88px] w-[297px] flex-col gap-2">
+            <button
+              type="button"
+              aria-disabled="true"
+              title="Google sign-in is not available yet"
+              onClick={(e) => e.preventDefault()}
+              className="relative flex h-10 w-[297px] cursor-not-allowed items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4 py-2"
+            >
+              <img src="/auth/google.svg" alt="Google Logo" className="absolute left-4 h-5 w-5" />
+              <span className="text-sm font-medium leading-[100%] text-[#252014]">Continue with Google</span>
+            </button>
+
+            <button
+              type="button"
+              aria-disabled="true"
+              title="Apple sign-in is not available yet"
+              onClick={(e) => e.preventDefault()}
+              className="relative flex h-10 w-[297px] cursor-not-allowed items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4 py-2"
+            >
+              <img src="/auth/apple.svg" alt="Apple Logo" className="absolute left-4 h-5 w-5" />
+              <span className="text-sm font-medium leading-[100%] text-[#252014]">Continue with Apple</span>
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex w-[297px] flex-col gap-2">
+            <div className="flex w-[297px] flex-col gap-1">
+              <label htmlFor="email" className="text-sm font-medium text-[#252014]">Email</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => handleBlur('email')}
+                placeholder="What's your email address?"
+                required
+                disabled={isLoading}
+                className="h-10 w-[297px] rounded-lg border border-[#E9E9E9] bg-white px-4 py-2 text-sm text-[#252014] outline-none"
+              />
+              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground">Email address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isLoading}
-                  className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-foreground">Password</Label>
-                  <Link
-                    to="/reset-password"
-                    className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
-                  className="bg-input-background border-input text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 transition-all rounded-xl h-12 disabled:opacity-50"
-                />
-              </div>
-
-              <div className="flex items-center space-x-3 pt-2">
-                <Checkbox
-                  id="remember"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  className="border-border text-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                />
-                <label
-                  htmlFor="remember"
-                  className="text-sm text-muted-foreground cursor-pointer font-medium hover:text-foreground transition-colors select-none"
-                >
-                  Remember me for 30 days
-                </label>
-              </div>
-
-              {error && (
-                <div className="flex items-center gap-2 text-destructive text-sm font-medium p-3 bg-destructive/10 rounded-xl animate-in fade-in slide-in-from-top-1">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full h-12 text-md font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-xl mt-4"
+            <div className="flex w-[297px] flex-col gap-1">
+              <label htmlFor="password" className="text-sm font-medium text-[#252014]">Password</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => handleBlur('password')}
+                placeholder="What's your password?"
+                required
                 disabled={isLoading}
+                className="h-10 w-[297px] rounded-lg border border-[#E9E9E9] bg-white px-4 py-2 text-sm text-[#252014] outline-none"
+              />
+              {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
+            </div>
+
+            <span
+              className="self-end cursor-not-allowed text-xs text-[#252014] opacity-60"
+              title="Forgot password is currently unavailable"
+              aria-disabled="true"
+            >
+              Forgot password
+            </span>
+
+            <div className="flex w-[297px] flex-col gap-2">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex h-10 w-[297px] cursor-pointer items-center justify-center rounded-lg border-none bg-[#24B5F8] px-4 py-2 shadow-[0px_3px_9.3px_0px_rgba(44,158,249,0.1)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isLoading ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
                 ) : (
-                  "Sign in"
+                  <span className="text-sm font-semibold text-white">Sign in</span>
                 )}
-              </Button>
-            </form>
+              </button>
 
-            <div className="text-center text-sm text-muted-foreground space-y-4">
-              <div>
-                Don't have an account?{' '}
-                <Link to="/register" className="font-semibold text-primary hover:text-primary/80 transition-colors">
-                  Sign up
-                </Link>
+              {error && <p className="text-center text-xs text-red-600">{error}</p>}
+
+              <div className="flex items-center justify-center gap-1">
+                <p className="text-sm text-[#9FA5A8]">Don't have an account?</p>
+                <Link to="/sign-up" className="text-sm text-[#252014] no-underline">Sign up</Link>
               </div>
             </div>
-          </div>
+          </form>
         </div>
+      </div>
 
+      <div className="absolute mt-[590px] flex h-12 w-[345px] items-center justify-center px-4">
+        <p className="text-center text-[11px] font-medium leading-[1.4] text-[#252014] opacity-60">
+          By clicking "Sign in" or "Continue" above, you acknowledge that you have read and understood, and agree to
+          Continuum's{' '}
+          <span className="cursor-default text-[#252014] underline opacity-80">Terms of Service</span>.
+        </p>
       </div>
     </div>
   );
