@@ -1,7 +1,88 @@
-import React from "react";
+import React, { useState } from "react";
 import clsx from "clsx";
 import { Link } from "react-router";
+import { postWaitlistSignup } from "@/api/auth";
 import svgPaths from "./landing-svg";
+
+function LandingWaitlistForm() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMessage("");
+    setStatus("loading");
+    try {
+      await postWaitlistSignup(email.trim());
+      setStatus("success");
+    } catch {
+      setStatus("error");
+      setErrorMessage("Something went wrong. Please try again in a moment.");
+    }
+  }
+
+  return (
+    <form
+      className="content-stretch flex flex-col gap-[8px] items-center relative shrink-0 w-[476px]"
+      onSubmit={handleSubmit}
+      noValidate
+    >
+      <div className="content-stretch flex gap-[8px] items-start relative shrink-0 w-full">
+        <div className="bg-white flex-[1_0_0] h-[40px] min-h-px min-w-px relative rounded-[8px]" data-name="Component 27">
+          <div
+            aria-hidden="true"
+            className="absolute border border-[#e9e9e9] border-solid inset-0 pointer-events-none rounded-[8px] shadow-[0px_7.928px_17.177px_0px_rgba(26,59,84,0.1)]"
+          />
+          <label className="flex flex-row items-center size-full cursor-text">
+            <span className="sr-only">Email address</span>
+            <input
+              type="email"
+              name="email"
+              required
+              autoComplete="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(ev) => setEmail(ev.target.value)}
+              disabled={status === "loading" || status === "success"}
+              className="w-full h-full bg-transparent border-0 outline-none rounded-[8px] px-[16px] py-[8px] font-['Satoshi:Medium',sans-serif] text-[14px] text-[#252014] placeholder:text-[#606d76] disabled:opacity-70"
+            />
+          </label>
+        </div>
+        <div className="content-stretch flex gap-[8px] h-[40px] items-center relative shrink-0">
+          <button
+            type="submit"
+            disabled={status === "loading" || status === "success"}
+            className="h-full relative rounded-[8px] shrink-0 bg-[#24b5f8] hover:bg-[#297ccb] transition-colors disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed border-0"
+            data-name="Component 7"
+          >
+            <div
+              aria-hidden="true"
+              className="absolute border border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none rounded-[8px] shadow-[0px_12px_3px_0px_rgba(45,154,249,0),0px_8px_3px_0px_rgba(45,154,249,0.03),0px_4px_3px_0px_rgba(45,154,249,0.11),0px_2px_2px_0px_rgba(45,154,249,0.19),0px_0px_1px_0px_rgba(45,154,249,0.21)]"
+            />
+            <div className="flex flex-row items-center justify-center size-full">
+              <div className="content-stretch flex gap-[6px] h-full items-center justify-center px-[16px] py-[8px] relative">
+                <span className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap">
+                  {status === "loading" ? "Sending…" : "Join Waitlist"}
+                </span>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+      {status === "success" ? (
+        <p className="font-['Satoshi:Medium',sans-serif] text-[14px] text-[#0b191f] text-center w-full" role="status">
+          Thanks — check your inbox for a confirmation.
+        </p>
+      ) : null}
+      {status === "error" && errorMessage ? (
+        <p className="font-['Satoshi:Medium',sans-serif] text-[14px] text-red-600 text-center w-full" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
+    </form>
+  );
+}
 
 /** Hero panel images under `public/landing/`. */
 const imgWip = "/landing/83a55141b039a44613c6c93d2b20289d9128f6c1.png";
@@ -450,30 +531,7 @@ export default function LandingPage() {
       >
         <p className="font-['Satoshi:Medium',sans-serif] leading-[1.04] min-w-full not-italic relative shrink-0 text-[#0b191f] text-[62px] text-center w-[min-content]">Join the Waitlist</p>
         <p className="font-['Satoshi:Medium',sans-serif] leading-[24px] not-italic relative shrink-0 text-[#606d76] text-[16px] text-center w-[580px]">We’re building a unified space for sprint planning, frictionless time tracking, and instant invoicing-but we need your help to perfect it. Join our exclusive Beta program to get early access, test our core features, and tell us exactly what your team needs to do its best deep work.</p>
-        <div className="content-stretch flex gap-[8px] items-start relative shrink-0 w-[476px]">
-          <div className="bg-white flex-[1_0_0] h-[40px] min-h-px min-w-px relative rounded-[8px]" data-name="Component 27">
-            <div aria-hidden="true" className="absolute border border-[#e9e9e9] border-solid inset-0 pointer-events-none rounded-[8px] shadow-[0px_7.928px_17.177px_0px_rgba(26,59,84,0.1)]" />
-            <div className="flex flex-row items-center size-full">
-              <div className="content-stretch flex items-center px-[16px] py-[8px] relative size-full">
-                <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#252014] text-[14px] whitespace-nowrap">Email address</p>
-              </div>
-            </div>
-          </div>
-          <div className="content-stretch flex gap-[8px] h-[40px] items-center relative shrink-0">
-            <Link
-              to="/sign-up"
-              className="h-full relative rounded-[8px] shrink-0 no-underline bg-[#24b5f8] hover:bg-[#297ccb] transition-colors"
-              data-name="Component 7"
-            >
-              <div aria-hidden="true" className="absolute border border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none rounded-[8px] shadow-[0px_12px_3px_0px_rgba(45,154,249,0),0px_8px_3px_0px_rgba(45,154,249,0.03),0px_4px_3px_0px_rgba(45,154,249,0.11),0px_2px_2px_0px_rgba(45,154,249,0.19),0px_0px_1px_0px_rgba(45,154,249,0.21)]" />
-              <div className="flex flex-row items-center justify-center size-full">
-                <div className="content-stretch flex gap-[6px] h-full items-center justify-center px-[16px] py-[8px] relative">
-                  <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap">Join Waitlist</p>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
+        <LandingWaitlistForm />
       </div>
       <div
         id="landing-features"
