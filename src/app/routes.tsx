@@ -1,7 +1,9 @@
 import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
 import { Login } from "./pages/auth/Login";
+import { WaitlistSignUp } from "./pages/auth/WaitlistSignUp";
 import { SignUp } from "./pages/auth/SignUp";
+import { Loading } from "./pages/auth/Loading";
 import { ResetPassword } from "./pages/auth/ResetPassword";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { AuthGuard } from "./components/auth/AuthGuard";
@@ -18,6 +20,7 @@ const CreateTask = lazy(() => import("./pages/CreateTask").then(m => ({ default:
 const Invoices = lazy(() => import("./pages/Invoices").then(m => ({ default: m.Invoices })));
 const ClientPortal = lazy(() => import("./pages/ClientPortal").then(m => ({ default: m.ClientPortal })));
 const RoleSelection = lazy(() => import("./pages/RoleSelection").then(m => ({ default: m.RoleSelection })));
+const AIProjectPlanner = lazy(() => import("./pages/AIProjectPlanner").then(m => ({ default: m.AIProjectPlanner })));
 const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 
 export const router = createBrowserRouter([
@@ -34,8 +37,16 @@ export const router = createBrowserRouter([
     Component: SignUp,
   },
   {
+    path: "/sign-up",
+    Component: WaitlistSignUp,
+  },
+  {
     path: "/reset-password",
     Component: ResetPassword,
+  },
+  {
+    path: "/loading",
+    Component: Loading,
   },
   {
     path: "/role-selection",
@@ -67,6 +78,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteSkeleton />}>
             <ProjectsList />
+          </Suspense>
+        ),
+      },
+      {
+        path: "projects/ai-planner",
+        element: (
+          <Suspense fallback={<RouteSkeleton />}>
+            <AIProjectPlanner />
           </Suspense>
         ),
       },

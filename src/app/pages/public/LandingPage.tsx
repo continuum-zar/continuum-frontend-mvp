@@ -131,7 +131,7 @@ type ComponentBackgroundImageAndText1Props = {
 function ComponentBackgroundImageAndText1({ text }: ComponentBackgroundImageAndText1Props) {
   return (
     <Link
-      to="/register"
+      to="/sign-up"
       className="content-stretch flex gap-[6px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 no-underline bg-[#24b5f8] hover:bg-[#297ccb] transition-colors"
     >
       <div aria-hidden="true" className="absolute border border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none rounded-[8px] shadow-[0px_12px_3px_0px_rgba(45,154,249,0),0px_8px_3px_0px_rgba(45,154,249,0.03),0px_4px_3px_0px_rgba(45,154,249,0.11),0px_2px_2px_0px_rgba(45,154,249,0.19),0px_0px_1px_0px_rgba(45,154,249,0.21)]" />
@@ -323,7 +323,7 @@ function ComponentBackgroundImageAndText({ text, additionalClassNames = "", asLi
     return <div className={className}>{inner}</div>;
   }
   return (
-    <Link to="/register" className={className}>
+    <Link to="/sign-up" className={className}>
       {inner}
     </Link>
   );
@@ -461,7 +461,7 @@ export default function LandingPage() {
           </div>
           <div className="content-stretch flex gap-[8px] h-[40px] items-center relative shrink-0">
             <Link
-              to="/register"
+              to="/sign-up"
               className="h-full relative rounded-[8px] shrink-0 no-underline bg-[#24b5f8] hover:bg-[#297ccb] transition-colors"
               data-name="Component 7"
             >
