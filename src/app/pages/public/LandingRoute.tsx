@@ -27,7 +27,7 @@ export function LandingRoute() {
   }
 
   return (
-    <main className="relative h-[2650px] min-h-screen w-full overflow-hidden bg-[#f9fafb]">
+    <main className="relative h-[2870px] min-h-screen w-full overflow-hidden bg-[#f9fafb]">
       <LandingPage />
     </main>
   );
