@@ -22,6 +22,12 @@ const ClientPortal = lazy(() => import("./pages/ClientPortal").then(m => ({ defa
 const RoleSelection = lazy(() => import("./pages/RoleSelection").then(m => ({ default: m.RoleSelection })));
 const AIProjectPlanner = lazy(() => import("./pages/AIProjectPlanner").then(m => ({ default: m.AIProjectPlanner })));
 const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
+const DashboardPlaceholder = lazy(() =>
+  import("./pages/DashboardPlaceholder").then((m) => ({ default: m.DashboardPlaceholder }))
+);
+const WelcomeContinuumView = lazy(() =>
+  import("./pages/WelcomeContinuumView").then((m) => ({ default: m.WelcomeContinuumView }))
+);
 
 export const router = createBrowserRouter([
   {
@@ -54,6 +60,26 @@ export const router = createBrowserRouter([
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
           <RoleSelection />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/dashboard-placeholder",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <DashboardPlaceholder />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/dashboard-placeholder/welcome",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <WelcomeContinuumView />
         </Suspense>
       </AuthGuard>
     ),

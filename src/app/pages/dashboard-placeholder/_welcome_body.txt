@@ -1,0 +1,305 @@
+          <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-[1_0_0] flex-col gap-[16px] h-full items-end min-h-px min-w-px overflow-x-clip overflow-y-auto pl-[24px] pr-[16px] py-[16px] relative rounded-[8px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)] z-[1]" data-node-id="8:3521">
+            <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3522">
+              <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3523">
+                <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-open-dot" data-node-id="8:3524">
+                  <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderOpenDot} />
+                </div>
+                <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] whitespace-nowrap" data-node-id="8:3526">
+                  Welcome to Continuum!
+                </p>
+              </div>
+              <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3530">
+                <div className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0" data-name="Component 7" data-node-id="8:3531">
+                  <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3532">
+                    <div className="relative shrink-0 size-[16px]" data-name="lucide/building-2" data-node-id="8:3533">
+                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideBuilding2} />
+                    </div>
+                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="8:3535">
+                      Client name will appear here
+                    </p>
+                  </div>
+                  <div className="relative shrink-0 size-[16px]" data-name="lucide/x" data-node-id="8:3536">
+                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideX} />
+                  </div>
+                </div>
+                <div className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px]" data-name="Component 5" data-node-id="8:3538">
+                  <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="8:3539">
+                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
+                  </div>
+                </div>
+                <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 9" data-node-id="8:3541">
+                  <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-cog" data-node-id="8:3542">
+                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderCog} />
+                  </div>
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3544">
+                    Edit
+                  </p>
+                </div>
+                <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 6" data-node-id="8:3545">
+                  <div className="relative shrink-0 size-[16px]" data-name="lucide/share" data-node-id="8:3546">
+                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideShare} />
+                  </div>
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3548">
+                    Share
+                  </p>
+                </div>
+                <div className="content-stretch flex gap-[6px] h-[32px] items-center justify-center pl-[16px] pr-[12px] py-[8px] relative rounded-[8px] shrink-0" data-name="Component 8" data-node-id="8:3549" style={{ backgroundImage: "linear-gradient(164.94079331184741deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)" }}>
+                  <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap" data-node-id="8:3550">
+                    Export
+                  </p>
+                  <div className="relative shrink-0 size-[16px]" data-name="lucide/chevron-down" data-node-id="8:3551">
+                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideChevronDown} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="h-0 relative shrink-0 w-full" data-node-id="8:3553">
+              <div className="absolute inset-[-0.57px_0]">
+                <img alt="" className="block max-w-none size-full" src={imgVector8} />
+              </div>
+            </div>
+            <div className="content-stretch flex flex-[1_0_0] flex-col items-start min-h-px min-w-px relative w-full" data-node-id="8:3554">
+              <div className="content-stretch flex flex-col gap-[64px] items-center pb-[32px] pt-[48px] relative shrink-0 w-full" data-node-id="8:3555">
+                <div className="h-[191px] relative shrink-0 w-full" data-node-id="8:3556">
+                  <div className="-translate-x-1/2 absolute h-[175.151px] left-1/2 top-0 w-[350.302px]" data-node-id="8:3557">
+                    <div className="absolute inset-[-4.85%_-2.43%]">
+                      <img alt="" className="block max-w-none size-full" src={imgFrame273} />
+                    </div>
+                  </div>
+                  <p className="absolute font-['Satoshi:Regular',sans-serif] leading-[normal] left-[calc(50%-24px)] not-italic overflow-hidden text-[#0b191f] text-[70.704px] text-ellipsis top-[49px] whitespace-nowrap" data-node-id="8:3560">
+                    0
+                  </p>
+                  <p className="absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[calc(50%-86px)] not-italic overflow-hidden text-[#727d83] text-[24px] text-ellipsis top-[159px] whitespace-nowrap" data-node-id="8:3561">
+                    Project on track
+                  </p>
+                </div>
+                <div className="content-stretch flex flex-col gap-[64px] items-start max-w-[815px] relative shrink-0 w-[815px]" data-node-id="8:3562">
+                  <div className="content-stretch flex gap-[10px] h-[156px] items-start relative shrink-0 w-full" data-node-id="8:3563">
+                    <div className="content-stretch flex flex-[1_0_0] gap-[16px] items-center min-h-px min-w-px relative self-stretch shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)]" data-node-id="8:3580">
+                      <div className="bg-white border border-[#ededed] border-solid content-stretch flex flex-[1_0_0] h-full items-start min-h-px min-w-px p-[24px] relative rounded-[12px]" data-node-id="8:3581">
+                        <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-end min-h-px min-w-px relative" data-node-id="8:3582">
+                          <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 size-[32px]" data-name="Component 7" data-node-id="8:3583">
+                            <div className="relative shrink-0 size-[16px]" data-name="lucide/plus" data-node-id="8:3586">
+                              <img alt="" className="absolute block max-w-none size-full" src={imgLucidePlus} />
+                            </div>
+                          </div>
+                          <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3588">
+                            <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3589">
+                              <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[4px] items-start leading-[normal] not-italic relative shrink-0 w-full" data-node-id="8:3590">
+                                <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-[16px] text-ellipsis whitespace-nowrap" data-node-id="8:3591">
+                                  New sprint
+                                </p>
+                                <p className="min-w-full relative shrink-0 text-[#727d83] text-[14px] w-[min-content]" data-node-id="8:3592">
+                                  Create new sprint
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white border border-[#ededed] border-solid content-stretch flex flex-[1_0_0] h-full items-start min-h-px min-w-px p-[24px] relative rounded-[12px]" data-node-id="8:3593">
+                        <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-end min-h-px min-w-px relative" data-node-id="8:3594">
+                          <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 size-[32px]" data-name="Component 7" data-node-id="8:3595">
+                            <div className="relative shrink-0 size-[16px]" data-name="lucide/paperclip" data-node-id="8:3598">
+                              <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
+                            </div>
+                          </div>
+                          <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3600">
+                            <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3601">
+                              <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[4px] items-start not-italic relative shrink-0 w-full" data-node-id="8:3602">
+                                <p className="leading-[normal] overflow-hidden relative shrink-0 text-[#0b191f] text-[16px] text-ellipsis whitespace-nowrap" data-node-id="8:3603">
+                                  Drop files here
+                                </p>
+                                <p className="leading-[0] min-w-full relative shrink-0 text-[#727d83] text-[14px] w-[min-content]" data-node-id="8:3604">
+                                  <span className="leading-[normal]">{`or `}</span>
+                                  <span className="[text-decoration-skip-ink:none] decoration-solid leading-[normal] underline">browse your computer</span>
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3605">
+                    <div className="content-stretch flex flex-col gap-[16px] h-[40px] items-start relative shrink-0 w-full" data-node-id="8:3606">
+                      <div className="content-stretch flex flex-[1_0_0] items-center justify-between min-h-px min-w-px relative w-full" data-node-id="8:3607">
+                        <div className="content-stretch flex items-center relative shrink-0" data-node-id="8:3608">
+                          <div className="content-stretch flex flex-col items-start relative shrink-0" data-node-id="8:3609">
+                            <div className="content-stretch flex gap-[8px] items-center justify-center relative shrink-0" data-node-id="8:3610">
+                              <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[24px] whitespace-nowrap" data-node-id="8:3611">
+                                Sprints
+                              </p>
+                              <div className="relative shrink-0 size-[16px]" data-name="lucide/info" data-node-id="8:3612">
+                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideInfo} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3650">
+                      <div className="border border-[#ebedee] border-solid content-stretch flex items-start overflow-clip relative rounded-[12px] shrink-0 w-full" data-node-id="8:3651">
+                        <div className="bg-white content-stretch flex flex-[1_0_0] items-start min-h-px min-w-px p-[24px] relative" data-node-id="8:3652">
+                          <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-start min-h-px min-w-px relative" data-node-id="8:3653">
+                            <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 size-[32px]" data-name="Component 7" data-node-id="8:3654">
+                              <div className="relative shrink-0 size-[16px]" data-name="lucide/circle-check-big" data-node-id="8:3657">
+                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideCircleCheckBig} />
+                              </div>
+                            </div>
+                            <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3659">
+                              <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full" data-node-id="8:3660">
+                                <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[4px] items-start leading-[normal] not-italic relative shrink-0 w-full" data-node-id="8:3661">
+                                  <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-[16px] text-ellipsis whitespace-nowrap" data-node-id="8:3662">
+                                    Done
+                                  </p>
+                                  <p className="min-w-full relative shrink-0 text-[#727d83] text-[14px] w-[min-content]" data-node-id="8:3663">
+                                    Short message goes here
+                                  </p>
+                                </div>
+                                <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3664">
+                                  <div className="bg-[#e4eaec] h-[6px] overflow-clip relative rounded-[26px] shrink-0 w-full" data-node-id="8:3665">
+                                    <div className="absolute bg-[#0b191f] left-0 rounded-[999px] size-[6px] top-0" data-node-id="8:3666" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="relative self-stretch shrink-0 w-0" data-name="Divider" data-node-id="8:3667">
+                          <div className="absolute inset-[0_-0.5px]">
+                            <img alt="" className="block max-w-none size-full" src={imgDivider} />
+                          </div>
+                        </div>
+                        <div className="bg-white content-stretch flex flex-[1_0_0] items-start min-h-px min-w-px p-[24px] relative" data-node-id="8:3669">
+                          <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-start min-h-px min-w-px relative" data-node-id="8:3670">
+                            <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 size-[32px]" data-name="Component 7" data-node-id="8:3671">
+                              <div className="relative shrink-0 size-[16px]" data-name="lucide/circle-dashed" data-node-id="8:3674">
+                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideCircleDashed} />
+                              </div>
+                            </div>
+                            <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3676">
+                              <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full" data-node-id="8:3677">
+                                <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[4px] items-start leading-[normal] not-italic relative shrink-0 w-full" data-node-id="8:3678">
+                                  <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-[16px] text-ellipsis whitespace-nowrap" data-node-id="8:3679">
+                                    In progress
+                                  </p>
+                                  <p className="min-w-full relative shrink-0 text-[#727d83] text-[14px] w-[min-content]" data-node-id="8:3680">
+                                    Short message goes here
+                                  </p>
+                                </div>
+                                <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3681">
+                                  <div className="bg-[#e4eaec] h-[6px] overflow-clip relative rounded-[26px] shrink-0 w-full" data-node-id="8:3682">
+                                    <div className="absolute bg-[#0b191f] left-[0.33px] rounded-[999px] size-[6px] top-0" data-node-id="8:3683" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="relative self-stretch shrink-0 w-0" data-name="Divider" data-node-id="8:3684">
+                          <div className="absolute inset-[0_-0.5px]">
+                            <img alt="" className="block max-w-none size-full" src={imgDivider} />
+                          </div>
+                        </div>
+                        <div className="bg-white content-stretch flex flex-[1_0_0] items-start min-h-px min-w-px p-[24px] relative" data-node-id="8:3686">
+                          <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-start min-h-px min-w-px relative" data-node-id="8:3687">
+                            <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 size-[32px]" data-name="Component 7" data-node-id="8:3688">
+                              <div className="relative shrink-0 size-[16px]" data-name="lucide/traffic-cone" data-node-id="8:3691">
+                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideTrafficCone} />
+                              </div>
+                            </div>
+                            <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3693">
+                              <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full" data-node-id="8:3694">
+                                <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[4px] items-start leading-[normal] not-italic relative shrink-0 w-full" data-node-id="8:3695">
+                                  <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-[16px] text-ellipsis whitespace-nowrap" data-node-id="8:3696">
+                                    Blocked
+                                  </p>
+                                  <p className="min-w-full relative shrink-0 text-[#727d83] text-[14px] w-[min-content]" data-node-id="8:3697">
+                                    Short message goes here
+                                  </p>
+                                </div>
+                                <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3698">
+                                  <div className="bg-[#e4eaec] h-[6px] overflow-clip relative rounded-[26px] shrink-0 w-full" data-node-id="8:3699">
+                                    <div className="absolute bg-[#0b191f] left-[-0.33px] rounded-[999px] size-[6px] top-0" data-node-id="8:3700" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3717">
+                    <div className="content-stretch flex flex-col gap-[16px] h-[40px] items-start justify-center relative shrink-0 w-full" data-node-id="8:3718">
+                      <div className="content-stretch flex flex-[1_0_0] items-center justify-between min-h-px min-w-px relative w-full" data-node-id="8:3719">
+                        <div className="content-stretch flex items-center relative shrink-0" data-node-id="8:3720">
+                          <div className="content-stretch flex flex-col items-start relative shrink-0" data-node-id="8:3721">
+                            <div className="content-stretch flex gap-[8px] items-center justify-center relative shrink-0" data-node-id="8:3722">
+                              <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[24px] whitespace-nowrap" data-node-id="8:3723">
+                                Members
+                              </p>
+                              <div className="relative shrink-0 size-[16px]" data-name="lucide/info" data-node-id="8:3724">
+                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideInfo} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="border border-[#ebedee] border-solid content-stretch flex gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 2" data-node-id="8:3726" style={{ backgroundImage: "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(168.89065931200642deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)" }}>
+                          <div className="relative shrink-0 size-[24px]" data-name="lucide/plus" data-node-id="8:3727">
+                            <img alt="" className="absolute block max-w-none size-full" src={imgLucidePlus1} />
+                          </div>
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3729">
+                            Invite Members
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="content-stretch flex items-start relative shrink-0 w-full" data-node-id="8:3761">
+                      <div className="bg-white border border-[#ebedee] border-solid content-stretch flex items-start p-[24px] relative rounded-[12px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-[260px]" data-node-id="8:3762">
+                        <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-start min-h-px min-w-px relative" data-node-id="8:3763">
+                          <div className="content-stretch flex h-[40px] items-center relative rounded-[8px] shrink-0 w-full" data-name="Component 13" data-node-id="8:3764">
+                            <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3765">
+                              <div className="bg-[#f17173] content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[35px]" data-name="Component 31" data-node-id="8:3766">
+                                <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[13.13px] text-white whitespace-nowrap" data-node-id="I8:3766;2032:902">
+                                  <p className="leading-[0.4]">AS</p>
+                                </div>
+                              </div>
+                              <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] items-start justify-center leading-[normal] not-italic relative shrink-0 whitespace-nowrap" data-node-id="8:3767">
+                                <p className="relative shrink-0 text-[#0b191f] text-[14px]" data-node-id="8:3768">
+                                  Amukelani Shiringani
+                                </p>
+                                <p className="relative shrink-0 text-[#727d83] text-[12px]" data-node-id="8:3769">
+                                  Product Designer
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3770">
+                            <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[8px] items-start leading-[normal] not-italic relative shrink-0 text-[14px] w-full whitespace-nowrap" data-node-id="8:3771">
+                              <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3772">
+                                <p className="relative shrink-0 text-[#727d83]" data-node-id="8:3773">
+                                  Total hours
+                                </p>
+                                <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-ellipsis w-[34px]" data-node-id="8:3774">
+                                  0
+                                </p>
+                              </div>
+                              <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3775">
+                                <p className="relative shrink-0 text-[#727d83]" data-node-id="8:3776">
+                                  Task completed
+                                </p>
+                                <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-ellipsis w-[34px]" data-node-id="8:3777">
+                                  0
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
