@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+import { Check, Plus } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Dialog,
@@ -41,7 +43,37 @@ type CreateTaskModalProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+type ChecklistRow = { id: string; text: string; done: boolean };
+
 export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
+  const [checklistItems, setChecklistItems] = useState<ChecklistRow[]>([]);
+
+  const addChecklistRow = useCallback(() => {
+    setChecklistItems((prev) => [...prev, { id: crypto.randomUUID(), text: "", done: false }]);
+  }, []);
+
+  const updateChecklistText = useCallback((id: string, text: string) => {
+    setChecklistItems((prev) => prev.map((r) => (r.id === id ? { ...r, text } : r)));
+  }, []);
+
+  const toggleChecklist = useCallback((id: string) => {
+    setChecklistItems((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        if (!r.done && !r.text.trim()) return r;
+        return { ...r, done: !r.done };
+      }),
+    );
+  }, []);
+
+  const removeChecklistIfEmpty = useCallback((id: string) => {
+    setChecklistItems((prev) => prev.filter((r) => !(r.id === id && !r.text.trim())));
+  }, []);
+
+  useEffect(() => {
+    if (!open) setChecklistItems([]);
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
@@ -267,6 +299,70 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
                       <img alt="" className="block size-[7px] shrink-0 object-contain" src={imgLucideCheck1} />
                     </span>
                   </div>
+                </div>
+              </div>
+
+              <div className="relative h-0 w-full shrink-0">
+                <div className="absolute inset-x-0 -top-px">
+                  <img alt="" className="block h-px w-full max-w-none" src={imgVector15} />
+                </div>
+              </div>
+
+              <div className="flex w-full flex-col gap-4">
+                <div className="flex w-full items-center justify-between">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    Checklist
+                  </p>
+                  <button
+                    type="button"
+                    onClick={addChecklistRow}
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    aria-label="Add checklist item"
+                  >
+                    <Plus className="size-4 text-[#0b191f]" strokeWidth={2} />
+                  </button>
+                </div>
+                <div className="flex w-full max-w-[363px] flex-col gap-2">
+                  {checklistItems.map((item) => (
+                    <div key={item.id} className="flex w-full min-w-0 items-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleChecklist(item.id)}
+                        className={cn(
+                          "flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-solid transition-colors",
+                          item.done
+                            ? "border-0 bg-[#24B5F8]"
+                            : "border-[#ebedee] bg-[#f9f9f9]",
+                        )}
+                        aria-label={item.done ? "Mark checklist item incomplete" : "Mark checklist item complete"}
+                      >
+                        {item.done && <Check className="size-[13px] text-white" strokeWidth={2.5} />}
+                      </button>
+                      <div className="min-w-0 flex-1 overflow-hidden px-4 py-1">
+                        {item.done ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleChecklist(item.id)}
+                            className="w-full cursor-pointer text-left font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#0b191f] opacity-50 line-through"
+                          >
+                            {item.text}
+                          </button>
+                        ) : (
+                          <input
+                            type="text"
+                            value={item.text}
+                            onChange={(e) => updateChecklistText(item.id, e.target.value)}
+                            onBlur={() => removeChecklistIfEmpty(item.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                            }}
+                            placeholder="Checklist item..."
+                            className="w-full border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
