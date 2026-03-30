@@ -1,88 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import clsx from "clsx";
 import { Link } from "react-router";
-import { postWaitlistSignup } from "@/api/auth";
 import svgPaths from "./landing-svg";
-
-function LandingWaitlistForm() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [errorMessage, setErrorMessage] = useState("");
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setErrorMessage("");
-    setStatus("loading");
-    try {
-      await postWaitlistSignup(email.trim());
-      setStatus("success");
-    } catch {
-      setStatus("error");
-      setErrorMessage("Something went wrong. Please try again in a moment.");
-    }
-  }
-
-  return (
-    <form
-      className="content-stretch flex flex-col gap-[8px] items-center relative shrink-0 w-[476px]"
-      onSubmit={handleSubmit}
-      noValidate
-    >
-      <div className="content-stretch flex gap-[8px] items-start relative shrink-0 w-full">
-        <div className="bg-white flex-[1_0_0] h-[40px] min-h-px min-w-px relative rounded-[8px]" data-name="Component 27">
-          <div
-            aria-hidden="true"
-            className="absolute border border-[#e9e9e9] border-solid inset-0 pointer-events-none rounded-[8px] shadow-[0px_7.928px_17.177px_0px_rgba(26,59,84,0.1)]"
-          />
-          <label className="flex flex-row items-center size-full cursor-text">
-            <span className="sr-only">Email address</span>
-            <input
-              type="email"
-              name="email"
-              required
-              autoComplete="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(ev) => setEmail(ev.target.value)}
-              disabled={status === "loading" || status === "success"}
-              className="w-full h-full bg-transparent border-0 outline-none rounded-[8px] px-[16px] py-[8px] font-['Satoshi:Medium',sans-serif] text-[14px] text-[#252014] placeholder:text-[#606d76] disabled:opacity-70"
-            />
-          </label>
-        </div>
-        <div className="content-stretch flex gap-[8px] h-[40px] items-center relative shrink-0">
-          <button
-            type="submit"
-            disabled={status === "loading" || status === "success"}
-            className="h-full relative rounded-[8px] shrink-0 bg-[#24b5f8] hover:bg-[#297ccb] transition-colors disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed border-0"
-            data-name="Component 7"
-          >
-            <div
-              aria-hidden="true"
-              className="absolute border border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none rounded-[8px] shadow-[0px_12px_3px_0px_rgba(45,154,249,0),0px_8px_3px_0px_rgba(45,154,249,0.03),0px_4px_3px_0px_rgba(45,154,249,0.11),0px_2px_2px_0px_rgba(45,154,249,0.19),0px_0px_1px_0px_rgba(45,154,249,0.21)]"
-            />
-            <div className="flex flex-row items-center justify-center size-full">
-              <div className="content-stretch flex gap-[6px] h-full items-center justify-center px-[16px] py-[8px] relative">
-                <span className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap">
-                  {status === "loading" ? "Sending…" : "Join Waitlist"}
-                </span>
-              </div>
-            </div>
-          </button>
-        </div>
-      </div>
-      {status === "success" ? (
-        <p className="font-['Satoshi:Medium',sans-serif] text-[14px] text-[#0b191f] text-center w-full" role="status">
-          Thanks — check your inbox for a confirmation.
-        </p>
-      ) : null}
-      {status === "error" && errorMessage ? (
-        <p className="font-['Satoshi:Medium',sans-serif] text-[14px] text-red-600 text-center w-full" role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
-    </form>
-  );
-}
 
 /** Hero panel images under `public/landing/`. */
 const imgWip = "/landing/83a55141b039a44613c6c93d2b20289d9128f6c1.png";
@@ -386,9 +305,16 @@ type ComponentBackgroundImageAndTextProps = {
   additionalClassNames?: string;
   /** When false, render a non-interactive div (e.g. decorative hidden elements). */
   asLink?: boolean;
+  /** Destination for the outline button (default sign-up). */
+  to?: string;
 };
 
-function ComponentBackgroundImageAndText({ text, additionalClassNames = "", asLink = true }: ComponentBackgroundImageAndTextProps) {
+function ComponentBackgroundImageAndText({
+  text,
+  additionalClassNames = "",
+  asLink = true,
+  to = "/sign-up",
+}: ComponentBackgroundImageAndTextProps) {
   const className = clsx(
     "bg-white content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0",
     asLink && "no-underline",
@@ -404,7 +330,7 @@ function ComponentBackgroundImageAndText({ text, additionalClassNames = "", asLi
     return <div className={className}>{inner}</div>;
   }
   return (
-    <Link to="/sign-up" className={className}>
+    <Link to={to} className={className}>
       {inner}
     </Link>
   );
@@ -503,22 +429,22 @@ export default function LandingPage() {
             <span className="leading-[1.04]">connects delivery with profitability.</span>
           </p>
         </div>
-        <ComponentBackgroundImageAndText text="Join Waitlist" />
+        <ComponentBackgroundImageAndText text="Start for free" />
       </div>
       <div className="absolute bg-gradient-to-b from-[rgba(255,255,255,0)] h-[453px] left-0 to-[#f9fafb] top-[1001px] w-[1512px]" />
-      <div className="absolute bg-gradient-to-b from-[rgba(255,255,255,0)] h-[253px] left-0 to-[#f9fafb] top-[5384px] w-[1512px]" />
-      <div className="absolute flex h-[453px] items-center justify-center left-0 top-[1359px] w-[1512px]">
+      <div className="absolute bg-gradient-to-b from-[rgba(255,255,255,0)] h-[253px] left-0 to-[#f9fafb] top-[5306px] w-[1512px]" />
+      <div className="absolute flex h-[453px] items-center justify-center left-0 top-[1281px] w-[1512px]">
         <div className="flex-none rotate-180">
           <div className="bg-gradient-to-b from-[rgba(255,255,255,0)] h-[453px] to-[#f9fafb] w-[1512px]" />
         </div>
       </div>
-      <div className="absolute flex h-[985px] items-center justify-center left-0 top-[5637px] w-[1512px]">
+      <div className="absolute flex h-[985px] items-center justify-center left-0 top-[5559px] w-[1512px]">
         <div className="flex-none rotate-180">
           <div className="bg-gradient-to-b from-[rgba(255,255,255,0)] h-[985px] to-[#f9fafb] w-[1512px]" />
         </div>
       </div>
-      <div className="-translate-x-1/2 absolute bg-[#f9fafb] h-[1378px] left-1/2 top-[1458px] w-[1512px]" />
-      <div className="absolute h-[378.896px] left-[-123.73px] top-[2248px] w-[1823.234px]">
+      <div className="-translate-x-1/2 absolute bg-[#f9fafb] h-[1378px] left-1/2 top-[1380px] w-[1512px]" />
+      <div className="absolute h-[378.896px] left-[-123.73px] top-[2170px] w-[1823.234px]">
         <div className="absolute inset-[-3.17%_0_-3.17%_-0.66%]">
           <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 1835.7 402.904">
             <path d={svgPaths.p296fcf40} id="Vector 12" stroke="var(--stroke-0, #E4EAEC)" strokeWidth="24" />
@@ -526,16 +452,19 @@ export default function LandingPage() {
         </div>
       </div>
       <div
-        id="landing-waitlist"
-        className="-translate-x-1/2 absolute content-stretch flex flex-col gap-[16px] items-center left-1/2 top-[1148px] w-[776px] scroll-mt-28"
+        id="landing-features-heading"
+        className="-translate-x-1/2 absolute content-stretch flex flex-col gap-[16px] items-center left-1/2 text-center top-[1260px] w-[776px] scroll-mt-28"
       >
-        <p className="font-['Satoshi:Medium',sans-serif] leading-[1.04] min-w-full not-italic relative shrink-0 text-[#0b191f] text-[62px] text-center w-[min-content]">Join the Waitlist</p>
-        <p className="font-['Satoshi:Medium',sans-serif] leading-[24px] not-italic relative shrink-0 text-[#606d76] text-[16px] text-center w-[580px]">We’re building a unified space for sprint planning, frictionless time tracking, and instant invoicing-but we need your help to perfect it. Join our exclusive Beta program to get early access, test our core features, and tell us exactly what your team needs to do its best deep work.</p>
-        <LandingWaitlistForm />
+        <h2 className="font-['Satoshi:Medium',sans-serif] leading-[1.04] m-0 min-w-full not-italic relative shrink-0 text-[#0b191f] text-[62px] w-[min-content]">
+          Designed for deep work
+        </h2>
+        <p className="font-['Satoshi:Medium',sans-serif] leading-[26px] m-0 not-italic relative shrink-0 text-[#606d76] text-[16px] w-[580px]">
+          Eliminate administrative drag. Continuum gets out of the way so your team can focus on shipping.
+        </p>
       </div>
       <div
         id="landing-features"
-        className="-translate-x-1/2 absolute content-start flex flex-wrap gap-[12px] items-start left-[calc(50%+12.5px)] shadow-[209px_356px_116px_0px_rgba(26,59,84,0),134px_228px_106px_0px_rgba(26,59,84,0.01),75px_128px_89px_0px_rgba(26,59,84,0.02),33px_57px_66px_0px_rgba(26,59,84,0.04),8px_14px_36px_0px_rgba(26,59,84,0.05)] top-[1518px] w-[1187px] scroll-mt-28"
+        className="-translate-x-1/2 absolute content-start flex flex-wrap gap-[12px] items-start left-[calc(50%+12.5px)] shadow-[209px_356px_116px_0px_rgba(26,59,84,0),134px_228px_106px_0px_rgba(26,59,84,0.01),75px_128px_89px_0px_rgba(26,59,84,0.02),33px_57px_66px_0px_rgba(26,59,84,0.04),8px_14px_36px_0px_rgba(26,59,84,0.05)] top-[1440px] w-[1187px] scroll-mt-28"
       >
         <div className="content-stretch flex flex-col gap-[10px] h-[564px] items-center overflow-clip p-[48px] relative rounded-[36px] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] shrink-0 w-[700px]" style={{ backgroundImage: "linear-gradient(rgba(178, 230, 247, 0.48) 0%, rgba(253, 251, 247, 0.48) 100%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)" }}>
           <div className="-translate-x-1/2 absolute left-1/2 size-[700px] top-[40px]">
@@ -554,16 +483,15 @@ export default function LandingPage() {
               </svg>
             </div>
           </div>
-          <div className="content-stretch flex flex-col gap-[36px] items-center relative shrink-0 w-full">
-            <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[24px] items-center not-italic relative shrink-0 text-center">
-              <p className="leading-[0] relative shrink-0 text-[#0b191f] text-[38.319px] tracking-[-0.48px] tracking-[-1.1496px] whitespace-nowrap">
-                <span className="leading-[1.04]">{`Frictionless `}</span>
-                <span className="font-['Satoshi:Bold',sans-serif] leading-[1.04]">Time Logging</span>
-              </p>
-              <p className="leading-[26px] relative shrink-0 text-[#606d76] text-[16px] w-[440px]">Log hours without leaving your workflow. Track time directly on tasks or retroactively fill your week in seconds, not hours.</p>
-            </div>
+          <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[10px] items-center not-italic relative shrink-0 text-center w-full">
+            <p className="leading-[0] relative shrink-0 text-[#0b191f] text-[38.319px] tracking-[-0.48px] tracking-[-1.1496px] whitespace-nowrap">
+              <span className="leading-[1.04]">{`Frictionless `}</span>
+              <span className="font-['Satoshi:Bold',sans-serif] leading-[1.04]">Time Logging</span>
+            </p>
+            <p className="leading-[26px] relative shrink-0 text-[#606d76] text-[16px] w-[440px]">Log hours without leaving your workflow. Track time directly on tasks or retroactively fill your week in seconds, not hours.</p>
+            <ComponentBackgroundImageAndText text="Start for free" />
           </div>
-          <div className="absolute h-[268.501px] left-1/2 -translate-x-1/2 top-[262px] w-[750px]">
+          <div className="absolute h-[268.501px] left-1/2 -translate-x-1/2 top-[268px] w-[750px]">
             <div className="absolute flex flex-wrap justify-center gap-[8px] items-center left-1/2 -translate-x-1/2 top-[94px] w-[750px]">
               <BackgroundImageAndText text="Create interactive prototypes" />
               <BackgroundImageAndText text="Conduct usability testing" />
@@ -674,13 +602,12 @@ export default function LandingPage() {
               </svg>
             </div>
           </div>
-          <div className="content-stretch flex flex-col gap-[24px] items-center relative shrink-0">
-            <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[24px] items-center not-italic relative shrink-0 text-center">
-              <p className="leading-[1.04] relative shrink-0 text-[#0b191f] text-[38.319px] w-[377px]">Integrated Invoicing</p>
-              <p className="leading-[26px] relative shrink-0 text-[#606d76] text-[16px] w-[332px]">Turn billable hours into professional invoices with one click.</p>
-            </div>
+          <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[10px] items-center not-italic relative shrink-0 text-center">
+            <p className="leading-[1.04] relative shrink-0 text-[#0b191f] text-[38.319px] w-[377px]">Integrated Invoicing</p>
+            <p className="leading-[26px] relative shrink-0 text-[#606d76] text-[16px] w-[332px]">Turn billable hours into professional invoices with one click.</p>
+            <ComponentBackgroundImageAndText text="Start for free" />
           </div>
-          <div className="-translate-x-1/2 absolute flex h-[513.342px] items-center justify-center left-[calc(50%+71.4px)] top-[157px] w-[957.794px]" style={{ "--transform-inner-width": "1200", "--transform-inner-height": "1492" } as React.CSSProperties}>
+          <div className="-translate-x-1/2 absolute flex h-[513.342px] items-center justify-center left-[calc(50%+71.4px)] top-[186px] w-[957.794px]" style={{ "--transform-inner-width": "1200", "--transform-inner-height": "1492" } as React.CSSProperties}>
             <div className="flex-none rotate-[-17.13deg] scale-y-92 skew-x-[22.42deg]">
               <div className="h-[379.522px] relative w-[749.361px]">
                 <div className="absolute flex h-[580.094px] items-center justify-center left-[-16.23px] top-[-162.57px] w-[721.685px]" style={{ "--transform-inner-width": "1200", "--transform-inner-height": "19" } as React.CSSProperties}>
@@ -1203,11 +1130,11 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="content-stretch flex flex-col gap-[36px] items-start relative shrink-0">
-                <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[24px] items-start not-italic relative shrink-0">
-                  <p className="leading-[1.04] relative shrink-0 text-[#0b191f] text-[38.319px] text-center whitespace-nowrap">Real-time Project Health</p>
+                <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[24px] items-start not-italic relative shrink-0 text-left">
+                  <p className="leading-[1.04] relative shrink-0 text-[#0b191f] text-[38.319px] whitespace-nowrap">Real-time Project Health</p>
                   <p className="leading-[26px] relative shrink-0 text-[#606d76] text-[16px] w-[332px]">{`Never be surprised by a missed deadline. Track velocity and see instantly if a project is "Project On Track" or "At Risk."`}</p>
+                  <ComponentBackgroundImageAndText text="Start for free" />
                 </div>
-                <ComponentBackgroundImageAndText text="Start for free" additionalClassNames="opacity-0" asLink={false} />
               </div>
               <div className="absolute content-stretch flex flex-col items-center left-[723px] px-[22.072px] top-[65.04px]">
                 <div className="h-[161.079px] relative shrink-0 w-[322.158px]">
@@ -1240,9 +1167,14 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
-      <div className="-translate-x-1/2 absolute content-stretch flex gap-[314px] items-center justify-center left-[calc(50%+0.5px)] top-[28px]">
-        <div className="content-stretch flex flex-col items-center relative shrink-0">
-          <p className="font-['Sarina',sans-serif] font-normal leading-[24px] not-italic relative shrink-0 text-[#0b191f] text-[21.405px] text-center tracking-[-0.4281px] whitespace-nowrap">Continuum</p>
+      <div className="absolute left-0 right-0 top-[28px] z-10 flex items-center px-[137px]">
+        <div className="flex min-w-0 flex-1 justify-start">
+          <Link
+            to="/"
+            className="font-['Sarina',sans-serif] font-normal leading-[24px] not-italic text-[#0b191f] text-[21.405px] tracking-[-0.4281px] no-underline whitespace-nowrap hover:opacity-90"
+          >
+            Continuum
+          </Link>
         </div>
         <nav
           aria-label="Page sections"
@@ -1252,35 +1184,51 @@ export default function LandingPage() {
             Overview
           </span>
           <span className="relative shrink-0 cursor-default select-none">
-            Waitlist
-          </span>
-          <span className="relative shrink-0 cursor-default select-none">
             Features
           </span>
           <span className="relative shrink-0 cursor-default select-none">
             Contact
           </span>
         </nav>
-        <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
-          <ComponentBackgroundImageAndText1 text="Join Waitlist" />
+        <div className="min-w-0 flex flex-1 justify-end gap-[8px] items-center">
+          <ComponentBackgroundImageAndText text="Login" to="/login" />
+          <ComponentBackgroundImageAndText1 text="Sign Up" />
         </div>
       </div>
-      <div
+      <footer
         id="landing-footer"
-        className="absolute content-stretch flex flex-col items-center left-[137px] not-italic text-center top-[2476px] whitespace-nowrap scroll-mt-28"
+        className="absolute bottom-0 left-0 right-0 z-10 scroll-mt-28"
       >
-        <p className="font-['Sarina',sans-serif] font-normal leading-[47.662px] relative shrink-0 text-[#0b191f] text-[42.509px] tracking-[-0.8502px]">Continuum</p>
-        <p className="font-['Sathu:Regular',sans-serif] leading-[normal] opacity-80 relative shrink-0 text-[#252014] text-[15.458px] tracking-[-0.1546px]">Time track with one click.</p>
-      </div>
-      <div className="absolute content-stretch flex font-['Satoshi:Medium',sans-serif] gap-[51px] items-center leading-[normal] left-[593px] not-italic text-[#606d76] text-[16px] text-center top-[2499px] whitespace-nowrap">
-        <p className="opacity-0 relative shrink-0">Product</p>
-        <p className="opacity-0 relative shrink-0">Heading 2</p>
-        <p className="opacity-0 relative shrink-0">Heading 3</p>
-      </div>
-      <div className="absolute content-stretch flex gap-[8px] items-center left-[1272px] top-[2497px]">
-        <ComponentBackgroundImageAndText1 text="Join Waitlist" />
-      </div>
-      <div className="absolute content-stretch flex items-center left-[159px] top-[1794px]">
+        <div
+          className="flex min-h-[132px] items-center gap-8 px-[137px] py-10 not-italic"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(249, 250, 251, 0.35) 0%, rgba(178, 230, 247, 0.08) 28%, rgba(178, 230, 247, 0.18) 58%, rgba(178, 230, 247, 0.32) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)",
+          }}
+        >
+          <div className="flex min-w-0 flex-1 flex-col items-start justify-center text-left whitespace-nowrap">
+            <p className="font-['Sarina',sans-serif] font-normal leading-[47.662px] relative shrink-0 text-[#0b191f] text-[42.509px] tracking-[-0.8502px]">
+              Continuum
+            </p>
+            <p className="font-['Sathu:Regular',sans-serif] leading-[normal] opacity-80 relative shrink-0 text-[#252014] text-[15.458px] tracking-[-0.1546px]">
+              Time track with one click.
+            </p>
+          </div>
+          <nav
+            aria-label="Footer"
+            className="content-stretch flex shrink-0 font-['Satoshi:Medium',sans-serif] gap-[51px] items-center leading-[normal] not-italic text-[#606d76] text-[16px] text-center whitespace-nowrap"
+          >
+            <span className="relative shrink-0 cursor-default select-none">Overview</span>
+            <span className="relative shrink-0 cursor-default select-none">Features</span>
+            <span className="relative shrink-0 cursor-default select-none">Contact</span>
+          </nav>
+          <div className="flex min-w-0 flex-1 justify-end gap-[8px] items-center">
+            <ComponentBackgroundImageAndText text="Login" to="/login" />
+            <ComponentBackgroundImageAndText1 text="Sign Up" />
+          </div>
+        </div>
+      </footer>
+      <div className="absolute content-stretch flex items-center left-[159px] top-[1716px]">
         <div className="-translate-x-1/2 -translate-y-1/2 absolute bg-[#eb4335] left-1/2 mix-blend-color-burn rounded-[4px] size-[8px] top-1/2" />
         <div className="bg-[#eb4335] rounded-[999px] shrink-0 size-[2px]" />
       </div>
