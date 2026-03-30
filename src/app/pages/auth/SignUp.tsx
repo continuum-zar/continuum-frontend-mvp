@@ -73,7 +73,7 @@ export function SignUp() {
                 email,
                 password
             });
-            navigate('/loading', { state: { from: 'register' } });
+            navigate('/onboarding/usage', { replace: true });
         } catch (error) {
             console.error('Registration failed:', error);
         } finally {

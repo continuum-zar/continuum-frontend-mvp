@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import { Login } from "./pages/auth/Login";
 import { WaitlistSignUp } from "./pages/auth/WaitlistSignUp";
 import { SignUp } from "./pages/auth/SignUp";
@@ -29,6 +29,16 @@ const WelcomeContinuumView = lazy(() =>
   import("./pages/WelcomeContinuumView").then((m) => ({ default: m.WelcomeContinuumView }))
 );
 
+const OnboardingUsage = lazy(() => import("./pages/onboarding/Usage"));
+const OnboardingCollaboration = lazy(() => import("./pages/onboarding/Collaboration"));
+const OnboardingRoleChips = lazy(() => import("./pages/onboarding/RoleSelection"));
+const OnboardingFunctionSelection = lazy(() => import("./pages/onboarding/FunctionSelection"));
+const OnboardingUseCaseSelection = lazy(() => import("./pages/onboarding/UseCaseSelection"));
+const OnboardingFeatureInterestSelection = lazy(() =>
+  import("./pages/onboarding/FeatureInterestSelection")
+);
+const OnboardingMindSelection = lazy(() => import("./pages/onboarding/MindSelection"));
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -53,6 +63,50 @@ export const router = createBrowserRouter([
   {
     path: "/loading",
     Component: Loading,
+  },
+  {
+    path: "onboarding",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <Outlet />
+        </Suspense>
+      </AuthGuard>
+    ),
+    children: [
+      {
+        index: true,
+        element: <Navigate to="usage" replace />,
+      },
+      {
+        path: "usage",
+        element: <OnboardingUsage />,
+      },
+      {
+        path: "collaboration",
+        element: <OnboardingCollaboration />,
+      },
+      {
+        path: "features",
+        element: <OnboardingFeatureInterestSelection />,
+      },
+      {
+        path: "mind",
+        element: <OnboardingMindSelection />,
+      },
+      {
+        path: "role",
+        element: <OnboardingRoleChips />,
+      },
+      {
+        path: "function",
+        element: <OnboardingFunctionSelection />,
+      },
+      {
+        path: "use-case",
+        element: <OnboardingUseCaseSelection />,
+      },
+    ],
   },
   {
     path: "/role-selection",
