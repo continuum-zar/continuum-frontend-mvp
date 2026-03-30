@@ -1,5 +1,10 @@
 import { Link } from "react-router";
 
+import {
+  WelcomeRecentActivity,
+  WelcomeRepo,
+  WelcomeResources,
+} from "../components/welcome/WelcomeActivityResourcesRepo";
 import { WelcomeMetricsRow } from "../components/welcome/WelcomeMetricsRow";
 
 const imgVector = "https://www.figma.com/api/mcp/asset/cacdb2e3-e05a-4b8c-8af9-92f40d7d18dc";
@@ -288,8 +293,8 @@ export function WelcomeContinuumView() {
                       <img alt="" className="block max-w-none size-full" src={imgFrame273} />
                     </div>
                   </div>
-                  <p className="absolute font-['Satoshi:Regular',sans-serif] leading-[normal] left-[calc(50%-24px)] not-italic overflow-hidden text-[#0b191f] text-[70.704px] text-ellipsis top-[49px] whitespace-nowrap" data-node-id="8:3560">
-                    0
+                  <p className="absolute font-['Satoshi:Regular',sans-serif] leading-[normal] left-[calc(50%-44px)] not-italic overflow-hidden text-[#0b191f] text-[70.704px] text-ellipsis top-[49px] whitespace-nowrap" data-node-id="8:3560">
+                    89
                   </p>
                   <p className="absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[calc(50%-86px)] not-italic overflow-hidden text-[#727d83] text-[24px] text-ellipsis top-[159px] whitespace-nowrap" data-node-id="8:3561">
                     Project on track
@@ -345,20 +350,18 @@ export function WelcomeContinuumView() {
                     </div>
                   </div>
                   <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3605">
-                    <div className="content-stretch flex flex-col gap-[16px] h-[40px] items-start relative shrink-0 w-full" data-node-id="8:3606">
-                      <div className="content-stretch flex flex-[1_0_0] items-center justify-between min-h-px min-w-px relative w-full" data-node-id="8:3607">
-                        <div className="content-stretch flex items-center relative shrink-0" data-node-id="8:3608">
-                          <div className="content-stretch flex flex-col items-start relative shrink-0" data-node-id="8:3609">
-                            <div className="content-stretch flex gap-[8px] items-center justify-center relative shrink-0" data-node-id="8:3610">
-                              <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[24px] whitespace-nowrap" data-node-id="8:3611">
-                                Sprints
-                              </p>
-                              <div className="relative shrink-0 size-[16px]" data-name="lucide/info" data-node-id="8:3612">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideInfo} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                    <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3606">
+                      <div className="content-stretch flex w-full items-center justify-between" data-node-id="8:3607">
+                        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic text-[#0b191f] text-[24px] whitespace-nowrap" data-node-id="8:3611">
+                          Sprints
+                        </p>
+                        <button
+                          type="button"
+                          className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                        >
+                          Add
+                          <img alt="" className="size-4" src={imgLucidePlus} />
+                        </button>
                       </div>
                     </div>
                     <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3650">
@@ -380,12 +383,19 @@ export function WelcomeContinuumView() {
                                     Short message goes here
                                   </p>
                                 </div>
-                                <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3664">
-                                  <div className="bg-[#e4eaec] h-[6px] overflow-clip relative rounded-[26px] shrink-0 w-full" data-node-id="8:3665">
-                                    <div className="absolute bg-[#0b191f] left-0 rounded-[999px] size-[6px] top-0" data-node-id="8:3666" />
+                                <div className="flex w-full flex-col gap-1" data-node-id="8:3664">
+                                  <div className="relative h-[6px] w-full shrink-0 overflow-clip rounded-[26px] bg-[#e4eaec]">
+                                    <div className="absolute top-0 left-0 size-[6px] rounded-full bg-[#0b191f]" data-node-id="8:3666" />
                                   </div>
+                                  <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-[15px] text-[#727d83]">+12% this sprint</p>
                                 </div>
                               </div>
+                              <button
+                                type="button"
+                                className="mt-5 h-8 min-w-[112px] rounded-[8px] border border-solid border-[#ededed] bg-white px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                              >
+                                Review tasks
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -411,12 +421,19 @@ export function WelcomeContinuumView() {
                                     Short message goes here
                                   </p>
                                 </div>
-                                <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3681">
-                                  <div className="bg-[#e4eaec] h-[6px] overflow-clip relative rounded-[26px] shrink-0 w-full" data-node-id="8:3682">
-                                    <div className="absolute bg-[#0b191f] left-[0.33px] rounded-[999px] size-[6px] top-0" data-node-id="8:3683" />
+                                <div className="flex w-full flex-col gap-1" data-node-id="8:3681">
+                                  <div className="relative h-[6px] w-full shrink-0 overflow-clip rounded-[26px] bg-[#e4eaec]">
+                                    <div className="absolute top-0 left-[0.33px] size-[6px] rounded-full bg-[#0b191f]" data-node-id="8:3683" />
                                   </div>
+                                  <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-[15px] text-[#727d83]">+12% this sprint</p>
                                 </div>
                               </div>
+                              <button
+                                type="button"
+                                className="mt-5 h-8 min-w-[112px] rounded-[8px] border border-solid border-[#ededed] bg-white px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                              >
+                                Review tasks
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -442,17 +459,31 @@ export function WelcomeContinuumView() {
                                     Short message goes here
                                   </p>
                                 </div>
-                                <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3698">
-                                  <div className="bg-[#e4eaec] h-[6px] overflow-clip relative rounded-[26px] shrink-0 w-full" data-node-id="8:3699">
-                                    <div className="absolute bg-[#0b191f] left-[-0.33px] rounded-[999px] size-[6px] top-0" data-node-id="8:3700" />
+                                <div className="flex w-full flex-col gap-1" data-node-id="8:3698">
+                                  <div className="relative h-[6px] w-full shrink-0 overflow-clip rounded-[26px] bg-[#e4eaec]">
+                                    <div className="absolute top-0 left-[-0.33px] size-[6px] rounded-full bg-[#0b191f]" data-node-id="8:3700" />
                                   </div>
+                                  <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-[15px] text-[#727d83]">
+                                    +5 more blocked is sprint
+                                  </p>
                                 </div>
                               </div>
+                              <button
+                                type="button"
+                                className="mt-5 h-8 min-w-[112px] rounded-[8px] border border-solid border-[#ededed] bg-white px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                              >
+                                Review tasks
+                              </button>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
+                  </div>
+                  <div className="flex w-full flex-col gap-16">
+                    <WelcomeRecentActivity />
+                    <WelcomeResources />
+                    <WelcomeRepo />
                   </div>
                   <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3717">
                     <div className="content-stretch flex flex-col gap-[16px] h-[40px] items-start justify-center relative shrink-0 w-full" data-node-id="8:3718">

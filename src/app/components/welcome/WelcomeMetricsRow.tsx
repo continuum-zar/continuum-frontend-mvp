@@ -29,7 +29,7 @@ export function WelcomeMetricsRow() {
               className="absolute top-[18px] left-1/2 -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
               data-node-id="11:5687"
             >
-              0
+              1.17
             </p>
             <div className="absolute top-0 left-0 h-[66.484px] w-[82.864px]" data-node-id="11:5688">
               <div className="absolute inset-[-6.52%_-5.23%]">
@@ -82,7 +82,7 @@ export function WelcomeMetricsRow() {
               className="absolute top-[18px] left-[calc(50%+0.07px)] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
               data-node-id="11:5701"
             >
-              0
+              46
             </p>
             <div className="absolute top-0 left-0 h-[66.484px] w-[82.864px]" data-node-id="11:5702">
               <div className="absolute inset-[-6.52%_-5.23%]">
@@ -109,7 +109,7 @@ export function WelcomeMetricsRow() {
                     className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-[#727d83]"
                     data-node-id="11:5709"
                   >
-                    of 0 Total Points
+                    of 150 Total Points
                   </p>
                 </div>
               </div>
@@ -123,7 +123,7 @@ export function WelcomeMetricsRow() {
               className="absolute top-[18px] left-[calc(50%+0.07px)] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
               data-node-id="I11:5712;3310:12281"
             >
-              0
+              12
             </p>
             <div className="absolute -top-1 -left-1 size-[90px]" data-node-id="I11:5712;3310:12284">
               <div className="absolute inset-[37.56%_0_15.57%_79.82%]">
