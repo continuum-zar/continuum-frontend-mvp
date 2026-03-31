@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Plus } from "lucide-react";
+import { Check, FileText, Link2, Plus, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Dialog,
@@ -10,6 +10,8 @@ import {
   DialogPortal,
 } from "./ui/dialog";
 import { cn } from "./ui/utils";
+import { AddResourceModal } from "./welcome/AddResourceModal";
+import { welcomeResourcesMock, type WelcomeResourceItem } from "@/app/data/welcomeDashboardMock";
 
 const imgLucideArrowLeft =
   "https://www.figma.com/api/mcp/asset/27ca96dc-a695-48d3-8f22-628b8eb437bd";
@@ -29,15 +31,6 @@ const imgLucideCheck1 =
   "https://www.figma.com/api/mcp/asset/023443fc-c32a-461b-8dbd-55d6e32cd451";
 const imgComponent34 =
   "https://www.figma.com/api/mcp/asset/0a33d0b2-07cc-4490-b6ee-909fecb0efb5";
-const imgLucideUpload =
-  "https://www.figma.com/api/mcp/asset/afdea210-e68e-4b3b-8edf-b7a54f43cbd1";
-const imgLucideFileText =
-  "https://www.figma.com/api/mcp/asset/309807ad-21a6-48f3-a184-19c2a87b0097";
-const imgLucideEye =
-  "https://www.figma.com/api/mcp/asset/b40c4a53-1f3b-4862-b24e-cb2fdfe77781";
-const imgLucideX =
-  "https://www.figma.com/api/mcp/asset/9a9d85d0-dece-4308-b06c-0c63e4b66568";
-
 type CreateTaskModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,6 +40,7 @@ type ChecklistRow = { id: string; text: string; done: boolean };
 
 export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
   const [checklistItems, setChecklistItems] = useState<ChecklistRow[]>([]);
+  const [addResourceOpen, setAddResourceOpen] = useState(false);
 
   const addChecklistRow = useCallback(() => {
     setChecklistItems((prev) => [...prev, { id: crypto.randomUUID(), text: "", done: false }]);
@@ -74,8 +68,52 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
     if (!open) setChecklistItems([]);
   }, [open]);
 
+  const renderResourceRow = (item: WelcomeResourceItem) => {
+    if (item.kind === "link") {
+      return (
+        <div key={item.id} className="flex w-full items-center gap-2">
+          <div className="flex min-h-[34px] min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
+            <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
+              <Link2 className="size-4 text-[#606d76]" strokeWidth={1.75} />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
+              <p className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+                {item.url}
+              </p>
+            </div>
+          </div>
+          <button type="button" className="inline-flex shrink-0 text-[#606d76]" aria-label="Remove resource">
+            <X className="size-4" strokeWidth={1.75} />
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div key={item.id} className="flex w-full items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
+          <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
+            <FileText className="size-4 text-[#606d76]" strokeWidth={1.75} />
+          </div>
+          <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
+            <p className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+              {item.name}
+            </p>
+            <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">
+              {item.sizeLabel}
+            </p>
+          </div>
+        </div>
+        <button type="button" className="inline-flex shrink-0 text-[#606d76]" aria-label="Remove resource">
+          <X className="size-4" strokeWidth={1.75} />
+        </button>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      <AddResourceModal open={addResourceOpen} onOpenChange={setAddResourceOpen} />
       <DialogPortal>
         <DialogOverlay className="bg-black/25" />
         <DialogPrimitive.Content
@@ -375,45 +413,18 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
                   <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                    Attachments
+                    Resources
                   </p>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
-                      style={{
-                        backgroundImage:
-                          "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(141.68deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
-                      }}
-                    >
-                      <img alt="" className="size-4" src={imgLucideUpload} />
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAddResourceOpen(true)}
+                    className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                  >
+                    Add
+                    <Plus className="size-4" strokeWidth={2} />
+                  </button>
                 </div>
-                {[
-                  { name: "File name goes here.pdf", size: "490 KB" },
-                  { name: "File name goes here.csv", size: "34 KB" },
-                  { name: "File name goes here.md", size: "12 KB" },
-                ].map((file) => (
-                  <div key={file.name} className="flex w-full items-center gap-2">
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <img alt="" className="size-6 shrink-0" src={imgLucideFileText} />
-                      <p className="truncate font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
-                        {file.name}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-4">
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium whitespace-nowrap text-[#606d76]">
-                        {file.size}
-                      </p>
-                      <button type="button" className="size-4 border-0 bg-transparent p-0" aria-label="View">
-                        <img alt="" className="size-full" src={imgLucideEye} />
-                      </button>
-                      <button type="button" className="size-4 border-0 bg-transparent p-0" aria-label="Remove">
-                        <img alt="" className="size-full" src={imgLucideX} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                <div className="flex w-full flex-col gap-4">{welcomeResourcesMock.map(renderResourceRow)}</div>
               </div>
             </div>
           </div>
