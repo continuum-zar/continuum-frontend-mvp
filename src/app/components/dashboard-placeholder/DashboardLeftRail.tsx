@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router";
+
+import { CreateProjectModal } from "./CreateProjectModal";
 
 const imgVector = "https://www.figma.com/api/mcp/asset/2470fa31-25cd-47ac-991d-d1c4219bd28d";
 const imgVector4 = "https://www.figma.com/api/mcp/asset/78ced5be-4173-418f-974b-68c6e9f6125c";
@@ -114,9 +117,12 @@ function Frame({ className }: { className?: string }) {
 }
 
 export function DashboardLeftRail() {
+  const [createProjectOpen, setCreateProjectOpen] = useState(false);
+
   return (
-    <div className="flex h-full min-h-0 w-[212px] shrink-0 flex-col items-start justify-between overflow-hidden z-[2]" data-node-id="7:2819">
-      <div className="flex min-h-0 w-full flex-1 flex-col gap-[16px] items-start overflow-hidden" data-node-id="7:2820">
+    <>
+      <div className="flex h-full min-h-0 w-[212px] shrink-0 flex-col items-start justify-between overflow-hidden z-[2]" data-node-id="7:2819">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-[16px] items-start overflow-hidden" data-node-id="7:2820">
         <div className="content-stretch flex flex-col gap-[9.534px] items-center pb-[16px] pt-[32px] relative shrink-0 w-full" data-node-id="7:2822">
           <div className="content-stretch flex flex-col items-center relative shrink-0" data-node-id="7:2824">
             <p
@@ -137,13 +143,22 @@ export function DashboardLeftRail() {
             </div>
             <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27467">
               <Component1 className="content-stretch flex flex-col items-start overflow-clip px-[2.667px] py-[7.333px] relative rounded-[4px] shrink-0 w-[16px]" type="Ellipse" />
-              <div className="overflow-clip relative rounded-[16px] shrink-0 size-[16px]" data-name="Component 35" data-node-id="I7:2828;2172:27469">
-                <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
-                  <div className="absolute inset-[-5.36%]">
-                    <img alt="" className="block max-w-none size-full" src={imgVector5} />
+              <button
+                type="button"
+                onClick={() => setCreateProjectOpen(true)}
+                className="inline-flex size-[16px] shrink-0 items-center justify-center overflow-clip rounded-[16px] border-0 bg-transparent p-0"
+                aria-label="Create project"
+                data-name="Component 35"
+                data-node-id="I7:2828;2172:27469"
+              >
+                <div className="relative size-[16px]">
+                  <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
+                    <div className="absolute inset-[-5.36%]">
+                      <img alt="" className="block max-w-none size-full" src={imgVector5} />
+                    </div>
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
           <Link
@@ -187,7 +202,7 @@ export function DashboardLeftRail() {
           </div>
         </div>
       </div>
-      <div className="flex w-full shrink-0 flex-col gap-[8px] items-start" data-node-id="7:2837">
+        <div className="flex w-full shrink-0 flex-col gap-[8px] items-start" data-node-id="7:2837">
         <div className="content-stretch flex gap-[12px] h-[40px] items-center opacity-0 px-[12px] relative rounded-[8px] shrink-0 w-full" data-name="Component 12" data-node-id="7:2838">
           <div className="relative shrink-0 size-[16px]" data-name="lucide/settings" data-node-id="7:2839">
             <img alt="" className="absolute block max-w-none size-full" src={imgLucideSettings} />
@@ -225,7 +240,9 @@ export function DashboardLeftRail() {
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+      <CreateProjectModal open={createProjectOpen} onOpenChange={setCreateProjectOpen} />
+    </>
   );
 }
