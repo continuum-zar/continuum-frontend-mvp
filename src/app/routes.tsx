@@ -37,6 +37,9 @@ const DashboardPlaceholderTaskView = lazy(() =>
 const DashboardPlaceholderAssigned = lazy(() =>
   import("./pages/DashboardPlaceholderAssigned").then((m) => ({ default: m.DashboardPlaceholderAssigned }))
 );
+const DashboardPlaceholderCreated = lazy(() =>
+  import("./pages/DashboardPlaceholderCreated").then((m) => ({ default: m.DashboardPlaceholderCreated }))
+);
 
 const OnboardingUsage = lazy(() => import("./pages/onboarding/Usage"));
 const OnboardingCollaboration = lazy(() => import("./pages/onboarding/Collaboration"));
@@ -173,6 +176,16 @@ export const router = createBrowserRouter([
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
           <DashboardPlaceholderAssigned />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/dashboard-placeholder/created",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <DashboardPlaceholderCreated />
         </Suspense>
       </AuthGuard>
     ),
