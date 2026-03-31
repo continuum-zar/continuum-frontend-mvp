@@ -59,10 +59,11 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
   const isDefaultAndHome = state === "Default" && type === "Home";
   const isSelectedAndInvoice = state === "Selected" && type === "Invoice";
   const isDefaultAndAssignedToMe = state === "Default" && type === "Assigned to Me";
+  const isSelectedAndAssignedToMe = state === "Selected" && type === "Assigned to Me";
   const isDefaultAndCreatedByMe = state === "Default" && type === "Created by Me";
   const isSelectedAndHome = state === "Selected" && type === "Home";
   return (
-    <div className={className || `content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] w-[47px] ${isSelectedAndHome || isSelectedAndInvoice ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]" : "bg-[#edf0f3]"}`} id={isSelectedAndHome ? "node-7_55" : isDefaultAndCreatedByMe ? "node-7_43" : isDefaultAndAssignedToMe ? "node-7_31" : "node-7_19"} style={isSelectedAndHome || isSelectedAndInvoice ? { backgroundImage: "linear-gradient(90deg, rgb(215, 235, 254) 0%, rgb(215, 235, 254) 100%), linear-gradient(146.07354234425264deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(237, 240, 243) 0%, rgb(237, 240, 243) 100%)" } : undefined}>
+    <div className={className || `content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] w-[47px] ${isSelectedAndHome || isSelectedAndInvoice || isSelectedAndAssignedToMe ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]" : "bg-[#edf0f3]"}`} id={isSelectedAndHome ? "node-7_55" : isDefaultAndCreatedByMe ? "node-7_43" : isDefaultAndAssignedToMe ? "node-7_31" : "node-7_19"} style={isSelectedAndHome || isSelectedAndInvoice || isSelectedAndAssignedToMe ? { backgroundImage: "linear-gradient(90deg, rgb(215, 235, 254) 0%, rgb(215, 235, 254) 100%), linear-gradient(146.07354234425264deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(237, 240, 243) 0%, rgb(237, 240, 243) 100%)" } : undefined}>
       {type === "Invoice" && (
         <div className="relative shrink-0 size-[16px]" data-name="lucide/scroll-text" data-node-id="7:20">
           <img alt="" className="absolute block max-w-none size-full" src={imgLucideScrollText} />
@@ -78,7 +79,7 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
           />
         </div>
       )}
-      {isDefaultAndAssignedToMe && (
+      {(isDefaultAndAssignedToMe || isSelectedAndAssignedToMe) && (
         <div className="relative shrink-0 size-[16px]" data-name="lucide/target" data-node-id="7:33">
           <img alt="" className="absolute block max-w-none size-full" src={imgLucideTarget} />
         </div>
@@ -104,7 +105,13 @@ type Frame1Props = {
   onInvoiceClick: () => void;
 };
 
-function Frame1({ className, isHomeActive = false, isInvoiceActive = false, onInvoiceClick }: Frame1Props) {
+function Frame1({
+  className,
+  isHomeActive = false,
+  isInvoiceActive = false,
+  onInvoiceClick,
+  isAssignedActive = false,
+}: Frame1Props & { isAssignedActive?: boolean }) {
   return (
     <div className={className || "content-stretch flex gap-[8px] items-center relative"} data-node-id="7:72">
       <Link
@@ -136,7 +143,21 @@ function Frame1({ className, isHomeActive = false, isInvoiceActive = false, onIn
           type="Invoice"
         />
       </button>
-      <Component2 className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" type="Assigned to Me" />
+      <Link
+        to="/dashboard-placeholder/assigned"
+        className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label="Assigned to me"
+      >
+        <Component2
+          className={`content-stretch flex h-full w-full gap-[12px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 ${
+            isAssignedActive
+              ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
+              : "bg-[#edf0f3]"
+          }`}
+          state={isAssignedActive ? "Selected" : "Default"}
+          type="Assigned to Me"
+        />
+      </Link>
       <Component2 className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" type="Created by Me" />
     </div>
   );
@@ -147,11 +168,13 @@ function Frame({
   isHomeActive = false,
   isInvoiceActive = false,
   onInvoiceClick,
+  isAssignedActive = false,
 }: {
   className?: string;
   isHomeActive?: boolean;
   isInvoiceActive?: boolean;
   onInvoiceClick: () => void;
+  isAssignedActive?: boolean;
 }) {
   return (
     <div className={className || "content-stretch flex flex-col gap-[8px] items-start relative"} data-node-id="7:92">
@@ -168,6 +191,7 @@ function Frame({
         isHomeActive={isHomeActive}
         isInvoiceActive={isInvoiceActive}
         onInvoiceClick={onInvoiceClick}
+        isAssignedActive={isAssignedActive}
       />
     </div>
   );
@@ -179,6 +203,7 @@ export function DashboardLeftRail() {
   const { pathname } = useLocation();
   const isHomeActive = pathname === "/dashboard-placeholder";
   const isInvoiceActive = invoiceOpen;
+  const isAssignedActive = pathname.startsWith("/dashboard-placeholder/assigned");
   const isGetStartedActive =
     pathname.startsWith("/dashboard-placeholder/get-started") ||
     pathname.startsWith("/dashboard-placeholder/task/");
@@ -202,6 +227,7 @@ export function DashboardLeftRail() {
           isHomeActive={isHomeActive}
           isInvoiceActive={isInvoiceActive}
           onInvoiceClick={() => setInvoiceOpen(true)}
+          isAssignedActive={isAssignedActive}
         />
         <div className="content-stretch flex flex-col isolate items-start relative shrink-0 w-full" data-node-id="7:2828">
           <div className="content-stretch flex items-center justify-between py-[8px] relative shrink-0 w-full z-[5]" data-node-id="I7:2828;2172:27463">
@@ -261,7 +287,7 @@ export function DashboardLeftRail() {
             </div>
           </Link>
         </div>
-        <div className="absolute content-stretch flex flex-col items-center left-[131px] opacity-0 top-[159px] w-[145px]" data-node-id="7:2829">
+        <div className="pointer-events-none absolute content-stretch flex flex-col items-center left-[131px] opacity-0 top-[159px] w-[145px]" data-node-id="7:2829" aria-hidden="true">
           <div className="content-stretch flex flex-col items-center relative shrink-0 w-full" data-node-id="7:2830">
             <div className="bg-[#0b191f] content-stretch flex flex-col items-start py-[4px] relative rounded-[8px] shadow-[0px_26px_7px_0px_rgba(21,21,21,0),0px_16px_7px_0px_rgba(21,21,21,0),0px_9px_6px_0px_rgba(21,21,21,0.01),0px_4px_4px_0px_rgba(21,21,21,0.02),0px_1px_2px_0px_rgba(21,21,21,0.03)] shrink-0 w-full" data-name="Tooltip" data-node-id="7:2831">
               <div className="content-stretch flex flex-col items-start justify-center px-[16px] py-[4px] relative rounded-[8px] shrink-0 w-full" data-name="Component 9" data-node-id="7:2832">
@@ -279,7 +305,7 @@ export function DashboardLeftRail() {
         </div>
       </div>
         <div className="flex w-full shrink-0 flex-col gap-[8px] items-start" data-node-id="7:2837">
-        <div className="content-stretch flex gap-[12px] h-[40px] items-center opacity-0 px-[12px] relative rounded-[8px] shrink-0 w-full" data-name="Component 12" data-node-id="7:2838">
+        <div className="pointer-events-none content-stretch flex gap-[12px] h-[40px] items-center opacity-0 px-[12px] relative rounded-[8px] shrink-0 w-full" data-name="Component 12" data-node-id="7:2838" aria-hidden="true">
           <div className="relative shrink-0 size-[16px]" data-name="lucide/settings" data-node-id="7:2839">
             <img alt="" className="absolute block max-w-none size-full" src={imgLucideSettings} />
           </div>
