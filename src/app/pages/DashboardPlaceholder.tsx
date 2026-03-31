@@ -474,7 +474,7 @@ export function DashboardPlaceholder() {
 
   return (
     <div
-      className="box-border flex h-screen min-h-0 w-full flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px]"
+      className="box-border flex h-screen min-h-0 w-full flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
       data-name="Dashboard placeholder"
       data-node-id="7:2816"
       style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)" }}
@@ -501,7 +501,7 @@ export function DashboardPlaceholder() {
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideChevronRight} />
                   </div>
                   <Link
-                    to="/dashboard-placeholder"
+                    to="/dashboard-placeholder/get-started"
                     className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] whitespace-nowrap no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                     data-node-id="7:2862"
                   >
@@ -645,10 +645,10 @@ export function DashboardPlaceholder() {
             </div>
               <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]" data-node-id="7:2908">
               <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col gap-[16px] items-start overflow-y-auto min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "todo" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("todo")} onDragLeave={handleColumnDragLeave("todo")} onDrop={handleDrop("todo")}>
-                <div className="content-stretch flex flex-col gap-[16px] isolate items-start relative shrink-0 w-[365.333px]" data-name="Component 125" data-node-id="7:2910">
+                <div className="content-stretch flex flex-col gap-[16px] isolate items-start relative shrink-0 w-full" data-name="Component 125" data-node-id="7:2910">
                   <div className="content-stretch flex items-center justify-between relative shrink-0 w-full z-[2]" data-node-id="I7:2910;2444:24776">
                     <Component3 className="content-stretch flex gap-[8px] items-center relative shrink-0" />
-                    <div className="content-stretch flex gap-[12px] items-center relative shrink-0" data-node-id="I7:2910;2444:24781">
+                    <div className="content-stretch flex gap-[12px] items-center relative shrink-0 ml-auto" data-node-id="I7:2910;2444:24781">
                       <button
                         type="button"
                         className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"

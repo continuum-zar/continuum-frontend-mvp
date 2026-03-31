@@ -75,7 +75,11 @@ const getHeatmapColor = (value: number) => {
   return 'bg-muted/30';
 };
 
-export function Dashboard() {
+type DashboardProps = {
+  hideKpiCards?: boolean;
+};
+
+export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const { role: userRole } = useRole();
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
@@ -460,7 +464,7 @@ export function Dashboard() {
       </div>
 
       {/* Row 1: KPI Velocity Cards (requires single project) */}
-      {isProjectPM && hasProjectSelected && (
+      {!hideKpiCards && isProjectPM && hasProjectSelected && (
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
           variants={container}

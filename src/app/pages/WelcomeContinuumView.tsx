@@ -128,11 +128,16 @@ export function WelcomeContinuumView() {
                   </p>
                 </div>
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I8:3506;2172:35237">
-                  <div className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" data-name="Component 80" data-node-id="I8:3506;2172:35237;2172:35161">
+                  <Link
+                    to="/dashboard-placeholder"
+                    className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                    data-name="Component 80"
+                    data-node-id="I8:3506;2172:35237;2172:35161"
+                  >
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/house" data-node-id="I8:3506;2172:35237;2172:35161;2172:35021">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideHouse} />
                     </div>
-                  </div>
+                  </Link>
                   <div className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" data-name="Component 81" data-node-id="I8:3506;2172:35237;2172:35162">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/scroll-text" data-node-id="I8:3506;2172:35237;2172:35162;2172:35025">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideScrollText} />
@@ -171,7 +176,7 @@ export function WelcomeContinuumView() {
                   </div>
                 </div>
                 <Link
-                  to="/dashboard-placeholder"
+                  to="/dashboard-placeholder/get-started"
                   className="content-stretch flex h-[40px] items-center pl-[24px] pr-[12px] relative rounded-[8px] shrink-0 w-full z-[1] text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                   data-name="Component 70"
                   data-node-id="I8:3507;2172:27567"

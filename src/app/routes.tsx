@@ -25,6 +25,9 @@ const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.N
 const DashboardPlaceholder = lazy(() =>
   import("./pages/DashboardPlaceholder").then((m) => ({ default: m.DashboardPlaceholder }))
 );
+const DashboardPlaceholderHome = lazy(() =>
+  import("./pages/DashboardPlaceholderHome").then((m) => ({ default: m.DashboardPlaceholderHome }))
+);
 const WelcomeContinuumView = lazy(() =>
   import("./pages/WelcomeContinuumView").then((m) => ({ default: m.WelcomeContinuumView }))
 );
@@ -123,6 +126,16 @@ export const router = createBrowserRouter([
   },
   {
     path: "/dashboard-placeholder",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <DashboardPlaceholderHome />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/dashboard-placeholder/get-started",
     element: (
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>

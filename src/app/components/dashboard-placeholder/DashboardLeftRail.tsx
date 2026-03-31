@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 
 import { CreateProjectModal } from "./CreateProjectModal";
 
@@ -55,6 +55,7 @@ type Component2Props = {
 };
 
 function Component2({ className, state = "Default", type = "Invoice" }: Component2Props) {
+  const isDefaultAndHome = state === "Default" && type === "Home";
   const isDefaultAndAssignedToMe = state === "Default" && type === "Assigned to Me";
   const isDefaultAndCreatedByMe = state === "Default" && type === "Created by Me";
   const isSelectedAndHome = state === "Selected" && type === "Home";
@@ -63,6 +64,16 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
       {state === "Default" && type === "Invoice" && (
         <div className="relative shrink-0 size-[16px]" data-name="lucide/scroll-text" data-node-id="7:20">
           <img alt="" className="absolute block max-w-none size-full" src={imgLucideScrollText} />
+        </div>
+      )}
+      {isDefaultAndHome && (
+        <div className="relative shrink-0 size-[16px]" data-name="lucide/house">
+          <img
+            alt=""
+            className="absolute block max-w-none size-full"
+            src={imgLucideHouse}
+            style={{ filter: "grayscale(1) saturate(0) opacity(0.7)" }}
+          />
         </div>
       )}
       {isDefaultAndAssignedToMe && (
@@ -86,13 +97,27 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
 
 type Frame1Props = {
   className?: string;
-  property1?: "Home";
+  isHomeActive?: boolean;
 };
 
-function Frame1({ className, property1: _property1 = "Home" }: Frame1Props) {
+function Frame1({ className, isHomeActive = false }: Frame1Props) {
   return (
     <div className={className || "content-stretch flex gap-[8px] items-center relative"} data-node-id="7:72">
-      <Component2 className="border-b border-solid border-white content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)] shrink-0 w-[47px]" state="Selected" type="Home" />
+      <Link
+        to="/dashboard-placeholder"
+        className="text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label="Home"
+      >
+        <Component2
+          className={`content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] ${
+            isHomeActive
+              ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
+              : "bg-[#edf0f3]"
+          }`}
+          state={isHomeActive ? "Selected" : "Default"}
+          type="Home"
+        />
+      </Link>
       <Component2 className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" />
       <Component2 className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" type="Assigned to Me" />
       <Component2 className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" type="Created by Me" />
@@ -100,7 +125,7 @@ function Frame1({ className, property1: _property1 = "Home" }: Frame1Props) {
   );
 }
 
-function Frame({ className }: { className?: string }) {
+function Frame({ className, isHomeActive = false }: { className?: string; isHomeActive?: boolean }) {
   return (
     <div className={className || "content-stretch flex flex-col gap-[8px] items-start relative"} data-node-id="7:92">
       <div className="bg-[#edf0f3] content-stretch flex gap-[8px] h-[40px] items-center px-[16px] py-[8px] relative rounded-[999px] shrink-0 w-full" data-name="Component 6" data-node-id="7:93">
@@ -111,13 +136,18 @@ function Frame({ className }: { className?: string }) {
           Search Projects
         </p>
       </div>
-      <Frame1 className="content-stretch flex gap-[8px] items-center relative shrink-0" />
+      <Frame1 className="content-stretch flex gap-[8px] items-center relative shrink-0" isHomeActive={isHomeActive} />
     </div>
   );
 }
 
 export function DashboardLeftRail() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const { pathname } = useLocation();
+  const isHomeActive = pathname === "/dashboard-placeholder";
+  const isGetStartedActive =
+    pathname.startsWith("/dashboard-placeholder/get-started") ||
+    pathname.startsWith("/dashboard-placeholder/task/");
 
   return (
     <>
@@ -133,7 +163,7 @@ export function DashboardLeftRail() {
             </p>
           </div>
         </div>
-        <Frame className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0" />
+        <Frame className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0" isHomeActive={isHomeActive} />
         <div className="content-stretch flex flex-col isolate items-start relative shrink-0 w-full" data-node-id="7:2828">
           <div className="content-stretch flex items-center justify-between py-[8px] relative shrink-0 w-full z-[5]" data-node-id="I7:2828;2172:27463">
             <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27464">
@@ -176,14 +206,21 @@ export function DashboardLeftRail() {
               </p>
             </div>
           </Link>
-          <div className="bg-[rgba(220,227,229,0.68)] content-stretch flex gap-[4px] h-[40px] items-center pl-[24px] pr-[12px] relative rounded-[8px] shrink-0 w-full z-[1]" data-name="Component 70" data-node-id="I7:2828;2172:27567">
+          <Link
+            to="/dashboard-placeholder/get-started"
+            className={`content-stretch flex gap-[4px] h-[40px] items-center pl-[24px] pr-[12px] relative rounded-[8px] shrink-0 w-full z-[1] text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${
+              isGetStartedActive ? "bg-[rgba(220,227,229,0.68)]" : ""
+            }`}
+            data-name="Component 70"
+            data-node-id="I7:2828;2172:27567"
+          >
             <div className="content-stretch flex flex-[1_0_0] gap-[8px] items-center min-h-px min-w-px relative" data-node-id="I7:2828;2172:27567;2172:27061">
               <CornerDownRight className="overflow-clip relative shrink-0 size-[16px]" />
               <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic overflow-hidden relative text-[#0b191f] text-[14px] text-ellipsis whitespace-nowrap" data-node-id="I7:2828;2172:27567;2172:27066">
                 Get started
               </p>
             </div>
-          </div>
+          </Link>
         </div>
         <div className="absolute content-stretch flex flex-col items-center left-[131px] opacity-0 top-[159px] w-[145px]" data-node-id="7:2829">
           <div className="content-stretch flex flex-col items-center relative shrink-0 w-full" data-node-id="7:2830">
