@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router";
 
 import { CreateProjectModal } from "./CreateProjectModal";
+import { InvoiceModal } from "./InvoiceModal";
 
 const imgVector = "https://www.figma.com/api/mcp/asset/2470fa31-25cd-47ac-991d-d1c4219bd28d";
 const imgVector4 = "https://www.figma.com/api/mcp/asset/78ced5be-4173-418f-974b-68c6e9f6125c";
@@ -56,12 +57,13 @@ type Component2Props = {
 
 function Component2({ className, state = "Default", type = "Invoice" }: Component2Props) {
   const isDefaultAndHome = state === "Default" && type === "Home";
+  const isSelectedAndInvoice = state === "Selected" && type === "Invoice";
   const isDefaultAndAssignedToMe = state === "Default" && type === "Assigned to Me";
   const isDefaultAndCreatedByMe = state === "Default" && type === "Created by Me";
   const isSelectedAndHome = state === "Selected" && type === "Home";
   return (
-    <div className={className || `content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] w-[47px] ${isSelectedAndHome ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]" : "bg-[#edf0f3]"}`} id={isSelectedAndHome ? "node-7_55" : isDefaultAndCreatedByMe ? "node-7_43" : isDefaultAndAssignedToMe ? "node-7_31" : "node-7_19"} style={isSelectedAndHome ? { backgroundImage: "linear-gradient(90deg, rgb(215, 235, 254) 0%, rgb(215, 235, 254) 100%), linear-gradient(146.07354234425264deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(237, 240, 243) 0%, rgb(237, 240, 243) 100%)" } : undefined}>
-      {state === "Default" && type === "Invoice" && (
+    <div className={className || `content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] w-[47px] ${isSelectedAndHome || isSelectedAndInvoice ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]" : "bg-[#edf0f3]"}`} id={isSelectedAndHome ? "node-7_55" : isDefaultAndCreatedByMe ? "node-7_43" : isDefaultAndAssignedToMe ? "node-7_31" : "node-7_19"} style={isSelectedAndHome || isSelectedAndInvoice ? { backgroundImage: "linear-gradient(90deg, rgb(215, 235, 254) 0%, rgb(215, 235, 254) 100%), linear-gradient(146.07354234425264deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(237, 240, 243) 0%, rgb(237, 240, 243) 100%)" } : undefined}>
+      {type === "Invoice" && (
         <div className="relative shrink-0 size-[16px]" data-name="lucide/scroll-text" data-node-id="7:20">
           <img alt="" className="absolute block max-w-none size-full" src={imgLucideScrollText} />
         </div>
@@ -98,9 +100,11 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
 type Frame1Props = {
   className?: string;
   isHomeActive?: boolean;
+  isInvoiceActive?: boolean;
+  onInvoiceClick: () => void;
 };
 
-function Frame1({ className, isHomeActive = false }: Frame1Props) {
+function Frame1({ className, isHomeActive = false, isInvoiceActive = false, onInvoiceClick }: Frame1Props) {
   return (
     <div className={className || "content-stretch flex gap-[8px] items-center relative"} data-node-id="7:72">
       <Link
@@ -118,14 +122,37 @@ function Frame1({ className, isHomeActive = false }: Frame1Props) {
           type="Home"
         />
       </Link>
-      <Component2 className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" />
+      <button
+        type="button"
+        onClick={onInvoiceClick}
+        className="text-inherit outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label="Invoices"
+      >
+        <Component2
+          className={`content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] ${
+            isInvoiceActive ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]" : "bg-[#edf0f3]"
+          }`}
+          state={isInvoiceActive ? "Selected" : "Default"}
+          type="Invoice"
+        />
+      </button>
       <Component2 className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" type="Assigned to Me" />
       <Component2 className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" type="Created by Me" />
     </div>
   );
 }
 
-function Frame({ className, isHomeActive = false }: { className?: string; isHomeActive?: boolean }) {
+function Frame({
+  className,
+  isHomeActive = false,
+  isInvoiceActive = false,
+  onInvoiceClick,
+}: {
+  className?: string;
+  isHomeActive?: boolean;
+  isInvoiceActive?: boolean;
+  onInvoiceClick: () => void;
+}) {
   return (
     <div className={className || "content-stretch flex flex-col gap-[8px] items-start relative"} data-node-id="7:92">
       <div className="bg-[#edf0f3] content-stretch flex gap-[8px] h-[40px] items-center px-[16px] py-[8px] relative rounded-[999px] shrink-0 w-full" data-name="Component 6" data-node-id="7:93">
@@ -136,15 +163,22 @@ function Frame({ className, isHomeActive = false }: { className?: string; isHome
           Search Projects
         </p>
       </div>
-      <Frame1 className="content-stretch flex gap-[8px] items-center relative shrink-0" isHomeActive={isHomeActive} />
+      <Frame1
+        className="content-stretch flex gap-[8px] items-center relative shrink-0"
+        isHomeActive={isHomeActive}
+        isInvoiceActive={isInvoiceActive}
+        onInvoiceClick={onInvoiceClick}
+      />
     </div>
   );
 }
 
 export function DashboardLeftRail() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
   const { pathname } = useLocation();
   const isHomeActive = pathname === "/dashboard-placeholder";
+  const isInvoiceActive = invoiceOpen;
   const isGetStartedActive =
     pathname.startsWith("/dashboard-placeholder/get-started") ||
     pathname.startsWith("/dashboard-placeholder/task/");
@@ -163,7 +197,12 @@ export function DashboardLeftRail() {
             </p>
           </div>
         </div>
-        <Frame className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0" isHomeActive={isHomeActive} />
+        <Frame
+          className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0"
+          isHomeActive={isHomeActive}
+          isInvoiceActive={isInvoiceActive}
+          onInvoiceClick={() => setInvoiceOpen(true)}
+        />
         <div className="content-stretch flex flex-col isolate items-start relative shrink-0 w-full" data-node-id="7:2828">
           <div className="content-stretch flex items-center justify-between py-[8px] relative shrink-0 w-full z-[5]" data-node-id="I7:2828;2172:27463">
             <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27464">
@@ -280,6 +319,7 @@ export function DashboardLeftRail() {
         </div>
       </div>
       <CreateProjectModal open={createProjectOpen} onOpenChange={setCreateProjectOpen} />
+      <InvoiceModal open={invoiceOpen} onOpenChange={setInvoiceOpen} />
     </>
   );
 }
