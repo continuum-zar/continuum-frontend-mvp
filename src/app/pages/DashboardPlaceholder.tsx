@@ -1,8 +1,10 @@
 import { useState } from "react";
+import type { DragEvent } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
+import { LogTimeModal } from "../components/dashboard-placeholder/LogTimeModal";
 
 const imgLucideListTodo = "https://www.figma.com/api/mcp/asset/2a12c1eb-b745-4bea-b9f1-f67045f8c03a";
 const imgLucideTimer = "https://www.figma.com/api/mcp/asset/5b386900-0988-47bc-b5fd-da0ce6db2015";
@@ -235,9 +237,240 @@ function Component4({ className, property1: _property1 = "Component 8" }: Compon
   );
 }
 
+type ColumnId = "todo" | "in-progress" | "completed";
+
+interface TaskCardData {
+  id: number;
+  title: string;
+  descriptionLines?: string[];
+  multiLineDesc?: boolean;
+  clipCount: number;
+  msgCount: number;
+  badgesHidden: boolean;
+}
+
+const TASKS: TaskCardData[] = [
+  { id: 1, title: "View project overview", descriptionLines: ['To view the project status, select "Welcome to Continuum!" in the top left under the "Projects" label.'], clipCount: 1, msgCount: 1, badgesHidden: false },
+  { id: 2, title: "Add a new task", descriptionLines: ['To find, organise, and add a new task, use the "+" icon in the top right corner of ', "To-Do."], multiLineDesc: true, clipCount: 1, msgCount: 1, badgesHidden: false },
+  { id: 3, title: "Add a new project", descriptionLines: ["Find, organise, and add a new project using the sidebar to the left."], clipCount: 1, msgCount: 1, badgesHidden: false },
+  { id: 4, title: "Create an account with Continuum", clipCount: 5, msgCount: 3, badgesHidden: true },
+];
+
+const INITIAL_COLUMNS: Record<number, ColumnId> = { 1: "todo", 2: "todo", 3: "todo", 4: "completed" };
+const INITIAL_COLUMN_ORDER: Record<ColumnId, number[]> = {
+  todo: [1, 2, 3],
+  "in-progress": [],
+  completed: [4],
+};
+
 export function DashboardPlaceholder() {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [logTimeOpen, setLogTimeOpen] = useState(false);
   const navigate = useNavigate();
+
+  const [cardColumns, setCardColumns] = useState<Record<number, ColumnId>>(INITIAL_COLUMNS);
+  const [columnOrder, setColumnOrder] = useState<Record<ColumnId, number[]>>(INITIAL_COLUMN_ORDER);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<ColumnId | null>(null);
+
+  const handleDragStart = (taskId: number) => (e: DragEvent<HTMLDivElement>) => {
+    setDraggingId(taskId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(taskId));
+    const el = e.currentTarget;
+    const ghost = el.cloneNode(true) as HTMLElement;
+    ghost.style.transform = "rotate(3deg)";
+    const ghostCard = ghost.querySelector(".bg-white") as HTMLElement | null;
+    if (ghostCard) {
+      ghostCard.style.border = "2px solid #24B5F8";
+    }
+    ghost.style.width = `${el.offsetWidth}px`;
+    ghost.style.position = "fixed";
+    ghost.style.top = "-9999px";
+    document.body.appendChild(ghost);
+    e.dataTransfer.setDragImage(ghost, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    requestAnimationFrame(() => document.body.removeChild(ghost));
+  };
+
+  const handleDragEnd = () => {
+    setDraggingId(null);
+    setDragOverCol(null);
+  };
+
+  const handleColumnDragOver = (col: ColumnId) => (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (draggingId !== null && cardColumns[draggingId] !== col) {
+      setDragOverCol(col);
+    }
+  };
+
+  const handleColumnDragLeave = (col: ColumnId) => (e: DragEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    if (!target.contains(e.relatedTarget as Node)) {
+      if (dragOverCol === col) setDragOverCol(null);
+    }
+  };
+
+  const moveCard = (taskId: number, destinationCol: ColumnId, targetId?: number, placeAfter = false) => {
+    setColumnOrder(prev => {
+      const next: Record<ColumnId, number[]> = {
+        todo: [...prev.todo],
+        "in-progress": [...prev["in-progress"]],
+        completed: [...prev.completed],
+      };
+
+      (Object.keys(next) as ColumnId[]).forEach(col => {
+        next[col] = next[col].filter(id => id !== taskId);
+      });
+
+      if (targetId === undefined) {
+        next[destinationCol].push(taskId);
+      } else {
+        const targetIndex = next[destinationCol].indexOf(targetId);
+        const insertIndex = targetIndex === -1 ? next[destinationCol].length : targetIndex + (placeAfter ? 1 : 0);
+        next[destinationCol].splice(insertIndex, 0, taskId);
+      }
+
+      return next;
+    });
+    setCardColumns(prev => ({ ...prev, [taskId]: destinationCol }));
+  };
+
+  const handleDrop = (col: ColumnId) => (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const taskId = Number(e.dataTransfer.getData("text/plain"));
+    if (!isNaN(taskId)) {
+      // Board-level drop inserts at the top of the destination column.
+      moveCard(taskId, col, col === cardColumns[taskId] ? undefined : columnOrder[col][0], false);
+    }
+    setDraggingId(null);
+    setDragOverCol(null);
+  };
+
+  const handleCardDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleCardDrop = (destinationCol: ColumnId, targetId: number) => (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const taskId = Number(e.dataTransfer.getData("text/plain"));
+    if (isNaN(taskId) || taskId === targetId) return;
+    // Card-on-card drop always inserts above the target card.
+    moveCard(taskId, destinationCol, targetId, false);
+    setDraggingId(null);
+    setDragOverCol(null);
+  };
+
+  const tasksInColumn = (col: ColumnId) =>
+    columnOrder[col]
+      .map(taskId => TASKS.find(t => t.id === taskId))
+      .filter((task): task is TaskCardData => task !== undefined);
+
+  const cardOrderFor = (taskId: number) => {
+    const col = cardColumns[taskId];
+    const idx = columnOrder[col]?.indexOf(taskId) ?? -1;
+    return idx === -1 ? undefined : idx;
+  };
+
+  const renderCard = (task: TaskCardData) => {
+    const isDragging = draggingId === task.id;
+    return (
+      <div
+        key={task.id}
+        className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${isDragging ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
+        draggable
+        onDragStart={handleDragStart(task.id)}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleCardDragOver}
+        onDrop={handleCardDrop(cardColumns[task.id], task.id)}
+        onClick={() => navigate(`/dashboard-placeholder/task/${task.id}`)}
+        style={{ order: cardOrderFor(task.id) }}
+      >
+        <div className={`bg-white ${isDragging ? "border-2 border-[#24B5F8]" : "border border-[#ebedee]"} border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full`}>
+          <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full">
+            <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">
+              <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full">
+                <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full">
+                  <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]">
+                    {task.title}
+                  </p>
+                  <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]">
+                    <div className="relative shrink-0 size-[16px]">
+                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideFlag} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {task.descriptionLines && (
+                <>
+                  <div className="h-0 relative shrink-0 w-full">
+                    <div className="absolute inset-[-0.57px_0]">
+                      <img alt="" className="block max-w-none size-full" src={imgVector13} />
+                    </div>
+                  </div>
+                  <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
+                    {task.multiLineDesc ? (
+                      <div className="font-['Satoshi:Medium',sans-serif] leading-[0] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full whitespace-pre-wrap">
+                        {task.descriptionLines.map((line, i) => (
+                          <p key={i} className={`leading-[normal]${i === 0 ? " mb-0" : ""}`}>{line}</p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full">
+                        {task.descriptionLines[0]}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
+              <div className="content-stretch flex gap-[6px] h-[15px] isolate items-center justify-center relative shrink-0 w-full">
+                <div className="relative shrink-0 size-[12px] z-[2]">
+                  <div className="absolute inset-[-33.33%]">
+                    <img alt="" className="block max-w-none size-full" src={imgFrame308} />
+                  </div>
+                </div>
+                <div className="flex-[1_0_0] h-0 min-h-px min-w-px relative z-[1]">
+                  <div className="absolute inset-[-2.5px_-0.84%]">
+                    <img alt="" className="block max-w-none size-full" src={imgVector14} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="content-stretch flex items-center justify-between relative shrink-0 w-full">
+              <div className="content-stretch flex items-center relative shrink-0">
+                <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
+              </div>
+              <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0">
+                <div className={`bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0${task.badgesHidden ? " opacity-0" : ""}`}>
+                  <div className="relative shrink-0 size-[16px]">
+                    <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
+                  </div>
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap">
+                    {task.clipCount}
+                  </p>
+                </div>
+                <div className={`bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0${task.badgesHidden ? " opacity-0" : ""}`}>
+                  <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]">
+                    <div className="relative shrink-0 size-[13.33px]">
+                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
+                    </div>
+                  </div>
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap">
+                    {task.msgCount}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -249,7 +482,7 @@ export function DashboardPlaceholder() {
       <div className="flex min-h-0 w-full flex-1 flex-col items-end gap-2" data-node-id="7:2817">
         <div className="isolate flex min-h-0 w-full flex-1 items-stretch gap-[16px]" data-node-id="7:2818">
           <DashboardLeftRail />
-          <div className="relative z-[1] isolate flex min-h-0 min-w-0 flex-1 flex-col items-end gap-[24px] overflow-x-clip overflow-y-auto rounded-[8px] border border-[#ebedee] border-solid bg-white py-[16px] pl-[24px] pr-[16px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]" data-node-id="7:2850">
+          <div className="relative z-[1] isolate flex min-h-0 min-w-0 flex-1 flex-col items-end gap-[24px] overflow-x-clip overflow-y-hidden rounded-[8px] border border-[#ebedee] border-solid bg-white py-[16px] pl-[24px] pr-[16px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]" data-node-id="7:2850">
             <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full z-[3]" data-node-id="7:2851">
               <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2852">
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2853">
@@ -391,20 +624,27 @@ export function DashboardPlaceholder() {
                     </div>
                   </div>
                   <div className="flex flex-row items-center self-stretch">
-                    <div className="content-stretch flex gap-[8px] h-full items-center justify-center px-[16px] py-[10px] relative rounded-[8px] shrink-0" data-name="Component 4" data-node-id="7:2904" style={{ backgroundImage: "linear-gradient(165.24069544367063deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)" }}>
+                    <button
+                      type="button"
+                      onClick={() => setLogTimeOpen(true)}
+                      className="content-stretch flex h-full shrink-0 items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[10px]"
+                      data-name="Component 4"
+                      data-node-id="7:2904"
+                      style={{ backgroundImage: "linear-gradient(165.24069544367063deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)" }}
+                    >
                       <div className="relative shrink-0 size-[16px]" data-name="lucide/plus" data-node-id="7:2905">
                         <img alt="" className="absolute block max-w-none size-full" src={imgLucidePlus} />
                       </div>
                       <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap" data-node-id="7:2907">
                         Log Time
                       </p>
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-              <div className="content-stretch flex gap-[16px] items-start relative shrink-0 w-full z-[1]" data-node-id="7:2908">
-              <div className="content-stretch flex flex-[1_0_0] flex-col gap-[16px] items-start min-h-px min-w-px p-[16px] relative rounded-[16px]" data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }}>
+              <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]" data-node-id="7:2908">
+              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col gap-[16px] items-start overflow-y-auto min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "todo" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("todo")} onDragLeave={handleColumnDragLeave("todo")} onDrop={handleDrop("todo")}>
                 <div className="content-stretch flex flex-col gap-[16px] isolate items-start relative shrink-0 w-[365.333px]" data-name="Component 125" data-node-id="7:2910">
                   <div className="content-stretch flex items-center justify-between relative shrink-0 w-full z-[2]" data-node-id="I7:2910;2444:24776">
                     <Component3 className="content-stretch flex gap-[8px] items-center relative shrink-0" />
@@ -446,8 +686,17 @@ export function DashboardPlaceholder() {
                     <img alt="" className="block max-w-none size-full" src={imgVector12} />
                   </div>
                 </div>
+                {dragOverCol === "todo" && draggingId !== null && (
+                  <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
+                )}
                 <div
-                  className="content-stretch cursor-pointer flex flex-col items-start relative shrink-0 w-full"
+                  className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${draggingId === 1 ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
+                  draggable
+                  onDragStart={handleDragStart(1)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={handleCardDragOver}
+                  onDrop={handleCardDrop("todo", 1)}
+                  style={{ display: cardColumns[1] !== "todo" ? "none" : undefined, order: cardOrderFor(1) }}
                   data-name="Component 118"
                   data-node-id="7:2912"
                   onClick={() => navigate("/dashboard-placeholder/task/1")}
@@ -521,7 +770,13 @@ export function DashboardPlaceholder() {
                   </div>
                 </div>
                 <div
-                  className="content-stretch cursor-pointer flex flex-col items-start relative shrink-0 w-full"
+                  className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${draggingId === 2 ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
+                  draggable
+                  onDragStart={handleDragStart(2)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={handleCardDragOver}
+                  onDrop={handleCardDrop("todo", 2)}
+                  style={{ display: cardColumns[2] !== "todo" ? "none" : undefined, order: cardOrderFor(2) }}
                   data-name="Component 127"
                   data-node-id="7:2913"
                   onClick={() => navigate("/dashboard-placeholder/task/2")}
@@ -596,7 +851,13 @@ export function DashboardPlaceholder() {
                   </div>
                 </div>
                 <div
-                  className="content-stretch cursor-pointer flex flex-col items-start relative shrink-0 w-full"
+                  className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${draggingId === 3 ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
+                  draggable
+                  onDragStart={handleDragStart(3)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={handleCardDragOver}
+                  onDrop={handleCardDrop("todo", 3)}
+                  style={{ display: cardColumns[3] !== "todo" ? "none" : undefined, order: cardOrderFor(3) }}
                   data-name="Component 126"
                   data-node-id="7:2914"
                   onClick={() => navigate("/dashboard-placeholder/task/3")}
@@ -669,8 +930,9 @@ export function DashboardPlaceholder() {
                     </div>
                   </div>
                 </div>
+                {tasksInColumn("todo").filter(t => INITIAL_COLUMNS[t.id] !== "todo").map(renderCard)}
               </div>
-              <div className="content-stretch flex flex-[1_0_0] flex-col gap-[16px] items-start min-h-px min-w-px p-[16px] relative rounded-[16px]" data-node-id="7:2915" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }}>
+              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col gap-[16px] items-start overflow-y-auto min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "in-progress" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2915" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("in-progress")} onDragLeave={handleColumnDragLeave("in-progress")} onDrop={handleDrop("in-progress")}>
                 <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2916">
                   <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2917">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/squircle-dashed" data-node-id="7:2919">
@@ -690,8 +952,12 @@ export function DashboardPlaceholder() {
                     </div>
                   </div>
                 </div>
+                {dragOverCol === "in-progress" && draggingId !== null && (
+                  <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
+                )}
+                {tasksInColumn("in-progress").map(renderCard)}
               </div>
-              <div className="content-stretch flex flex-[1_0_0] flex-col gap-[16px] items-start min-h-px min-w-px p-[16px] relative rounded-[16px]" data-node-id="7:2925" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }}>
+              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col gap-[16px] items-start overflow-y-auto min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "completed" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2925" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("completed")} onDragLeave={handleColumnDragLeave("completed")} onDrop={handleDrop("completed")}>
                 <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2926">
                   <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2927">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/circle-check-big" data-node-id="7:2929">
@@ -711,8 +977,17 @@ export function DashboardPlaceholder() {
                     </div>
                   </div>
                 </div>
+                {dragOverCol === "completed" && draggingId !== null && (
+                  <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
+                )}
                 <div
-                  className="content-stretch cursor-pointer flex flex-col items-start relative shrink-0 w-full"
+                  className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${draggingId === 4 ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
+                  draggable
+                  onDragStart={handleDragStart(4)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={handleCardDragOver}
+                  onDrop={handleCardDrop("completed", 4)}
+                  style={{ display: cardColumns[4] !== "completed" ? "none" : undefined, order: cardOrderFor(4) }}
                   data-name="Component 118"
                   data-node-id="7:2935"
                   onClick={() => navigate("/dashboard-placeholder/task/4")}
@@ -775,6 +1050,7 @@ export function DashboardPlaceholder() {
                     </div>
                   </div>
                 </div>
+                {tasksInColumn("completed").filter(t => INITIAL_COLUMNS[t.id] !== "completed").map(renderCard)}
               </div>
             </div>
           </div>
@@ -959,6 +1235,7 @@ export function DashboardPlaceholder() {
         </div>
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
+      <LogTimeModal open={logTimeOpen} onOpenChange={setLogTimeOpen} />
     </div>
   );
 }
