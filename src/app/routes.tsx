@@ -40,6 +40,11 @@ const DashboardPlaceholderAssigned = lazy(() =>
 const DashboardPlaceholderCreated = lazy(() =>
   import("./pages/DashboardPlaceholderCreated").then((m) => ({ default: m.DashboardPlaceholderCreated }))
 );
+const DashboardPlaceholderGetStartedTimeLogs = lazy(() =>
+  import("./pages/DashboardPlaceholderGetStartedTimeLogs").then((m) => ({
+    default: m.DashboardPlaceholderGetStartedTimeLogs,
+  }))
+);
 
 const OnboardingUsage = lazy(() => import("./pages/onboarding/Usage"));
 const OnboardingCollaboration = lazy(() => import("./pages/onboarding/Collaboration"));
@@ -146,6 +151,16 @@ export const router = createBrowserRouter([
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
           <DashboardPlaceholder />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/dashboard-placeholder/get-started/time-logs",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <DashboardPlaceholderGetStartedTimeLogs />
         </Suspense>
       </AuthGuard>
     ),

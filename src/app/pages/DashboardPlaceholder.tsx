@@ -511,16 +511,26 @@ export function DashboardPlaceholder() {
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2866">
                   <Component4 className="bg-[#d7fede] content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0" />
                   <div className="bg-[#f0f3f5] content-stretch flex gap-[2px] h-[32px] items-center p-[2px] relative rounded-[8px] shrink-0 w-[251px]" data-node-id="7:2868">
-                    <div className="bg-white border border-[#ededed] border-solid content-stretch flex h-[36px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 2" data-node-id="7:2869">
+                    <Link
+                      to="/dashboard-placeholder/get-started"
+                      className="bg-white border border-[#ededed] border-solid content-stretch flex h-[36px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      data-name="Component 2"
+                      data-node-id="7:2869"
+                    >
                       <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="7:2870">
                         Sprint
                       </p>
-                    </div>
-                    <div className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0" data-name="Component 3" data-node-id="7:2871">
+                    </Link>
+                    <Link
+                      to="/dashboard-placeholder/get-started/time-logs"
+                      className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      data-name="Component 3"
+                      data-node-id="7:2871"
+                    >
                       <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] text-right whitespace-nowrap" data-node-id="7:2872">
                         Time logs
                       </p>
-                    </div>
+                    </Link>
                     <div className="h-full relative shrink-0 w-0" data-node-id="7:2873">
                       <div className="absolute inset-[0_-0.5px]">
                         <img alt="" className="block max-w-none size-full" src={imgVector8} />
