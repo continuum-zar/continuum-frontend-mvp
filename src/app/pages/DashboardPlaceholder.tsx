@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { LogTimeModal } from "../components/dashboard-placeholder/LogTimeModal";
+import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 
 const imgLucideListTodo = "https://www.figma.com/api/mcp/asset/2a12c1eb-b745-4bea-b9f1-f67045f8c03a";
 const imgLucideTimer = "https://www.figma.com/api/mcp/asset/5b386900-0988-47bc-b5fd-da0ce6db2015";
@@ -265,6 +266,7 @@ const INITIAL_COLUMN_ORDER: Record<ColumnId, number[]> = {
 export function DashboardPlaceholder() {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [logTimeOpen, setLogTimeOpen] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const navigate = useNavigate();
 
   const [cardColumns, setCardColumns] = useState<Record<number, ColumnId>>(INITIAL_COLUMNS);
@@ -1064,7 +1066,13 @@ export function DashboardPlaceholder() {
             </div>
           </div>
         </div>
-        <div className="absolute border border-[#edecea] border-solid bottom-[14px] content-stretch flex flex-col isolate items-start overflow-clip right-[14px] rounded-[48px] shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] size-[48px]" data-node-id="7:2936">
+        <button
+          type="button"
+          onClick={() => setAiChatOpen(true)}
+          className="absolute bottom-[14px] right-[14px] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Open AI assistant"
+          data-node-id="7:2936"
+        >
           <div className="-translate-x-1/2 -translate-y-1/2 absolute content-stretch flex items-center left-[calc(50%+0.5px)] top-[calc(50%+0.5px)] z-[3]" data-node-id="I7:2936;3646:40266">
             <div className="overflow-clip relative shrink-0 size-[28px]" data-name="Frame 453/bot" data-node-id="I7:2936;3646:40267">
               <div className="absolute inset-[16.67%_8.33%]" data-name="Vector" data-node-id="I7:2936;3646:40267;3392:54498">
@@ -1241,10 +1249,11 @@ export function DashboardPlaceholder() {
               </div>
             </div>
           </div>
-        </div>
+        </button>
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
       <LogTimeModal open={logTimeOpen} onOpenChange={setLogTimeOpen} />
+      <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} showQuickActions={false} />
     </div>
   );
 }

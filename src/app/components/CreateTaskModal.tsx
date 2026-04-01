@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, FileText, Link2, Plus, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, FileText, Link2, Plus, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Dialog,
@@ -31,16 +31,52 @@ const imgLucideCheck1 =
   "https://www.figma.com/api/mcp/asset/023443fc-c32a-461b-8dbd-55d6e32cd451";
 const imgComponent34 =
   "https://www.figma.com/api/mcp/asset/0a33d0b2-07cc-4490-b6ee-909fecb0efb5";
+const DEFAULT_TASK_TITLE = "Set up high-fidelity prototypes with conditional logic";
+const DEFAULT_TASK_DESCRIPTION =
+  "A long description goes here, this space will only show two lines before truncation. ";
+
+export type ChecklistRow = { id: string; text: string; done: boolean };
+
+export type CreateTaskModalPrefill = {
+  title: string;
+  description: string;
+  descriptionMeta?: string;
+  checklist?: ChecklistRow[];
+};
+
 type CreateTaskModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** AI / deep-link: seed fields when opening or when prefillKey changes */
+  prefill?: CreateTaskModalPrefill;
+  /** Bump when switching carousel slides so prefill re-applies */
+  prefillKey?: string | number;
+  headerTitle?: string;
+  submitLabel?: string;
+  carousel?: {
+    index: number;
+    total: number;
+    onPrev: () => void;
+    onNext: () => void;
+  };
 };
 
-type ChecklistRow = { id: string; text: string; done: boolean };
-
-export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
+export function CreateTaskModal({
+  open,
+  onOpenChange,
+  prefill,
+  prefillKey,
+  headerTitle = "Create Task",
+  submitLabel,
+  carousel,
+}: CreateTaskModalProps) {
   const [checklistItems, setChecklistItems] = useState<ChecklistRow[]>([]);
+  const [taskTitle, setTaskTitle] = useState(DEFAULT_TASK_TITLE);
+  const [taskDescription, setTaskDescription] = useState(DEFAULT_TASK_DESCRIPTION);
+  const [taskDescriptionMeta, setTaskDescriptionMeta] = useState("85/100 Characters");
   const [addResourceOpen, setAddResourceOpen] = useState(false);
+
+  const resolvedSubmitLabel = submitLabel ?? "Create Task";
 
   const addChecklistRow = useCallback(() => {
     setChecklistItems((prev) => [...prev, { id: crypto.randomUUID(), text: "", done: false }]);
@@ -65,8 +101,22 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
   }, []);
 
   useEffect(() => {
-    if (!open) setChecklistItems([]);
-  }, [open]);
+    if (!open) {
+      setChecklistItems([]);
+      return;
+    }
+    if (prefill) {
+      setTaskTitle(prefill.title);
+      setTaskDescription(prefill.description);
+      setTaskDescriptionMeta(prefill.descriptionMeta ?? "85/100 Characters");
+      setChecklistItems(prefill.checklist?.length ? prefill.checklist : []);
+    } else {
+      setTaskTitle(DEFAULT_TASK_TITLE);
+      setTaskDescription(DEFAULT_TASK_DESCRIPTION);
+      setTaskDescriptionMeta("85/100 Characters");
+      setChecklistItems([]);
+    }
+  }, [open, prefill, prefillKey]);
 
   const renderResourceRow = (item: WelcomeResourceItem) => {
     if (item.kind === "link") {
@@ -111,18 +161,83 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
     );
   };
 
+  const showCarousel = Boolean(carousel && carousel.total > 1);
+  const canPrev = showCarousel && carousel!.index > 0;
+  const canNext = showCarousel && carousel!.index < carousel!.total - 1;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <AddResourceModal open={addResourceOpen} onOpenChange={setAddResourceOpen} />
       <DialogPortal>
         <DialogOverlay className="bg-black/25" />
+        {showCarousel && canPrev && (
+          <button
+            type="button"
+            aria-label="Previous task"
+            data-task-carousel-nav=""
+            onClick={(e) => {
+              e.stopPropagation();
+              carousel!.onPrev();
+            }}
+            className="fixed top-1/2 left-4 z-[60] flex size-12 -translate-y-1/2 items-center justify-center rounded-[999px] border-0 bg-white shadow-md md:left-8"
+          >
+            <ChevronLeft className="size-8 text-[#0b191f]" strokeWidth={1.5} />
+          </button>
+        )}
+        {showCarousel && canNext && (
+          <button
+            type="button"
+            aria-label="Next task"
+            data-task-carousel-nav=""
+            onClick={(e) => {
+              e.stopPropagation();
+              carousel!.onNext();
+            }}
+            className="fixed top-1/2 right-4 z-[60] flex size-12 -translate-y-1/2 items-center justify-center rounded-[999px] border-0 bg-white shadow-md md:right-8"
+          >
+            <ChevronRight className="size-8 text-[#0b191f]" strokeWidth={1.5} />
+          </button>
+        )}
+        {showCarousel && (
+          <div
+            className="fixed bottom-8 left-1/2 z-[60] -translate-x-1/2"
+            data-task-carousel-nav=""
+          >
+            <div
+              className="flex gap-2 rounded-[99px] bg-white/90 p-2 shadow-sm backdrop-blur-[10px]"
+              role="tablist"
+              aria-label="Task carousel"
+            >
+              {Array.from({ length: carousel!.total }, (_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "rounded-[99px] transition-[width,background-color]",
+                    i === carousel!.index ? "h-2 w-6 bg-black" : "size-2 bg-[#d9d9d9]",
+                  )}
+                  aria-hidden
+                />
+              ))}
+            </div>
+          </div>
+        )}
         <DialogPrimitive.Content
           aria-describedby={undefined}
+          onPointerDownOutside={(e) => {
+            if ((e.target as HTMLElement).closest("[data-task-carousel-nav]")) {
+              e.preventDefault();
+            }
+          }}
+          onInteractOutside={(e) => {
+            if ((e.target as HTMLElement).closest("[data-task-carousel-nav]")) {
+              e.preventDefault();
+            }
+          }}
           className={cn(
             "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(886px,90vh)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
           )}
         >
-          <DialogPrimitive.Title className="sr-only">Create Task</DialogPrimitive.Title>
+          <DialogPrimitive.Title className="sr-only">{headerTitle}</DialogPrimitive.Title>
 
           <div className="z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
             <DialogClose asChild>
@@ -138,7 +253,7 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
             </DialogClose>
             <div className="pointer-events-none absolute left-1/2 top-[25px] flex -translate-x-1/2 flex-col items-center gap-3">
               <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
-                Create Task
+                {headerTitle}
               </p>
             </div>
             <button
@@ -162,7 +277,7 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
             <div className="flex w-full flex-col gap-6 pb-6">
               <div className="flex w-full items-center bg-white py-2">
                 <p className="min-w-0 flex-1 font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">
-                  Set up high-fidelity prototypes with conditional logic
+                  {taskTitle}
                 </p>
               </div>
 
@@ -172,11 +287,11 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
                 </p>
                 <div className="flex h-[106px] w-full flex-col justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 pt-4 pb-2">
                   <p className="w-full font-['Satoshi',sans-serif] text-[16px] font-medium text-[#606d76]">
-                    A long description goes here, this space will only show two lines before truncation.{" "}
+                    {taskDescription}
                   </p>
                   <div className="flex w-full items-center justify-end opacity-[0.32]">
                     <p className="font-['Satoshi',sans-serif] text-[14px] font-medium whitespace-nowrap text-[#606d76]">
-                      85/100 Characters
+                      {taskDescriptionMeta}
                     </p>
                   </div>
                 </div>
@@ -440,7 +555,7 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
                 }}
               >
                 <span className="font-['Inter',sans-serif] text-[14px] font-semibold text-white">
-                  Create Task
+                  {resolvedSubmitLabel}
                 </span>
               </button>
             </DialogClose>
