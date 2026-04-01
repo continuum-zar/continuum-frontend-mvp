@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Link, useLocation } from "react-router";
 
 import { CreateProjectModal } from "./CreateProjectModal";
@@ -15,7 +16,6 @@ const imgLucideSearch = "https://www.figma.com/api/mcp/asset/96a4c70f-3ae8-48af-
 const imgLucideFolderOpenDot = "https://www.figma.com/api/mcp/asset/941ffd1f-d458-4dea-b5e5-49e021a96475";
 const imgVector105 = "https://www.figma.com/api/mcp/asset/17833d32-ab5b-4ab4-99e5-73910456563c";
 const imgLucideSettings = "https://www.figma.com/api/mcp/asset/b6f4bb01-1341-4aa3-b63b-d4e00aa8f650";
-const imgVector6 = "https://www.figma.com/api/mcp/asset/535c537f-57dd-4391-be82-e2493f10c7a4";
 const imgVector7 = "https://www.figma.com/api/mcp/asset/f982bdec-baa8-4afc-b88d-5e64cbe35a27";
 
 function CornerDownRight({ className }: { className?: string }) {
@@ -179,6 +179,51 @@ function Frame1({
   );
 }
 
+function formatHms(totalSec: number) {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
+}
+
+/** Figma 13:338 Frame 382 — idle: grey ring + red dot. Figma 13:841/13:858 Frame 383 — recording: rgba(235,67,53,0.1) circle + ~18px red square */
+function LeftRailRecordButton({
+  recording,
+  onToggle,
+}: {
+  recording: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`relative box-border flex size-[42px] shrink-0 items-center justify-center rounded-full outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${
+        recording
+          ? "border-0 bg-transparent p-[10.615px]"
+          : "border border-solid border-[#8a8f91] bg-white p-[2.5px]"
+      }`}
+      aria-label={recording ? "Stop recording time" : "Start recording time"}
+      aria-pressed={recording}
+    >
+      {recording ? (
+        <>
+          <span
+            className="absolute left-1/2 top-1/2 size-[42.462px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[rgba(235,67,53,0.1)]"
+            aria-hidden
+          />
+          <span
+            className="relative z-[1] size-[17.692px] shrink-0 rounded-[3px] bg-[#eb4335]"
+            aria-hidden
+          />
+        </>
+      ) : (
+        <span className="relative z-[1] size-[30px] shrink-0 rounded-full bg-[#eb4335]" aria-hidden />
+      )}
+    </button>
+  );
+}
+
 function Frame({
   className,
   isHomeActive = false,
@@ -219,7 +264,15 @@ function Frame({
 export function DashboardLeftRail() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [timeRecording, setTimeRecording] = useState(false);
+  const [elapsedSec, setElapsedSec] = useState(0);
   const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (!timeRecording) return;
+    const id = window.setInterval(() => setElapsedSec((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [timeRecording]);
   const isHomeActive = pathname === "/dashboard-placeholder";
   const isInvoiceActive = invoiceOpen;
   const isAssignedActive = pathname.startsWith("/dashboard-placeholder/assigned");
@@ -230,8 +283,10 @@ export function DashboardLeftRail() {
 
   return (
     <>
-      <div className="flex h-full min-h-0 w-[212px] shrink-0 flex-col items-start justify-between overflow-hidden z-[2]" data-node-id="7:2819">
-        <div className="flex min-h-0 w-full flex-1 flex-col gap-[16px] items-start overflow-hidden" data-node-id="7:2820">
+      <div
+        className="flex h-full min-h-0 w-[212px] shrink-0 flex-col items-stretch overflow-hidden z-[2]"
+        data-node-id="7:2819"
+      >
         <div className="content-stretch flex flex-col gap-[9.534px] items-center pb-[16px] pt-[32px] relative shrink-0 w-full" data-node-id="7:2822">
           <div className="content-stretch flex flex-col items-center relative shrink-0" data-node-id="7:2824">
             <p
@@ -250,6 +305,7 @@ export function DashboardLeftRail() {
           isAssignedActive={isAssignedActive}
           isCreatedActive={isCreatedActive}
         />
+        <div className="relative flex min-h-0 w-full flex-1 flex-col gap-[16px] overflow-x-hidden overflow-y-auto" data-node-id="7:2820">
         <div className="content-stretch flex flex-col isolate items-start relative shrink-0 w-full" data-node-id="7:2828">
           <div className="content-stretch flex items-center justify-between py-[8px] relative shrink-0 w-full z-[5]" data-node-id="I7:2828;2172:27463">
             <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27464">
@@ -324,9 +380,42 @@ export function DashboardLeftRail() {
             </div>
           </div>
         </div>
-      </div>
-        <div className="flex w-full shrink-0 flex-col gap-[8px] items-start" data-node-id="7:2837">
-        <div className="pointer-events-none content-stretch flex gap-[12px] h-[40px] items-center opacity-0 px-[12px] relative rounded-[8px] shrink-0 w-full" data-name="Component 12" data-node-id="7:2838" aria-hidden="true">
+        </div>
+        {/* Figma 13:560 — timer + divider + profile stacked with no extra vertical gap */}
+        <div className="flex w-full shrink-0 flex-col gap-0" data-node-id="7:2837">
+        {/* Figma 13:571–13:573 — timer + Select ticket + record (13:575, 13:588) */}
+        <div className="flex w-full shrink-0 items-center gap-2 pl-2 pr-0 py-1" data-name="Component 144">
+              <div className="flex min-w-0 flex-1 flex-col justify-center gap-0 leading-none">
+                <p className="whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                  {formatHms(elapsedSec)}
+                </p>
+                <button
+                  type="button"
+                  className="mt-0.5 flex items-start gap-0.5 rounded-sm text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Select ticket"
+                >
+                  <span className="whitespace-nowrap font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                    Select ticket
+                  </span>
+                  <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
+                </button>
+              </div>
+              <LeftRailRecordButton
+                recording={timeRecording}
+                onToggle={() => {
+                  setTimeRecording((r) => {
+                    if (r) setElapsedSec(0);
+                    return !r;
+                  });
+                }}
+              />
+        </div>
+        <div
+          className="pointer-events-none hidden gap-[12px] px-[12px] py-0"
+          data-name="Component 12"
+          data-node-id="7:2838"
+          aria-hidden="true"
+        >
           <div className="relative shrink-0 size-[16px]" data-name="lucide/settings" data-node-id="7:2839">
             <img alt="" className="absolute block max-w-none size-full" src={imgLucideSettings} />
           </div>
@@ -334,11 +423,7 @@ export function DashboardLeftRail() {
             Settings
           </p>
         </div>
-        <div className="h-0 relative shrink-0 w-full" data-node-id="7:2842">
-          <div className="absolute inset-[-0.5px_-0.24%]">
-            <img alt="" className="block max-w-none size-full" src={imgVector6} />
-          </div>
-        </div>
+        <div className="h-px w-full shrink-0 bg-[#ebedee]" data-node-id="7:2842" aria-hidden />
         <div className="content-stretch flex h-[40px] items-center justify-between relative rounded-[8px] shrink-0 w-full" data-name="Component 13" data-node-id="7:2843">
           <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2844">
             <div className="bg-[#f17173] content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" data-name="Component 31" data-node-id="7:2845">
