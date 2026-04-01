@@ -10,6 +10,7 @@ import {
   type WelcomeResourceItem,
 } from "@/app/data/welcomeDashboardMock";
 import { AddResourceModal } from "./AddResourceModal";
+import { WelcomeLinkRepositoryModal } from "./WelcomeLinkRepositoryModal";
 
 const addButtonClass =
   "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]";
@@ -120,13 +121,16 @@ export function WelcomeResources() {
 }
 
 export function WelcomeRepo() {
+  const [linkRepoOpen, setLinkRepoOpen] = useState(false);
+
   return (
     <div className="flex w-full flex-col gap-4">
+      <WelcomeLinkRepositoryModal open={linkRepoOpen} onOpenChange={setLinkRepoOpen} />
       <div className="flex w-full items-center justify-between">
         <p className="font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal whitespace-nowrap text-[#0b191f]">
           Repository
         </p>
-        <button type="button" className={addButtonClass}>
+        <button type="button" className={addButtonClass} onClick={() => setLinkRepoOpen(true)}>
           Connect
           <Plus className="size-4" strokeWidth={2} />
         </button>

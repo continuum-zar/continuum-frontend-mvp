@@ -6,6 +6,7 @@ import { CreateTaskModal } from "../components/CreateTaskModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { LogTimeModal } from "../components/dashboard-placeholder/LogTimeModal";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
+import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
 
 const imgLucideListTodo = "https://www.figma.com/api/mcp/asset/2a12c1eb-b745-4bea-b9f1-f67045f8c03a";
 const imgLucideTimer = "https://www.figma.com/api/mcp/asset/5b386900-0988-47bc-b5fd-da0ce6db2015";
@@ -267,6 +268,7 @@ export function DashboardPlaceholder() {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [logTimeOpen, setLogTimeOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [shareProjectOpen, setShareProjectOpen] = useState(false);
   const navigate = useNavigate();
 
   const [cardColumns, setCardColumns] = useState<Record<number, ColumnId>>(INITIAL_COLUMNS);
@@ -620,7 +622,14 @@ export function DashboardPlaceholder() {
                         <p className="leading-[0.4]">AS</p>
                       </div>
                     </div>
-                    <div className="bg-[#e19c02] content-stretch flex gap-[5.714px] items-center mr-[-10.667px] p-[9.143px] relative rounded-[428.143px] shrink-0" data-name="Component 31" data-node-id="I7:2903;2032:931">
+                    <button
+                      type="button"
+                      onClick={() => setShareProjectOpen(true)}
+                      aria-label="Invite members"
+                      className="border-0 bg-[#e19c02] content-stretch flex cursor-pointer gap-[5.714px] items-center mr-[-10.667px] p-[9.143px] relative rounded-[428.143px] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      data-name="Component 31"
+                      data-node-id="I7:2903;2032:931"
+                    >
                       <div className="-translate-x-1/2 -translate-y-1/2 absolute left-1/2 size-[37.333px] top-1/2" data-node-id="I7:2903;2032:931;2469:49931">
                         <img alt="" className="absolute block max-w-none size-full" src={imgEllipse12} />
                       </div>
@@ -632,7 +641,7 @@ export function DashboardPlaceholder() {
                       <div className="relative shrink-0 size-[13.714px]" data-name="lucide/user-round-plus" data-node-id="I7:2903;2032:931;2469:48877">
                         <img alt="" className="absolute block max-w-none size-full" src={imgLucideUserRoundPlus} />
                       </div>
-                    </div>
+                    </button>
                   </div>
                   <div className="flex flex-row items-center self-stretch">
                     <button
@@ -1253,6 +1262,7 @@ export function DashboardPlaceholder() {
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
       <LogTimeModal open={logTimeOpen} onOpenChange={setLogTimeOpen} />
+      <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} />
       <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} showQuickActions={false} />
     </div>
   );

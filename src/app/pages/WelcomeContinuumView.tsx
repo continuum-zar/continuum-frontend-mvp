@@ -8,6 +8,7 @@ import {
 } from "../components/welcome/WelcomeActivityResourcesRepo";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeMetricsRow } from "../components/welcome/WelcomeMetricsRow";
+import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
 
 const imgVector = "https://www.figma.com/api/mcp/asset/cacdb2e3-e05a-4b8c-8af9-92f40d7d18dc";
 const imgVector4 = "https://www.figma.com/api/mcp/asset/c3b52218-d733-48d4-bdc8-06bb9e9a483b";
@@ -101,6 +102,7 @@ function Component1({ className, state = "Default", type = "Home" }: Component1P
 
 export function WelcomeContinuumView() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [shareProjectOpen, setShareProjectOpen] = useState(false);
 
   return (
     <div
@@ -511,14 +513,24 @@ export function WelcomeContinuumView() {
                             </div>
                           </div>
                         </div>
-                        <div className="border border-[#ebedee] border-solid content-stretch flex gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 2" data-node-id="8:3726" style={{ backgroundImage: "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(168.89065931200642deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)" }}>
+                        <button
+                          type="button"
+                          className="border border-[#ebedee] border-solid content-stretch flex cursor-pointer gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                          data-name="Component 2"
+                          data-node-id="8:3726"
+                          style={{
+                            backgroundImage:
+                              "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(168.89065931200642deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
+                          }}
+                          onClick={() => setShareProjectOpen(true)}
+                        >
                           <div className="relative shrink-0 size-[24px]" data-name="lucide/plus" data-node-id="8:3727">
                             <img alt="" className="absolute block max-w-none size-full" src={imgLucidePlus1} />
                           </div>
                           <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3729">
                             Invite Members
                           </p>
-                        </div>
+                        </button>
                       </div>
                     </div>
                     <div className="content-stretch flex items-start relative shrink-0 w-full" data-node-id="8:3761">
@@ -590,6 +602,7 @@ export function WelcomeContinuumView() {
         </div>
       </div>
       <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} />
+      <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} />
     </div>
   );
 }
