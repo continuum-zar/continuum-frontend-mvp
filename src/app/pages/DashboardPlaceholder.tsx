@@ -20,7 +20,6 @@ const imgEllipse28 = "https://www.figma.com/api/mcp/asset/bdacad62-bbe1-4de2-b3e
 const imgEllipse29 = "https://www.figma.com/api/mcp/asset/710e523e-163a-4f70-9ad4-56391a61a3ac";
 const imgLucideFolderOpenDot = "https://www.figma.com/api/mcp/asset/941ffd1f-d458-4dea-b5e5-49e021a96475";
 const imgLucideChevronRight = "https://www.figma.com/api/mcp/asset/3c9be13d-56ac-42e3-a5bd-d538ded07d91";
-const imgVector8 = "https://www.figma.com/api/mcp/asset/c091d350-44e5-4a58-bc3c-6f975b84b12a";
 const imgLucideBell = "https://www.figma.com/api/mcp/asset/bff9ccf9-de26-47c4-bee7-385dad67d583";
 const imgLucideFolderCog = "https://www.figma.com/api/mcp/asset/c887e8ab-eac8-49d0-a552-df4e52754a78";
 const imgLucideShare = "https://www.figma.com/api/mcp/asset/6bac045f-4082-4943-bb21-c2b42ea3f721";
@@ -531,16 +530,16 @@ export function DashboardPlaceholder() {
                         Time logs
                       </p>
                     </Link>
-                    <div className="h-full relative shrink-0 w-0" data-node-id="7:2873">
-                      <div className="absolute inset-[0_-0.5px]">
-                        <img alt="" className="block max-w-none size-full" src={imgVector8} />
-                      </div>
-                    </div>
-                    <div className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0" data-name="Component 4" data-node-id="7:2874">
+                    <Link
+                      to="/dashboard-placeholder/get-started/time-logs?tab=activity"
+                      className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      data-name="Component 4"
+                      data-node-id="7:2874"
+                    >
                       <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="7:2875">
                         Activity
                       </p>
-                    </div>
+                    </Link>
                   </div>
                   <div className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px]" data-name="Component 5" data-node-id="7:2876">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="7:2877">
