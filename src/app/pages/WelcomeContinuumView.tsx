@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router";
 
 import {
@@ -5,6 +6,7 @@ import {
   WelcomeRepo,
   WelcomeResources,
 } from "../components/welcome/WelcomeActivityResourcesRepo";
+import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeMetricsRow } from "../components/welcome/WelcomeMetricsRow";
 
 const imgVector = "https://www.figma.com/api/mcp/asset/cacdb2e3-e05a-4b8c-8af9-92f40d7d18dc";
@@ -35,6 +37,7 @@ const imgDivider = "https://www.figma.com/api/mcp/asset/7a877d5e-6a85-4a7f-ae6d-
 const imgLucideCircleDashed = "https://www.figma.com/api/mcp/asset/ccaffd7b-80ba-4413-ada6-9324ab249688";
 const imgLucideTrafficCone = "https://www.figma.com/api/mcp/asset/df64d315-4479-4557-86ce-eebf48f8e6ec";
 const imgLucidePlus1 = "https://www.figma.com/api/mcp/asset/1da1cc85-0c45-4470-a43f-e9a9f1a1e4f5";
+const imgVector15 = "https://www.figma.com/api/mcp/asset/41d4c7e7-e987-4d3e-b39f-b0a8c1791b01";
 
 function CornerDownRight({ className }: { className?: string }) {
   return (
@@ -97,6 +100,8 @@ function Component1({ className, state = "Default", type = "Home" }: Component1P
 }
 
 export function WelcomeContinuumView() {
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+
   return (
     <div
       className="box-border flex h-screen min-h-0 w-full flex-col overflow-hidden pb-[8px] pl-[12px] pr-[8px] pt-[12px]"
@@ -230,7 +235,7 @@ export function WelcomeContinuumView() {
               </div>
             </div>
           </div>
-          <div className="relative z-[1] flex min-h-0 min-w-0 flex-1 flex-col items-end gap-[16px] overflow-x-clip overflow-y-auto rounded-[8px] border border-[#ebedee] border-solid bg-white py-[16px] pl-[24px] pr-[16px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]" data-node-id="8:3521">
+          <div className="relative z-[1] flex min-h-0 min-w-0 flex-1 flex-col items-end gap-[16px] overflow-hidden rounded-[8px] border border-[#ebedee] border-solid bg-white py-[16px] pl-[24px] pr-[16px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]" data-node-id="8:3521">
             <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3522">
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3523">
                 <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-open-dot" data-node-id="8:3524">
@@ -290,7 +295,8 @@ export function WelcomeContinuumView() {
                 <img alt="" className="block max-w-none size-full" src={imgVector8} />
               </div>
             </div>
-            <div className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col items-start" data-node-id="8:3554">
+            <div className="relative min-h-0 w-full min-w-0 flex-1 self-stretch overflow-x-clip overflow-y-auto">
+            <div className="relative flex w-full min-w-0 flex-col items-start" data-node-id="8:3554">
               <div className="content-stretch flex flex-col gap-[64px] items-center pb-[32px] pt-[48px] relative shrink-0 w-full" data-node-id="8:3555">
                 <div className="h-[191px] relative shrink-0 w-full" data-node-id="8:3556">
                   <div className="-translate-x-1/2 absolute h-[175.151px] left-1/2 top-0 w-[350.302px]" data-node-id="8:3557">
@@ -562,9 +568,28 @@ export function WelcomeContinuumView() {
                 </div>
               </div>
             </div>
+            </div>
+            <button
+              type="button"
+              className="absolute bottom-[14px] right-[14px] z-20 flex size-[48px] flex-col items-start isolate overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Open AI assistant"
+              data-node-id="8:3521-fab"
+              onClick={() => setAiChatOpen(true)}
+            >
+              <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%+0.5px)] top-[calc(50%+0.5px)] z-[3] flex items-center">
+                <div className="relative size-[28px] shrink-0 overflow-clip">
+                  <div className="absolute inset-[16.67%_8.33%]">
+                    <div className="absolute inset-[-5.15%_-4.12%]">
+                      <img alt="" className="block size-full max-w-none" src={imgVector15} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </button>
           </div>
         </div>
       </div>
+      <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} />
     </div>
   );
 }
