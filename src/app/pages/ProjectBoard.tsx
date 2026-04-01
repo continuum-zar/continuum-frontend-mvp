@@ -353,7 +353,7 @@ export function ProjectBoard() {
   const createIntegrationMutation = useCreateIntegration(projectId);
   const updateIntegrationMutation = useUpdateIntegration(projectId);
   const deleteIntegrationMutation = useDeleteIntegration(projectId);
-  const testIntegrationMutation = useTestIntegration();
+  const testIntegrationMutation = useTestIntegration(projectId);
 
   const project = projectQuery.data ?? null;
   const isLoading = projectQuery.isLoading || tasksQuery.isLoading;
@@ -1196,7 +1196,7 @@ export function ProjectBoard() {
             <h3 className="text-muted-foreground text-sm font-bold tracking-widest uppercase">Discord Integration</h3>
           </div>
           <p className="text-xs text-muted-foreground mb-3">
-            Discord Server Settings → Integrations → Webhooks. You’ll get card-move messages like: who moved it, task title, previous and new list.
+            Discord Server Settings → Integrations → Webhooks. You’ll get notified on task creation and card movements (who moved it, task title, previous and new list).
           </p>
           <div className="bg-card border border-border rounded-lg p-6">
             {integrationsQuery.isLoading ? (
