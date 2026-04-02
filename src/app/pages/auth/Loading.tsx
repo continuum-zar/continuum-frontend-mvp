@@ -8,7 +8,7 @@ export function Loading() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      navigate('/dashboard', { replace: true });
+      navigate('/dashboard-placeholder', { replace: true });
     }, LOADING_DURATION_MS);
 
     return () => window.clearTimeout(timer);

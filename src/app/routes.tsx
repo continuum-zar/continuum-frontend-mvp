@@ -176,6 +176,16 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/dashboard-placeholder/project/:projectId",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <WelcomeContinuumView />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
     path: "/dashboard-placeholder/task/:taskId",
     element: (
       <AuthGuard>

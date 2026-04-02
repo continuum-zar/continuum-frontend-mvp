@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { useLocation, useParams } from "react-router";
 
+import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import {
   WelcomeRecentActivity,
   WelcomeRepo,
@@ -9,19 +10,13 @@ import {
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeMetricsRow } from "../components/welcome/WelcomeMetricsRow";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
+import {
+  DASHBOARD_PROJECTS,
+  getDashboardProjectById,
+  resolveDashboardProjectId,
+} from "../data/dashboardPlaceholderProjects";
 
-const imgVector = "https://www.figma.com/api/mcp/asset/cacdb2e3-e05a-4b8c-8af9-92f40d7d18dc";
-const imgVector4 = "https://www.figma.com/api/mcp/asset/c3b52218-d733-48d4-bdc8-06bb9e9a483b";
-const imgVector5 = "https://www.figma.com/api/mcp/asset/4bb96863-dcd1-4992-adc3-89235afafcce";
-const imgLucideHouse = "https://www.figma.com/api/mcp/asset/3f251344-9625-4758-8378-ab9e36ac0a08";
-const imgLucideTarget = "https://www.figma.com/api/mcp/asset/8d4c8e75-6f30-480a-80b8-811ca12f8b39";
-const imgLucideListTodo = "https://www.figma.com/api/mcp/asset/3d5520c2-3c0f-4d4b-b509-08e0e720ff35";
-const imgLucideSearch = "https://www.figma.com/api/mcp/asset/816b3301-2710-49b5-b489-cfed543179c2";
-const imgLucideScrollText = "https://www.figma.com/api/mcp/asset/b6085f62-deab-4bf5-a3ab-ce34315798ac";
 const imgLucideFolderOpenDot = "https://www.figma.com/api/mcp/asset/565be4ed-fc29-4562-a26f-1c943a6d5847";
-const imgLucideSettings = "https://www.figma.com/api/mcp/asset/fbf5329b-aa45-4cb6-8b40-087712a4088d";
-const imgVector6 = "https://www.figma.com/api/mcp/asset/742275dd-26b4-4316-bfb1-47486a4607f5";
-const imgVector7 = "https://www.figma.com/api/mcp/asset/df985590-409e-419a-9294-2aa12acc296b";
 const imgLucideBuilding2 = "https://www.figma.com/api/mcp/asset/71a5ce6a-04cd-4e3a-bf8d-8982fbc63fe8";
 const imgLucideX = "https://www.figma.com/api/mcp/asset/74ddb36d-7bc2-46ad-838d-6170796e1694";
 const imgLucideBell = "https://www.figma.com/api/mcp/asset/0e2a64e9-ee3f-4ce3-aa60-05063accc712";
@@ -40,67 +35,12 @@ const imgLucideTrafficCone = "https://www.figma.com/api/mcp/asset/df64d315-4479-
 const imgLucidePlus1 = "https://www.figma.com/api/mcp/asset/1da1cc85-0c45-4470-a43f-e9a9f1a1e4f5";
 const imgVector15 = "https://www.figma.com/api/mcp/asset/41d4c7e7-e987-4d3e-b39f-b0a8c1791b01";
 
-function CornerDownRight({ className }: { className?: string }) {
-  return (
-    <div className={className || "overflow-clip relative size-[16px]"} data-name="corner-down-right" data-node-id="7:374">
-      <div className="absolute inset-[16.67%]" data-name="Vector" data-node-id="7:375">
-        <div className="absolute inset-[-6.25%]">
-          <img alt="" className="block max-w-none size-full" src={imgVector} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type ComponentProps = {
-  className?: string;
-  property1?: "Default" | "Hover" | "Pressing";
-  type?: "Ellipse" | "Plus";
-};
-
-function Component({ className, property1: _property1 = "Default", type = "Plus" }: ComponentProps) {
-  const isDefaultAndPlus = _property1 === "Default" && type === "Plus";
-  return (
-    <div className={className || `overflow-clip relative rounded-[4px] ${isDefaultAndPlus ? "size-[16px]" : "content-stretch flex flex-col items-start px-[2.667px] py-[7.333px] w-[16px]"}`} id={isDefaultAndPlus ? "node-7_364" : "node-7_357"}>
-      <div className={isDefaultAndPlus ? "absolute inset-[20.83%]" : "h-[1.333px] relative shrink-0 w-[10.667px]"} data-name="Vector" id={isDefaultAndPlus ? "node-7_365" : "node-7_358"}>
-        <div className={`absolute ${isDefaultAndPlus ? "inset-[-5.36%]" : "inset-[-50%_-6.25%]"}`}>
-          <img alt="" className="block max-w-none size-full" src={isDefaultAndPlus ? imgVector5 : imgVector4} />
-        </div>
-      </div>
-    </div>
-  );
-}
-type Component1Props = {
-  className?: string;
-  state?: "Default" | "Hover" | "Pressing" | "Selected";
-  type?: "Home" | "Invoice" | "Assigned to Me" | "Created by Me";
-};
-
-function Component1({ className, state = "Default", type = "Home" }: Component1Props) {
-  const isDefaultAndAssignedToMe = state === "Default" && type === "Assigned to Me";
-  const isDefaultAndCreatedByMe = state === "Default" && type === "Created by Me";
-  return (
-    <div className={className || "bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] w-[47px]"} id={isDefaultAndCreatedByMe ? "node-7_43" : isDefaultAndAssignedToMe ? "node-7_31" : "node-7_7"}>
-      {state === "Default" && type === "Home" && (
-        <div className="relative shrink-0 size-[16px]" data-name="lucide/house" data-node-id="7:8">
-          <img alt="" className="absolute block max-w-none size-full" src={imgLucideHouse} />
-        </div>
-      )}
-      {isDefaultAndAssignedToMe && (
-        <div className="relative shrink-0 size-[16px]" data-name="lucide/target" data-node-id="7:33">
-          <img alt="" className="absolute block max-w-none size-full" src={imgLucideTarget} />
-        </div>
-      )}
-      {isDefaultAndCreatedByMe && (
-        <div className="relative shrink-0 size-[16px]" data-name="lucide/list-todo" data-node-id="7:44">
-          <img alt="" className="absolute block max-w-none size-full" src={imgLucideListTodo} />
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function WelcomeContinuumView() {
+  const { projectId: routeProjectId } = useParams();
+  const { pathname } = useLocation();
+  const activeProjectId = resolveDashboardProjectId(pathname, routeProjectId);
+  const activeProject = getDashboardProjectById(activeProjectId) ?? DASHBOARD_PROJECTS[0];
+
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
 
@@ -113,130 +53,7 @@ export function WelcomeContinuumView() {
     >
       <div className="flex min-h-0 w-full flex-1 flex-col items-end gap-2" data-node-id="8:3496">
         <div className="isolate flex min-h-0 w-full flex-1 items-stretch gap-[16px]" data-node-id="8:3497">
-          <div className="flex h-full min-h-0 w-[212px] shrink-0 flex-col items-start justify-between overflow-hidden z-[2]" data-node-id="8:3498">
-            <div className="flex min-h-0 w-full flex-1 flex-col gap-[16px] items-start overflow-hidden" data-node-id="8:3499">
-              <div className="content-stretch flex flex-col gap-[9.534px] items-center pb-[16px] pt-[32px] relative shrink-0 w-full" data-node-id="8:3501">
-                <div className="content-stretch flex flex-col items-center relative shrink-0" data-node-id="8:3503">
-                  <p
-                    className="relative shrink-0 text-center font-normal font-['Sarina',sans-serif] text-[26.219px] leading-[29.397px] tracking-[-0.5244px] whitespace-nowrap text-[#1A4659]"
-                    data-node-id="8:3504"
-                  >
-                    Continuum
-                  </p>
-                </div>
-              </div>
-              <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0" data-node-id="8:3506">
-                <div className="bg-[#edf0f3] content-stretch flex gap-[8px] h-[40px] items-center px-[16px] py-[8px] relative rounded-[999px] shrink-0 w-full" data-name="Component 6" data-node-id="I8:3506;2172:35233">
-                  <div className="relative shrink-0 size-[16px]" data-name="lucide/search" data-node-id="I8:3506;2172:35234">
-                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideSearch} />
-                  </div>
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] text-center whitespace-nowrap" data-node-id="I8:3506;2172:35236">
-                    Search Projects
-                  </p>
-                </div>
-                <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I8:3506;2172:35237">
-                  <Link
-                    to="/dashboard-placeholder"
-                    className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                    data-name="Component 80"
-                    data-node-id="I8:3506;2172:35237;2172:35161"
-                  >
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/house" data-node-id="I8:3506;2172:35237;2172:35161;2172:35021">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideHouse} />
-                    </div>
-                  </Link>
-                  <div className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" data-name="Component 81" data-node-id="I8:3506;2172:35237;2172:35162">
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/scroll-text" data-node-id="I8:3506;2172:35237;2172:35162;2172:35025">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideScrollText} />
-                    </div>
-                  </div>
-                  <Component1 className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" type="Assigned to Me" />
-                  <Component1 className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px]" type="Created by Me" />
-                </div>
-              </div>
-              <div className="content-stretch flex flex-col isolate items-start relative shrink-0 w-full" data-node-id="8:3507">
-                <div className="content-stretch flex items-center justify-between py-[8px] relative shrink-0 w-full z-[5]" data-node-id="I8:3507;2172:27463">
-                  <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I8:3507;2172:27464">
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="I8:3507;2172:27466">
-                      Projects
-                    </p>
-                  </div>
-                  <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I8:3507;2172:27467">
-                    <Component className="content-stretch flex flex-col items-start overflow-clip px-[2.667px] py-[7.333px] relative rounded-[4px] shrink-0 w-[16px]" type="Ellipse" />
-                    <div className="overflow-clip relative rounded-[16px] shrink-0 size-[16px]" data-name="Component 35" data-node-id="I8:3507;2172:27469">
-                      <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I8:3507;2172:27469;2119:3014">
-                        <div className="absolute inset-[-5.36%]">
-                          <img alt="" className="block max-w-none size-full" src={imgVector5} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-[rgba(220,227,229,0.68)] content-stretch flex gap-[4px] h-[40px] items-center px-[12px] relative rounded-[8px] shrink-0 w-full z-[2]" data-name="Component 69" data-node-id="I8:3507;2172:27472">
-                  <div className="content-stretch flex flex-[1_0_0] gap-[8px] items-center min-h-px min-w-px relative" data-node-id="I8:3507;2172:27472;2172:25268">
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-open-dot" data-node-id="I8:3507;2172:27472;2172:25271">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderOpenDot} />
-                    </div>
-                    <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic overflow-hidden relative text-[#0b191f] text-[14px] text-ellipsis whitespace-nowrap" data-node-id="I8:3507;2172:27472;2172:25273">
-                      Welcome to Continuum!
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  to="/dashboard-placeholder/get-started"
-                  className="content-stretch flex h-[40px] items-center pl-[24px] pr-[12px] relative rounded-[8px] shrink-0 w-full z-[1] text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                  data-name="Component 70"
-                  data-node-id="I8:3507;2172:27567"
-                >
-                  <div className="content-stretch flex flex-[1_0_0] gap-[8px] items-center min-h-px min-w-px relative" data-node-id="I8:3507;2172:27567;2172:27072">
-                    <CornerDownRight className="overflow-clip relative shrink-0 size-[16px]" />
-                    <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic overflow-hidden relative text-[#0b191f] text-[14px] text-ellipsis whitespace-nowrap" data-node-id="I8:3507;2172:27567;2172:27075">
-                      Get started
-                    </p>
-                  </div>
-                </Link>
-              </div>
-            </div>
-            <div className="flex w-full shrink-0 flex-col gap-[8px] items-start" data-node-id="8:3508">
-              <div className="content-stretch flex gap-[12px] h-[40px] items-center opacity-0 px-[12px] relative rounded-[8px] shrink-0 w-full" data-name="Component 12" data-node-id="8:3509">
-                <div className="relative shrink-0 size-[16px]" data-name="lucide/settings" data-node-id="8:3510">
-                  <img alt="" className="absolute block max-w-none size-full" src={imgLucideSettings} />
-                </div>
-                <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3512">
-                  Settings
-                </p>
-              </div>
-              <div className="h-0 relative shrink-0 w-full" data-node-id="8:3513">
-                <div className="absolute inset-[-0.5px_-0.24%]">
-                  <img alt="" className="block max-w-none size-full" src={imgVector6} />
-                </div>
-              </div>
-              <div className="content-stretch flex h-[40px] items-center justify-between relative rounded-[8px] shrink-0 w-full" data-name="Component 13" data-node-id="8:3514">
-                <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3515">
-                  <div className="bg-[#f17173] content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" data-name="Component 31" data-node-id="8:3516">
-                    <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[9px] text-white whitespace-nowrap" data-node-id="I8:3516;2032:902">
-                      <p className="leading-[0.4]">AS</p>
-                    </div>
-                  </div>
-                  <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] items-start justify-center leading-[normal] not-italic relative shrink-0 whitespace-nowrap" data-node-id="8:3517">
-                    <p className="relative shrink-0 text-[#0b191f] text-[14px]" data-node-id="8:3518">
-                      Amukelani Shiringani
-                    </p>
-                    <p className="relative shrink-0 text-[#727d83] text-[12px]" data-node-id="8:3519">
-                      amushiringani@gmail.com
-                    </p>
-                  </div>
-                </div>
-                <div className="overflow-clip relative shrink-0 size-[16px]" data-name="lucide" data-node-id="8:3520">
-                  <div className="absolute bottom-[37.5%] left-1/4 right-1/4 top-[37.5%]" data-name="Vector" data-node-id="I8:3520;2032:589">
-                    <div className="absolute inset-[-16.67%_-8.33%]">
-                      <img alt="" className="block max-w-none size-full" src={imgVector7} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <DashboardLeftRail />
           <div className="relative z-[1] flex min-h-0 min-w-0 flex-1 flex-col items-end gap-[16px] overflow-hidden rounded-[8px] border border-[#ebedee] border-solid bg-white py-[16px] pl-[24px] pr-[16px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]" data-node-id="8:3521">
             <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3522">
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3523">
@@ -244,7 +61,7 @@ export function WelcomeContinuumView() {
                   <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderOpenDot} />
                 </div>
                 <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] whitespace-nowrap" data-node-id="8:3526">
-                  Welcome to Continuum!
+                  {activeProject.name}
                 </p>
               </div>
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3530">

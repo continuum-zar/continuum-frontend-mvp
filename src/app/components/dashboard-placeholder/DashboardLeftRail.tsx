@@ -1,9 +1,18 @@
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useSearchParams } from "react-router";
 
 import { CreateProjectModal } from "./CreateProjectModal";
 import { InvoiceModal } from "./InvoiceModal";
+import {
+  DASHBOARD_PROJECTS,
+  expandedProjectFromLocation,
+  isProjectOverviewActive,
+  isSprintNavActive,
+  projectMainHref,
+  projectSprintHref,
+} from "../../data/dashboardPlaceholderProjects";
+import { cn } from "../ui/utils";
 
 const imgVector = "https://www.figma.com/api/mcp/asset/2470fa31-25cd-47ac-991d-d1c4219bd28d";
 const imgVector4 = "https://www.figma.com/api/mcp/asset/78ced5be-4173-418f-974b-68c6e9f6125c";
@@ -14,6 +23,8 @@ const imgLucideListTodo1 = "https://www.figma.com/api/mcp/asset/c6b03a9f-19dc-4a
 const imgLucideHouse = "https://www.figma.com/api/mcp/asset/388d9d61-9282-4b33-a23c-be98ac66a1f7";
 const imgLucideSearch = "https://www.figma.com/api/mcp/asset/96a4c70f-3ae8-48af-8935-3d2391a31d16";
 const imgLucideFolderOpenDot = "https://www.figma.com/api/mcp/asset/941ffd1f-d458-4dea-b5e5-49e021a96475";
+/** Closed project — Figma 31:10046 lucide/folder-dot */
+const imgLucideFolderDot = "https://www.figma.com/api/mcp/asset/bf89c9ce-bf7d-4173-a31e-93e57f09f941";
 const imgVector105 = "https://www.figma.com/api/mcp/asset/17833d32-ab5b-4ab4-99e5-73910456563c";
 const imgLucideSettings = "https://www.figma.com/api/mcp/asset/b6f4bb01-1341-4aa3-b63b-d4e00aa8f650";
 const imgVector7 = "https://www.figma.com/api/mcp/asset/f982bdec-baa8-4afc-b88d-5e64cbe35a27";
@@ -267,6 +278,9 @@ export function DashboardLeftRail() {
   const [timeRecording, setTimeRecording] = useState(false);
   const [elapsedSec, setElapsedSec] = useState(0);
   const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
+  const projectParam = searchParams.get("project");
+  const expandedProjectId = expandedProjectFromLocation(pathname, projectParam);
 
   useEffect(() => {
     if (!timeRecording) return;
@@ -277,9 +291,6 @@ export function DashboardLeftRail() {
   const isInvoiceActive = invoiceOpen;
   const isAssignedActive = pathname.startsWith("/dashboard-placeholder/assigned");
   const isCreatedActive = pathname.startsWith("/dashboard-placeholder/created");
-  const isGetStartedActive =
-    pathname.startsWith("/dashboard-placeholder/get-started") ||
-    pathname.startsWith("/dashboard-placeholder/task/");
 
   return (
     <>
@@ -333,36 +344,61 @@ export function DashboardLeftRail() {
               </button>
             </div>
           </div>
-          <Link
-            to="/dashboard-placeholder/welcome"
-            className="content-stretch flex h-[40px] cursor-pointer items-center px-[12px] relative rounded-[8px] shrink-0 w-full z-[2] text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-            data-name="Component 69"
-            data-node-id="I7:2828;2172:27472"
-          >
-            <div className="content-stretch flex flex-[1_0_0] gap-[8px] items-center min-h-px min-w-px relative" data-node-id="I7:2828;2172:27472;2172:25325">
-              <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-open-dot" data-node-id="I7:2828;2172:27472;2172:25350">
-                <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderOpenDot} />
-              </div>
-              <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic overflow-hidden relative text-[#0b191f] text-[14px] text-ellipsis text-left whitespace-nowrap" data-node-id="I7:2828;2172:27472;2172:25328">
-                Welcome to Continuum!
-              </p>
-            </div>
-          </Link>
-          <Link
-            to="/dashboard-placeholder/get-started"
-            className={`content-stretch flex gap-[4px] h-[40px] items-center pl-[24px] pr-[12px] relative rounded-[8px] shrink-0 w-full z-[1] text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${
-              isGetStartedActive ? "bg-[rgba(220,227,229,0.68)]" : ""
-            }`}
-            data-name="Component 70"
-            data-node-id="I7:2828;2172:27567"
-          >
-            <div className="content-stretch flex flex-[1_0_0] gap-[8px] items-center min-h-px min-w-px relative" data-node-id="I7:2828;2172:27567;2172:27061">
-              <CornerDownRight className="overflow-clip relative shrink-0 size-[16px]" />
-              <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic overflow-hidden relative text-[#0b191f] text-[14px] text-ellipsis whitespace-nowrap" data-node-id="I7:2828;2172:27567;2172:27066">
-                Get started
-              </p>
-            </div>
-          </Link>
+          <div className="flex w-full flex-col gap-0" data-node-id="I7:2828;2172:projects">
+            {DASHBOARD_PROJECTS.map((project) => {
+              const isExpanded = expandedProjectId === project.id;
+              const folderIcon = isExpanded ? imgLucideFolderOpenDot : imgLucideFolderDot;
+              const sprintActive = isSprintNavActive(project.id, pathname, projectParam);
+              const overviewActive = isProjectOverviewActive(project.id, pathname);
+              const parentWhileSprintActive = isExpanded && sprintActive && !overviewActive;
+              return (
+                <div key={project.id} className="flex w-full flex-col">
+                  <Link
+                    to={projectMainHref(project.id)}
+                    aria-current={overviewActive ? "page" : undefined}
+                    className={cn(
+                      "content-stretch relative z-[2] flex h-[40px] w-full shrink-0 cursor-pointer items-center rounded-[8px] px-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
+                      "ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring",
+                      overviewActive && "bg-[rgba(220,227,229,0.68)] font-medium text-[#0b191f] hover:bg-[rgba(205,214,220,0.85)]",
+                      !overviewActive && parentWhileSprintActive && "bg-[rgba(237,240,243,0.72)] hover:bg-[rgba(225,232,236,0.9)]",
+                      !overviewActive && !parentWhileSprintActive && "hover:bg-[#edf0f3]",
+                    )}
+                    data-name={isExpanded ? "Component 69" : "Component 68"}
+                  >
+                    <div className="content-stretch flex min-h-px min-w-px flex-[1_0_0] gap-[8px] items-center relative">
+                      <div className="relative shrink-0 size-[16px]">
+                        <img alt="" className="absolute block max-w-none size-full" src={folderIcon} />
+                      </div>
+                      <p className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap text-left font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-[#0b191f]">
+                        {project.name}
+                      </p>
+                    </div>
+                  </Link>
+                  {isExpanded ? (
+                    <Link
+                      to={projectSprintHref(project.id)}
+                      aria-current={sprintActive ? "page" : undefined}
+                      className={cn(
+                        "content-stretch z-[1] flex h-[40px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] pl-[24px] pr-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
+                        "ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring",
+                        sprintActive
+                          ? "bg-[rgba(220,227,229,0.68)] font-medium hover:bg-[rgba(200,210,216,0.78)]"
+                          : "hover:bg-[#edf0f3]",
+                      )}
+                      data-name="Component 70"
+                    >
+                      <div className="content-stretch flex min-h-px min-w-px flex-[1_0_0] gap-[8px] items-center relative">
+                        <CornerDownRight className="relative shrink-0 overflow-clip size-[16px]" />
+                        <p className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-[#0b191f]">
+                          {project.sprintLabel}
+                        </p>
+                      </div>
+                    </Link>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
         </div>
         <div className="pointer-events-none absolute content-stretch flex flex-col items-center left-[131px] opacity-0 top-[159px] w-[145px]" data-node-id="7:2829" aria-hidden="true">
           <div className="content-stretch flex flex-col items-center relative shrink-0 w-full" data-node-id="7:2830">
