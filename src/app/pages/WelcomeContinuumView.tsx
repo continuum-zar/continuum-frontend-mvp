@@ -304,7 +304,7 @@ export function WelcomeContinuumView() {
                     <WelcomeRecentActivity />
                     <WelcomeResources />
                     <WelcomeRepo />
-                    <WelcomeMilestoneTimeline />
+                    <WelcomeMilestoneTimeline variant="demo" />
                   </div>
                   <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3717">
                     <div className="content-stretch flex flex-col gap-[16px] h-[40px] items-start justify-center relative shrink-0 w-full" data-node-id="8:3718">
@@ -403,7 +403,9 @@ export function WelcomeContinuumView() {
                   </Link>
                 </div>
               )}
-              {isApiRoute && projectQuery.isSuccess && <WelcomeEmptyProjectBody />}
+              {isApiRoute && projectQuery.isSuccess && routeProjectId && (
+                <WelcomeEmptyProjectBody projectId={Number(routeProjectId)} />
+              )}
             </div>
             )}
             </div>

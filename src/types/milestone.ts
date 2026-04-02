@@ -30,4 +30,6 @@ export interface Milestone {
     date: string;
     status: MilestoneStatus;
     desc?: string;
+    /** Raw `due_date` from API (YYYY-MM-DD) for timeline formatting */
+    dueDateIso?: string | null;
 }

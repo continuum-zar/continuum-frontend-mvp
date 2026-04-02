@@ -5,6 +5,7 @@
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 import { WelcomeMetricsRow } from "./WelcomeMetricsRow";
+import { WelcomeMilestoneTimeline } from "./WelcomeMilestoneTimeline";
 import { WelcomeProjectHeroGauge } from "./WelcomeProjectHeroGauge";
 
 const imgLucidePlus = mcpAsset("91e46d01-6ae8-4fc9-aa4e-13b1040fb3cf");
@@ -14,7 +15,6 @@ const imgLucideTrafficCone = mcpAsset("30a100c4-ae3a-49ae-a09f-8e007edeaa41");
 const imgLucideActivity = mcpAsset("8b04e159-5943-4424-a1ff-8259ce5f1905");
 const imgLucidePaperclip = mcpAsset("eca27db3-d7a3-4625-8615-00ef276c3530");
 const imgLucideGitBranch = mcpAsset("1638b448-769f-4e9f-b1e0-f8bd6e479808");
-const imgLucideGoal = mcpAsset("183d0e54-4a33-4803-b12d-d870a190794d");
 const imgLucideUsers = mcpAsset("4202e9d8-d2e7-4542-8b8e-eafd6dcf6d0d");
 
 function AddButton({ label = "Add" }: { label?: string }) {
@@ -42,7 +42,7 @@ function EmptyPlaceholderCard({ icon, title }: { icon: string; title: string }) 
   );
 }
 
-export function WelcomeEmptyProjectBody() {
+export function WelcomeEmptyProjectBody({ projectId }: { projectId: number }) {
   return (
     <div className="relative flex w-full min-w-0 flex-col items-center gap-16 pb-8 pt-12">
       <div className="flex w-full max-w-[815px] flex-col items-center gap-16">
@@ -118,12 +118,8 @@ export function WelcomeEmptyProjectBody() {
         <EmptyPlaceholderCard icon={imgLucideGitBranch} title="No repositories connected" />
       </div>
 
-      <div className="flex w-full max-w-[815px] flex-col gap-4">
-        <div className="flex w-full items-center justify-between">
-          <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Milestone timelines</p>
-          <AddButton />
-        </div>
-        <EmptyPlaceholderCard icon={imgLucideGoal} title="No milestone connected" />
+      <div className="flex w-full max-w-[815px] flex-col">
+        <WelcomeMilestoneTimeline variant="live" projectId={projectId} />
       </div>
 
       <div className="flex w-full max-w-[815px] flex-col gap-4">
