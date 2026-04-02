@@ -4,6 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { projectKeys, getApiErrorMessage } from './hooks';
 
+/** Shape of the paginated envelope returned by the backend list endpoints. */
+interface PaginatedResponse<T> {
+    data: T[];
+    total: number;
+    skip: number;
+    limit: number;
+}
+
 function mapRepository(res: RepositoryAPIResponse): Repository {
     return {
         id: res.id,
@@ -21,8 +29,9 @@ function mapRepository(res: RepositoryAPIResponse): Repository {
 
 /** Fetch repositories linked to a project. GET /projects/:id/repositories */
 export async function fetchRepositories(projectId: number | string): Promise<Repository[]> {
-    const { data } = await api.get<RepositoryAPIResponse[]>(`/projects/${projectId}/repositories`);
-    return (data ?? []).map(mapRepository);
+    const { data } = await api.get<PaginatedResponse<RepositoryAPIResponse>>(`/projects/${projectId}/repositories`);
+    // Backend returns a paginated envelope: { data: [...], total, skip, limit }
+    return (data?.data ?? []).map(mapRepository);
 }
 
 /** Link a repository to a project. POST /projects/:id/repositories. Requires admin. */
