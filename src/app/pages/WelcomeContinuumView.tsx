@@ -29,7 +29,6 @@ const imgLucidePlus = "https://www.figma.com/api/mcp/asset/a8bb95b4-2e9b-4e0d-86
 const imgLucidePaperclip = "https://www.figma.com/api/mcp/asset/4f0c9d53-e72c-473e-981a-13f5b9320156";
 const imgLucideInfo = "https://www.figma.com/api/mcp/asset/f597ed55-c78f-481a-a433-abcd6a07d507";
 const imgLucideCircleCheckBig = "https://www.figma.com/api/mcp/asset/22239b8b-27ab-4973-ad00-4eaffd3f837b";
-const imgDivider = "https://www.figma.com/api/mcp/asset/7a877d5e-6a85-4a7f-ae6d-3c1d119e5fb4";
 const imgLucideCircleDashed = "https://www.figma.com/api/mcp/asset/ccaffd7b-80ba-4413-ada6-9324ab249688";
 const imgLucideTrafficCone = "https://www.figma.com/api/mcp/asset/df64d315-4479-4557-86ce-eebf48f8e6ec";
 const imgLucidePlus1 = "https://www.figma.com/api/mcp/asset/1da1cc85-0c45-4470-a43f-e9a9f1a1e4f5";
@@ -229,12 +228,7 @@ export function WelcomeContinuumView() {
                             </div>
                           </div>
                         </div>
-                        <div className="relative self-stretch shrink-0 w-0" data-name="Divider" data-node-id="8:3667">
-                          <div className="absolute inset-[0_-0.5px]">
-                            <img alt="" className="block max-w-none size-full" src={imgDivider} />
-                          </div>
-                        </div>
-                        <div className="bg-white content-stretch flex flex-[1_0_0] items-start min-h-px min-w-px p-[24px] relative" data-node-id="8:3669">
+                        <div className="border-l border-solid border-[#ebedee] bg-white content-stretch flex flex-[1_0_0] items-start min-h-px min-w-px p-[24px] relative" data-node-id="8:3669">
                           <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-start min-h-px min-w-px relative" data-node-id="8:3670">
                             <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 size-[32px]" data-name="Component 7" data-node-id="8:3671">
                               <div className="relative shrink-0 size-[16px]" data-name="lucide/circle-dashed" data-node-id="8:3674">
@@ -267,12 +261,7 @@ export function WelcomeContinuumView() {
                             </div>
                           </div>
                         </div>
-                        <div className="relative self-stretch shrink-0 w-0" data-name="Divider" data-node-id="8:3684">
-                          <div className="absolute inset-[0_-0.5px]">
-                            <img alt="" className="block max-w-none size-full" src={imgDivider} />
-                          </div>
-                        </div>
-                        <div className="bg-white content-stretch flex flex-[1_0_0] items-start min-h-px min-w-px p-[24px] relative" data-node-id="8:3686">
+                        <div className="border-l border-solid border-[#ebedee] bg-white content-stretch flex flex-[1_0_0] items-start min-h-px min-w-px p-[24px] relative" data-node-id="8:3686">
                           <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-start min-h-px min-w-px relative" data-node-id="8:3687">
                             <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 size-[32px]" data-name="Component 7" data-node-id="8:3688">
                               <div className="relative shrink-0 size-[16px]" data-name="lucide/traffic-cone" data-node-id="8:3691">
