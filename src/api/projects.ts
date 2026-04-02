@@ -3,6 +3,7 @@ import type { PaginatedResponse } from '@/types/api';
 import type { ProjectAPIResponse, ProjectDetailAPIResponse } from '@/types/project';
 import type { MilestoneAPIResponse } from '@/types/milestone';
 import type { MemberAPIResponse } from '@/types/member';
+import type { AttachmentAPIResponse } from '@/types/attachment';
 import {
     mapProjectListItem,
     mapProjectDetail,
@@ -132,4 +133,52 @@ export const projectKeys = {
     members: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'members'] as const,
     repositories: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'repositories'] as const,
     loggedHours: (projectId?: string | null) => ['logged-hours', projectId ?? 'all'] as const,
+    projectAttachments: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'attachments'] as const,
 };
+
+// ---------------------------------------------------------------------------
+// Project-level attachments
+// ---------------------------------------------------------------------------
+
+interface ProjectAttachmentsListResponse {
+    attachments: AttachmentAPIResponse[];
+    total: number;
+}
+
+/** Fetch all attachments for a project. */
+export async function fetchProjectAttachments(projectId: number | string): Promise<AttachmentAPIResponse[]> {
+    const { data } = await api.get<ProjectAttachmentsListResponse>(`/projects/${projectId}/attachments`);
+    return data?.attachments ?? [];
+}
+
+/** Upload a file attachment to a project. */
+export async function uploadProjectAttachment(projectId: number | string, file: File): Promise<AttachmentAPIResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await api.post<AttachmentAPIResponse>(`/projects/${projectId}/attachments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+}
+
+/** Add a URL link attachment to a project. */
+export async function addProjectAttachmentLink(
+    projectId: number | string,
+    payload: { url: string; name?: string | null }
+): Promise<AttachmentAPIResponse> {
+    const { data } = await api.post<AttachmentAPIResponse>(`/projects/${projectId}/attachments/link`, {
+        url: payload.url,
+        name: payload.name ?? payload.url,
+    });
+    return data;
+}
+
+/** Delete a project attachment. */
+export async function deleteProjectAttachment(attachmentId: number | string): Promise<void> {
+    await api.delete(`/projects/attachments/${attachmentId}`);
+}
+
+/** Get the download URL for a project attachment. */
+export function getProjectAttachmentDownloadUrl(attachmentId: number | string): string {
+    return `/api/v1/projects/attachments/${attachmentId}/download`;
+}

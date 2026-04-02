@@ -23,6 +23,10 @@ import {
     updateProject,
     deleteProject,
     projectKeys,
+    fetchProjectAttachments,
+    uploadProjectAttachment,
+    addProjectAttachmentLink,
+    deleteProjectAttachment,
 } from './projects';
 export { projectKeys };
 import { createClient, fetchClient, clientKeys } from './clients';
@@ -506,6 +510,67 @@ export function useDeleteAttachment(taskId: number | string | undefined | null) 
         },
     });
 }
+
+// ---------------------------------------------------------------------------
+// Project attachment hooks
+// ---------------------------------------------------------------------------
+const projectAttachmentsKey = (projectId: number | string) =>
+    ['projectAttachments', projectId] as const;
+
+export function useProjectAttachments(projectId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: projectAttachmentsKey(projectId!),
+        queryFn: () => fetchProjectAttachments(projectId!),
+        enabled: projectId != null && projectId !== '',
+    });
+}
+
+export function useUploadProjectAttachment(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (file: File) => uploadProjectAttachment(projectId!, file),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '')
+                queryClient.invalidateQueries({ queryKey: projectAttachmentsKey(projectId!) });
+            toast.success('Attachment uploaded successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to upload attachment'));
+        },
+    });
+}
+
+export function useAddProjectAttachmentLink(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: { url: string; name?: string | null }) =>
+            addProjectAttachmentLink(projectId!, payload),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '')
+                queryClient.invalidateQueries({ queryKey: projectAttachmentsKey(projectId!) });
+            toast.success('Link added');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to add link'));
+        },
+    });
+}
+
+export function useDeleteProjectAttachment(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (attachmentId: number | string) => deleteProjectAttachment(attachmentId),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '')
+                queryClient.invalidateQueries({ queryKey: projectAttachmentsKey(projectId!) });
+            toast.success('Attachment deleted');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to delete attachment'));
+        },
+    });
+}
+
 
 // Timeline keys
 const taskTimelineKey = (taskId: number | string) => ['taskTimeline', taskId] as const;

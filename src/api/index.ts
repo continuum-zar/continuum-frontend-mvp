@@ -10,6 +10,11 @@ export {
     deleteMilestone,
     fetchMembers,
     addMember,
+    fetchProjectAttachments,
+    uploadProjectAttachment,
+    addProjectAttachmentLink,
+    deleteProjectAttachment,
+    getProjectAttachmentDownloadUrl,
 } from './projects';
 export {
     fetchTask,
@@ -81,6 +86,10 @@ export {
     useUploadAttachment,
     useAddAttachmentLink,
     useDeleteAttachment,
+    useProjectAttachments,
+    useUploadProjectAttachment,
+    useAddProjectAttachmentLink,
+    useDeleteProjectAttachment,
     useTaskTimeline,
     useAssignTask,
     useDeleteTask,
