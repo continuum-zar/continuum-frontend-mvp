@@ -211,3 +211,19 @@ export type {
     GeneratePlanResponse,
     ApprovePlanResponse,
 } from './planner';
+export {
+    fetchProjectIntegrations,
+    createProjectIntegration,
+    updateIntegration,
+    deleteIntegration,
+    testIntegration,
+    integrationKeys,
+} from './integrations';
+export type { Integration, IntegrationCreate, IntegrationUpdate, IntegrationProvider } from '@/types/integration';
+export {
+    useProjectIntegrations,
+    useCreateIntegration,
+    useUpdateIntegration,
+    useDeleteIntegration,
+    useTestIntegration,
+} from './hooks';

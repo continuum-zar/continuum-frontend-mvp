@@ -1,6 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
+    fetchProjectIntegrations,
+    createProjectIntegration,
+    updateIntegration,
+    deleteIntegration,
+    testIntegration,
+    integrationKeys,
+} from './integrations';
+export { integrationKeys };
+import type { IntegrationCreate, IntegrationUpdate } from '@/types/integration';
+import {
     fetchProjects,
     fetchProject,
     fetchMilestones,
@@ -528,5 +538,76 @@ export function useClientDetail(clientId: number | string | undefined | null) {
         enabled: clientId != null && clientId !== '',
         staleTime: 3 * 60 * 1000,
         refetchOnWindowFocus: false,
+    });
+}
+
+// Integrations
+
+export function useProjectIntegrations(projectId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: integrationKeys.list(projectId!),
+        queryFn: () => fetchProjectIntegrations(projectId!),
+        enabled: projectId != null && projectId !== '',
+    });
+}
+
+export function useCreateIntegration(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: IntegrationCreate) => createProjectIntegration(projectId!, body),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '') {
+                queryClient.invalidateQueries({ queryKey: integrationKeys.list(projectId) });
+            }
+            toast.success('Integration added successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to add integration'));
+        },
+    });
+}
+
+export function useUpdateIntegration(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ integrationId, body }: { integrationId: number | string; body: IntegrationUpdate }) =>
+            updateIntegration(projectId!, integrationId, body),
+        onSuccess: () => {
+             if (projectId != null && projectId !== '') {
+                queryClient.invalidateQueries({ queryKey: integrationKeys.list(projectId) });
+            }
+            toast.success('Integration updated successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to update integration'));
+        },
+    });
+}
+
+export function useDeleteIntegration(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (integrationId: number | string) => deleteIntegration(projectId!, integrationId),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '') {
+                queryClient.invalidateQueries({ queryKey: integrationKeys.list(projectId) });
+            }
+            toast.success('Integration removed successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to remove integration'));
+        },
+    });
+}
+
+export function useTestIntegration(projectId: number | string | undefined | null) {
+    return useMutation({
+        mutationFn: (integrationId: number | string) => testIntegration(projectId!, integrationId),
+        onSuccess: () => {
+            toast.success('Test message sent successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to send test message'));
+        },
     });
 }
