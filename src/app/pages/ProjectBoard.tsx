@@ -41,6 +41,11 @@ import {
   useUnlinkRepository,
   useWikiScanStatus,
   useScanRepository,
+  useProjectIntegrations,
+  useCreateIntegration,
+  useUpdateIntegration,
+  useDeleteIntegration,
+  useTestIntegration,
   projectKeys,
   mapMilestone,
   fetchTask,
@@ -52,6 +57,7 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
+import { Switch } from '../components/ui/switch';
 import { getProgressColor } from '@/lib/utils/progressColor';
 import {
   DropdownMenu,
@@ -343,6 +349,12 @@ export function ProjectBoard() {
   const wikiScanStatusQuery = useWikiScanStatus(projectId);
   const scanRepositoryMutation = useScanRepository(projectId);
 
+  const integrationsQuery = useProjectIntegrations(projectId);
+  const createIntegrationMutation = useCreateIntegration(projectId);
+  const updateIntegrationMutation = useUpdateIntegration(projectId);
+  const deleteIntegrationMutation = useDeleteIntegration(projectId);
+  const testIntegrationMutation = useTestIntegration(projectId);
+
   const project = projectQuery.data ?? null;
   const isLoading = projectQuery.isLoading || tasksQuery.isLoading;
   const error = projectQuery.error
@@ -413,6 +425,7 @@ export function ProjectBoard() {
     api_token: '',
   });
   const [unlinkRepoId, setUnlinkRepoId] = useState<number | null>(null);
+  const [newIntegrationUrl, setNewIntegrationUrl] = useState('');
 
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -1175,6 +1188,92 @@ export function ProjectBoard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Integrations */}
+      {canManage && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-muted-foreground text-sm font-bold tracking-widest uppercase">Discord Integration</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Discord Server Settings → Integrations → Webhooks. You’ll get notified on task creation and card movements (who moved it, task title, previous and new list).
+          </p>
+          <div className="bg-card border border-border rounded-lg p-6">
+            {integrationsQuery.isLoading ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading integrations…</div>
+            ) : (integrationsQuery.data?.length ?? 0) === 0 ? (
+              <div className="flex flex-col gap-4 max-w-lg">
+                <div className="space-y-2">
+                  <Label htmlFor="discord-webhook">Webhook URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="discord-webhook"
+                      placeholder="https://discord.com/api/webhooks/..."
+                      value={newIntegrationUrl}
+                      onChange={(e) => setNewIntegrationUrl(e.target.value)}
+                      className="bg-input-background"
+                    />
+                    <Button
+                      onClick={() => {
+                        if (!newIntegrationUrl.trim() || !projectId) return;
+                        createIntegrationMutation.mutate(
+                          { integration_type: 'discord', webhook_url: newIntegrationUrl.trim() },
+                          { onSuccess: () => setNewIntegrationUrl('') }
+                        );
+                      }}
+                      disabled={!newIntegrationUrl.trim() || createIntegrationMutation.isPending}
+                    >
+                      {createIntegrationMutation.isPending ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {(integrationsQuery.data ?? []).map((integration) => (
+                  <div key={integration.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-3 px-4 rounded-md bg-muted/30 border border-border">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium capitalize mb-1">{integration.integration_type} Webhook</p>
+                      <p className="text-xs text-muted-foreground truncate" title={integration.webhook_url}>
+                        {integration.webhook_url}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`active-${integration.id}`} className="text-xs cursor-pointer">Active</Label>
+                        <Switch
+                          id={`active-${integration.id}`}
+                          checked={integration.is_enabled}
+                          onCheckedChange={(checked) => updateIntegrationMutation.mutate({ integrationId: integration.id, body: { is_enabled: checked } })}
+                          disabled={updateIntegrationMutation.isPending}
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => testIntegrationMutation.mutate(integration.id)}
+                        disabled={testIntegrationMutation.isPending}
+                      >
+                        {testIntegrationMutation.isPending ? 'Testing...' : 'Test'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive shrink-0"
+                        onClick={() => deleteIntegrationMutation.mutate(integration.id)}
+                        disabled={deleteIntegrationMutation.isPending}
+                        title="Remove integration"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Kanban Board */}
       <DndProvider backend={HTML5Backend}>
