@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { Link, useLocation, useSearchParams } from "react-router";
 
 import { useProjectMilestones, useProjects } from "@/api/hooks";
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import type { Project } from "@/types/project";
 
 import { CreateProjectModal } from "./CreateProjectModal";
@@ -18,20 +19,20 @@ import {
 } from "../../data/dashboardPlaceholderProjects";
 import { cn } from "../ui/utils";
 
-const imgVector = "https://www.figma.com/api/mcp/asset/2470fa31-25cd-47ac-991d-d1c4219bd28d";
-const imgVector4 = "https://www.figma.com/api/mcp/asset/78ced5be-4173-418f-974b-68c6e9f6125c";
-const imgVector5 = "https://www.figma.com/api/mcp/asset/04dec58a-df34-4fc6-ba98-484eea4a0b4c";
-const imgLucideScrollText = "https://www.figma.com/api/mcp/asset/8f3bfd7b-fb81-41c7-bc6d-5fcf8c73d1e4";
-const imgLucideTarget = "https://www.figma.com/api/mcp/asset/6bf96cb4-388b-4e5f-961a-4656035c5b07";
-const imgLucideListTodo1 = "https://www.figma.com/api/mcp/asset/c6b03a9f-19dc-4a05-9baa-139251a95efc";
-const imgLucideHouse = "https://www.figma.com/api/mcp/asset/388d9d61-9282-4b33-a23c-be98ac66a1f7";
-const imgLucideSearch = "https://www.figma.com/api/mcp/asset/96a4c70f-3ae8-48af-8935-3d2391a31d16";
-const imgLucideFolderOpenDot = "https://www.figma.com/api/mcp/asset/941ffd1f-d458-4dea-b5e5-49e021a96475";
+const imgVector = mcpAsset("2470fa31-25cd-47ac-991d-d1c4219bd28d");
+const imgVector4 = mcpAsset("78ced5be-4173-418f-974b-68c6e9f6125c");
+const imgVector5 = mcpAsset("04dec58a-df34-4fc6-ba98-484eea4a0b4c");
+const imgLucideScrollText = mcpAsset("8f3bfd7b-fb81-41c7-bc6d-5fcf8c73d1e4");
+const imgLucideTarget = mcpAsset("6bf96cb4-388b-4e5f-961a-4656035c5b07");
+const imgLucideListTodo1 = mcpAsset("c6b03a9f-19dc-4a05-9baa-139251a95efc");
+const imgLucideHouse = mcpAsset("388d9d61-9282-4b33-a23c-be98ac66a1f7");
+const imgLucideSearch = mcpAsset("96a4c70f-3ae8-48af-8935-3d2391a31d16");
+const imgLucideFolderOpenDot = mcpAsset("941ffd1f-d458-4dea-b5e5-49e021a96475");
 /** Closed project — Figma 31:10046 lucide/folder-dot */
-const imgLucideFolderDot = "https://www.figma.com/api/mcp/asset/bf89c9ce-bf7d-4173-a31e-93e57f09f941";
-const imgVector105 = "https://www.figma.com/api/mcp/asset/17833d32-ab5b-4ab4-99e5-73910456563c";
-const imgLucideSettings = "https://www.figma.com/api/mcp/asset/b6f4bb01-1341-4aa3-b63b-d4e00aa8f650";
-const imgVector7 = "https://www.figma.com/api/mcp/asset/f982bdec-baa8-4afc-b88d-5e64cbe35a27";
+const imgLucideFolderDot = mcpAsset("bf89c9ce-bf7d-4173-a31e-93e57f09f941");
+const imgVector105 = mcpAsset("17833d32-ab5b-4ab4-99e5-73910456563c");
+const imgLucideSettings = mcpAsset("b6f4bb01-1341-4aa3-b63b-d4e00aa8f650");
+const imgVector7 = mcpAsset("f982bdec-baa8-4afc-b88d-5e64cbe35a27");
 
 function CornerDownRight({ className }: { className?: string }) {
   return (

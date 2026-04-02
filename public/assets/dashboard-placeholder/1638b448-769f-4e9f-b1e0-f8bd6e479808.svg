@@ -1,0 +1,5 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="lucide/git-branch">
+<path id="Vector" d="M30 12C25.2261 12 20.6477 13.8964 17.2721 17.2721C13.8964 20.6477 12 25.2261 12 30M30 12C30 15.3137 32.6863 18 36 18C39.3137 18 42 15.3137 42 12C42 8.68629 39.3137 6 36 6C32.6863 6 30 8.68629 30 12ZM12 30V6M12 30C8.68629 30 6 32.6863 6 36C6 39.3137 8.68629 42 12 42C15.3137 42 18 39.3137 18 36C18 32.6863 15.3137 30 12 30Z" stroke="var(--stroke-0, #606D76)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>

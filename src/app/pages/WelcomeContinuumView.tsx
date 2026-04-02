@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 
 import { useProject } from "@/api/hooks";
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import {
@@ -20,22 +21,22 @@ import {
   isApiProjectId,
 } from "../data/dashboardPlaceholderProjects";
 
-const imgLucideFolderOpenDot = "https://www.figma.com/api/mcp/asset/565be4ed-fc29-4562-a26f-1c943a6d5847";
-const imgLucideBuilding2 = "https://www.figma.com/api/mcp/asset/71a5ce6a-04cd-4e3a-bf8d-8982fbc63fe8";
-const imgLucideX = "https://www.figma.com/api/mcp/asset/74ddb36d-7bc2-46ad-838d-6170796e1694";
-const imgLucideBell = "https://www.figma.com/api/mcp/asset/0e2a64e9-ee3f-4ce3-aa60-05063accc712";
-const imgLucideFolderCog = "https://www.figma.com/api/mcp/asset/5cad83cc-0f0b-48f5-9afd-c5124c0169e6";
-const imgLucideShare = "https://www.figma.com/api/mcp/asset/00b88546-c39b-453e-aa9d-34f496edd586";
-const imgLucideChevronDown = "https://www.figma.com/api/mcp/asset/72ab3ac0-aebf-4278-859f-4205108fb16c";
-const imgVector8 = "https://www.figma.com/api/mcp/asset/1acc14a4-997e-4b19-b81a-91ef21ff09c2";
-const imgLucidePlus = "https://www.figma.com/api/mcp/asset/a8bb95b4-2e9b-4e0d-861b-fa00d8582ce7";
-const imgLucidePaperclip = "https://www.figma.com/api/mcp/asset/4f0c9d53-e72c-473e-981a-13f5b9320156";
-const imgLucideInfo = "https://www.figma.com/api/mcp/asset/f597ed55-c78f-481a-a433-abcd6a07d507";
-const imgLucideCircleCheckBig = "https://www.figma.com/api/mcp/asset/22239b8b-27ab-4973-ad00-4eaffd3f837b";
-const imgLucideCircleDashed = "https://www.figma.com/api/mcp/asset/ccaffd7b-80ba-4413-ada6-9324ab249688";
-const imgLucideTrafficCone = "https://www.figma.com/api/mcp/asset/df64d315-4479-4557-86ce-eebf48f8e6ec";
-const imgLucidePlus1 = "https://www.figma.com/api/mcp/asset/1da1cc85-0c45-4470-a43f-e9a9f1a1e4f5";
-const imgVector15 = "https://www.figma.com/api/mcp/asset/41d4c7e7-e987-4d3e-b39f-b0a8c1791b01";
+const imgLucideFolderOpenDot = mcpAsset("565be4ed-fc29-4562-a26f-1c943a6d5847");
+const imgLucideBuilding2 = mcpAsset("71a5ce6a-04cd-4e3a-bf8d-8982fbc63fe8");
+const imgLucideX = mcpAsset("74ddb36d-7bc2-46ad-838d-6170796e1694");
+const imgLucideBell = mcpAsset("0e2a64e9-ee3f-4ce3-aa60-05063accc712");
+const imgLucideFolderCog = mcpAsset("5cad83cc-0f0b-48f5-9afd-c5124c0169e6");
+const imgLucideShare = mcpAsset("00b88546-c39b-453e-aa9d-34f496edd586");
+const imgLucideChevronDown = mcpAsset("72ab3ac0-aebf-4278-859f-4205108fb16c");
+const imgVector8 = mcpAsset("1acc14a4-997e-4b19-b81a-91ef21ff09c2");
+const imgLucidePlus = mcpAsset("a8bb95b4-2e9b-4e0d-861b-fa00d8582ce7");
+const imgLucidePaperclip = mcpAsset("4f0c9d53-e72c-473e-981a-13f5b9320156");
+const imgLucideInfo = mcpAsset("f597ed55-c78f-481a-a433-abcd6a07d507");
+const imgLucideCircleCheckBig = mcpAsset("22239b8b-27ab-4973-ad00-4eaffd3f837b");
+const imgLucideCircleDashed = mcpAsset("ccaffd7b-80ba-4413-ada6-9324ab249688");
+const imgLucideTrafficCone = mcpAsset("df64d315-4479-4557-86ce-eebf48f8e6ec");
+const imgLucidePlus1 = mcpAsset("1da1cc85-0c45-4470-a43f-e9a9f1a1e4f5");
+const imgVector15 = mcpAsset("41d4c7e7-e987-4d3e-b39f-b0a8c1791b01");
 
 export function WelcomeContinuumView() {
   const { projectId: routeProjectId } = useParams();

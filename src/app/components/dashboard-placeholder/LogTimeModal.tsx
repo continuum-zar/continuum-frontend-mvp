@@ -5,18 +5,19 @@ import { useEffect, useState } from "react";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import { cn } from "../ui/utils";
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 /** Figma playground node 25:10140 */
 const imgLucideArrowLeft =
-  "https://www.figma.com/api/mcp/asset/2117706d-83d3-4c1d-9e0b-71c1454e8c99";
+  mcpAsset("2117706d-83d3-4c1d-9e0b-71c1454e8c99");
 const imgLucideChevronDown =
-  "https://www.figma.com/api/mcp/asset/8faeee75-ddf6-4f27-b584-6f1616dedbea";
+  mcpAsset("8faeee75-ddf6-4f27-b584-6f1616dedbea");
 const imgLucideCalendar =
-  "https://www.figma.com/api/mcp/asset/f1ef5ba5-3c1f-41b1-bab1-b7a4e0d4e160";
+  mcpAsset("f1ef5ba5-3c1f-41b1-bab1-b7a4e0d4e160");
 const imgLucideBot =
-  "https://www.figma.com/api/mcp/asset/45ca08ef-a09e-466c-a13b-102083214a38";
+  mcpAsset("45ca08ef-a09e-466c-a13b-102083214a38");
 const imgLucidePlus =
-  "https://www.figma.com/api/mcp/asset/aac47b62-2c74-4f4f-8d02-d409018b8e1c";
+  mcpAsset("aac47b62-2c74-4f4f-8d02-d409018b8e1c");
 
 const DESC_MAX = 100;
 

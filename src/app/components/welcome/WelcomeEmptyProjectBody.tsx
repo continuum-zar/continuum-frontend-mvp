@@ -2,18 +2,20 @@
  * New project overview (placeholder data + empty sections) — Figma playground node 35:10701.
  * Milestone empty card: 35:11112; section header: 35:11072.
  */
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+
 import { WelcomeMetricsRow } from "./WelcomeMetricsRow";
 import { WelcomeProjectHeroGauge } from "./WelcomeProjectHeroGauge";
 
-const imgLucidePlus = "https://www.figma.com/api/mcp/asset/91e46d01-6ae8-4fc9-aa4e-13b1040fb3cf";
-const imgLucideCircleCheckBig = "https://www.figma.com/api/mcp/asset/41c88891-51ac-4464-b6eb-547fa8d0e688";
-const imgLucideCircleDashed = "https://www.figma.com/api/mcp/asset/f7749471-815b-4202-a0c7-5bc740426265";
-const imgLucideTrafficCone = "https://www.figma.com/api/mcp/asset/30a100c4-ae3a-49ae-a09f-8e007edeaa41";
-const imgLucideActivity = "https://www.figma.com/api/mcp/asset/8b04e159-5943-4424-a1ff-8259ce5f1905";
-const imgLucidePaperclip = "https://www.figma.com/api/mcp/asset/eca27db3-d7a3-4625-8615-00ef276c3530";
-const imgLucideGitBranch = "https://www.figma.com/api/mcp/asset/1638b448-769f-4e9f-b1e0-f8bd6e479808";
-const imgLucideGoal = "https://www.figma.com/api/mcp/asset/183d0e54-4a33-4803-b12d-d870a190794d";
-const imgLucideUsers = "https://www.figma.com/api/mcp/asset/4202e9d8-d2e7-4542-8b8e-eafd6dcf6d0d";
+const imgLucidePlus = mcpAsset("91e46d01-6ae8-4fc9-aa4e-13b1040fb3cf");
+const imgLucideCircleCheckBig = mcpAsset("41c88891-51ac-4464-b6eb-547fa8d0e688");
+const imgLucideCircleDashed = mcpAsset("f7749471-815b-4202-a0c7-5bc740426265");
+const imgLucideTrafficCone = mcpAsset("30a100c4-ae3a-49ae-a09f-8e007edeaa41");
+const imgLucideActivity = mcpAsset("8b04e159-5943-4424-a1ff-8259ce5f1905");
+const imgLucidePaperclip = mcpAsset("eca27db3-d7a3-4625-8615-00ef276c3530");
+const imgLucideGitBranch = mcpAsset("1638b448-769f-4e9f-b1e0-f8bd6e479808");
+const imgLucideGoal = mcpAsset("183d0e54-4a33-4803-b12d-d870a190794d");
+const imgLucideUsers = mcpAsset("4202e9d8-d2e7-4542-8b8e-eafd6dcf6d0d");
 
 function AddButton({ label = "Add" }: { label?: string }) {
   return (

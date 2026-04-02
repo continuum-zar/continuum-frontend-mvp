@@ -4,6 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ArrowUp, Check, Minus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import {
   Dialog,
   DialogOverlay,
@@ -16,24 +17,24 @@ import {
 } from "../CreateTaskModal";
 
 /** Figma — base panel 14:3223 / welcome mock 14:3453, 395×537 */
-const imgChevronDown = "https://www.figma.com/api/mcp/asset/efd29821-4b68-45a8-a943-000591716212";
-const imgSquarePen = "https://www.figma.com/api/mcp/asset/8b659cef-3407-4a90-9a3b-040a80e97dd7";
-const imgMinus = "https://www.figma.com/api/mcp/asset/398b8c9e-4389-4bf0-b963-a0ba27edd9e9";
-const imgBot = "https://www.figma.com/api/mcp/asset/39d27ae7-19c5-4d7d-b5fa-d32575b9f513";
-const imgPlus = "https://www.figma.com/api/mcp/asset/0d0492e3-ad36-48a3-8f2a-a9ea51d299e4";
-const imgSettings2 = "https://www.figma.com/api/mcp/asset/dce388b9-22f0-4c35-976b-ca6706b88382";
+const imgChevronDown = mcpAsset("efd29821-4b68-45a8-a943-000591716212");
+const imgSquarePen = mcpAsset("8b659cef-3407-4a90-9a3b-040a80e97dd7");
+const imgMinus = mcpAsset("398b8c9e-4389-4bf0-b963-a0ba27edd9e9");
+const imgBot = mcpAsset("39d27ae7-19c5-4d7d-b5fa-d32575b9f513");
+const imgPlus = mcpAsset("0d0492e3-ad36-48a3-8f2a-a9ea51d299e4");
+const imgSettings2 = mcpAsset("dce388b9-22f0-4c35-976b-ca6706b88382");
 /** Figma — active chat 14:3531 / 14:3595 */
-const imgSquarePenChat = "https://www.figma.com/api/mcp/asset/79fbaac6-1ad4-4409-9061-0ae19953dbea";
-const imgEllipsis = "https://www.figma.com/api/mcp/asset/8a1cc0a4-ebd0-4e5d-b345-dccb8e9fd5b1";
-const imgChevronDownChat = "https://www.figma.com/api/mcp/asset/01a53fe2-c907-40d9-bed5-3d02e00d882e";
-const imgLucideSquare = "https://www.figma.com/api/mcp/asset/e40fa00b-dbb1-4554-9a43-c7e4cbe8cb5c";
-const imgChevronRightThought = "https://www.figma.com/api/mcp/asset/ab00dcdd-398d-4dfc-b3f7-4fc77a4515a3";
-const imgPlusChat = "https://www.figma.com/api/mcp/asset/5f40ebe2-bfb1-49bf-b797-367653d10f56";
-const imgSettingsChat = "https://www.figma.com/api/mcp/asset/41a9a4e3-6a20-4694-9477-56c0c6ed916b";
-const imgArrowUpChat = "https://www.figma.com/api/mcp/asset/ff641961-e4ca-488f-aa65-39498a45ed47";
+const imgSquarePenChat = mcpAsset("79fbaac6-1ad4-4409-9061-0ae19953dbea");
+const imgEllipsis = mcpAsset("8a1cc0a4-ebd0-4e5d-b345-dccb8e9fd5b1");
+const imgChevronDownChat = mcpAsset("01a53fe2-c907-40d9-bed5-3d02e00d882e");
+const imgLucideSquare = mcpAsset("e40fa00b-dbb1-4554-9a43-c7e4cbe8cb5c");
+const imgChevronRightThought = mcpAsset("ab00dcdd-398d-4dfc-b3f7-4fc77a4515a3");
+const imgPlusChat = mcpAsset("5f40ebe2-bfb1-49bf-b797-367653d10f56");
+const imgSettingsChat = mcpAsset("41a9a4e3-6a20-4694-9477-56c0c6ed916b");
+const imgArrowUpChat = mcpAsset("ff641961-e4ca-488f-aa65-39498a45ed47");
 
 /** Figma 14:1031 SpinnerGradient — 16px ring */
-const imgSpinnerRing = "https://www.figma.com/api/mcp/asset/27cbd367-f262-4de4-bd86-598cee0210f1";
+const imgSpinnerRing = mcpAsset("27cbd367-f262-4de4-bd86-598cee0210f1");
 
 const SUGGESTED_PROMPTS = [
   "How is the project going?",

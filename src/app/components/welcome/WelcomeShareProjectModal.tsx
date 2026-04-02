@@ -10,17 +10,18 @@ import {
   DialogPortal,
 } from "../ui/dialog";
 import { cn } from "../ui/utils";
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 /** Figma playground 21:10053 / 21:10055 / 21:10072 / 21:10202 / 21:10152 */
 const imgLucideArrowLeft =
-  "https://www.figma.com/api/mcp/asset/988dda97-4902-4371-bc4c-9ffe4afea0e8";
-const imgLucideX = "https://www.figma.com/api/mcp/asset/2c079b92-8097-4df4-8a11-e1f18dba0f5a";
+  mcpAsset("988dda97-4902-4371-bc4c-9ffe4afea0e8");
+const imgLucideX = mcpAsset("2c079b92-8097-4df4-8a11-e1f18dba0f5a");
 const imgLucideCalendar =
-  "https://www.figma.com/api/mcp/asset/b6c3dbcc-8336-401f-a031-737097b8b021";
+  mcpAsset("b6c3dbcc-8336-401f-a031-737097b8b021");
 const imgLucideChevronDown =
-  "https://www.figma.com/api/mcp/asset/e35c7a9b-edbf-490f-911a-a2c7f3582268";
+  mcpAsset("e35c7a9b-edbf-490f-911a-a2c7f3582268");
 const imgLucideLink =
-  "https://www.figma.com/api/mcp/asset/c71c30bb-4db7-47ac-8e4f-ea6fc97b4fb8";
+  mcpAsset("c71c30bb-4db7-47ac-8e4f-ea6fc97b4fb8");
 
 const inviteButtonGradient =
   "linear-gradient(151.86872497935377deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)";

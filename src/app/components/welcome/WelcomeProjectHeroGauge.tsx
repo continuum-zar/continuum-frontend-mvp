@@ -1,11 +1,13 @@
 "use client";
 
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+
 /**
  * Large semicircle hero gauge (89 / “Project on track”) — shared by welcome demo
  * and new-project empty overview. Figma playground 35:10702–35:10707.
  */
 const imgHeroArcFilled =
-  "https://www.figma.com/api/mcp/asset/1c54c7ec-1cc0-4107-8c3d-ea141fcb2f4e";
+  mcpAsset("1c54c7ec-1cc0-4107-8c3d-ea141fcb2f4e");
 
 export function WelcomeProjectHeroGauge() {
   return (

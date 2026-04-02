@@ -10,17 +10,18 @@ import {
   DialogPortal,
 } from "../ui/dialog";
 import { cn } from "../ui/utils";
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 /** Figma playground node 21:9969 / 21:9971 / 21:10007 — asset URLs from design context */
 const imgLucideArrowLeft =
-  "https://www.figma.com/api/mcp/asset/87d62a9b-f825-4e11-bc9a-d08105d1800e";
-const imgLucideX = "https://www.figma.com/api/mcp/asset/25ba1811-ddb0-4b13-83b1-420f5ba868f2";
+  mcpAsset("87d62a9b-f825-4e11-bc9a-d08105d1800e");
+const imgLucideX = mcpAsset("25ba1811-ddb0-4b13-83b1-420f5ba868f2");
 const imgLucideCalendar =
-  "https://www.figma.com/api/mcp/asset/3ce919d3-754a-4f0f-849a-28d0113aa5c0";
+  mcpAsset("3ce919d3-754a-4f0f-849a-28d0113aa5c0");
 const imgLucideChevronDown =
-  "https://www.figma.com/api/mcp/asset/e4587061-0e2f-4576-85e6-65765188c9d2";
+  mcpAsset("e4587061-0e2f-4576-85e6-65765188c9d2");
 const imgLucideInfo =
-  "https://www.figma.com/api/mcp/asset/6b39c1ca-6d99-4835-9a9f-23dd7ffc6211";
+  mcpAsset("6b39c1ca-6d99-4835-9a9f-23dd7ffc6211");
 
 const primaryButtonGradient =
   "linear-gradient(166.56145949751235deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)";

@@ -2,11 +2,12 @@
 
 import { Plus } from "lucide-react";
 
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { welcomeMilestoneTimelineMock } from "@/app/data/welcomeDashboardMock";
 
 /** Figma node 35:11709 — lucide/goal */
 const imgLucideGoal =
-  "https://www.figma.com/api/mcp/asset/4c9029a9-ad80-4490-8581-35f0a2f32754";
+  mcpAsset("4c9029a9-ad80-4490-8581-35f0a2f32754");
 
 const addButtonClass =
   "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]";

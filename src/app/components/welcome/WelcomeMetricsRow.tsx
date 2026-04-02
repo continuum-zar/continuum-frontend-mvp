@@ -1,20 +1,22 @@
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+
 /** Welcome dashboard secondary metrics — matches Figma node 11:5683 */
 const imgEfficiencyArc =
-  "https://www.figma.com/api/mcp/asset/a66a3896-7a75-4ab0-8590-1a9153d1131d";
+  mcpAsset("a66a3896-7a75-4ab0-8590-1a9153d1131d");
 const imgGaugeIndicator =
-  "https://www.figma.com/api/mcp/asset/526dd3fc-a323-411f-a999-20f981098020";
+  mcpAsset("526dd3fc-a323-411f-a999-20f981098020");
 const imgTasksArc =
-  "https://www.figma.com/api/mcp/asset/496742c5-9223-4416-adc2-deff7ef9f49b";
+  mcpAsset("496742c5-9223-4416-adc2-deff7ef9f49b");
 const imgCommitsSeg1 =
-  "https://www.figma.com/api/mcp/asset/f2dd3b1a-f123-4e62-b25a-81ba164cab8b";
+  mcpAsset("f2dd3b1a-f123-4e62-b25a-81ba164cab8b");
 const imgCommitsFrame =
-  "https://www.figma.com/api/mcp/asset/16ac1dec-3035-4bdb-a771-8def8c26b0cc";
+  mcpAsset("16ac1dec-3035-4bdb-a771-8def8c26b0cc");
 const imgCommitsSeg2 =
-  "https://www.figma.com/api/mcp/asset/049c11c9-ae20-4c8a-9053-7f6e83daccdb";
+  mcpAsset("049c11c9-ae20-4c8a-9053-7f6e83daccdb");
 const imgLegendShipped =
-  "https://www.figma.com/api/mcp/asset/07b7126a-5203-4677-9754-7af36c03acb9";
+  mcpAsset("07b7126a-5203-4677-9754-7af36c03acb9");
 const imgLegendProgress =
-  "https://www.figma.com/api/mcp/asset/a8cfd688-142f-4eda-ad11-95db12443984";
+  mcpAsset("a8cfd688-142f-4eda-ad11-95db12443984");
 
 type WelcomeMetricsRowProps = {
   /** Zeroed gauges and muted arcs — empty project overview (Figma 33:10282). */

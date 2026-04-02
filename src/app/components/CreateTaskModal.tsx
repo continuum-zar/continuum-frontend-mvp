@@ -11,26 +11,27 @@ import {
 } from "./ui/dialog";
 import { cn } from "./ui/utils";
 import { AddResourceModal } from "./welcome/AddResourceModal";
+import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { welcomeResourcesMock, type WelcomeResourceItem } from "@/app/data/welcomeDashboardMock";
 
 const imgLucideArrowLeft =
-  "https://www.figma.com/api/mcp/asset/27ca96dc-a695-48d3-8f22-628b8eb437bd";
+  mcpAsset("27ca96dc-a695-48d3-8f22-628b8eb437bd");
 const imgLucideFlag =
-  "https://www.figma.com/api/mcp/asset/e52cc33b-1c94-4f51-831d-27613aec8fb7";
+  mcpAsset("e52cc33b-1c94-4f51-831d-27613aec8fb7");
 const imgVector15 =
-  "https://www.figma.com/api/mcp/asset/ed075df4-e80e-41eb-a544-5369dfb77a46";
+  mcpAsset("ed075df4-e80e-41eb-a544-5369dfb77a46");
 const imgLucideTag =
-  "https://www.figma.com/api/mcp/asset/d427a1f8-33d2-4b4d-a88d-0d6788ed82e6";
+  mcpAsset("d427a1f8-33d2-4b4d-a88d-0d6788ed82e6");
 const imgLucideCheck =
-  "https://www.figma.com/api/mcp/asset/f17b7c55-8260-41c2-9b91-6892f419b0f9";
+  mcpAsset("f17b7c55-8260-41c2-9b91-6892f419b0f9");
 const imgLucideCalendarPlus =
-  "https://www.figma.com/api/mcp/asset/425b9c90-6c91-4ee0-a3d7-1a5b0f599a35";
+  mcpAsset("425b9c90-6c91-4ee0-a3d7-1a5b0f599a35");
 const imgLucideUserRoundPlus1 =
-  "https://www.figma.com/api/mcp/asset/3b9ddb70-8dce-456b-9932-8b226f04049a";
+  mcpAsset("3b9ddb70-8dce-456b-9932-8b226f04049a");
 const imgLucideCheck1 =
-  "https://www.figma.com/api/mcp/asset/023443fc-c32a-461b-8dbd-55d6e32cd451";
+  mcpAsset("023443fc-c32a-461b-8dbd-55d6e32cd451");
 const imgComponent34 =
-  "https://www.figma.com/api/mcp/asset/0a33d0b2-07cc-4490-b6ee-909fecb0efb5";
+  mcpAsset("0a33d0b2-07cc-4490-b6ee-909fecb0efb5");
 const DEFAULT_TASK_TITLE = "Set up high-fidelity prototypes with conditional logic";
 const DEFAULT_TASK_DESCRIPTION =
   "A long description goes here, this space will only show two lines before truncation. ";
