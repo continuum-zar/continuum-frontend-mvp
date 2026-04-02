@@ -404,7 +404,10 @@ export function WelcomeContinuumView() {
                 </div>
               )}
               {isApiRoute && projectQuery.isSuccess && routeProjectId && (
-                <WelcomeEmptyProjectBody projectId={Number(routeProjectId)} />
+                <WelcomeEmptyProjectBody
+                  projectId={Number(routeProjectId)}
+                  onOpenInviteMembers={() => setShareProjectOpen(true)}
+                />
               )}
             </div>
             )}

@@ -17,10 +17,11 @@ const imgLucidePaperclip = mcpAsset("eca27db3-d7a3-4625-8615-00ef276c3530");
 const imgLucideGitBranch = mcpAsset("1638b448-769f-4e9f-b1e0-f8bd6e479808");
 const imgLucideUsers = mcpAsset("4202e9d8-d2e7-4542-8b8e-eafd6dcf6d0d");
 
-function AddButton({ label = "Add" }: { label?: string }) {
+function AddButton({ label = "Add", onClick }: { label?: string; onClick?: () => void }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
     >
       {label}
@@ -42,7 +43,14 @@ function EmptyPlaceholderCard({ icon, title }: { icon: string; title: string }) 
   );
 }
 
-export function WelcomeEmptyProjectBody({ projectId }: { projectId: number }) {
+export function WelcomeEmptyProjectBody({
+  projectId,
+  onOpenInviteMembers,
+}: {
+  projectId: number;
+  /** Opens the same share/invite modal as “Invite Members” on the welcome shell */
+  onOpenInviteMembers?: () => void;
+}) {
   return (
     <div className="relative flex w-full min-w-0 flex-col items-center gap-16 pb-8 pt-12">
       <div className="flex w-full max-w-[815px] flex-col items-center gap-16">
@@ -125,7 +133,7 @@ export function WelcomeEmptyProjectBody({ projectId }: { projectId: number }) {
       <div className="flex w-full max-w-[815px] flex-col gap-4">
         <div className="flex w-full items-center justify-between">
           <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Team</p>
-          <AddButton />
+          <AddButton onClick={onOpenInviteMembers} />
         </div>
         <EmptyPlaceholderCard icon={imgLucideUsers} title="No members assigned" />
       </div>

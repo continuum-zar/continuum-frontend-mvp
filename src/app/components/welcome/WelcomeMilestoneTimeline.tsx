@@ -7,7 +7,10 @@ import { useProjectMilestones } from "@/api/hooks";
 import type { Milestone } from "@/types/milestone";
 
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
-import { CreateMilestoneModal } from "@/app/components/dashboard-placeholder/CreateMilestoneModal";
+import {
+  CreateMilestoneModal,
+  type CreateMilestoneModalEditing,
+} from "@/app/components/dashboard-placeholder/CreateMilestoneModal";
 import { welcomeMilestoneTimelineMock } from "@/app/data/welcomeDashboardMock";
 import { cn } from "../ui/utils";
 
@@ -48,6 +51,7 @@ export type WelcomeMilestoneTimelineProps = {
  */
 export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: WelcomeMilestoneTimelineProps) {
   const [milestoneModalOpen, setMilestoneModalOpen] = useState(false);
+  const [editingMilestone, setEditingMilestone] = useState<CreateMilestoneModalEditing | null>(null);
   const isLive = variant === "live" && projectId != null && Number.isFinite(projectId);
 
   const { data: milestones = [], isLoading } = useProjectMilestones(isLive ? projectId : undefined);
@@ -86,7 +90,11 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
             )}
             disabled={!isLive}
             title={!isLive ? "Open a project from the sidebar to add milestones" : undefined}
-            onClick={() => isLive && setMilestoneModalOpen(true)}
+            onClick={() => {
+              if (!isLive) return;
+              setEditingMilestone(null);
+              setMilestoneModalOpen(true);
+            }}
           >
             Add
             <Plus className="size-4" strokeWidth={2} />
@@ -121,14 +129,40 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
             {rows.map((m) => (
               <div key={m.id} className="relative z-[1] flex max-w-[474px] items-start overflow-hidden rounded-[8px] pr-2">
                 <div className="flex w-[50px] shrink-0 justify-center">
-                  <div className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
-                    <img
-                      alt=""
-                      className="block size-4 max-w-none shrink-0"
-                      src={imgLucideGoal}
-                      aria-hidden
-                    />
-                  </div>
+                  {isLive ? (
+                    <button
+                      type="button"
+                      className="flex size-[50px] shrink-0 cursor-pointer items-center justify-center rounded-[99px] bg-[#edf0f3] outline-none transition-colors hover:bg-[#e4eaec] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40"
+                      aria-label={`Edit milestone ${m.title}`}
+                      onClick={() => {
+                        const ms = milestones.find((x) => x.id === m.id);
+                        if (!ms) return;
+                        setEditingMilestone({
+                          id: ms.id,
+                          name: ms.name,
+                          description: ms.desc,
+                          dueDateIso: ms.dueDateIso,
+                        });
+                        setMilestoneModalOpen(true);
+                      }}
+                    >
+                      <img
+                        alt=""
+                        className="pointer-events-none block size-4 max-w-none shrink-0"
+                        src={imgLucideGoal}
+                        aria-hidden
+                      />
+                    </button>
+                  ) : (
+                    <div className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
+                      <img
+                        alt=""
+                        className="block size-4 max-w-none shrink-0"
+                        src={imgLucideGoal}
+                        aria-hidden
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-center py-1.5 pl-4 pr-2 font-['Satoshi',sans-serif] font-medium leading-normal">
                   <p className="w-[183px] max-w-full truncate text-[12px] text-[#727d83]">{m.dateLabel}</p>
@@ -142,7 +176,15 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
       </div>
 
       {isLive && projectId != null && (
-        <CreateMilestoneModal open={milestoneModalOpen} onOpenChange={setMilestoneModalOpen} projectId={projectId} />
+        <CreateMilestoneModal
+          open={milestoneModalOpen}
+          onOpenChange={(open) => {
+            setMilestoneModalOpen(open);
+            if (!open) setEditingMilestone(null);
+          }}
+          projectId={projectId}
+          editingMilestone={editingMilestone}
+        />
       )}
     </>
   );
