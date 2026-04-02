@@ -1213,7 +1213,7 @@ export function ProjectBoard() {
                       onChange={(e) => setNewIntegrationUrl(e.target.value)}
                       className="bg-input-background"
                     />
-                    <Button 
+                    <Button
                       onClick={() => {
                         if (!newIntegrationUrl.trim() || !projectId) return;
                         createIntegrationMutation.mutate(
@@ -1241,7 +1241,7 @@ export function ProjectBoard() {
                     <div className="flex items-center gap-4 shrink-0">
                       <div className="flex items-center gap-2">
                         <Label htmlFor={`active-${integration.id}`} className="text-xs cursor-pointer">Active</Label>
-                        <Switch 
+                        <Switch
                           id={`active-${integration.id}`}
                           checked={integration.is_enabled}
                           onCheckedChange={(checked) => updateIntegrationMutation.mutate({ integrationId: integration.id, body: { is_enabled: checked } })}

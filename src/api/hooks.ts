@@ -570,7 +570,7 @@ export function useCreateIntegration(projectId: number | string | undefined | nu
 export function useUpdateIntegration(projectId: number | string | undefined | null) {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ integrationId, body }: { integrationId: number | string; body: IntegrationUpdate }) => 
+        mutationFn: ({ integrationId, body }: { integrationId: number | string; body: IntegrationUpdate }) =>
             updateIntegration(projectId!, integrationId, body),
         onSuccess: () => {
              if (projectId != null && projectId !== '') {
