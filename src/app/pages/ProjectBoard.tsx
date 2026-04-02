@@ -24,7 +24,6 @@ import {
   Upload,
   FileText,
   X,
-  ExternalLink,
 } from 'lucide-react';
 import type { Task, TaskStatus } from '@/types/task';
 import type { Milestone } from '@/types/milestone';
@@ -55,10 +54,12 @@ import {
   useUploadProjectAttachment,
   useAddProjectAttachmentLink,
   useDeleteProjectAttachment,
-  getProjectAttachmentDownloadUrl,
+  downloadProjectAttachment,
   projectKeys,
   mapMilestone,
   mapAttachment,
+  getAttachmentLinkHref,
+  getAttachmentLinkLabel,
   fetchTask,
   getApiErrorMessage,
 } from '@/api';
@@ -1125,45 +1126,62 @@ export function ProjectBoard() {
           )}
           {!projectAttachmentsQuery.isLoading && (projectAttachmentsQuery.data?.length ?? 0) > 0 && (
             <ul className="space-y-2">
-              {(projectAttachmentsQuery.data ?? []).map(mapAttachment).map((att) => (
+              {(projectAttachmentsQuery.data ?? []).map(mapAttachment).map((att) => {
+                const linkHref = getAttachmentLinkHref(att);
+                const linkLabel = getAttachmentLinkLabel(att);
+                return (
                 <li
                   key={att.id}
                   className="flex items-center justify-between gap-3 py-2 px-3 rounded-md bg-muted/30 border border-border"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    {att.url ? (
+                    {att.kind === 'link' ? (
                       <Link className="w-4 h-4 shrink-0 text-primary" />
                     ) : (
                       <FileText className="w-4 h-4 shrink-0 text-muted-foreground" />
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{att.filename}</p>
-                      <p className="text-xs text-muted-foreground">{att.size}</p>
+                      {att.kind === 'link' && linkHref ? (
+                        <a
+                          href={linkHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={linkHref}
+                          className="text-sm font-medium text-primary truncate block hover:underline"
+                        >
+                          {linkLabel}
+                        </a>
+                      ) : (
+                        <p className="text-sm font-medium truncate">{att.filename}</p>
+                      )}
+                      {att.kind === 'file' ? (
+                        <p className="text-xs text-muted-foreground">{att.size}</p>
+                      ) : null}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    {att.url ? (
-                      <a
-                        href={att.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    {att.kind === 'file' ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Download"
+                        onClick={async () => {
+                          try {
+                            const { blob, filename } = await downloadProjectAttachment(att.id);
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = filename || att.filename;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          } catch (err) {
+                            toast.error(getApiErrorMessage(err, 'Failed to download file'));
+                          }
+                        }}
                       >
-                        <Button variant="ghost" size="icon" title="Open link">
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      </a>
-                    ) : (
-                      <a
-                        href={getProjectAttachmentDownloadUrl(att.id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
-                      >
-                        <Button variant="ghost" size="icon" title="Download">
-                          <Upload className="w-4 h-4 rotate-180" />
-                        </Button>
-                      </a>
-                    )}
+                        <Upload className="w-4 h-4 rotate-180" />
+                      </Button>
+                    ) : null}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -1175,7 +1193,8 @@ export function ProjectBoard() {
                     </Button>
                   </div>
                 </li>
-              ))}
+              );
+              })}
             </ul>
           )}
         </div>

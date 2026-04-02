@@ -42,7 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
-import { formatDueDate, useTask, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useAddAttachmentLink, useDeleteAttachment, downloadTaskAttachment, mapAttachment, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches, useAddTaskLabel, useRemoveTaskLabel } from '@/api';
+import { formatDueDate, useTask, useUpdateTask, useTaskComments, useCreateTaskComment, useTaskAttachments, useUploadAttachment, useAddAttachmentLink, useDeleteAttachment, downloadTaskAttachment, mapAttachment, getAttachmentLinkHref, getAttachmentLinkLabel, useTaskTimeline, useProjectMembers, useAssignTask, useProjectRepositories, useRepositoryBranches, useAddTaskLabel, useRemoveTaskLabel } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, TaskStatusAPI, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { Member } from '@/types/member';
@@ -556,18 +556,24 @@ export function TaskDetail() {
                 </div>
               ) : attachments && attachments.length > 0 ? (
                 <div className="space-y-2">
-                  {(attachments ?? []).map(mapAttachment).map((attachment) => (
+                  {(attachments ?? []).map(mapAttachment).map((attachment) => {
+                    const linkHref = getAttachmentLinkHref(attachment);
+                    const linkLabel = getAttachmentLinkLabel(attachment);
+                    return (
                     <div key={attachment.id} className="flex items-center justify-between p-2 bg-input-background rounded">
                       <div className="min-w-0 flex-1">
-                        {attachment.url ? (
+                        {attachment.kind === 'link' && linkHref ? (
                           <a
-                            href={attachment.url}
+                            href={linkHref}
                             target="_blank"
                             rel="noopener noreferrer"
+                            title={linkHref}
                             className="text-sm text-primary hover:underline truncate block"
                           >
-                            {attachment.filename}
+                            {linkLabel}
                           </a>
+                        ) : attachment.kind === 'link' ? (
+                          <span className="text-sm font-medium truncate block">{attachment.filename}</span>
                         ) : (
                           <button
                             type="button"
@@ -589,7 +595,9 @@ export function TaskDetail() {
                             {attachment.filename}
                           </button>
                         )}
-                        <span className="text-sm text-muted-foreground ml-2">{attachment.size}</span>
+                        {attachment.kind === 'file' ? (
+                          <span className="text-sm text-muted-foreground ml-2">{attachment.size}</span>
+                        ) : null}
                       </div>
                       <Button
                         variant="ghost"
@@ -600,7 +608,8 @@ export function TaskDetail() {
                         ×
                       </Button>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No attachments yet</p>

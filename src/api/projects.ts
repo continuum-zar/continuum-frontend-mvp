@@ -123,17 +123,28 @@ export async function addMember(
     return data;
 }
 
+/**
+ * Unify `useParams()` string ids and `Number(id)` so React Query keys match; otherwise
+ * invalidateQueries from mutations (number) does not refresh queries subscribed with a string id.
+ */
+export function normalizeProjectKeyId(projectId: number | string): number | string {
+    if (typeof projectId === 'number' && Number.isFinite(projectId)) return projectId;
+    if (typeof projectId === 'string' && /^\d+$/.test(projectId)) return Number(projectId);
+    return projectId;
+}
+
 export const projectKeys = {
     all: ['projects'] as const,
     list: () => [...projectKeys.all, 'list'] as const,
-    detail: (id: number | string) => [...projectKeys.all, 'detail', id] as const,
-    tasks: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'tasks'] as const,
+    detail: (id: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(id)] as const,
+    tasks: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'tasks'] as const,
     allTasks: () => ['tasks', 'all'] as const,
-    milestones: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'milestones'] as const,
-    members: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'members'] as const,
-    repositories: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'repositories'] as const,
+    milestones: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'milestones'] as const,
+    members: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'members'] as const,
+    repositories: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'repositories'] as const,
     loggedHours: (projectId?: string | null) => ['logged-hours', projectId ?? 'all'] as const,
-    projectAttachments: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'attachments'] as const,
+    projectAttachments: (projectId: number | string) =>
+        [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'attachments'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -181,4 +192,36 @@ export async function deleteProjectAttachment(attachmentId: number | string): Pr
 /** Get the download URL for a project attachment. */
 export function getProjectAttachmentDownloadUrl(attachmentId: number | string): string {
     return `/api/v1/projects/attachments/${attachmentId}/download`;
+}
+
+function parseContentDispositionFilename(headers: Record<string, unknown>): string {
+    const contentDisposition = headers?.['content-disposition'];
+    let filename = 'attachment';
+    if (typeof contentDisposition === 'string') {
+        const match =
+            contentDisposition.match(/filename\*?=(?:UTF-8'')?["']?([^"'\s;]+)["']?/i) ??
+            contentDisposition.match(/filename=["']?([^"'\s;]+)["']?/i);
+        if (match?.[1]) filename = decodeURIComponent(match[1].trim());
+    }
+    return filename;
+}
+
+/** Result of downloading a project attachment (blob + suggested filename). */
+export interface DownloadProjectAttachmentResult {
+    blob: Blob;
+    filename: string;
+}
+
+/**
+ * Download a project attachment via axios (sends `Authorization`).
+ * Plain `<a href={getProjectAttachmentDownloadUrl(...)}>` does not send the bearer token — use this instead.
+ */
+export async function downloadProjectAttachment(
+    attachmentId: number | string
+): Promise<DownloadProjectAttachmentResult> {
+    const res = await api.get<Blob>(`/projects/attachments/${attachmentId}/download`, {
+        responseType: 'blob',
+    });
+    const filename = parseContentDispositionFilename(res.headers as Record<string, unknown>);
+    return { blob: res.data, filename };
 }

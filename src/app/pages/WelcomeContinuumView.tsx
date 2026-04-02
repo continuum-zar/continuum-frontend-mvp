@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 
-import { useProject } from "@/api/hooks";
+import { useProject, useProjectMembers } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
@@ -47,6 +47,20 @@ export function WelcomeContinuumView() {
     Boolean(routeProjectId && isApiProjectId(routeProjectId)) &&
     pathname.startsWith("/dashboard-placeholder/project/");
   const projectQuery = useProject(isApiRoute ? routeProjectId : undefined);
+  const membersQuery = useProjectMembers(isApiRoute ? routeProjectId : undefined);
+
+  const clientPillLabel = (() => {
+    if (!isApiRoute) return "Client name will appear here";
+    const clients = (membersQuery.data ?? []).filter((m) => {
+      const k = (m.role || "").toLowerCase().replace(/\s+/g, "_");
+      return k === "client";
+    });
+    if (clients.length === 0) return "Client name will appear here";
+    return clients
+      .map((c) => c.name.trim())
+      .filter(Boolean)
+      .join(", ");
+  })();
 
   const headerTitle = isWelcomeDemo
     ? DASHBOARD_WELCOME_PROJECT.name
@@ -81,8 +95,12 @@ export function WelcomeContinuumView() {
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/building-2" data-node-id="8:3533">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideBuilding2} />
                     </div>
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="8:3535">
-                      Client name will appear here
+                    <p
+                      className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative max-w-[min(280px,40vw)] shrink truncate text-[#606d76] text-[14px]"
+                      title={clientPillLabel}
+                      data-node-id="8:3535"
+                    >
+                      {clientPillLabel}
                     </p>
                   </div>
                   <div className="relative shrink-0 size-[16px]" data-name="lucide/x" data-node-id="8:3536">
@@ -433,7 +451,15 @@ export function WelcomeContinuumView() {
         </div>
       </div>
       <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} />
-      <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} />
+      <WelcomeShareProjectModal
+        open={shareProjectOpen}
+        onOpenChange={setShareProjectOpen}
+        projectId={
+          isApiRoute && routeProjectId && isApiProjectId(routeProjectId)
+            ? Number(routeProjectId)
+            : undefined
+        }
+      />
     </div>
   );
 }

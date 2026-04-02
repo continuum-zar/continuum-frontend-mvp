@@ -1,8 +1,10 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Upload, X } from "lucide-react";
+
+import { useAddProjectAttachmentLink, useUploadProjectAttachment } from "@/api/hooks";
 
 import {
   Dialog,
@@ -18,10 +20,57 @@ const uploadGradient =
 type AddResourceModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When set, upload and “add link” call the project attachments API */
+  projectId?: number;
 };
 
-export function AddResourceModal({ open, onOpenChange }: AddResourceModalProps) {
+export function AddResourceModal({ open, onOpenChange, projectId }: AddResourceModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [displayText, setDisplayText] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+
+  const uploadMutation = useUploadProjectAttachment(projectId ?? null);
+  const addLinkMutation = useAddProjectAttachmentLink(projectId ?? null);
+
+  const canUseApi = projectId != null && Number.isFinite(projectId);
+  const pending = uploadMutation.isPending || addLinkMutation.isPending;
+  const canSubmit =
+    canUseApi &&
+    !pending &&
+    (pendingFile != null || linkUrl.trim().length > 0);
+
+  useEffect(() => {
+    if (!open) return;
+    setLinkUrl("");
+    setDisplayText("");
+    setPendingFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [open]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setPendingFile(file ?? null);
+    if (file) setLinkUrl("");
+  };
+
+  const handleSubmit = async () => {
+    if (!canSubmit || !canUseApi) return;
+    try {
+      if (pendingFile) {
+        await uploadMutation.mutateAsync(pendingFile);
+        onOpenChange(false);
+      } else if (linkUrl.trim()) {
+        await addLinkMutation.mutateAsync({
+          url: linkUrl.trim(),
+          name: displayText.trim() || null,
+        });
+        onOpenChange(false);
+      }
+    } catch {
+      // Toasts handled in hooks
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,13 +121,14 @@ export function AddResourceModal({ open, onOpenChange }: AddResourceModalProps) 
           >
             <div className="flex w-full flex-col gap-6 pb-6">
               <div className="flex w-full flex-col gap-2">
-                <div className="flex h-[235px] w-full items-center justify-center rounded-[12px] border-2 border-dashed border-[#ebedee]">
+                <div className="flex min-h-[235px] w-full flex-col items-center justify-center gap-3 rounded-[12px] border-2 border-dashed border-[#ebedee] px-4 py-6">
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept=".pdf,.md,application/pdf,text/markdown"
                     className="sr-only"
                     tabIndex={-1}
+                    onChange={handleFileChange}
                   />
                   <button
                     type="button"
@@ -89,6 +139,11 @@ export function AddResourceModal({ open, onOpenChange }: AddResourceModalProps) 
                     Upload
                     <Upload className="size-4" strokeWidth={2} />
                   </button>
+                  {pendingFile ? (
+                    <p className="max-w-full truncate text-center font-['Satoshi',sans-serif] text-[13px] font-medium text-[#606d76]">
+                      {pendingFile.name}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex w-full items-start justify-between font-['Satoshi',sans-serif] text-[14px] font-normal whitespace-nowrap text-[#606d76]">
                   <p>Accepted formats: pdf, md</p>
@@ -108,6 +163,11 @@ export function AddResourceModal({ open, onOpenChange }: AddResourceModalProps) 
                   <input
                     type="url"
                     placeholder="Paste a new link"
+                    value={linkUrl}
+                    onChange={(e) => {
+                      setLinkUrl(e.target.value);
+                      if (e.target.value.trim()) setPendingFile(null);
+                    }}
                     className="w-full min-w-0 border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
                   />
                 </div>
@@ -120,7 +180,9 @@ export function AddResourceModal({ open, onOpenChange }: AddResourceModalProps) 
                 <div className="flex h-10 w-full items-center rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2">
                   <input
                     type="text"
-                    placeholder="Test to display"
+                    placeholder="Text to display"
+                    value={displayText}
+                    onChange={(e) => setDisplayText(e.target.value)}
                     className="w-full min-w-0 border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
                   />
                 </div>
@@ -131,10 +193,17 @@ export function AddResourceModal({ open, onOpenChange }: AddResourceModalProps) 
           <div className="z-[1] flex w-full shrink-0 items-center justify-end border-t border-solid border-[#ebedee] bg-white px-9 py-4">
             <button
               type="button"
-              disabled
-              className="inline-flex h-10 cursor-not-allowed items-center justify-center rounded-[8px] bg-[rgba(96,109,118,0.1)] px-4 py-2 font-['Inter',sans-serif] text-[14px] font-semibold text-[#606d76] opacity-50"
+              disabled={!canSubmit}
+              onClick={handleSubmit}
+              className={cn(
+                "inline-flex h-10 items-center justify-center rounded-[8px] px-4 py-2 font-['Inter',sans-serif] text-[14px] font-semibold",
+                canSubmit
+                  ? "cursor-pointer font-bold text-white"
+                  : "cursor-not-allowed bg-[rgba(96,109,118,0.1)] text-[#606d76] opacity-50"
+              )}
+              style={canSubmit ? { backgroundImage: uploadGradient } : undefined}
             >
-              Add Resource
+              {pending ? "Adding…" : "Add Resource"}
             </button>
           </div>
         </DialogPrimitive.Content>

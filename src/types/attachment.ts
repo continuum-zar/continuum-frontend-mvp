@@ -1,11 +1,24 @@
 /** Raw attachment from API (GET /tasks/{taskId}/attachments) */
 export interface AttachmentAPIResponse {
     id: number;
+    /** File name, or link label; some APIs also use `display_name` / `name` for links */
     original_filename: string;
+    display_name?: string | null;
+    name?: string | null;
+    title?: string | null;
     file_size: number;
     mime_type: string;
     /** Set for link attachments */
     url?: string | null;
+    /** Some backends expose the target URL under a different key */
+    link_url?: string | null;
+    source_url?: string | null;
+    external_url?: string | null;
+    resource_url?: string | null;
+    target_url?: string | null;
+    /** Explicit type flags from API */
+    is_link?: boolean | null;
+    attachment_type?: string | null;
     created_at: string;
     /** Some APIs return uploaded_by */
     uploaded_by?: {
@@ -26,9 +39,11 @@ export interface AttachmentAPIResponse {
 export interface Attachment {
     id: string;
     filename: string;
-    size: string; // formatted size like "2.4 MB" or "Link"
+    /** Formatted size for files; empty for links (second line hidden in UI) */
+    size: string;
     mimeType: string;
-    /** Set for link attachments; open in new tab */
+    kind: 'file' | 'link';
+    /** Resolved target URL for link attachments (for open + display) */
     url?: string | null;
     createdAt: string;
     uploadedBy?: string;

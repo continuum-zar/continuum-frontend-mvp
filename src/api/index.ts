@@ -15,7 +15,9 @@ export {
     addProjectAttachmentLink,
     deleteProjectAttachment,
     getProjectAttachmentDownloadUrl,
+    downloadProjectAttachment,
 } from './projects';
+export type { DownloadProjectAttachmentResult } from './projects';
 export {
     fetchTask,
     updateTask,
@@ -62,7 +64,19 @@ export {
 } from './repositories';
 export type { Repository, RepositoryCreateBody, RepositoryProvider, BranchItem } from '@/types/repository';
 export type { CommentAPIResponse } from '@/types/comment';
-export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate, mapAttachment, normalizeProjectStatus } from './mappers';
+export {
+    mapProjectListItem,
+    mapProjectDetail,
+    mapTask,
+    mapMilestone,
+    mapMember,
+    mapMilestoneStatus,
+    formatDueDate,
+    mapAttachment,
+    getAttachmentLinkHref,
+    getAttachmentLinkLabel,
+    normalizeProjectStatus,
+} from './mappers';
 export {
     useProjects,
     useProject,

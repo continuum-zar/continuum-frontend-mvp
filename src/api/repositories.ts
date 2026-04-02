@@ -2,7 +2,8 @@ import api from '@/lib/api';
 import type { BranchItem, RepositoryAPIResponse, Repository, RepositoryCreateBody } from '@/types/repository';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { projectKeys, getApiErrorMessage } from './hooks';
+import { getApiErrorMessage } from './hooks';
+import { normalizeProjectKeyId, projectKeys } from './projects';
 
 /** Shape of the paginated envelope returned by the backend list endpoints. */
 interface PaginatedResponse<T> {
@@ -73,7 +74,7 @@ export function useRepositoryBranches(
     repositoryId: number | undefined | null
 ) {
     return useQuery({
-        queryKey: ['projects', 'detail', projectId, 'repositories', repositoryId, 'branches'] as const,
+        queryKey: ['projects', 'detail', normalizeProjectKeyId(projectId!), 'repositories', repositoryId, 'branches'] as const,
         queryFn: () => fetchRepositoryBranches(projectId!, repositoryId!),
         enabled:
             projectId != null &&

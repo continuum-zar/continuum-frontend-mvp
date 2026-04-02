@@ -19,14 +19,19 @@ function ResourceRow({ item }: { item: WelcomeResourceItem }) {
   if (item.kind === "link") {
     return (
       <div className="flex w-full items-center gap-2">
-        <div className="flex min-h-[34px] min-w-0 max-w-[474px] flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2 sm:max-w-none">
+        <div className="flex min-h-[34px] min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
           <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
             <Link2 className="size-4 text-[#606d76]" strokeWidth={1.75} />
           </div>
           <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
-            <p className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 hover:text-[#0d52cc]"
+            >
               {item.url}
-            </p>
+            </a>
           </div>
         </div>
         <button type="button" className="inline-flex shrink-0 text-[#606d76]" aria-label="Remove">
@@ -137,8 +142,8 @@ export function WelcomeRepo() {
       </div>
       <div className="flex w-full flex-col gap-4">
         {welcomeRepoMock.map((repo) => (
-          <div key={repo.id} className="flex max-w-full items-center gap-2">
-            <div className="flex min-w-0 max-w-[474px] flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
+          <div key={repo.id} className="flex w-full max-w-full items-center gap-2">
+            <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
               <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
                 <Link2 className="size-4 text-[#606d76]" strokeWidth={1.75} />
               </div>

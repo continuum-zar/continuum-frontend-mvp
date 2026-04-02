@@ -3,6 +3,9 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 
+import { useLinkRepository } from "@/api";
+import type { RepositoryProvider } from "@/types/repository";
+
 import {
   Dialog,
   DialogClose,
@@ -32,14 +35,28 @@ const inputClass =
 type WelcomeLinkRepositoryModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When set, “Link repository” calls POST /projects/:id/repositories */
+  projectId?: number;
 };
 
-export function WelcomeLinkRepositoryModal({ open, onOpenChange }: WelcomeLinkRepositoryModalProps) {
+export function WelcomeLinkRepositoryModal({
+  open,
+  onOpenChange,
+  projectId,
+}: WelcomeLinkRepositoryModalProps) {
   const [repositoryUrl, setRepositoryUrl] = useState("");
   const [repositoryName, setRepositoryName] = useState("");
-  const [provider, setProvider] = useState("github");
+  const [provider, setProvider] = useState<RepositoryProvider>("github");
   const [webhookSecret, setWebhookSecret] = useState("");
   const [apiToken, setApiToken] = useState("");
+
+  const linkMutation = useLinkRepository(projectId ?? null);
+
+  const canUseApi = projectId != null && Number.isFinite(projectId);
+  const formValid = repositoryUrl.trim().length > 0 && repositoryName.trim().length > 0;
+  const canSubmit =
+    formValid &&
+    (!canUseApi || !linkMutation.isPending);
 
   useEffect(() => {
     if (!open) return;
@@ -49,6 +66,26 @@ export function WelcomeLinkRepositoryModal({ open, onOpenChange }: WelcomeLinkRe
     setWebhookSecret("");
     setApiToken("");
   }, [open]);
+
+  const handleLink = async () => {
+    if (!formValid) return;
+    if (!canUseApi) {
+      onOpenChange(false);
+      return;
+    }
+    try {
+      await linkMutation.mutateAsync({
+        repository_url: repositoryUrl.trim(),
+        repository_name: repositoryName.trim(),
+        provider,
+        webhook_secret: webhookSecret.trim() || undefined,
+        api_token: apiToken.trim() || undefined,
+      });
+      onOpenChange(false);
+    } catch {
+      // Toast handled in hook
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -146,7 +183,7 @@ export function WelcomeLinkRepositoryModal({ open, onOpenChange }: WelcomeLinkRe
                   <div className="relative w-full">
                     <select
                       value={provider}
-                      onChange={(e) => setProvider(e.target.value)}
+                      onChange={(e) => setProvider(e.target.value as RepositoryProvider)}
                       className={cn(inputClass, "cursor-pointer appearance-none pr-12 text-[#0b191f]")}
                       aria-label="Provider"
                     >
@@ -201,11 +238,17 @@ export function WelcomeLinkRepositoryModal({ open, onOpenChange }: WelcomeLinkRe
               <div className="flex h-[39px] w-full items-center justify-end">
                 <button
                   type="button"
-                  className="inline-flex h-full cursor-pointer items-center justify-center gap-2 rounded-[8px] border-0 px-4 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-bold text-white outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/50"
-                  style={{ backgroundImage: primaryButtonGradient }}
-                  onClick={() => onOpenChange(false)}
+                  disabled={!canSubmit}
+                  className={cn(
+                    "inline-flex h-full items-center justify-center gap-2 rounded-[8px] border-0 px-4 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-bold outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/50",
+                    canSubmit
+                      ? "cursor-pointer text-white"
+                      : "cursor-not-allowed bg-[rgba(96,109,118,0.15)] text-[#606d76]"
+                  )}
+                  style={canSubmit ? { backgroundImage: primaryButtonGradient } : undefined}
+                  onClick={() => void handleLink()}
                 >
-                  Link repository
+                  {canUseApi && linkMutation.isPending ? "Linking…" : "Link repository"}
                 </button>
               </div>
             </div>
