@@ -2,10 +2,14 @@ import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Link, useLocation, useSearchParams } from "react-router";
 
+import { useProjectMilestones, useProjects } from "@/api/hooks";
+import type { Project } from "@/types/project";
+
 import { CreateProjectModal } from "./CreateProjectModal";
 import { InvoiceModal } from "./InvoiceModal";
 import {
-  DASHBOARD_PROJECTS,
+  DASHBOARD_WELCOME_PROJECT,
+  WELCOME_PROJECT_ID,
   expandedProjectFromLocation,
   isProjectOverviewActive,
   isSprintNavActive,
@@ -272,6 +276,109 @@ function Frame({
   );
 }
 
+type DashboardPlaceholderProjectBlockProps = {
+  projectId: string;
+  displayName: string;
+  expandedProjectId: string | null;
+  pathname: string;
+  projectParam: string | null;
+  renderSprint: boolean;
+  sprintLabel: string;
+};
+
+function DashboardPlaceholderProjectBlock({
+  projectId,
+  displayName,
+  expandedProjectId,
+  pathname,
+  projectParam,
+  renderSprint,
+  sprintLabel,
+}: DashboardPlaceholderProjectBlockProps) {
+  const isExpanded = expandedProjectId === projectId;
+  const folderIcon = isExpanded ? imgLucideFolderOpenDot : imgLucideFolderDot;
+  const sprintActive = isSprintNavActive(projectId, pathname, projectParam);
+  const overviewActive = isProjectOverviewActive(projectId, pathname);
+  const parentWhileSprintActive = isExpanded && sprintActive && !overviewActive;
+
+  return (
+    <div className="flex w-full flex-col">
+      <Link
+        to={projectMainHref(projectId)}
+        aria-current={overviewActive ? "page" : undefined}
+        className={cn(
+          "content-stretch relative z-[2] flex h-[40px] w-full shrink-0 cursor-pointer items-center rounded-[8px] px-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
+          "ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring",
+          overviewActive && "bg-[rgba(220,227,229,0.68)] font-medium text-[#0b191f] hover:bg-[rgba(205,214,220,0.85)]",
+          !overviewActive && parentWhileSprintActive && "bg-[rgba(237,240,243,0.72)] hover:bg-[rgba(225,232,236,0.9)]",
+          !overviewActive && !parentWhileSprintActive && "hover:bg-[#edf0f3]",
+        )}
+        data-name={isExpanded ? "Component 69" : "Component 68"}
+      >
+        <div className="content-stretch flex min-h-px min-w-px flex-[1_0_0] gap-[8px] items-center relative">
+          <div className="relative shrink-0 size-[16px]">
+            <img alt="" className="absolute block max-w-none size-full" src={folderIcon} />
+          </div>
+          <p className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap text-left font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-[#0b191f]">
+            {displayName}
+          </p>
+        </div>
+      </Link>
+      {renderSprint ? (
+        <Link
+          to={projectSprintHref(projectId)}
+          aria-current={sprintActive ? "page" : undefined}
+          className={cn(
+            "content-stretch z-[1] flex h-[40px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] pl-[24px] pr-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
+            "ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring",
+            sprintActive
+              ? "bg-[rgba(220,227,229,0.68)] font-medium hover:bg-[rgba(200,210,216,0.78)]"
+              : "hover:bg-[#edf0f3]",
+          )}
+          data-name="Component 70"
+        >
+          <div className="content-stretch flex min-h-px min-w-px flex-[1_0_0] gap-[8px] items-center relative">
+            <CornerDownRight className="relative shrink-0 overflow-clip size-[16px]" />
+            <p className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-[#0b191f]">
+              {sprintLabel}
+            </p>
+          </div>
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function ApiProjectBlock({
+  project,
+  expandedProjectId,
+  pathname,
+  projectParam,
+}: {
+  project: Project;
+  expandedProjectId: string | null;
+  pathname: string;
+  projectParam: string | null;
+}) {
+  const projectId = project.id;
+  const isExpanded = expandedProjectId === projectId;
+  const { data: milestones = [] } = useProjectMilestones(isExpanded ? project.apiId : undefined);
+  const renderSprint = isExpanded && milestones.length > 0;
+  const sprintLabel = milestones[0]?.name ?? "Sprint";
+
+  return (
+    <DashboardPlaceholderProjectBlock
+      projectId={projectId}
+      displayName={project.title}
+      expandedProjectId={expandedProjectId}
+      pathname={pathname}
+      projectParam={projectParam}
+      renderSprint={renderSprint}
+      sprintLabel={sprintLabel}
+    />
+  );
+}
+
 export function DashboardLeftRail() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
@@ -281,6 +388,7 @@ export function DashboardLeftRail() {
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get("project");
   const expandedProjectId = expandedProjectFromLocation(pathname, projectParam);
+  const { data: apiProjects = [] } = useProjects();
 
   useEffect(() => {
     if (!timeRecording) return;
@@ -345,59 +453,24 @@ export function DashboardLeftRail() {
             </div>
           </div>
           <div className="flex w-full flex-col gap-0" data-node-id="I7:2828;2172:projects">
-            {DASHBOARD_PROJECTS.map((project) => {
-              const isExpanded = expandedProjectId === project.id;
-              const folderIcon = isExpanded ? imgLucideFolderOpenDot : imgLucideFolderDot;
-              const sprintActive = isSprintNavActive(project.id, pathname, projectParam);
-              const overviewActive = isProjectOverviewActive(project.id, pathname);
-              const parentWhileSprintActive = isExpanded && sprintActive && !overviewActive;
-              return (
-                <div key={project.id} className="flex w-full flex-col">
-                  <Link
-                    to={projectMainHref(project.id)}
-                    aria-current={overviewActive ? "page" : undefined}
-                    className={cn(
-                      "content-stretch relative z-[2] flex h-[40px] w-full shrink-0 cursor-pointer items-center rounded-[8px] px-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
-                      "ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring",
-                      overviewActive && "bg-[rgba(220,227,229,0.68)] font-medium text-[#0b191f] hover:bg-[rgba(205,214,220,0.85)]",
-                      !overviewActive && parentWhileSprintActive && "bg-[rgba(237,240,243,0.72)] hover:bg-[rgba(225,232,236,0.9)]",
-                      !overviewActive && !parentWhileSprintActive && "hover:bg-[#edf0f3]",
-                    )}
-                    data-name={isExpanded ? "Component 69" : "Component 68"}
-                  >
-                    <div className="content-stretch flex min-h-px min-w-px flex-[1_0_0] gap-[8px] items-center relative">
-                      <div className="relative shrink-0 size-[16px]">
-                        <img alt="" className="absolute block max-w-none size-full" src={folderIcon} />
-                      </div>
-                      <p className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap text-left font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-[#0b191f]">
-                        {project.name}
-                      </p>
-                    </div>
-                  </Link>
-                  {isExpanded ? (
-                    <Link
-                      to={projectSprintHref(project.id)}
-                      aria-current={sprintActive ? "page" : undefined}
-                      className={cn(
-                        "content-stretch z-[1] flex h-[40px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] pl-[24px] pr-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
-                        "ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring",
-                        sprintActive
-                          ? "bg-[rgba(220,227,229,0.68)] font-medium hover:bg-[rgba(200,210,216,0.78)]"
-                          : "hover:bg-[#edf0f3]",
-                      )}
-                      data-name="Component 70"
-                    >
-                      <div className="content-stretch flex min-h-px min-w-px flex-[1_0_0] gap-[8px] items-center relative">
-                        <CornerDownRight className="relative shrink-0 overflow-clip size-[16px]" />
-                        <p className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-[#0b191f]">
-                          {project.sprintLabel}
-                        </p>
-                      </div>
-                    </Link>
-                  ) : null}
-                </div>
-              );
-            })}
+            <DashboardPlaceholderProjectBlock
+              projectId={WELCOME_PROJECT_ID}
+              displayName={DASHBOARD_WELCOME_PROJECT.name}
+              expandedProjectId={expandedProjectId}
+              pathname={pathname}
+              projectParam={projectParam}
+              renderSprint={expandedProjectId === WELCOME_PROJECT_ID}
+              sprintLabel={DASHBOARD_WELCOME_PROJECT.sprintLabel}
+            />
+            {apiProjects.map((project) => (
+              <ApiProjectBlock
+                key={project.apiId}
+                project={project}
+                expandedProjectId={expandedProjectId}
+                pathname={pathname}
+                projectParam={projectParam}
+              />
+            ))}
           </div>
         </div>
         <div className="pointer-events-none absolute content-stretch flex flex-col items-center left-[131px] opacity-0 top-[159px] w-[145px]" data-node-id="7:2829" aria-hidden="true">

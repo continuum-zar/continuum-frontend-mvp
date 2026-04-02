@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useLocation, useParams } from "react-router";
+import { Link, useLocation, useParams } from "react-router";
+
+import { useProject } from "@/api/hooks";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import {
@@ -7,13 +9,15 @@ import {
   WelcomeRepo,
   WelcomeResources,
 } from "../components/welcome/WelcomeActivityResourcesRepo";
+import { WelcomeMilestoneTimeline } from "../components/welcome/WelcomeMilestoneTimeline";
+import { WelcomeProjectHeroGauge } from "../components/welcome/WelcomeProjectHeroGauge";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
+import { WelcomeEmptyProjectBody } from "../components/welcome/WelcomeEmptyProjectBody";
 import { WelcomeMetricsRow } from "../components/welcome/WelcomeMetricsRow";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
 import {
-  DASHBOARD_PROJECTS,
-  getDashboardProjectById,
-  resolveDashboardProjectId,
+  DASHBOARD_WELCOME_PROJECT,
+  isApiProjectId,
 } from "../data/dashboardPlaceholderProjects";
 
 const imgLucideFolderOpenDot = "https://www.figma.com/api/mcp/asset/565be4ed-fc29-4562-a26f-1c943a6d5847";
@@ -24,7 +28,6 @@ const imgLucideFolderCog = "https://www.figma.com/api/mcp/asset/5cad83cc-0f0b-48
 const imgLucideShare = "https://www.figma.com/api/mcp/asset/00b88546-c39b-453e-aa9d-34f496edd586";
 const imgLucideChevronDown = "https://www.figma.com/api/mcp/asset/72ab3ac0-aebf-4278-859f-4205108fb16c";
 const imgVector8 = "https://www.figma.com/api/mcp/asset/1acc14a4-997e-4b19-b81a-91ef21ff09c2";
-const imgFrame273 = "https://www.figma.com/api/mcp/asset/ac507bb9-a208-4172-9994-88e7c4869ce4";
 const imgLucidePlus = "https://www.figma.com/api/mcp/asset/a8bb95b4-2e9b-4e0d-861b-fa00d8582ce7";
 const imgLucidePaperclip = "https://www.figma.com/api/mcp/asset/4f0c9d53-e72c-473e-981a-13f5b9320156";
 const imgLucideInfo = "https://www.figma.com/api/mcp/asset/f597ed55-c78f-481a-a433-abcd6a07d507";
@@ -37,8 +40,16 @@ const imgVector15 = "https://www.figma.com/api/mcp/asset/41d4c7e7-e987-4d3e-b39f
 export function WelcomeContinuumView() {
   const { projectId: routeProjectId } = useParams();
   const { pathname } = useLocation();
-  const activeProjectId = resolveDashboardProjectId(pathname, routeProjectId);
-  const activeProject = getDashboardProjectById(activeProjectId) ?? DASHBOARD_PROJECTS[0];
+  const isWelcomeDemo =
+    pathname === "/dashboard-placeholder/welcome" || pathname.startsWith("/dashboard-placeholder/welcome/");
+  const isApiRoute =
+    Boolean(routeProjectId && isApiProjectId(routeProjectId)) &&
+    pathname.startsWith("/dashboard-placeholder/project/");
+  const projectQuery = useProject(isApiRoute ? routeProjectId : undefined);
+
+  const headerTitle = isWelcomeDemo
+    ? DASHBOARD_WELCOME_PROJECT.name
+    : projectQuery.data?.name ?? (projectQuery.isLoading ? "Loading…" : "Project");
 
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
@@ -60,7 +71,7 @@ export function WelcomeContinuumView() {
                   <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderOpenDot} />
                 </div>
                 <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] whitespace-nowrap" data-node-id="8:3526">
-                  {activeProject.name}
+                  {headerTitle}
                 </p>
               </div>
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3530">
@@ -114,21 +125,10 @@ export function WelcomeContinuumView() {
               </div>
             </div>
             <div className="relative min-h-0 w-full min-w-0 flex-1 self-stretch overflow-x-clip overflow-y-auto">
+            {isWelcomeDemo ? (
             <div className="relative flex w-full min-w-0 flex-col items-start" data-node-id="8:3554">
               <div className="content-stretch flex flex-col gap-[64px] items-center pb-[32px] pt-[48px] relative shrink-0 w-full" data-node-id="8:3555">
-                <div className="h-[191px] relative shrink-0 w-full" data-node-id="8:3556">
-                  <div className="-translate-x-1/2 absolute h-[175.151px] left-1/2 top-0 w-[350.302px]" data-node-id="8:3557">
-                    <div className="absolute inset-[-4.85%_-2.43%]">
-                      <img alt="" className="block max-w-none size-full" src={imgFrame273} />
-                    </div>
-                  </div>
-                  <p className="absolute font-['Satoshi:Regular',sans-serif] leading-[normal] left-[calc(50%-44px)] not-italic overflow-hidden text-[#0b191f] text-[70.704px] text-ellipsis top-[49px] whitespace-nowrap" data-node-id="8:3560">
-                    89
-                  </p>
-                  <p className="absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[calc(50%-86px)] not-italic overflow-hidden text-[#727d83] text-[24px] text-ellipsis top-[159px] whitespace-nowrap" data-node-id="8:3561">
-                    Project on track
-                  </p>
-                </div>
+                <WelcomeProjectHeroGauge />
                 <WelcomeMetricsRow />
                 <div className="content-stretch flex flex-col gap-[64px] items-start max-w-[815px] relative shrink-0 w-[815px]" data-node-id="8:3562">
                   <div className="content-stretch flex gap-[10px] h-[156px] items-start relative shrink-0 w-full" data-node-id="8:3563">
@@ -303,6 +303,7 @@ export function WelcomeContinuumView() {
                     <WelcomeRecentActivity />
                     <WelcomeResources />
                     <WelcomeRepo />
+                    <WelcomeMilestoneTimeline />
                   </div>
                   <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3717">
                     <div className="content-stretch flex flex-col gap-[16px] h-[40px] items-start justify-center relative shrink-0 w-full" data-node-id="8:3718">
@@ -386,6 +387,24 @@ export function WelcomeContinuumView() {
                 </div>
               </div>
             </div>
+            ) : (
+            <div className="relative flex w-full min-w-0 flex-col items-start px-1">
+              {isApiRoute && projectQuery.isLoading && (
+                <div className="flex min-h-[280px] w-full items-center justify-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+                  Loading project…
+                </div>
+              )}
+              {isApiRoute && projectQuery.isError && (
+                <div className="flex min-h-[280px] w-full flex-col items-center justify-center gap-4 px-4 text-center">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] text-[#0b191f]">We couldn’t load this project.</p>
+                  <Link to="/dashboard-placeholder" className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline">
+                    Back to dashboard
+                  </Link>
+                </div>
+              )}
+              {isApiRoute && projectQuery.isSuccess && <WelcomeEmptyProjectBody />}
+            </div>
+            )}
             </div>
             <button
               type="button"

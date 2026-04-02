@@ -16,10 +16,17 @@ const imgLegendShipped =
 const imgLegendProgress =
   "https://www.figma.com/api/mcp/asset/a8cfd688-142f-4eda-ad11-95db12443984";
 
-export function WelcomeMetricsRow() {
+type WelcomeMetricsRowProps = {
+  /** Zeroed gauges and muted arcs — empty project overview (Figma 33:10282). */
+  empty?: boolean;
+};
+
+export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
   return (
     <div
-      className="relative mx-auto flex w-full max-w-[815px] shrink-0 flex-wrap items-center justify-center gap-x-8 gap-y-6 rounded-[12px] bg-white sm:gap-x-10"
+      className={`relative mx-auto flex w-full max-w-[815px] shrink-0 flex-wrap items-center rounded-[12px] bg-white sm:gap-x-10 ${
+        empty ? "justify-between gap-x-6 gap-y-6" : "justify-center gap-x-8 gap-y-6"
+      }`}
       data-name="Welcome metrics"
       data-node-id="11:5683"
     >
@@ -29,9 +36,12 @@ export function WelcomeMetricsRow() {
               className="absolute top-[18px] left-1/2 -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
               data-node-id="11:5687"
             >
-              1.17
+              {empty ? "0" : "1.17"}
             </p>
-            <div className="absolute top-0 left-0 h-[66.484px] w-[82.864px]" data-node-id="11:5688">
+            <div
+              className={`absolute top-0 left-0 h-[66.484px] w-[82.864px] ${empty ? "opacity-[0.42] grayscale" : ""}`}
+              data-node-id="11:5688"
+            >
               <div className="absolute inset-[-6.52%_-5.23%]">
                 <img alt="" className="block size-full max-w-none" src={imgEfficiencyArc} />
               </div>
@@ -68,7 +78,7 @@ export function WelcomeMetricsRow() {
                     className="relative min-h-px min-w-px flex-1 font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-[#727d83]"
                     data-node-id="11:5697"
                   >
-                    Safe Zone
+                    {empty ? "No data yet" : "Safe Zone"}
                   </p>
                 </div>
               </div>
@@ -82,9 +92,12 @@ export function WelcomeMetricsRow() {
               className="absolute top-[18px] left-[calc(50%+0.07px)] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
               data-node-id="11:5701"
             >
-              46
+              {empty ? "0" : "46"}
             </p>
-            <div className="absolute top-0 left-0 h-[66.484px] w-[82.864px]" data-node-id="11:5702">
+            <div
+              className={`absolute top-0 left-0 h-[66.484px] w-[82.864px] ${empty ? "opacity-[0.42] grayscale" : ""}`}
+              data-node-id="11:5702"
+            >
               <div className="absolute inset-[-6.52%_-5.23%]">
                 <img alt="" className="block size-full max-w-none" src={imgTasksArc} />
               </div>
@@ -109,7 +122,7 @@ export function WelcomeMetricsRow() {
                     className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-[#727d83]"
                     data-node-id="11:5709"
                   >
-                    of 150 Total Points
+                    {empty ? "of 0 Total Points" : "of 150 Total Points"}
                   </p>
                 </div>
               </div>
@@ -123,17 +136,17 @@ export function WelcomeMetricsRow() {
               className="absolute top-[18px] left-[calc(50%+0.07px)] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
               data-node-id="I11:5712;3310:12281"
             >
-              12
+              {empty ? "0" : "12"}
             </p>
-            <div className="absolute -top-1 -left-1 size-[90px]" data-node-id="I11:5712;3310:12284">
+            <div className={`absolute -top-1 -left-1 size-[90px] ${empty ? "opacity-0" : ""}`} data-node-id="I11:5712;3310:12284">
               <div className="absolute inset-[37.56%_0_15.57%_79.82%]">
                 <img alt="" className="block size-full max-w-none" src={imgCommitsSeg1} />
               </div>
             </div>
-            <div className="absolute -top-1 -left-1 size-[90px]" data-node-id="I11:5712;3310:12375">
+            <div className={`absolute -top-1 -left-1 size-[90px] ${empty ? "opacity-40" : ""}`} data-node-id="I11:5712;3310:12375">
               <img alt="" className="absolute block size-full max-w-none" src={imgCommitsFrame} />
             </div>
-            <div className="absolute -top-1 -left-1 size-[90px]" data-node-id="I11:5712;3310:12286">
+            <div className={`absolute -top-1 -left-1 size-[90px] ${empty ? "opacity-0" : ""}`} data-node-id="I11:5712;3310:12286">
               <div className="absolute inset-[3.03%_63.16%_15.57%_0]">
                 <img alt="" className="block size-full max-w-none" src={imgCommitsSeg2} />
               </div>

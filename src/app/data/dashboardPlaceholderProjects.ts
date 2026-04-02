@@ -1,49 +1,60 @@
 /**
- * Placeholder project list for dashboard-placeholder sidebar + project-level routes.
- * Closed row = folder-dot; expanded shows folder-open + sprint row (kanban) under the project.
+ * Dashboard-placeholder routing helpers.
+ * "welcome" = demo overview at /welcome; numeric ids = API projects at /project/:id.
  */
 
-export const DASHBOARD_PROJECTS = [
-  { id: "welcome", name: "Welcome to Continuum!", sprintLabel: "Get started" },
-  { id: "alpha", name: "Untitled long project_name_1", sprintLabel: "UX Strategy" },
-  { id: "beta", name: "Mobile redesign", sprintLabel: "Sprint 2" },
-] as const;
+export const WELCOME_PROJECT_ID = "welcome" as const;
 
-export type DashboardPlaceholderProjectId = (typeof DASHBOARD_PROJECTS)[number]["id"];
+/** Static row for the marketing/demo Welcome overview only. */
+export const DASHBOARD_WELCOME_PROJECT = {
+  id: WELCOME_PROJECT_ID,
+  name: "Welcome to Continuum!",
+  sprintLabel: "Get started",
+} as const;
 
-export function getDashboardProjectById(id: string) {
-  return DASHBOARD_PROJECTS.find((p) => p.id === id);
+/** @deprecated Prefer DASHBOARD_WELCOME_PROJECT; kept for imports expecting an array */
+export const DASHBOARD_PROJECTS = [DASHBOARD_WELCOME_PROJECT] as const;
+
+export type DashboardPlaceholderProjectId = typeof WELCOME_PROJECT_ID | (string & {});
+
+export function isApiProjectId(id: string): boolean {
+  return /^\d+$/.test(id);
 }
 
-/** Project overview: welcome uses legacy URL; others use /project/:id */
+export function getDashboardProjectById(id: string) {
+  if (id === WELCOME_PROJECT_ID) return DASHBOARD_WELCOME_PROJECT;
+  return undefined;
+}
+
+/** Project overview: welcome uses /welcome; API projects use /project/:numericId */
 export function projectMainHref(projectId: string): string {
-  if (projectId === "welcome") return "/dashboard-placeholder/welcome";
+  if (projectId === WELCOME_PROJECT_ID) return "/dashboard-placeholder/welcome";
   return `/dashboard-placeholder/project/${projectId}`;
 }
 
 /** Sprint / kanban board */
 export function projectSprintHref(projectId: string): string {
-  if (projectId === "welcome") return "/dashboard-placeholder/get-started";
+  if (projectId === WELCOME_PROJECT_ID) return "/dashboard-placeholder/get-started";
   return `/dashboard-placeholder/get-started?project=${projectId}`;
 }
 
 /**
- * Which project is expanded in the rail (shows sprint child). Null = all collapsed (e.g. org home).
+ * Which project is expanded in the rail (sprint child may show when milestones exist). Null = none.
  */
 export function expandedProjectFromLocation(pathname: string, projectParam: string | null): string | null {
-  if (pathname.startsWith("/dashboard-placeholder/welcome")) return "welcome";
+  if (pathname.startsWith("/dashboard-placeholder/welcome")) return WELCOME_PROJECT_ID;
   if (pathname.startsWith("/dashboard-placeholder/project/")) {
     const m = pathname.match(/^\/dashboard-placeholder\/project\/([^/]+)/);
     const id = m?.[1];
-    if (id && DASHBOARD_PROJECTS.some((p) => p.id === id)) return id;
+    if (id && (id === WELCOME_PROJECT_ID || isApiProjectId(id))) return id;
   }
   if (pathname.startsWith("/dashboard-placeholder/get-started")) {
-    if (projectParam && DASHBOARD_PROJECTS.some((p) => p.id === projectParam)) return projectParam;
-    return "welcome";
+    if (projectParam && (projectParam === WELCOME_PROJECT_ID || isApiProjectId(projectParam))) return projectParam;
+    return WELCOME_PROJECT_ID;
   }
   if (pathname.startsWith("/dashboard-placeholder/task/")) {
-    if (projectParam && DASHBOARD_PROJECTS.some((p) => p.id === projectParam)) return projectParam;
-    return "welcome";
+    if (projectParam && (projectParam === WELCOME_PROJECT_ID || isApiProjectId(projectParam))) return projectParam;
+    return WELCOME_PROJECT_ID;
   }
   return null;
 }
@@ -53,13 +64,13 @@ export function isSprintNavActive(projectId: string, pathname: string, projectPa
     pathname.startsWith("/dashboard-placeholder/get-started") ||
     pathname.startsWith("/dashboard-placeholder/task/");
   if (!onSprintSurface) return false;
-  if (projectId === "welcome") return !projectParam || projectParam === "welcome";
+  if (projectId === WELCOME_PROJECT_ID) return !projectParam || projectParam === WELCOME_PROJECT_ID;
   return projectParam === projectId;
 }
 
 /** True when viewing this project's overview (not the kanban sprint). */
 export function isProjectOverviewActive(projectId: string, pathname: string): boolean {
-  if (projectId === "welcome") {
+  if (projectId === WELCOME_PROJECT_ID) {
     return pathname === "/dashboard-placeholder/welcome" || pathname.startsWith("/dashboard-placeholder/welcome/");
   }
   return (
@@ -68,14 +79,10 @@ export function isProjectOverviewActive(projectId: string, pathname: string): bo
   );
 }
 
-/** Resolve project for project-level overview pages */
-export function resolveDashboardProjectId(
-  pathname: string,
-  routeProjectId: string | undefined,
-): DashboardPlaceholderProjectId {
+/** Resolve active project id for overview pages (welcome demo vs API project param). */
+export function resolveDashboardProjectId(pathname: string, routeProjectId: string | undefined): string {
   if (pathname.startsWith("/dashboard-placeholder/project/") && routeProjectId) {
-    const p = getDashboardProjectById(routeProjectId);
-    if (p) return p.id;
+    if (routeProjectId === WELCOME_PROJECT_ID || isApiProjectId(routeProjectId)) return routeProjectId;
   }
-  return "welcome";
+  return WELCOME_PROJECT_ID;
 }

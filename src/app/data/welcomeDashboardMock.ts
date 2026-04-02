@@ -43,3 +43,43 @@ export const welcomeRepoMock = [
   { id: "repo2", url: "https://www.git.com/", lastIndexed: "Last indexed 15 March 2026" },
   { id: "repo3", url: "https://www.git.com/", lastIndexed: "Last indexed 15 March 2026" },
 ] as const;
+
+/** Milestone timeline — Figma playground nodes 35:11664–35:11707 */
+export const welcomeMilestoneTimelineMock = [
+  {
+    id: "ms1",
+    dateLabel: "20-06-2026",
+    title: "Foundation & Setup",
+    description: "Long description about the project milestone.",
+  },
+  {
+    id: "ms2",
+    dateLabel: "20-05-2026",
+    title: "Initial Concept",
+    description: "Brainstorming and defining the project scope and goals.",
+  },
+  {
+    id: "ms3",
+    dateLabel: "20-04-2026",
+    title: "Research Phase",
+    description: "Conducted market and user research to gather requirements.",
+  },
+  {
+    id: "ms4",
+    dateLabel: "20-03-2026",
+    title: "Design Prototyping",
+    description: "Created wireframes and interactive prototypes for user feedback.",
+  },
+  {
+    id: "ms5",
+    dateLabel: "20-02-2026",
+    title: "Development Start",
+    description: "Kickoff of the development cycle with core features.",
+  },
+  {
+    id: "ms6",
+    dateLabel: "20-01-2026",
+    title: "Alpha Release",
+    description: "Released the first alpha version for internal testing.",
+  },
+] as const;

@@ -1,7 +1,11 @@
 "use client";
 
+import { useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ArrowLeft, CalendarPlus } from "lucide-react";
+import { useNavigate } from "react-router";
+
+import { useCreateProject } from "@/api/hooks";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import { cn } from "../ui/utils";
@@ -11,9 +15,55 @@ type CreateProjectModalProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+function formatDueDateDisplay(iso: string): string {
+  if (!iso) return "";
+  const parts = iso.split("-");
+  const y = parts[0];
+  const m = parts[1];
+  const d = parts[2];
+  if (!y || !m || !d) return iso;
+  return `${m} / ${d} / ${y}`;
+}
+
 export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalProps) {
+  const navigate = useNavigate();
+  const createProject = useCreateProject();
+  const [projectName, setProjectName] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCreate = async () => {
+    const name = projectName.trim();
+    if (!name) return;
+    try {
+      const data = await createProject.mutateAsync({
+        name,
+        description: description.trim() || undefined,
+        due_date: dueDate || null,
+      });
+      onOpenChange(false);
+      setProjectName("");
+      setDescription("");
+      setDueDate("");
+      navigate(`/dashboard-placeholder/project/${data.id}`);
+    } catch {
+      // Toast handled in useCreateProject
+    }
+  };
+
+  const handleClose = (openFromRadix: boolean) => {
+    if (!openFromRadix) {
+      setProjectName("");
+      setDescription("");
+      setDueDate("");
+    }
+    onOpenChange(openFromRadix);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogPortal>
         <DialogOverlay className="bg-black/25" />
         <DialogPrimitive.Content
@@ -43,24 +93,94 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
                 "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
             }}
           >
+            <style>
+              {`
+                @keyframes blink-cursor {
+                  0%, 100% { opacity: 1; }
+                  50% { opacity: 0; }
+                }
+                .cursor-blink {
+                  animation: blink-cursor 1s step-end infinite;
+                }
+              `}
+            </style>
             <div className="flex h-10 w-full items-center gap-2 bg-white py-2">
-              <div className="h-[30px] w-[2px] rounded-[999px] bg-[#1466ff]" />
-              <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#606d76]/50">Project name</p>
+              <div
+                className={cn(
+                  "h-[30px] w-[2px] rounded-[999px] bg-[#1466ff] transition-opacity",
+                  isNameFocused && !projectName && "cursor-blink"
+                )}
+              />
+              <input
+                type="text"
+                placeholder="Project name"
+                className="w-full border-none px-0 font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f] placeholder:text-[#606d76]/30 focus:outline-none focus:ring-0"
+                style={{ caretColor: projectName ? "#1466ff" : "transparent" }}
+                value={projectName}
+                onFocus={() => setIsNameFocused(true)}
+                onBlur={() => setIsNameFocused(false)}
+                onChange={(e) => setProjectName(e.target.value)}
+              />
             </div>
 
             <div className="flex w-full flex-col gap-1">
               <p className="text-[14px] font-medium text-[#606d76]">Description</p>
-              <div className="flex h-[106px] flex-col justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 pb-2 pt-4">
-                <p className="text-[16px] font-medium text-[#606d76]/50">Add description here...</p>
-                <p className="self-end text-[14px] font-medium text-[#606d76]/30">80 Characters</p>
+              <div className="flex h-[106px] flex-col justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 pb-2 pt-4 focus-within:border-[#1466ff]">
+                <textarea
+                  placeholder="Add description here..."
+                  maxLength={80}
+                  className="size-full resize-none border-none p-0 text-[16px] font-medium text-[#0b191f] placeholder:text-[#606d76]/40 focus:outline-none focus:ring-0"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+                <p className="self-end text-[14px] font-medium text-[#606d76]/30">
+                  {description.length} / 80 Characters
+                </p>
               </div>
             </div>
 
             <div className="flex w-full flex-col gap-1">
-              <p className="text-[14px] font-medium text-[#606d76]">Targert delivery date</p>
-              <div className="flex h-10 items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4">
-                <p className="text-[16px] font-medium text-[#9fa5a8]">mm/dd/yyyy</p>
-                <CalendarPlus className="size-4 text-[#0b191f]" />
+              <p className="text-[14px] font-medium text-[#606d76]">Target delivery date</p>
+              {/* Hidden input is anchored top-right of the row so the native picker opens aligned to the field (sr-only anchors top-left). */}
+              <div className="relative w-full">
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  tabIndex={-1}
+                  className="pointer-events-none absolute right-4 top-1/2 z-0 h-px w-px -translate-y-1/2 opacity-0"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  aria-hidden="true"
+                />
+                <button
+                  type="button"
+                  className="relative z-10 flex h-10 w-full items-center justify-between gap-2 rounded-[8px] border border-[#e9e9e9] bg-white px-4 text-left focus:outline-none focus-visible:border-[#1466ff]"
+                  aria-label={
+                    dueDate
+                      ? `Target delivery date ${formatDueDateDisplay(dueDate)}`
+                      : "Choose target delivery date"
+                  }
+                  onClick={() => {
+                    const el = dateInputRef.current;
+                    if (!el) return;
+                    if (typeof el.showPicker === "function") {
+                      void el.showPicker();
+                    } else {
+                      el.focus();
+                      el.click();
+                    }
+                  }}
+                >
+                  <span
+                    className={cn(
+                      "min-w-0 flex-1 text-[16px] font-medium",
+                      dueDate ? "text-[#0b191f]" : "text-[#606d76]/40"
+                    )}
+                  >
+                    {dueDate ? formatDueDateDisplay(dueDate) : "mm / dd / yyyy"}
+                  </span>
+                  <CalendarPlus className="size-4 shrink-0 text-[#0b191f]" aria-hidden="true" />
+                </button>
               </div>
             </div>
 
@@ -68,10 +188,16 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
               <div className="w-[130px]">
                 <button
                   type="button"
-                  disabled
-                  className="inline-flex h-10 w-full items-center justify-center rounded-[8px] bg-[rgba(96,109,118,0.1)] px-4 text-[14px] font-semibold text-[#606d76]/50"
+                  disabled={!projectName.trim() || createProject.isPending}
+                  onClick={() => void handleCreate()}
+                  className={cn(
+                    "inline-flex h-10 w-full items-center justify-center rounded-[8px] px-4 text-[14px] font-semibold transition-colors duration-200",
+                    projectName.trim() && !createProject.isPending
+                      ? "bg-[#1466ff] text-white hover:bg-[#0051e6]"
+                      : "bg-[rgba(96,109,118,0.1)] text-[#606d76]/50"
+                  )}
                 >
-                  Create Project
+                  {createProject.isPending ? "Creating…" : "Create Project"}
                 </button>
               </div>
             </div>
