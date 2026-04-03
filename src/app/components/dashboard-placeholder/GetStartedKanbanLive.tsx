@@ -6,6 +6,8 @@ import { useNavigate } from "react-router";
 
 import { useProjectTasks, useUpdateTaskStatus } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
+import type { Member } from "@/types/member";
 import type { Task, TaskStatus } from "@/types/task";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
@@ -19,21 +21,6 @@ const imgVector10 = mcpAsset("0d58a9e0-9d27-4eb3-ad07-b2ad64a15f10");
 const imgVector12 = mcpAsset("64e38728-fa1b-4a8c-97d3-cbb7f586a27c");
 const imgLucideSquircleDashed = mcpAsset("e2efeca9-31cd-4cf9-ac56-b2799ee8a450");
 const imgLucideCircleCheckBig = mcpAsset("244bb570-3aed-481d-8cf9-f067c69c50b0");
-
-function AvatarPlaceholder({ className }: { className?: string }) {
-  return (
-    <div
-      className={
-        className ||
-        "bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]"
-      }
-    >
-      <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[9px] text-white whitespace-nowrap">
-        <p className="leading-[0.4]">AS</p>
-      </div>
-    </div>
-  );
-}
 
 type ColumnId = "todo" | "in-progress" | "completed";
 
@@ -54,13 +41,16 @@ const STATIC_TASK_DETAIL_PATH = "/dashboard-placeholder/task/1";
 export type GetStartedKanbanLiveProps = {
   projectId: number;
   milestoneId: string | null;
+  /** Project members (for assignee initials on cards). */
+  members?: Member[];
 };
 
-export function GetStartedKanbanLive({ projectId, milestoneId }: GetStartedKanbanLiveProps) {
+export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: GetStartedKanbanLiveProps) {
   const navigate = useNavigate();
   const tasksQuery = useProjectTasks(projectId);
   const updateStatusMutation = useUpdateTaskStatus(projectId);
   const pendingMoveRef = useRef(new Set<string>());
+  const memberByUserId = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
 
   const filtered = useMemo(() => {
     const list = tasksQuery.data ?? [];
@@ -159,6 +149,13 @@ export function GetStartedKanbanLive({ projectId, milestoneId }: GetStartedKanba
     const checklistPct =
       checklistTotal > 0 ? Math.min(100, Math.round((checklistDone / checklistTotal) * 100)) : 0;
     const progressFraction = checklistTotal > 0 ? checklistPct / 100 : 0;
+    const assigneeUserId =
+      task.assignees.length > 0 && task.assignees[0] ? Number(task.assignees[0]) : null;
+    const assignee =
+      assigneeUserId != null && Number.isFinite(assigneeUserId)
+        ? memberByUserId.get(assigneeUserId)
+        : undefined;
+    const assigneeMissing = assigneeUserId != null && assignee == null;
 
     return (
       <div
@@ -231,8 +228,37 @@ export function GetStartedKanbanLive({ projectId, milestoneId }: GetStartedKanba
               </div>
             </div>
             <div className="content-stretch flex items-center justify-between relative shrink-0 w-full">
-              <div className="content-stretch flex items-center relative shrink-0">
-                <AvatarPlaceholder className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
+              <div className="content-stretch flex min-w-0 items-center relative shrink-0">
+                {assignee ? (
+                  <div
+                    className="content-stretch flex shrink-0 items-center justify-center rounded-[999px] border border-solid border-white size-[24px]"
+                    style={{ backgroundColor: memberAvatarBackground(assignee.userId) }}
+                    title={assignee.name}
+                  >
+                    <span className="font-['Satoshi:Medium',sans-serif] text-[9px] leading-[0.4] text-white">
+                      {assignee.initials}
+                    </span>
+                  </div>
+                ) : assigneeMissing ? (
+                  <div
+                    className="flex size-[24px] shrink-0 items-center justify-center rounded-[999px] border border-solid border-[#e4e8eb] bg-[#f5f7f8]"
+                    title={`Assignee (user #${assigneeUserId})`}
+                  >
+                    <span className="font-['Satoshi:Medium',sans-serif] text-[9px] text-[#727d83]">?</span>
+                  </div>
+                ) : (
+                  <div className="flex min-w-0 max-w-full items-center gap-1.5">
+                    <div
+                      className="flex size-[24px] shrink-0 items-center justify-center rounded-[999px] border border-dashed border-[#cdd2d5] bg-[#fafbfc]"
+                      title="Unassigned"
+                    >
+                      <span className="text-[10px] text-[#727d83]">—</span>
+                    </div>
+                    <span className="truncate font-['Satoshi:Medium',sans-serif] text-[11px] text-[#727d83]">
+                      Unassigned
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0">
                 <div

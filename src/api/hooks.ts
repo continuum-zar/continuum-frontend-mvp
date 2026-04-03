@@ -23,6 +23,7 @@ import {
     updateProject,
     deleteProject,
     projectKeys,
+    normalizeProjectKeyId,
     fetchProjectAttachments,
     uploadProjectAttachment,
     addProjectAttachmentLink,
@@ -287,8 +288,10 @@ export function useAddMember(projectId: number | string | undefined | null) {
     return useMutation({
         mutationFn: (body: { email: string; role?: string }) => addMember(projectId!, body),
         onSuccess: () => {
-            if (projectId != null && projectId !== '')
-                queryClient.invalidateQueries({ queryKey: projectKeys.members(projectId) });
+            if (projectId != null && projectId !== '') {
+                const id = normalizeProjectKeyId(projectId);
+                void queryClient.invalidateQueries({ queryKey: projectKeys.members(id) });
+            }
             toast.success('Member added to project');
         },
         onError: (err: unknown) => {

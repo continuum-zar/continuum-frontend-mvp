@@ -5,7 +5,10 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { GetStartedKanbanLive } from "../components/dashboard-placeholder/GetStartedKanbanLive";
 import { isApiProjectId } from "../data/dashboardPlaceholderProjects";
 
+import { useProjectMembers } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
+import type { Member } from "@/types/member";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { LogTimeModal } from "../components/dashboard-placeholder/LogTimeModal";
@@ -64,7 +67,7 @@ type ComponentProps = {
   profilePic?: "True" | "False" | "Add user";
 };
 
-function Component({ className, profilePic: _profilePic = "False" }: ComponentProps) {
+function Component({ className }: Pick<ComponentProps, "className">) {
   return (
     <div className={className || "bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] size-[24px]"} data-node-id="7:769">
       <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[9px] text-white whitespace-nowrap" data-node-id="7:770">
@@ -79,7 +82,7 @@ type Component3Props = {
   type?: "To-Do";
 };
 
-function Component3({ className, chevron: _chevron = "False", type: _type = "To-Do" }: Component3Props) {
+function Component3({ className }: Pick<Component3Props, "className">) {
   return (
     <div className={className || "content-stretch flex gap-[8px] items-center relative"} data-node-id="7:1027">
       <div className="relative shrink-0 size-[16px]" data-name="lucide/list-todo" data-node-id="7:1028">
@@ -96,7 +99,7 @@ type Component4Props = {
   property1?: "Component 7" | "Component 8";
 };
 
-function Component4({ className, property1: _property1 = "Component 8" }: Component4Props) {
+function Component4({ className }: Pick<Component4Props, "className">) {
   return (
     <div className={className || "bg-[#d7fede] content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px]"} data-node-id="7:846">
       <div className="relative shrink-0 size-[16px]" data-name="lucide/timer" data-node-id="7:847">
@@ -268,6 +271,9 @@ const INITIAL_COLUMN_ORDER: Record<ColumnId, number[]> = {
   completed: [4],
 };
 
+/** Overlapping member avatars next to Log Time — show up to this many, then a +N chip. */
+const LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX = 5;
+
 export function DashboardPlaceholder() {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [logTimeOpen, setLogTimeOpen] = useState(false);
@@ -278,7 +284,11 @@ export function DashboardPlaceholder() {
   const projectParam = searchParams.get("project");
   const milestoneParam = searchParams.get("milestone");
   const isLiveBoard = projectParam != null && isApiProjectId(projectParam);
-
+  const liveProjectId = isLiveBoard && projectParam ? Number(projectParam) : null;
+  const liveMembersQuery = useProjectMembers(liveProjectId, { enabled: liveProjectId != null });
+  const liveMembers: Member[] = liveMembersQuery.data ?? [];
+  const liveHeaderVisibleMembers = liveMembers.slice(0, LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX);
+  const liveHeaderMemberOverflow = Math.max(0, liveMembers.length - LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX);
 
   const [cardColumns, setCardColumns] = useState<Record<number, ColumnId>>(INITIAL_COLUMNS);
   const [columnOrder, setColumnOrder] = useState<Record<ColumnId, number[]>>(INITIAL_COLUMN_ORDER);
@@ -626,11 +636,47 @@ export function DashboardPlaceholder() {
                 </div>
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2902">
                   <div className="content-stretch flex items-center pr-[10.667px] relative shrink-0" data-name="Component 33" data-node-id="7:2903">
-                    <div className="bg-[#f17173] border-[1.333px] border-solid border-white content-stretch flex items-center justify-center mr-[-10.667px] relative rounded-[999px] shrink-0 size-[32px]" data-name="Component 29" data-node-id="I7:2903;2032:932">
-                      <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-white whitespace-nowrap" data-node-id="I7:2903;2032:932;2032:902">
-                        <p className="leading-[0.4]">AS</p>
+                    {isLiveBoard ? (
+                      liveMembersQuery.isLoading ? (
+                        <>
+                          <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-[#e4e8eb]" aria-hidden />
+                          <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-[#e4e8eb]" aria-hidden />
+                          <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-[#e4e8eb]" aria-hidden />
+                        </>
+                      ) : (
+                        <>
+                          {liveHeaderVisibleMembers.map((m, i) => (
+                            <div
+                              key={m.id}
+                              className="content-stretch flex items-center justify-center border-[1.333px] border-solid border-white mr-[-10.667px] relative rounded-[999px] shrink-0 size-[32px]"
+                              style={{ zIndex: i + 1, backgroundColor: memberAvatarBackground(m.userId) }}
+                              title={m.name}
+                              data-name="Component 29"
+                            >
+                              <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-white whitespace-nowrap">
+                                <p className="leading-[0.4]">{m.initials}</p>
+                              </div>
+                            </div>
+                          ))}
+                          {liveHeaderMemberOverflow > 0 ? (
+                            <div
+                              className="content-stretch flex items-center justify-center border-[1.333px] border-solid border-white mr-[-10.667px] relative z-10 rounded-[999px] shrink-0 size-[32px] bg-[#e8ecef]"
+                              title={`${liveHeaderMemberOverflow} more member${liveHeaderMemberOverflow === 1 ? "" : "s"}`}
+                            >
+                              <span className="font-['Satoshi:Medium',sans-serif] text-[11px] leading-[0.4] text-[#606d76]">
+                                +{liveHeaderMemberOverflow}
+                              </span>
+                            </div>
+                          ) : null}
+                        </>
+                      )
+                    ) : (
+                      <div className="bg-[#f17173] border-[1.333px] border-solid border-white content-stretch flex items-center justify-center mr-[-10.667px] relative rounded-[999px] shrink-0 size-[32px]" data-name="Component 29" data-node-id="I7:2903;2032:932">
+                        <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-white whitespace-nowrap" data-node-id="I7:2903;2032:932;2032:902">
+                          <p className="leading-[0.4]">AS</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => setShareProjectOpen(true)}
@@ -673,7 +719,11 @@ export function DashboardPlaceholder() {
               </div>
             </div>
 {isLiveBoard ? (
-              <GetStartedKanbanLive projectId={Number(projectParam)} milestoneId={milestoneParam} />
+              <GetStartedKanbanLive
+                projectId={Number(projectParam)}
+                milestoneId={milestoneParam}
+                members={liveMembers}
+              />
             ) : (
               <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]" data-node-id="7:2908">
               <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col gap-[16px] items-start overflow-y-auto min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "todo" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("todo")} onDragLeave={handleColumnDragLeave("todo")} onDrop={handleDrop("todo")}>

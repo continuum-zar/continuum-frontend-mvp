@@ -4,6 +4,8 @@ import { Link, useLocation, useSearchParams } from "react-router";
 
 import { useProjectMilestones, useProjects } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+import { useAuthStore } from "@/store/authStore";
+import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
 import type { Milestone } from "@/types/milestone";
 import type { Project } from "@/types/project";
 
@@ -422,6 +424,20 @@ export function DashboardLeftRail() {
   const projectParam = searchParams.get("project");
   const expandedProjectId = expandedProjectFromLocation(pathname, projectParam);
   const { data: apiProjects = [] } = useProjects();
+  const user = useAuthStore((s) => s.user);
+  const profileName = user
+    ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email
+    : "—";
+  const profileEmail = user?.email ?? "—";
+  const profileInitials =
+    user != null
+      ? user.first_name && user.last_name
+        ? `${user.first_name[0] ?? ""}${user.last_name[0] ?? ""}`.toUpperCase()
+        : user.email
+          ? user.email.slice(0, 2).toUpperCase()
+          : "?"
+      : "?";
+  const profileAvatarBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#f0f3f5";
 
   useEffect(() => {
     if (!timeRecording) return;
@@ -576,18 +592,23 @@ export function DashboardLeftRail() {
         </div>
         <div className="h-px w-full shrink-0 bg-[#ebedee]" data-node-id="7:2842" aria-hidden />
         <div className="content-stretch flex h-[40px] items-center justify-between relative rounded-[8px] shrink-0 w-full" data-name="Component 13" data-node-id="7:2843">
-          <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2844">
-            <div className="bg-[#f17173] content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" data-name="Component 31" data-node-id="7:2845">
+          <div className="content-stretch flex min-w-0 gap-[8px] items-center relative shrink-0" data-node-id="7:2844">
+            <div
+              className="content-stretch flex shrink-0 items-center justify-center relative rounded-[999px] size-[24px] border border-solid border-white"
+              style={{ backgroundColor: profileAvatarBg }}
+              data-name="Component 31"
+              data-node-id="7:2845"
+            >
               <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[9px] text-white whitespace-nowrap" data-node-id="I7:2845;2032:902">
-                <p className="leading-[0.4]">AS</p>
+                <p className="leading-[0.4]">{profileInitials}</p>
               </div>
             </div>
-            <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] items-start justify-center leading-[normal] not-italic relative shrink-0 whitespace-nowrap" data-node-id="7:2846">
-              <p className="relative shrink-0 text-[#0b191f] text-[14px]" data-node-id="7:2847">
-                Amukelani Shiringani
+            <div className="content-stretch flex min-w-0 flex-col font-['Satoshi:Medium',sans-serif] items-start justify-center leading-[normal] not-italic relative shrink-0">
+              <p className="relative max-w-[140px] shrink-0 truncate text-[#0b191f] text-[14px]" data-node-id="7:2847" title={profileName}>
+                {profileName}
               </p>
-              <p className="relative shrink-0 text-[#727d83] text-[12px]" data-node-id="7:2848">
-                amushiringani@gmail.com
+              <p className="relative max-w-[140px] shrink-0 truncate text-[#727d83] text-[12px]" data-node-id="7:2848" title={profileEmail}>
+                {profileEmail}
               </p>
             </div>
           </div>
