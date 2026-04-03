@@ -1,6 +1,9 @@
 import { useState } from "react";
 import type { DragEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
+
+import { GetStartedKanbanLive } from "../components/dashboard-placeholder/GetStartedKanbanLive";
+import { isApiProjectId } from "../data/dashboardPlaceholderProjects";
 
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { CreateTaskModal } from "../components/CreateTaskModal";
@@ -271,6 +274,11 @@ export function DashboardPlaceholder() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const projectParam = searchParams.get("project");
+  const milestoneParam = searchParams.get("milestone");
+  const isLiveBoard = projectParam != null && isApiProjectId(projectParam);
+
 
   const [cardColumns, setCardColumns] = useState<Record<number, ColumnId>>(INITIAL_COLUMNS);
   const [columnOrder, setColumnOrder] = useState<Record<ColumnId, number[]>>(INITIAL_COLUMN_ORDER);
@@ -664,6 +672,9 @@ export function DashboardPlaceholder() {
                 </div>
               </div>
             </div>
+{isLiveBoard ? (
+              <GetStartedKanbanLive projectId={Number(projectParam)} milestoneId={milestoneParam} />
+            ) : (
               <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]" data-node-id="7:2908">
               <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col gap-[16px] items-start overflow-y-auto min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "todo" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("todo")} onDragLeave={handleColumnDragLeave("todo")} onDrop={handleDrop("todo")}>
                 <div className="content-stretch flex flex-col gap-[16px] isolate items-start relative shrink-0 w-full" data-name="Component 125" data-node-id="7:2910">
@@ -1074,6 +1085,7 @@ export function DashboardPlaceholder() {
                 {tasksInColumn("completed").filter(t => INITIAL_COLUMNS[t.id] !== "completed").map(renderCard)}
               </div>
             </div>
+            )}
           </div>
         </div>
         <button
@@ -1263,7 +1275,7 @@ export function DashboardPlaceholder() {
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
       <LogTimeModal open={logTimeOpen} onOpenChange={setLogTimeOpen} />
-      <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} />
+      <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} projectId={isLiveBoard ? Number(projectParam) : undefined} />
       <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} showQuickActions={false} />
     </div>
   );
