@@ -4,7 +4,7 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import LandingPage from "./LandingPage";
 
 /**
- * Public marketing landing at `/`. Authenticated users are sent to the app dashboard.
+ * Public marketing landing at `/`. Authenticated users are sent to the default tasks board.
  */
 export function LandingRoute() {
   const { isAuthenticated, isInitialized, accessToken } = useAuthStore();
@@ -23,7 +23,7 @@ export function LandingRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/dashboard-placeholder/entry" replace />;
   }
 
   return (

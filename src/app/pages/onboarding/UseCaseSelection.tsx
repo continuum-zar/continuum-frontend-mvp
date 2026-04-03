@@ -56,7 +56,7 @@ export default function UseCaseSelection() {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard");
+    navigate("/dashboard-placeholder/entry");
   };
 
   return (

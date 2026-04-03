@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 
 import { ErrorBoundary } from './ErrorBoundary';
 import { MobileDesktopOnlyGate } from './components/MobileDesktopOnlyGate';
+import { AuthQueryCacheSync } from './components/AuthQueryCacheSync';
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -21,6 +22,7 @@ function App() {
     <ErrorBoundary>
       <RoleProvider>
         <TimeTrackingProvider>
+          <AuthQueryCacheSync />
           <MobileDesktopOnlyGate>
             <RouterProvider router={router} />
           </MobileDesktopOnlyGate>

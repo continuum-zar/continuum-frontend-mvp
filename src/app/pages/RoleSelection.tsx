@@ -25,7 +25,7 @@ export function RoleSelection() {
                     <CardContent className="flex justify-center pt-4">
                         <Button
                             className="w-full"
-                            onClick={() => navigate('/dashboard')}
+                            onClick={() => navigate('/dashboard-placeholder/entry')}
                         >
                             Continue to Dashboard
                         </Button>

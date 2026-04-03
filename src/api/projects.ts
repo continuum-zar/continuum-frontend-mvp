@@ -136,6 +136,9 @@ export function normalizeProjectKeyId(projectId: number | string): number | stri
 export const projectKeys = {
     all: ['projects'] as const,
     list: () => [...projectKeys.all, 'list'] as const,
+    /** List key scoped to the signed-in user so cache is never reused across accounts. */
+    listForUser: (userId: string | number | undefined | null) =>
+        [...projectKeys.list(), userId ?? 'signed-out'] as const,
     detail: (id: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(id)] as const,
     tasks: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'tasks'] as const,
     allTasks: () => ['tasks', 'all'] as const,

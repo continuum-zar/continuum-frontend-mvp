@@ -55,7 +55,7 @@ export default function MindSelection() {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard");
+    navigate("/dashboard-placeholder/entry");
   };
 
   return (

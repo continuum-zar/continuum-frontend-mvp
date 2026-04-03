@@ -4,6 +4,7 @@ import { Login } from "./pages/auth/Login";
 import { WaitlistSignUp } from "./pages/auth/WaitlistSignUp";
 import { SignUp } from "./pages/auth/SignUp";
 import { Loading } from "./pages/auth/Loading";
+import { PostAuthBoardRedirect } from "./pages/auth/PostAuthBoardRedirect";
 import { ResetPassword } from "./pages/auth/ResetPassword";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { AuthGuard } from "./components/auth/AuthGuard";
@@ -80,6 +81,14 @@ export const router = createBrowserRouter([
   {
     path: "/loading",
     Component: Loading,
+  },
+  {
+    path: "/dashboard-placeholder/entry",
+    element: (
+      <AuthGuard>
+        <PostAuthBoardRedirect />
+      </AuthGuard>
+    ),
   },
   {
     path: "onboarding",

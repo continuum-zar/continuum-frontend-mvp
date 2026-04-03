@@ -53,6 +53,7 @@ import {
 import { fetchLoggedHours, createLoggedHour } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
 import type { Task, TaskStatus, ScopeWeight } from '@/types/task';
+import { useAuthStore } from '@/store/authStore';
 
 /** Normalize FastAPI error detail into a single message. */
 export function getApiErrorMessage(err: unknown, fallback: string): string {
@@ -70,9 +71,12 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
 
 
 export function useProjects() {
+    const userId = useAuthStore((s) => s.user?.id);
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     return useQuery({
-        queryKey: projectKeys.list(),
+        queryKey: projectKeys.listForUser(userId),
         queryFn: fetchProjects,
+        enabled: isAuthenticated && userId != null && userId !== '',
         // Reference data: keep longer in cache and avoid refetch on window focus
         staleTime: 3 * 60 * 1000,
         refetchOnWindowFocus: false,

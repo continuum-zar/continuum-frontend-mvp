@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InvoiceAPIResponse, InvoiceWithItems } from '@/types/invoice';
 import { mapInvoice } from './mappers';
 import { fetchProjects, projectKeys } from './projects';
+import { useAuthStore } from '@/store/authStore';
 
 export async function fetchInvoices(params?: { project_id?: number | string; status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' }): Promise<InvoiceAPIResponse[]> {
     const res = await api.get<InvoiceAPIResponse[]>('/invoices/', { params });
@@ -78,16 +79,18 @@ export const invoiceKeys = {
 
 export function useInvoices(params?: { project_id?: number | string }) {
     const queryClient = useQueryClient();
+    const userId = useAuthStore((s) => s.user?.id);
     return useQuery({
         queryKey: invoiceKeys.list(params),
         queryFn: async () => {
-            const [invoices, projects] = await Promise.all([
-                fetchInvoices(params),
-                queryClient.ensureQueryData({
-                    queryKey: projectKeys.list(),
-                    queryFn: fetchProjects,
-                }),
-            ]);
+            const invoices = await fetchInvoices(params);
+            const projects =
+                userId != null && userId !== ''
+                    ? await queryClient.ensureQueryData({
+                          queryKey: projectKeys.listForUser(userId),
+                          queryFn: fetchProjects,
+                      })
+                    : [];
 
             const projectNameMap = new Map<number, string>(
                 projects.map((p) => [p.apiId, p.title])

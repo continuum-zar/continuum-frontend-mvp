@@ -1,17 +1,31 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 
+import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
+
 const LOADING_DURATION_MS = 2500;
 
 export function Loading() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      navigate('/dashboard-placeholder', { replace: true });
-    }, LOADING_DURATION_MS);
+    const minDelay = new Promise<void>((resolve) => {
+      window.setTimeout(resolve, LOADING_DURATION_MS);
+    });
+    const pathPromise = resolveDefaultBoardPath();
+    let cancelled = false;
 
-    return () => window.clearTimeout(timer);
+    Promise.all([minDelay, pathPromise])
+      .then(([, path]) => {
+        if (!cancelled) navigate(path, { replace: true });
+      })
+      .catch(() => {
+        if (!cancelled) navigate('/dashboard-placeholder/get-started', { replace: true });
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   return (

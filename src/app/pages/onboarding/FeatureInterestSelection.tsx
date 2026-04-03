@@ -65,7 +65,7 @@ export default function FeatureInterestSelection() {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard");
+    navigate("/dashboard-placeholder/entry");
   };
 
   return (

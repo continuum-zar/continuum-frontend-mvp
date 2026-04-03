@@ -61,7 +61,7 @@ export default function OnboardingRoleSelection() {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard");
+    navigate("/dashboard-placeholder/entry");
   };
 
   return (
