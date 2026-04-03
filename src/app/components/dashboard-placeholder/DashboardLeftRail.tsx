@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Link, useLocation, useSearchParams } from "react-router";
 
 import { useProjectMilestones, useProjects } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+import type { Milestone } from "@/types/milestone";
 import type { Project } from "@/types/project";
 
 import { CreateProjectModal } from "./CreateProjectModal";
@@ -33,6 +34,18 @@ const imgLucideFolderDot = mcpAsset("bf89c9ce-bf7d-4173-a31e-93e57f09f941");
 const imgVector105 = mcpAsset("17833d32-ab5b-4ab4-99e5-73910456563c");
 const imgLucideSettings = mcpAsset("b6f4bb01-1341-4aa3-b63b-d4e00aa8f650");
 const imgVector7 = mcpAsset("f982bdec-baa8-4afc-b88d-5e64cbe35a27");
+
+/** Same ordering as ProjectBoard milestone tabs (timeline order). */
+function sortMilestonesForNav(list: Milestone[]): Milestone[] {
+  return [...list].sort((a, b) => {
+    const tA = new Date(a.date).getTime();
+    const tB = new Date(b.date).getTime();
+    if (Number.isNaN(tA) && Number.isNaN(tB)) return 0;
+    if (Number.isNaN(tA)) return 1;
+    if (Number.isNaN(tB)) return -1;
+    return tA - tB;
+  });
+}
 
 function CornerDownRight({ className }: { className?: string }) {
   return (
@@ -277,14 +290,16 @@ function Frame({
   );
 }
 
+type SprintNavItem = { milestoneId: string; label: string; to: string };
+
 type DashboardPlaceholderProjectBlockProps = {
   projectId: string;
   displayName: string;
   expandedProjectId: string | null;
   pathname: string;
   projectParam: string | null;
-  renderSprint: boolean;
-  sprintLabel: string;
+  /** Milestone / sprint rows under the project; null when collapsed or none */
+  sprintItems: SprintNavItem[] | null;
 };
 
 function DashboardPlaceholderProjectBlock({
@@ -293,14 +308,15 @@ function DashboardPlaceholderProjectBlock({
   expandedProjectId,
   pathname,
   projectParam,
-  renderSprint,
-  sprintLabel,
+  sprintItems,
 }: DashboardPlaceholderProjectBlockProps) {
   const isExpanded = expandedProjectId === projectId;
+  const [searchParams] = useSearchParams();
+  const milestoneParam = searchParams.get("milestone");
   const folderIcon = isExpanded ? imgLucideFolderOpenDot : imgLucideFolderDot;
-  const sprintActive = isSprintNavActive(projectId, pathname, projectParam);
+  const sprintSurfaceActive = isSprintNavActive(projectId, pathname, projectParam);
   const overviewActive = isProjectOverviewActive(projectId, pathname);
-  const parentWhileSprintActive = isExpanded && sprintActive && !overviewActive;
+  const parentWhileSprintActive = isExpanded && sprintSurfaceActive && !overviewActive;
 
   return (
     <div className="flex w-full flex-col">
@@ -325,27 +341,38 @@ function DashboardPlaceholderProjectBlock({
           </p>
         </div>
       </Link>
-      {renderSprint ? (
-        <Link
-          to={projectSprintHref(projectId)}
-          aria-current={sprintActive ? "page" : undefined}
-          className={cn(
-            "content-stretch z-[1] flex h-[40px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] pl-[24px] pr-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
-            "ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring",
-            sprintActive
-              ? "bg-[rgba(220,227,229,0.68)] font-medium hover:bg-[rgba(200,210,216,0.78)]"
-              : "hover:bg-[#edf0f3]",
-          )}
-          data-name="Component 70"
-        >
-          <div className="content-stretch flex min-h-px min-w-px flex-[1_0_0] gap-[8px] items-center relative">
-            <CornerDownRight className="relative shrink-0 overflow-clip size-[16px]" />
-            <p className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-[#0b191f]">
-              {sprintLabel}
-            </p>
-          </div>
-        </Link>
-      ) : null}
+      {sprintItems?.map((item) => {
+        const rowActive =
+          sprintSurfaceActive &&
+          (sprintItems.length === 1 ||
+            (milestoneParam != null && milestoneParam === item.milestoneId) ||
+            (milestoneParam == null && item.milestoneId === sprintItems[0]?.milestoneId));
+        return (
+          <Link
+            key={item.milestoneId}
+            to={item.to}
+            aria-current={rowActive ? "page" : undefined}
+            className={cn(
+              "content-stretch z-[1] flex h-[40px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] pl-[24px] pr-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
+              "ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring",
+              rowActive
+                ? "bg-[rgba(220,227,229,0.68)] font-medium hover:bg-[rgba(200,210,216,0.78)]"
+                : "hover:bg-[#edf0f3]",
+            )}
+            data-name="Component 70"
+          >
+            <div className="content-stretch flex min-h-px min-w-px flex-[1_0_0] gap-[8px] items-center relative">
+              <CornerDownRight className="relative shrink-0 overflow-clip size-[16px]" />
+              <p
+                className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-[#0b191f]"
+                title={item.label}
+              >
+                {item.label}
+              </p>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -364,8 +391,14 @@ function ApiProjectBlock({
   const projectId = project.id;
   const isExpanded = expandedProjectId === projectId;
   const { data: milestones = [] } = useProjectMilestones(isExpanded ? project.apiId : undefined);
-  const renderSprint = isExpanded && milestones.length > 0;
-  const sprintLabel = milestones[0]?.name ?? "Sprint";
+  const sprintItems = useMemo((): SprintNavItem[] | null => {
+    if (!isExpanded || milestones.length === 0) return null;
+    return sortMilestonesForNav(milestones).map((m) => ({
+      milestoneId: m.id,
+      label: m.name,
+      to: projectSprintHref(projectId, m.id),
+    }));
+  }, [isExpanded, milestones, projectId]);
 
   return (
     <DashboardPlaceholderProjectBlock
@@ -374,8 +407,7 @@ function ApiProjectBlock({
       expandedProjectId={expandedProjectId}
       pathname={pathname}
       projectParam={projectParam}
-      renderSprint={renderSprint}
-      sprintLabel={sprintLabel}
+      sprintItems={sprintItems}
     />
   );
 }
@@ -460,8 +492,17 @@ export function DashboardLeftRail() {
               expandedProjectId={expandedProjectId}
               pathname={pathname}
               projectParam={projectParam}
-              renderSprint={expandedProjectId === WELCOME_PROJECT_ID}
-              sprintLabel={DASHBOARD_WELCOME_PROJECT.sprintLabel}
+              sprintItems={
+                expandedProjectId === WELCOME_PROJECT_ID
+                  ? [
+                      {
+                        milestoneId: WELCOME_PROJECT_ID,
+                        label: DASHBOARD_WELCOME_PROJECT.sprintLabel,
+                        to: projectSprintHref(WELCOME_PROJECT_ID),
+                      },
+                    ]
+                  : null
+              }
             />
             {apiProjects.map((project) => (
               <ApiProjectBlock

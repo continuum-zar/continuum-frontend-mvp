@@ -32,10 +32,13 @@ export function projectMainHref(projectId: string): string {
   return `/dashboard-placeholder/project/${projectId}`;
 }
 
-/** Sprint / kanban board */
-export function projectSprintHref(projectId: string): string {
+/** Sprint / kanban board. Optional milestone id scopes the nav row and `?milestone=` for deep links. */
+export function projectSprintHref(projectId: string, milestoneId?: string): string {
   if (projectId === WELCOME_PROJECT_ID) return "/dashboard-placeholder/get-started";
-  return `/dashboard-placeholder/get-started?project=${projectId}`;
+  const q = new URLSearchParams();
+  q.set("project", projectId);
+  if (milestoneId) q.set("milestone", milestoneId);
+  return `/dashboard-placeholder/get-started?${q.toString()}`;
 }
 
 /**
