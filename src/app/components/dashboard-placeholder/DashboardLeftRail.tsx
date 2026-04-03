@@ -473,64 +473,78 @@ export function DashboardLeftRail() {
           isAssignedActive={isAssignedActive}
           isCreatedActive={isCreatedActive}
         />
-        <div className="relative flex min-h-0 w-full flex-1 flex-col gap-[16px] overflow-x-hidden overflow-y-auto" data-node-id="7:2820">
-        <div className="content-stretch flex flex-col isolate items-start relative shrink-0 w-full" data-node-id="7:2828">
-          <div className="content-stretch flex items-center justify-between py-[8px] relative shrink-0 w-full z-[5]" data-node-id="I7:2828;2172:27463">
-            <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27464">
-              <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="I7:2828;2172:27466">
-                Projects
-              </p>
-            </div>
-            <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27467">
-              <Component1 className="content-stretch flex flex-col items-start overflow-clip px-[2.667px] py-[7.333px] relative rounded-[4px] shrink-0 w-[16px]" type="Ellipse" />
-              <button
-                type="button"
-                onClick={() => setCreateProjectOpen(true)}
-                className="inline-flex size-[16px] shrink-0 items-center justify-center overflow-clip rounded-[16px] border-0 bg-transparent p-0"
-                aria-label="Create project"
-                data-name="Component 35"
-                data-node-id="I7:2828;2172:27469"
-              >
-                <div className="relative size-[16px]">
-                  <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
-                    <div className="absolute inset-[-5.36%]">
-                      <img alt="" className="block max-w-none size-full" src={imgVector5} />
+        <div
+          className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+          data-node-id="7:2820"
+        >
+          <div className="shrink-0 bg-[#f5f8fa]" data-node-id="7:2828">
+            <div
+              className="content-stretch flex items-center justify-between py-[8px] relative w-full z-[5]"
+              data-node-id="I7:2828;2172:27463"
+            >
+              <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27464">
+                <p
+                  className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap"
+                  data-node-id="I7:2828;2172:27466"
+                >
+                  Projects
+                </p>
+              </div>
+              <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27467">
+                <Component1
+                  className="content-stretch flex flex-col items-start overflow-clip px-[2.667px] py-[7.333px] relative rounded-[4px] shrink-0 w-[16px]"
+                  type="Ellipse"
+                />
+                <button
+                  type="button"
+                  onClick={() => setCreateProjectOpen(true)}
+                  className="inline-flex size-[16px] shrink-0 items-center justify-center overflow-clip rounded-[16px] border-0 bg-transparent p-0"
+                  aria-label="Create project"
+                  data-name="Component 35"
+                  data-node-id="I7:2828;2172:27469"
+                >
+                  <div className="relative size-[16px]">
+                    <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
+                      <div className="absolute inset-[-5.36%]">
+                        <img alt="" className="block max-w-none size-full" src={imgVector5} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
+                </button>
+              </div>
             </div>
           </div>
-          <div className="flex w-full flex-col gap-0" data-node-id="I7:2828;2172:projects">
-            <DashboardPlaceholderProjectBlock
-              projectId={WELCOME_PROJECT_ID}
-              displayName={DASHBOARD_WELCOME_PROJECT.name}
-              expandedProjectId={expandedProjectId}
-              pathname={pathname}
-              projectParam={projectParam}
-              sprintItems={
-                expandedProjectId === WELCOME_PROJECT_ID
-                  ? [
-                      {
-                        milestoneId: WELCOME_PROJECT_ID,
-                        label: DASHBOARD_WELCOME_PROJECT.sprintLabel,
-                        to: projectSprintHref(WELCOME_PROJECT_ID),
-                      },
-                    ]
-                  : null
-              }
-            />
-            {apiProjects.map((project) => (
-              <ApiProjectBlock
-                key={project.apiId}
-                project={project}
+          <div className="scrollbar-none flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+            <div className="flex w-full flex-col gap-0" data-node-id="I7:2828;2172:projects">
+              <DashboardPlaceholderProjectBlock
+                projectId={WELCOME_PROJECT_ID}
+                displayName={DASHBOARD_WELCOME_PROJECT.name}
                 expandedProjectId={expandedProjectId}
                 pathname={pathname}
                 projectParam={projectParam}
+                sprintItems={
+                  expandedProjectId === WELCOME_PROJECT_ID
+                    ? [
+                        {
+                          milestoneId: WELCOME_PROJECT_ID,
+                          label: DASHBOARD_WELCOME_PROJECT.sprintLabel,
+                          to: projectSprintHref(WELCOME_PROJECT_ID),
+                        },
+                      ]
+                    : null
+                }
               />
-            ))}
+              {apiProjects.map((project) => (
+                <ApiProjectBlock
+                  key={project.apiId}
+                  project={project}
+                  expandedProjectId={expandedProjectId}
+                  pathname={pathname}
+                  projectParam={projectParam}
+                />
+              ))}
+            </div>
           </div>
-        </div>
         <div className="pointer-events-none absolute content-stretch flex flex-col items-center left-[131px] opacity-0 top-[159px] w-[145px]" data-node-id="7:2829" aria-hidden="true">
           <div className="content-stretch flex flex-col items-center relative shrink-0 w-full" data-node-id="7:2830">
             <div className="bg-[#0b191f] content-stretch flex flex-col items-start py-[4px] relative rounded-[8px] shadow-[0px_26px_7px_0px_rgba(21,21,21,0),0px_16px_7px_0px_rgba(21,21,21,0),0px_9px_6px_0px_rgba(21,21,21,0.01),0px_4px_4px_0px_rgba(21,21,21,0.02),0px_1px_2px_0px_rgba(21,21,21,0.03)] shrink-0 w-full" data-name="Tooltip" data-node-id="7:2831">

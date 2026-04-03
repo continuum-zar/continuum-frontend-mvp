@@ -307,9 +307,17 @@ export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: G
     );
   }
 
+  const columnHeaderDivider = (
+    <div className="h-0 relative w-full shrink-0">
+      <div className="absolute inset-[-0.57px_0]">
+        <img alt="" className="block max-w-none size-full" src={imgVector12} />
+      </div>
+    </div>
+  );
+
   const colWrap = (col: ColumnId, children: ReactNode, header: ReactNode) => (
     <div
-      className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col gap-[16px] items-start overflow-y-auto min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === col ? "border-2 border-dashed border-[#cdd2d5]" : ""}`}
+      className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === col ? "border-2 border-dashed border-[#cdd2d5]" : ""}`}
       style={{
         backgroundImage:
           "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
@@ -318,39 +326,37 @@ export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: G
       onDragLeave={handleColumnDragLeave(col)}
       onDrop={handleDrop(col)}
     >
-      {header}
-      <div className="h-0 relative shrink-0 w-full">
-        <div className="absolute inset-[-0.57px_0]">
-          <img alt="" className="block max-w-none size-full" src={imgVector12} />
-        </div>
+      <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
+        {header}
+        {columnHeaderDivider}
       </div>
-      {dragOverCol === col && draggingId !== null && (
-        <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
-      )}
-      {children}
+      <div className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pt-4">
+        {dragOverCol === col && draggingId !== null && (
+          <div className="h-[184px] w-full shrink-0 rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
+        )}
+        {children}
+      </div>
     </div>
   );
 
   const todoHeader = (
-    <div className="content-stretch flex flex-col gap-[16px] isolate items-start relative shrink-0 w-full">
-      <div className="content-stretch flex items-center justify-between relative shrink-0 w-full z-[2]">
-        <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
-          <div className="relative shrink-0 size-[16px]">
-            <img alt="" className="absolute block max-w-none size-full" src={imgLucideListTodo} />
-          </div>
-          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap">
-            To-do
-          </p>
+    <div className="content-stretch flex items-center justify-between relative isolate w-full shrink-0 z-[2]">
+      <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
+        <div className="relative shrink-0 size-[16px]">
+          <img alt="" className="absolute block max-w-none size-full" src={imgLucideListTodo} />
         </div>
-        <div className="content-stretch flex gap-[12px] items-center relative shrink-0 ml-auto">
-          <button type="button" className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0" aria-hidden>
-            <img alt="" className="block size-full max-h-full max-w-full object-contain" src={imgLucideSearch1} />
-          </button>
-          <div className="content-stretch flex flex-col items-start overflow-clip px-[4px] py-[11px] relative rounded-[4px] shrink-0 w-[24px]">
-            <div className="h-[2px] relative shrink-0 w-[16px]">
-              <div className="absolute inset-[-50%_-6.25%]">
-                <img alt="" className="block max-w-none size-full" src={imgVector10} />
-              </div>
+        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap">
+          To-do
+        </p>
+      </div>
+      <div className="content-stretch flex gap-[12px] items-center relative shrink-0 ml-auto">
+        <button type="button" className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0" aria-hidden>
+          <img alt="" className="block size-full max-h-full max-w-full object-contain" src={imgLucideSearch1} />
+        </button>
+        <div className="content-stretch flex flex-col items-start overflow-clip px-[4px] py-[11px] relative rounded-[4px] shrink-0 w-[24px]">
+          <div className="h-[2px] relative shrink-0 w-[16px]">
+            <div className="absolute inset-[-50%_-6.25%]">
+              <img alt="" className="block max-w-none size-full" src={imgVector10} />
             </div>
           </div>
         </div>

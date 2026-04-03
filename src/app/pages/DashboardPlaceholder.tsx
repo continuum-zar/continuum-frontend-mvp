@@ -726,7 +726,8 @@ export function DashboardPlaceholder() {
               />
             ) : (
               <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]" data-node-id="7:2908">
-              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col gap-[16px] items-start overflow-y-auto min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "todo" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("todo")} onDragLeave={handleColumnDragLeave("todo")} onDrop={handleDrop("todo")}>
+              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "todo" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("todo")} onDragLeave={handleColumnDragLeave("todo")} onDrop={handleDrop("todo")}>
+                <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
                 <div className="content-stretch flex flex-col gap-[16px] isolate items-start relative shrink-0 w-full" data-name="Component 125" data-node-id="7:2910">
                   <div className="content-stretch flex items-center justify-between relative shrink-0 w-full z-[2]" data-node-id="I7:2910;2444:24776">
                     <Component3 className="content-stretch flex gap-[8px] items-center relative shrink-0" />
@@ -768,6 +769,8 @@ export function DashboardPlaceholder() {
                     <img alt="" className="block max-w-none size-full" src={imgVector12} />
                   </div>
                 </div>
+                </div>
+                <div className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pt-4">
                 {dragOverCol === "todo" && draggingId !== null && (
                   <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
                 )}
@@ -1013,8 +1016,10 @@ export function DashboardPlaceholder() {
                   </div>
                 </div>
                 {tasksInColumn("todo").filter(t => INITIAL_COLUMNS[t.id] !== "todo").map(renderCard)}
+                </div>
               </div>
-              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col gap-[16px] items-start overflow-y-auto min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "in-progress" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2915" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("in-progress")} onDragLeave={handleColumnDragLeave("in-progress")} onDrop={handleDrop("in-progress")}>
+              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "in-progress" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2915" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("in-progress")} onDragLeave={handleColumnDragLeave("in-progress")} onDrop={handleDrop("in-progress")}>
+                <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
                 <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2916">
                   <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2917">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/squircle-dashed" data-node-id="7:2919">
@@ -1034,12 +1039,16 @@ export function DashboardPlaceholder() {
                     </div>
                   </div>
                 </div>
+                </div>
+                <div className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pt-4">
                 {dragOverCol === "in-progress" && draggingId !== null && (
                   <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
                 )}
                 {tasksInColumn("in-progress").map(renderCard)}
+                </div>
               </div>
-              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col gap-[16px] items-start overflow-y-auto min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "completed" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2925" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("completed")} onDragLeave={handleColumnDragLeave("completed")} onDrop={handleDrop("completed")}>
+              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "completed" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2925" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("completed")} onDragLeave={handleColumnDragLeave("completed")} onDrop={handleDrop("completed")}>
+                <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
                 <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2926">
                   <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2927">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/circle-check-big" data-node-id="7:2929">
@@ -1059,6 +1068,8 @@ export function DashboardPlaceholder() {
                     </div>
                   </div>
                 </div>
+                </div>
+                <div className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pt-4">
                 {dragOverCol === "completed" && draggingId !== null && (
                   <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
                 )}
@@ -1133,6 +1144,7 @@ export function DashboardPlaceholder() {
                   </div>
                 </div>
                 {tasksInColumn("completed").filter(t => INITIAL_COLUMNS[t.id] !== "completed").map(renderCard)}
+                </div>
               </div>
             </div>
             )}
