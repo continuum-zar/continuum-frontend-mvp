@@ -18,6 +18,8 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    // Dev server (e.g. Docker on Railway) receives Host: *.up.railway.app — allow it (Vite 6 host check).
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: process.env.VITE_PROXY_TARGET || 'http://localhost:8001',
