@@ -1,24 +1,22 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { useEffect, useState } from "react";
+import { Check, Plus, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "../ui/utils";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+import { useProjectTasks } from "@/api/hooks";
 
 /** Figma playground node 25:10140 */
 const imgLucideArrowLeft =
   mcpAsset("2117706d-83d3-4c1d-9e0b-71c1454e8c99");
 const imgLucideChevronDown =
   mcpAsset("8faeee75-ddf6-4f27-b584-6f1616dedbea");
-const imgLucideCalendar =
-  mcpAsset("f1ef5ba5-3c1f-41b1-bab1-b7a4e0d4e160");
 const imgLucideBot =
   mcpAsset("45ca08ef-a09e-466c-a13b-102083214a38");
-const imgLucidePlus =
-  mcpAsset("aac47b62-2c74-4f4f-8d02-d409018b8e1c");
-
 const DESC_MAX = 100;
 
 const placeholderDescription =
@@ -30,17 +28,59 @@ const AI_SUGGESTED_DESCRIPTION =
 type LogTimeModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When set, task list loads from this project (API). Omit on demo routes without a project. */
+  projectId?: number | null;
 };
 
-export function LogTimeModal({ open, onOpenChange }: LogTimeModalProps) {
-  const [task, setTask] = useState("");
+export function LogTimeModal({ open, onOpenChange, projectId }: LogTimeModalProps) {
+  const [taskId, setTaskId] = useState("");
+  const [taskPickerOpen, setTaskPickerOpen] = useState(false);
+  const [taskSearch, setTaskSearch] = useState("");
+  const [hoursSpent, setHoursSpent] = useState("");
   const [description, setDescription] = useState("");
+  const taskSearchInputRef = useRef<HTMLInputElement>(null);
+  /** Dialog surface for Radix popper collision — keeps task dropdown inside the modal. */
+  const [dialogBoundary, setDialogBoundary] = useState<Element | null>(null);
+  const setDialogContentNode = useCallback((node: HTMLDivElement | null) => {
+    setDialogBoundary(node);
+  }, []);
+
+  const { data: projectTasks = [], isLoading: tasksLoading } = useProjectTasks(
+    projectId != null ? projectId : undefined,
+  );
+
+  const filteredTasks = useMemo(() => {
+    const q = taskSearch.trim().toLowerCase();
+    if (!q) return projectTasks;
+    return projectTasks.filter((t) => t.title.toLowerCase().includes(q));
+  }, [projectTasks, taskSearch]);
+
+  const selectedTask = projectTasks.find((t) => t.id === taskId);
 
   useEffect(() => {
     if (!open) return;
-    setTask("");
+    setTaskId("");
+    setTaskPickerOpen(false);
+    setTaskSearch("");
+    setHoursSpent("");
     setDescription("");
   }, [open]);
+
+  useEffect(() => {
+    if (taskPickerOpen) {
+      setTimeout(() => taskSearchInputRef.current?.focus(), 0);
+    } else {
+      setTaskSearch("");
+    }
+  }, [taskPickerOpen]);
+
+  const hoursNum = Number.parseFloat(hoursSpent);
+  const canSubmit =
+    taskId !== "" &&
+    hoursSpent.trim() !== "" &&
+    Number.isFinite(hoursNum) &&
+    hoursNum > 0 &&
+    projectId != null;
 
   const descLen = description.length;
 
@@ -53,6 +93,7 @@ export function LogTimeModal({ open, onOpenChange }: LogTimeModalProps) {
       <DialogPortal>
         <DialogOverlay className="bg-black/25" />
         <DialogPrimitive.Content
+          ref={setDialogContentNode}
           aria-describedby={undefined}
           className={cn(
             "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
@@ -91,57 +132,123 @@ export function LogTimeModal({ open, onOpenChange }: LogTimeModalProps) {
             }}
           >
             <div className="flex w-full flex-col gap-6">
-              {/* Task + date/time — Figma I25:10140;2488:110958 */}
+              {/* Task + time spent — Figma I25:10140;2488:110958 */}
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full flex-col gap-1">
                   <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">Task</p>
-                  <div className="relative w-full">
-                    <select
-                      value={task}
-                      onChange={(e) => setTask(e.target.value)}
-                      className={cn(
-                        "h-10 w-full cursor-pointer appearance-none rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2 pr-10 font-['Satoshi',sans-serif] text-[16px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40",
-                        task ? "text-[#0b191f]" : "text-[#9fa5a8]",
-                      )}
-                      aria-label="Task"
+                  {projectId != null ? (
+                    <Popover open={taskPickerOpen} onOpenChange={setTaskPickerOpen} modal={false}>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className={cn(
+                            "flex h-10 w-full items-center justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2 text-left font-['Satoshi',sans-serif] text-[16px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40",
+                            selectedTask ? "text-[#0b191f]" : "text-[#9fa5a8]",
+                          )}
+                          aria-expanded={taskPickerOpen}
+                          aria-haspopup="listbox"
+                          aria-label="Select task"
+                        >
+                          <span className="min-w-0 flex-1 truncate">
+                            {selectedTask ? selectedTask.title : "Selecting a task"}
+                          </span>
+                          <img alt="" className="ml-2 size-4 shrink-0" src={imgLucideChevronDown} aria-hidden />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        sideOffset={4}
+                        collisionBoundary={dialogBoundary ?? undefined}
+                        collisionPadding={12}
+                        className={cn(
+                          "z-[100] flex w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden border border-solid border-[#e9e9e9] p-0 shadow-lg",
+                          "max-h-[min(320px,var(--radix-popper-available-height,280px))]",
+                        )}
+                        onOpenAutoFocus={(e) => {
+                          e.preventDefault();
+                          taskSearchInputRef.current?.focus();
+                        }}
+                      >
+                        <div
+                          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[8px] bg-white"
+                          role="listbox"
+                        >
+                          <div className="flex shrink-0 items-center gap-2 border-b border-[#f0f0f0] px-3 py-2">
+                            <Search className="size-4 shrink-0 text-[#9fa5a8]" strokeWidth={2} />
+                            <input
+                              ref={taskSearchInputRef}
+                              type="text"
+                              value={taskSearch}
+                              onChange={(e) => setTaskSearch(e.target.value)}
+                              placeholder="Search tasks…"
+                              className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                              aria-label="Search tasks"
+                            />
+                          </div>
+                          <div
+                            className="scrollbar-hide min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain py-1 [-webkit-overflow-scrolling:touch]"
+                            onWheel={(e) => e.stopPropagation()}
+                          >
+                            {tasksLoading ? (
+                              <p className="px-3 py-3 text-center font-['Satoshi',sans-serif] text-[13px] text-[#9fa5a8]">
+                                Loading tasks…
+                              </p>
+                            ) : filteredTasks.length === 0 ? (
+                              <p className="px-3 py-3 text-center font-['Satoshi',sans-serif] text-[13px] text-[#9fa5a8]">
+                                {projectTasks.length === 0 ? "No tasks in this project" : "No matching tasks"}
+                              </p>
+                            ) : (
+                              filteredTasks.map((t) => (
+                                <button
+                                  key={t.id}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={taskId === t.id}
+                                  onClick={() => {
+                                    setTaskId(t.id);
+                                    setTaskPickerOpen(false);
+                                  }}
+                                  className={cn(
+                                    "flex w-full items-center gap-2 px-3 py-2.5 text-left font-['Satoshi',sans-serif] text-[14px] transition-colors hover:bg-[#f5f7f8]",
+                                    taskId === t.id && "bg-[#f0f8ff]",
+                                  )}
+                                >
+                                  <span className="min-w-0 flex-1 truncate text-[#0b191f]">{t.title}</span>
+                                  {taskId === t.id ? (
+                                    <Check className="size-4 shrink-0 text-[#2798f5]" strokeWidth={2} />
+                                  ) : null}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex h-10 w-full cursor-not-allowed items-center justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2 text-left font-['Satoshi',sans-serif] text-[16px] font-medium text-[#9fa5a8] opacity-60 outline-none"
+                      aria-label="Select task"
                     >
-                      <option value="">Selecting a task</option>
-                      <option value="task1">Design system audit</option>
-                      <option value="task2">API integration</option>
-                      <option value="task3">QA pass</option>
-                    </select>
-                    <div className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2" aria-hidden>
-                      <img alt="" className="absolute block size-full max-w-none" src={imgLucideChevronDown} />
-                    </div>
-                  </div>
+                      <span className="min-w-0 flex-1 truncate">Open a project board to select tasks</span>
+                      <img alt="" className="ml-2 size-4 shrink-0" src={imgLucideChevronDown} aria-hidden />
+                    </button>
+                  )}
                 </div>
 
-                <div className="flex w-full gap-4">
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">Date Range</p>
-                    <div className="relative w-full">
-                      <input
-                        type="text"
-                        readOnly
-                        placeholder="Start Date-End Date"
-                        className="h-10 w-full cursor-default rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2 pr-10 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] placeholder:text-[#9fa5a8] outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40"
-                        aria-label="Date range"
-                      />
-                      <div className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2" aria-hidden>
-                        <img alt="" className="absolute block size-full max-w-none" src={imgLucideCalendar} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">Time Range</p>
-                    <input
-                      type="text"
-                      readOnly
-                      placeholder="Start Time-End Time"
-                      className="h-10 w-full cursor-default rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] placeholder:text-[#9fa5a8] outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40"
-                      aria-label="Time range"
-                    />
-                  </div>
+                <div className="flex w-1/2 min-w-0 flex-col gap-1">
+                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">Time spent</p>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={hoursSpent}
+                    onChange={(e) => setHoursSpent(e.target.value)}
+                    placeholder="Hours (e.g. 2.5)"
+                    className="h-10 w-full rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] placeholder:text-[#9fa5a8] outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40"
+                    aria-label="Time spent in hours"
+                  />
                 </div>
               </div>
 
@@ -185,14 +292,26 @@ export function LogTimeModal({ open, onOpenChange }: LogTimeModalProps) {
               <div className="w-[119px] shrink-0">
                 <button
                   type="button"
-                  disabled
-                  className="inline-flex h-10 w-full cursor-not-allowed items-center justify-center gap-2 rounded-[8px] border-0 bg-[rgba(96,109,118,0.1)] px-4 py-2 outline-none"
-                  aria-disabled="true"
+                  disabled={!canSubmit}
+                  className={cn(
+                    "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border-0 px-4 py-2 outline-none",
+                    canSubmit
+                      ? "cursor-pointer bg-[#2798f5] text-white hover:bg-[#1e87e0]"
+                      : "cursor-not-allowed bg-[rgba(96,109,118,0.1)]",
+                  )}
+                  aria-disabled={!canSubmit}
                 >
-                  <span className="relative block size-4 shrink-0">
-                    <img alt="" className="absolute block size-full max-w-none" src={imgLucidePlus} />
-                  </span>
-                  <span className="font-['Inter',sans-serif] text-[14px] font-semibold text-[#606d76] opacity-50">
+                  <Plus
+                    size={16}
+                    className={cn("shrink-0", canSubmit ? "text-white" : "text-[#606d76] opacity-50")}
+                    strokeWidth={2}
+                  />
+                  <span
+                    className={cn(
+                      "font-['Inter',sans-serif] text-[14px] font-semibold",
+                      canSubmit ? "text-white" : "text-[#606d76] opacity-50",
+                    )}
+                  >
                     Log Time
                   </span>
                 </button>

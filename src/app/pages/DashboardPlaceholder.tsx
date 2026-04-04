@@ -1399,7 +1399,7 @@ export function DashboardPlaceholder() {
         </button>
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
-      <LogTimeModal open={logTimeOpen} onOpenChange={setLogTimeOpen} />
+      <LogTimeModal open={logTimeOpen} onOpenChange={setLogTimeOpen} projectId={isLiveBoard ? liveProjectId : undefined} />
       <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} projectId={isLiveBoard ? Number(projectParam) : undefined} />
       <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} showQuickActions={false} />
       <WelcomeToContinuumModal open={welcomeToContinuumOpen} onOpenChange={handleWelcomeToContinuumOpenChange} />
