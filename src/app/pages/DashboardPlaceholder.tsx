@@ -570,7 +570,7 @@ export function DashboardPlaceholder() {
                       </p>
                     </Link>
                     <Link
-                      to="/dashboard-placeholder/get-started/time-logs"
+                      to="/dashboard-placeholder/get-started/time-logs?populated=1&tab=time-logs"
                       className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       data-name="Component 3"
                       data-node-id="7:2871"
@@ -580,7 +580,7 @@ export function DashboardPlaceholder() {
                       </p>
                     </Link>
                     <Link
-                      to="/dashboard-placeholder/get-started/time-logs?tab=activity"
+                      to="/dashboard-placeholder/get-started/time-logs?populated=1&tab=activity"
                       className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       data-name="Component 4"
                       data-node-id="7:2874"

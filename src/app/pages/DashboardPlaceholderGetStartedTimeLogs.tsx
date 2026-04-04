@@ -164,6 +164,10 @@ const Y_AXIS_W = 29;
 const TREND_GRID_LINE_TOPS = [6, 140.6, 275.2, 409.8, 544.4, 679] as const;
 const Y_LABEL_TOPS = [0, 134, 268, 402, 536, 670] as const;
 
+/** Figma Graphi&Grid width (4:1638) — plot area scrolls horizontally when the column is narrower. */
+const TREND_PLOT_W = 1179;
+const TREND_CHART_MIN_W = Y_AXIS_W + TREND_PLOT_W;
+
 /** Figma 4:1978 — Task Completion Rate area chart (smooth line + fill) */
 const PERF_LINE = "#24B5F8";
 const ACTIVITY_PERF_WEEKS = [
@@ -382,84 +386,88 @@ function ActivityTrendBar({
   );
 }
 
-/** Figma 4:1636 BarLineChart — dimensions from node metadata */
+/** Figma 4:1636 BarLineChart — horizontal scroll is scoped to the chart block only (like Performance’s chart card), not the whole middle panel. */
 function ActivityTrendsBarChart() {
   const yTicks = [100, 80, 60, 40, 20, 0] as const;
 
   return (
-    <div className="flex w-full min-w-0 flex-col overflow-hidden p-2">
-      {/* MainChart row: yAxisLeft 29×685 + Graphi&Grid 1179×685 (Figma 4:1638) */}
-      <div className="flex w-full min-w-0" style={{ height: TREND_CHART_MAIN_H }}>
+    <div className="flex w-full min-w-0 flex-col p-2">
+      <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain scrollbar-hide [-webkit-overflow-scrolling:touch]">
+        <div className="min-w-0" style={{ minWidth: TREND_CHART_MIN_W }}>
+          {/* MainChart row: yAxisLeft 29×685 + Graphi&Grid 1179×685 (Figma 4:1638) */}
+          <div className="flex w-full min-w-0" style={{ height: TREND_CHART_MAIN_H }}>
+          <div
+            className="relative shrink-0 text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]"
+            style={{ width: Y_AXIS_W, height: TREND_CHART_MAIN_H, fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
+          >
+            {yTicks.map((t, i) => (
+              <span key={t} className="absolute right-0 whitespace-nowrap" style={{ top: Y_LABEL_TOPS[i] }}>
+                {t}
+              </span>
+            ))}
+          </div>
+          <div className="relative min-w-0 flex-1" style={{ height: TREND_CHART_MAIN_H }}>
+            {/* xLines — dashed; bottom line solid (Figma uses img for last line) */}
+            <div className="pointer-events-none absolute inset-0">
+              {TREND_GRID_LINE_TOPS.map((top, i) => (
+                <div
+                  key={top}
+                  className={`absolute left-0 right-0 h-0 ${
+                    i === TREND_GRID_LINE_TOPS.length - 1 ? "border-t border-solid border-[#d4d4d8]" : "border-t border-dashed border-[#e4e4e7]"
+                  }`}
+                  style={{ top }}
+                />
+              ))}
+            </div>
+            {/* yLines — 7 vertical lines at 0, 1/6 … 1 of plot width (4:1654) */}
+            <div className="pointer-events-none absolute inset-0">
+              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className="absolute top-0 bottom-0 w-0 border-l border-dashed border-[#e4e4e7]"
+                  style={{ left: `${(i / 6) * 100}%` }}
+                />
+              ))}
+            </div>
+            {/* BarArea inset-[6px_0_7px_0] — 4:1662 */}
+            <div
+              className="absolute flex items-stretch"
+              style={{
+                left: 0,
+                right: 0,
+                top: TREND_BAR_AREA_TOP,
+                bottom: TREND_BAR_AREA_BOTTOM,
+              }}
+            >
+              {ACTIVITY_TRENDS_WEEKS.map((week) => (
+                <div
+                  key={week.label}
+                  className="flex h-full min-h-0 min-w-0 flex-1 items-stretch gap-0.5 px-[15px]"
+                >
+                  <ActivityTrendBar value={week.totalHours} color={TREND_BAR_HOURS} plotHeightPx={TREND_BAR_AREA_H} />
+                  <ActivityTrendBar
+                    value={week.tasksCompleted}
+                    color={TREND_BAR_TASKS}
+                    plotHeightPx={TREND_BAR_AREA_H}
+                  />
+                  <ActivityTrendBar value={week.commits} color={TREND_BAR_COMMITS} plotHeightPx={TREND_BAR_AREA_H} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* xAxis — 4:1759 h 23, labels align with BarGroup columns (pl 29 matches y-axis) */}
         <div
-          className="relative shrink-0 text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]"
-          style={{ width: Y_AXIS_W, height: TREND_CHART_MAIN_H, fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
+          className="flex h-[23px] w-full shrink-0 items-start pl-[29px] pt-0"
+          style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
         >
-          {yTicks.map((t, i) => (
-            <span key={t} className="absolute right-0 whitespace-nowrap" style={{ top: Y_LABEL_TOPS[i] }}>
-              {t}
-            </span>
+          {ACTIVITY_TRENDS_WEEKS.map((w) => (
+            <div key={w.label} className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch">
+              <p className="w-full text-center text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]">{w.label}</p>
+            </div>
           ))}
         </div>
-        <div className="relative min-w-0 flex-1" style={{ height: TREND_CHART_MAIN_H }}>
-          {/* xLines — dashed; bottom line solid (Figma uses img for last line) */}
-          <div className="pointer-events-none absolute inset-0">
-            {TREND_GRID_LINE_TOPS.map((top, i) => (
-              <div
-                key={top}
-                className={`absolute left-0 right-0 h-0 ${
-                  i === TREND_GRID_LINE_TOPS.length - 1 ? "border-t border-solid border-[#d4d4d8]" : "border-t border-dashed border-[#e4e4e7]"
-                }`}
-                style={{ top }}
-              />
-            ))}
-          </div>
-          {/* yLines — 7 vertical lines at 0, 1/6 … 1 of plot width (4:1654) */}
-          <div className="pointer-events-none absolute inset-0">
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="absolute top-0 bottom-0 w-0 border-l border-dashed border-[#e4e4e7]"
-                style={{ left: `${(i / 6) * 100}%` }}
-              />
-            ))}
-          </div>
-          {/* BarArea inset-[6px_0_7px_0] — 4:1662 */}
-          <div
-            className="absolute flex items-stretch"
-            style={{
-              left: 0,
-              right: 0,
-              top: TREND_BAR_AREA_TOP,
-              bottom: TREND_BAR_AREA_BOTTOM,
-            }}
-          >
-            {ACTIVITY_TRENDS_WEEKS.map((week) => (
-              <div
-                key={week.label}
-                className="flex h-full min-h-0 min-w-0 flex-1 items-stretch gap-0.5 px-[15px]"
-              >
-                <ActivityTrendBar value={week.totalHours} color={TREND_BAR_HOURS} plotHeightPx={TREND_BAR_AREA_H} />
-                <ActivityTrendBar
-                  value={week.tasksCompleted}
-                  color={TREND_BAR_TASKS}
-                  plotHeightPx={TREND_BAR_AREA_H}
-                />
-                <ActivityTrendBar value={week.commits} color={TREND_BAR_COMMITS} plotHeightPx={TREND_BAR_AREA_H} />
-              </div>
-            ))}
-          </div>
         </div>
-      </div>
-      {/* xAxis — 4:1759 h 23, labels align with BarGroup columns (pl 29 matches y-axis) */}
-      <div
-        className="flex h-[23px] w-full shrink-0 items-start pl-[29px] pt-0"
-        style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
-      >
-        {ACTIVITY_TRENDS_WEEKS.map((w) => (
-          <div key={w.label} className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch">
-            <p className="w-full text-center text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]">{w.label}</p>
-          </div>
-        ))}
       </div>
       {/* Legends — 4:1772 h 24 */}
       <div className="flex h-6 w-full shrink-0 items-start justify-center overflow-hidden pt-0">
@@ -473,24 +481,33 @@ function ActivityTrendsBarChart() {
   );
 }
 
-function buildGetStartedSearchParams(populated: boolean, tab?: "activity") {
+/** Welcome / Get started demo: populated + Activity tab unless URL overrides (`populated=0` = empty mock). */
+function buildGetStartedSearchParams(populated: boolean, tab: "time-logs" | "activity"): string {
   const p = new URLSearchParams();
-  if (populated) p.set("populated", "1");
-  if (tab === "activity") p.set("tab", "activity");
-  const s = p.toString();
-  return s ? `?${s}` : "";
+  p.set("populated", populated ? "1" : "0");
+  p.set("tab", tab);
+  return `?${p.toString()}`;
 }
 
 export function DashboardPlaceholderGetStartedTimeLogs() {
-  const [searchParams] = useSearchParams();
-  const populated = searchParams.get("populated") === "1";
-  const mainTab = searchParams.get("tab") === "activity" ? "activity" : "time-logs";
+  const [searchParams, setSearchParams] = useSearchParams();
+  /** Default: show sample data (opt out with `?populated=0`). */
+  const populated = searchParams.get("populated") !== "0";
+  /** Default: Activity tab (`?tab=time-logs` for time log table). */
+  const mainTab: "time-logs" | "activity" =
+    searchParams.get("tab") === "time-logs" ? "time-logs" : "activity";
   const [logTimeOpen, setLogTimeOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [activityView, setActivityView] = useState<"members" | "trends" | "performance">("members");
 
-  const qsBase = buildGetStartedSearchParams(populated);
+  const qsTimeLogs = buildGetStartedSearchParams(populated, "time-logs");
   const qsActivity = buildGetStartedSearchParams(populated, "activity");
+
+  useEffect(() => {
+    if (searchParams.toString() === "") {
+      setSearchParams({ populated: "1", tab: "activity" }, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const logs = useMemo(() => (populated ? SAMPLE_LOGS : []), [populated]);
 
@@ -521,7 +538,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
         <div className="isolate flex min-h-0 w-full min-w-0 flex-1 flex-row items-stretch gap-4">
           <DashboardLeftRail />
 
-          <section className="z-[1] flex min-h-0 min-w-0 max-w-none flex-1 flex-col overflow-x-auto overflow-y-auto rounded-[8px] border border-[#ebedee] bg-white px-6 py-4 pb-8 shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
+          <section className="scrollbar-hide z-[1] flex min-h-0 min-w-0 max-w-none flex-1 flex-col overflow-x-auto overflow-y-auto rounded-[8px] border border-[#ebedee] bg-white px-6 py-4 pb-8 shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
           {/* Top bar — matches Figma 40:7745 / 40:8001 */}
           <div className="flex w-full flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -546,7 +563,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                     Sprint
                   </Link>
                   <Link
-                    to={`/dashboard-placeholder/get-started/time-logs${qsBase}`}
+                    to={`/dashboard-placeholder/get-started/time-logs${qsTimeLogs}`}
                     className={`inline-flex h-9 items-center justify-center rounded-[8px] px-4 no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${tabBtn(mainTab === "time-logs")}`}
                   >
                     Time logs
@@ -775,7 +792,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
               )}
 
               {populated && activityView === "trends" && (
-                <div className="mt-4 w-full min-w-0 overflow-hidden rounded-[8px] border border-[#ebedee] bg-white">
+                <div className="mt-4 w-full min-w-0 overflow-x-hidden rounded-[8px] border border-[#ebedee] bg-white">
                   <ActivityTrendsBarChart />
                 </div>
               )}
