@@ -62,7 +62,11 @@ export function TaskPanels({ onBack }: TaskPanelsProps) {
                     <div className={`flex size-5 items-center justify-center rounded-[4px] ${done ? "bg-[#24B5F8]" : "border border-[#ebedee] bg-[#f9f9f9]"}`}>
                       {done ? <Check size={13} className="text-white" /> : null}
                     </div>
-                    <p className={`text-[13px] ${done ? "text-[#0b191f]/50 line-through" : "text-[#0b191f]"}`}>{label}</p>
+                    <p
+                      className={`font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${done ? "text-[#0b191f]/50 line-through" : "text-[#0b191f]"}`}
+                    >
+                      {label}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -79,8 +83,11 @@ export function TaskPanels({ onBack }: TaskPanelsProps) {
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {["Wireframes", "Prototypes", "User Flows", "Design Systems", "Usability Testing", "Final Mockups", "User Testing Feedback"].map((tag, idx) => (
-                  <span key={tag} className={`rounded-[16px] px-4 py-1 text-[14px] font-medium ${idx === 0 ? "bg-[#0b191f] text-white" : "border border-[#cdd2d5] text-[#606d76]"}`}>
+                {["Wireframes", "Prototypes", "User Flows", "Design Systems", "Usability Testing", "Final Mockups", "User Testing Feedback"].map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center justify-center rounded-[16px] border border-[#cdd2d5] bg-white px-4 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76]"
+                  >
                     {tag}
                   </span>
                 ))}

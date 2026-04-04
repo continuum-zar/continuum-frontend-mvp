@@ -336,6 +336,7 @@ export function useUpdateTask() {
             status,
             scope_weight,
             due_date,
+            estimated_hours,
             linked_repo,
             linked_branch,
             checklists,
@@ -346,10 +347,22 @@ export function useUpdateTask() {
             status?: TaskStatus;
             scope_weight?: ScopeWeight;
             due_date?: string | null;
+            estimated_hours?: number | null;
             linked_repo?: string | null;
             linked_branch?: string | null;
             checklists?: Array<{ id?: string; text: string; done: boolean }>;
-        }) => updateTask(taskId, { title, description, status, scope_weight, due_date, linked_repo, linked_branch, checklists }),
+        }) =>
+            updateTask(taskId, {
+                title,
+                description,
+                status,
+                scope_weight,
+                due_date,
+                estimated_hours,
+                linked_repo,
+                linked_branch,
+                checklists,
+            }),
         onSuccess: (_data, { taskId }) => {
             // Show success toast
             toast.success('Task updated successfully');

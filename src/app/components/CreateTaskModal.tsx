@@ -13,6 +13,7 @@ import { cn } from "./ui/utils";
 import { AddResourceModal } from "./welcome/AddResourceModal";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { welcomeResourcesMock, type WelcomeResourceItem } from "@/app/data/welcomeDashboardMock";
+import { formatEstimatedEffortLabel } from "@/api";
 
 const imgLucideArrowLeft =
   mcpAsset("27ca96dc-a695-48d3-8f22-628b8eb437bd");
@@ -24,8 +25,6 @@ const imgLucideTag =
   mcpAsset("d427a1f8-33d2-4b4d-a88d-0d6788ed82e6");
 const imgLucideCheck =
   mcpAsset("f17b7c55-8260-41c2-9b91-6892f419b0f9");
-const imgLucideCalendarPlus =
-  mcpAsset("425b9c90-6c91-4ee0-a3d7-1a5b0f599a35");
 const imgLucideUserRoundPlus1 =
   mcpAsset("3b9ddb70-8dce-456b-9932-8b226f04049a");
 const imgLucideCheck1 =
@@ -76,6 +75,9 @@ export function CreateTaskModal({
   const [taskDescription, setTaskDescription] = useState(DEFAULT_TASK_DESCRIPTION);
   const [taskDescriptionMeta, setTaskDescriptionMeta] = useState("85/100 Characters");
   const [addResourceOpen, setAddResourceOpen] = useState(false);
+  const [mockEffortHours, setMockEffortHours] = useState<number | null>(null);
+  const [addingMockEffort, setAddingMockEffort] = useState(false);
+  const [mockEffortDraft, setMockEffortDraft] = useState("");
 
   const resolvedSubmitLabel = submitLabel ?? "Create Task";
 
@@ -320,11 +322,11 @@ export function CreateTaskModal({
                   </div>
                 </div>
                 <div className="flex w-full flex-wrap content-start items-start gap-2">
-                  <div className="flex items-center justify-center gap-2 rounded-[16px] bg-[#0b191f] py-1 pr-3 pl-4">
-                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium whitespace-nowrap text-white">
+                  <div className="inline-flex items-center justify-center gap-2 rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5">
+                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal whitespace-nowrap text-[#606d76]">
                       Wireframes
                     </p>
-                    <img alt="" className="size-4" src={imgLucideCheck} />
+                    <img alt="" className="size-4 opacity-70" src={imgLucideCheck} />
                   </div>
                   {[
                     "Prototypes",
@@ -336,9 +338,9 @@ export function CreateTaskModal({
                   ].map((label) => (
                     <div
                       key={label}
-                      className="flex items-center justify-center rounded-[16px] border border-solid border-[#cdd2d5] px-4 py-1"
+                      className="inline-flex items-center justify-center rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5"
                     >
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium whitespace-nowrap text-[#606d76]">
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal whitespace-nowrap text-[#606d76]">
                         {label}
                       </p>
                     </div>
@@ -355,35 +357,72 @@ export function CreateTaskModal({
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
                   <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                    Due Date
+                    Estimated effort
                   </p>
-                  <div
-                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(141.68deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
-                    }}
-                  >
-                    <img alt="" className="size-4" src={imgLucideCalendarPlus} />
-                  </div>
+                  {mockEffortHours == null && !addingMockEffort ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddingMockEffort(true);
+                        setMockEffortDraft("");
+                      }}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]"
+                    >
+                      Add <Plus size={16} />
+                    </button>
+                  ) : null}
                 </div>
                 <div className="flex w-full flex-wrap content-start items-start gap-2">
-                  <div className="flex items-center justify-center gap-2 rounded-[16px] bg-[#0b191f] py-1 pr-3 pl-4">
-                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium whitespace-nowrap text-white">
-                      1 Hour
-                    </p>
-                    <img alt="" className="size-4" src={imgLucideCheck} />
-                  </div>
-                  {["4 Hours", "8 Hours", "12 Hours", "48 Hours"].map((label) => (
-                    <div
-                      key={label}
-                      className="flex items-center justify-center rounded-[16px] border border-solid border-[#cdd2d5] px-4 py-1"
-                    >
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium whitespace-nowrap text-[#606d76]">
-                        {label}
+                  {mockEffortHours != null && !addingMockEffort ? (
+                    <div className="group inline-flex items-center gap-1.5 rounded-[16px] bg-[#0b191f] px-4 py-1.5">
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none text-white">
+                        {formatEstimatedEffortLabel(mockEffortHours)}
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMockEffortHours(null);
+                          setAddingMockEffort(false);
+                          setMockEffortDraft("");
+                        }}
+                        className="inline-flex size-4 items-center justify-center text-white/80 opacity-0 transition-opacity group-hover:opacity-100 hover:text-white"
+                        aria-label="Remove estimated effort"
+                      >
+                        <X size={12} />
+                      </button>
                     </div>
-                  ))}
+                  ) : null}
+                  {addingMockEffort && (
+                    <div className="inline-flex items-center rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Hours"
+                        value={mockEffortDraft}
+                        onChange={(e) => setMockEffortDraft(e.target.value)}
+                        onBlur={() => {
+                          setAddingMockEffort(false);
+                          const t = mockEffortDraft.trim().replace(/h$/i, "");
+                          if (t === "") return;
+                          const n = Number(t);
+                          if (Number.isFinite(n) && n >= 0) setMockEffortHours(n);
+                          setMockEffortDraft("");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                          if (e.key === "Escape") {
+                            setAddingMockEffort(false);
+                            setMockEffortDraft("");
+                          }
+                        }}
+                        className="w-20 border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none text-[#606d76] outline-none placeholder:text-[#606d76]/60"
+                        autoFocus
+                      />
+                    </div>
+                  )}
+                  {mockEffortHours == null && !addingMockEffort ? (
+                    <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">No effort set</p>
+                  ) : null}
                 </div>
               </div>
 
@@ -497,7 +536,7 @@ export function CreateTaskModal({
                           <button
                             type="button"
                             onClick={() => toggleChecklist(item.id)}
-                            className="w-full cursor-pointer text-left font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#0b191f] opacity-50 line-through"
+                            className="w-full cursor-pointer text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
                           >
                             {item.text}
                           </button>
@@ -511,7 +550,7 @@ export function CreateTaskModal({
                               if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                             }}
                             placeholder="Checklist item..."
-                            className="w-full border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
+                            className="w-full border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
                           />
                         )}
                       </div>

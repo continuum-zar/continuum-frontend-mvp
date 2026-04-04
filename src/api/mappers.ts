@@ -91,6 +91,13 @@ export function formatDueDate(iso: string): string {
     return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 }
 
+/** Display estimated hours as "1 hour" / "3.5 hours" (not "h"). */
+export function formatEstimatedEffortLabel(hours: number): string {
+    const n = Number(hours);
+    if (!Number.isFinite(n)) return '';
+    return `${n} ${n === 1 ? 'hour' : 'hours'}`;
+}
+
 export function mapMilestone(m: MilestoneAPIResponse): Milestone {
     return {
         id: String(m.id),

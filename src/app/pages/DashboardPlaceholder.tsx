@@ -3,9 +3,14 @@ import type { DragEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { GetStartedKanbanLive } from "../components/dashboard-placeholder/GetStartedKanbanLive";
-import { isApiProjectId } from "../data/dashboardPlaceholderProjects";
+import {
+  DASHBOARD_WELCOME_PROJECT,
+  isApiProjectId,
+  projectMainHref,
+  projectSprintHref,
+} from "../data/dashboardPlaceholderProjects";
 
-import { useProjectMembers } from "@/api/hooks";
+import { useProject, useProjectMembers, useProjectMilestones } from "@/api/hooks";
 import { useAuthStore } from "@/store/authStore";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
@@ -312,7 +317,33 @@ export function DashboardPlaceholder() {
     }
   };
   const liveMembersQuery = useProjectMembers(liveProjectId, { enabled: liveProjectId != null });
+  const liveProjectQuery = useProject(liveProjectId);
+  const liveMilestonesQuery = useProjectMilestones(liveProjectId);
   const liveMembers: Member[] = liveMembersQuery.data ?? [];
+
+  const breadcrumbProjectLabel =
+    isLiveBoard && liveProjectId != null
+      ? liveProjectQuery.data?.name ?? (liveProjectQuery.isLoading ? "…" : "Project")
+      : DASHBOARD_WELCOME_PROJECT.name;
+
+  const breadcrumbProjectHref =
+    isLiveBoard && projectParam != null && isApiProjectId(projectParam)
+      ? projectMainHref(projectParam)
+      : "/dashboard-placeholder/welcome";
+
+  const sprintBoardHref =
+    isLiveBoard && projectParam != null && isApiProjectId(projectParam)
+      ? projectSprintHref(projectParam, milestoneParam ?? undefined)
+      : "/dashboard-placeholder/get-started";
+
+  /** Second breadcrumb segment + main page title under the rule — milestone name for API projects, mock label for welcome-only. */
+  const milestonePageTitle =
+    isLiveBoard && liveProjectId != null
+      ? milestoneParam
+        ? liveMilestonesQuery.data?.find((m) => m.id === milestoneParam)?.name ??
+          (liveMilestonesQuery.isLoading ? "…" : "Milestone")
+        : "Sprint"
+      : DASHBOARD_WELCOME_PROJECT.sprintLabel;
   const liveHeaderVisibleMembers = liveMembers.slice(0, LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX);
   const liveHeaderMemberOverflow = Math.max(0, liveMembers.length - LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX);
 
@@ -535,25 +566,27 @@ export function DashboardPlaceholder() {
               <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2852">
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2853">
                   <Link
-                    to="/dashboard-placeholder/welcome"
-                    className="content-stretch flex gap-[8px] items-center relative shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                    to={breadcrumbProjectHref}
+                    className="content-stretch flex min-w-0 max-w-[min(100%,320px)] gap-[8px] items-center relative shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                    title={breadcrumbProjectLabel}
                   >
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-open-dot" data-node-id="7:2854">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderOpenDot} />
                     </div>
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] whitespace-nowrap" data-node-id="7:2856">
-                      Welcome to Continuum!
+                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 shrink text-[#606d76] text-[16px] truncate" data-node-id="7:2856">
+                      {breadcrumbProjectLabel}
                     </p>
                   </Link>
                   <div className="relative shrink-0 size-[16px]" data-name="lucide/chevron-right" data-node-id="7:2860">
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideChevronRight} />
                   </div>
                   <Link
-                    to="/dashboard-placeholder/get-started"
-                    className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] whitespace-nowrap no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                    to={sprintBoardHref}
+                    className="font-['Satoshi:Medium',sans-serif] min-w-0 max-w-[min(100%,280px)] leading-[normal] not-italic relative shrink truncate text-[#606d76] text-[16px] no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                     data-node-id="7:2862"
+                    title={milestonePageTitle}
                   >
-                    Get started
+                    {milestonePageTitle}
                   </Link>
                 </div>
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2866">
@@ -622,8 +655,12 @@ export function DashboardPlaceholder() {
             <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full z-[2]" data-node-id="7:2888">
               <div className="content-stretch flex items-center relative shrink-0 w-full" data-node-id="7:2889">
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2890">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[24px] whitespace-nowrap" data-node-id="7:2891">
-                    Get started
+                  <p
+                    className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 max-w-[min(100%,480px)] shrink truncate text-[#0b191f] text-[24px]"
+                    data-node-id="7:2891"
+                    title={milestonePageTitle}
+                  >
+                    {milestonePageTitle}
                   </p>
                   <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2892">
                     <div className="content-stretch flex items-center justify-center relative shrink-0 size-[24px]" data-node-id="7:2897">

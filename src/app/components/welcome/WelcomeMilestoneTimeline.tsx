@@ -46,7 +46,7 @@ export type WelcomeMilestoneTimelineProps = {
 };
 
 /**
- * Milestone timelines — under Repository on welcome (Figma 35:11176 / 35:11664–35:11707).
+ * Milestone timelines — project overview: placed above the Sprints section (after hero/metrics).
  * Live variant uses the same row styling after milestones are created via {@link CreateMilestoneModal}.
  */
 export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: WelcomeMilestoneTimelineProps) {

@@ -3,9 +3,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams } from 'react-router';
 import {
   ArrowLeft,
-  CalendarPlus,
+  Activity,
   Check,
   ChevronDown,
+  Download,
   FileText,
   Flag,
   Link2,
@@ -13,12 +14,11 @@ import {
   Tag,
   UserRoundPlus,
   X,
-  Activity,
 } from 'lucide-react';
-import { Calendar } from '../components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { toast } from 'sonner';
 import {
   formatDueDate,
+  formatEstimatedEffortLabel,
   useTask,
   useUpdateTask,
   useTaskAttachments,
@@ -32,6 +32,8 @@ import {
   useAddTaskLabel,
   useRemoveTaskLabel,
 } from '@/api';
+import { getApiErrorMessage } from '@/api/hooks';
+import type { Attachment } from '@/types/attachment';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { Member } from '@/types/member';
@@ -148,6 +150,115 @@ function TaskDetailSkeleton() {
   );
 }
 
+function triggerBlobDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function TaskResourceRow({
+  attachment,
+  onDelete,
+  deletePending,
+}: {
+  attachment: Attachment;
+  onDelete: () => void;
+  deletePending: boolean;
+}) {
+  const [downloading, setDownloading] = useState(false);
+  const linkHref = getAttachmentLinkHref(attachment);
+  const linkLabel = getAttachmentLinkLabel(attachment);
+
+  if (attachment.kind === 'link') {
+    return (
+      <div className="flex w-full items-center gap-2">
+        <div className="flex min-h-[34px] min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
+          <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
+            <Link2 className="size-4 text-[#606d76]" strokeWidth={1.75} />
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
+            {linkHref ? (
+              <a
+                href={linkHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={linkHref}
+                className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 hover:text-[#0d52cc]"
+              >
+                {linkLabel}
+              </a>
+            ) : (
+              <p className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+                {attachment.filename}
+              </p>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          className="inline-flex shrink-0 text-[#606d76] disabled:opacity-50"
+          aria-label="Remove"
+          disabled={deletePending}
+          onClick={onDelete}
+        >
+          <X className="size-4" strokeWidth={1.75} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex w-full items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
+        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
+          <FileText className="size-4 text-[#606d76]" strokeWidth={1.75} />
+        </div>
+        <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
+          <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+            {attachment.filename}
+          </p>
+          {attachment.size ? (
+            <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">
+              {attachment.size}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <button
+        type="button"
+        disabled={downloading || deletePending}
+        className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-[#606d76] transition-colors hover:bg-[#edf0f3] hover:text-[#0b191f] disabled:opacity-50"
+        aria-label="Download"
+        onClick={async () => {
+          setDownloading(true);
+          try {
+            const { blob, filename } = await downloadTaskAttachment(attachment.id);
+            triggerBlobDownload(blob, filename || attachment.filename);
+          } catch (err) {
+            toast.error(getApiErrorMessage(err, 'Failed to download file'));
+          } finally {
+            setDownloading(false);
+          }
+        }}
+      >
+        <Download className="size-4" strokeWidth={1.75} />
+      </button>
+      <button
+        type="button"
+        className="inline-flex shrink-0 self-center text-[#606d76] disabled:opacity-50"
+        aria-label="Remove"
+        disabled={deletePending}
+        onClick={onDelete}
+      >
+        <X className="size-4" strokeWidth={1.75} />
+      </button>
+    </div>
+  );
+}
+
 function TaskNotFound() {
   const navigate = useNavigate();
   return (
@@ -198,7 +309,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   /* ─ local state ─ */
   const [status, setStatus] = useState('');
   const [scope, setScope] = useState('');
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
   const [editingDesc, setEditingDesc] = useState(false);
@@ -208,6 +318,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [checklistDraft, setChecklistDraft] = useState('');
   const [addingTag, setAddingTag] = useState(false);
   const [tagDraft, setTagDraft] = useState('New tag');
+  const [addingEffort, setAddingEffort] = useState(false);
+  const [effortDraft, setEffortDraft] = useState('');
   const [resourceModalOpen, setResourceModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -216,6 +328,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descTextareaRef = useRef<HTMLTextAreaElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const effortInputRef = useRef<HTMLInputElement>(null);
   const checklistInputRef = useRef<HTMLInputElement>(null);
 
   /* ─ init from task ─ */
@@ -223,7 +336,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     if (task) {
       setStatus(taskStatusToDisplay(task.status ?? 'todo'));
       setScope((task.scope_weight ?? 'M') as string);
-      if (task.due_date) setDueDate(new Date(task.due_date));
       setLocalChecklists(task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : []);
     }
   }, [task]);
@@ -334,13 +446,34 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     });
   };
 
-  /* ─ due date ─ */
-  const handleDueDateChange = (date: Date | undefined) => {
-    setDueDate(date);
-    if (taskId) {
-      const isoDate = date ? date.toISOString().split('T')[0] : null;
-      updateTaskMutation.mutate({ taskId, due_date: isoDate });
-    }
+  const parseEffortHours = (raw: string): number | null => {
+    const t = raw.trim().replace(/h$/i, '');
+    if (t === '') return null;
+    const n = Number(t);
+    if (!Number.isFinite(n) || n < 0) return null;
+    return n;
+  };
+
+  const startAddEffort = () => {
+    setEffortDraft('');
+    setAddingEffort(true);
+    setTimeout(() => {
+      effortInputRef.current?.focus();
+      effortInputRef.current?.select();
+    }, 0);
+  };
+
+  const saveEffort = () => {
+    setAddingEffort(false);
+    if (!taskId) return;
+    const hours = parseEffortHours(effortDraft);
+    if (hours === null) return;
+    updateTaskMutation.mutate({ taskId, estimated_hours: hours });
+  };
+
+  const clearEffort = () => {
+    if (!taskId) return;
+    updateTaskMutation.mutate({ taskId, estimated_hours: null });
   };
 
   /* ─ status / scope ─ */
@@ -486,11 +619,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           onChange={(e) => setChecklistDraft(e.target.value)}
                           onBlur={saveChecklistEdit}
                           onKeyDown={(e) => { if (e.key === 'Enter') saveChecklistEdit(); if (e.key === 'Escape') setEditingChecklistIdx(null); }}
-                          className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-[#0b191f] outline-none"
+                          className="min-w-0 flex-1 border-0 bg-transparent font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none"
                         />
                       ) : (
                         <p
-                          className={`min-w-0 flex-1 cursor-text text-[13px] ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
+                          className={`min-w-0 flex-1 cursor-text font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
                           onClick={() => startEditChecklist(idx)}
                         >
                           {item.text}
@@ -515,18 +648,16 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(task.labels ?? []).map((tag, idx) => (
+                {(task.labels ?? []).map((tag) => (
                   <span
                     key={tag}
-                    className={`group relative rounded-[16px] px-4 py-1 text-[14px] font-medium ${
-                      idx === 0 ? 'bg-[#0b191f] text-white' : 'border border-[#cdd2d5] text-[#606d76]'
-                    }`}
+                    className="group relative inline-flex items-center gap-1.5 rounded-[16px] border border-[#cdd2d5] bg-white px-4 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76]"
                   >
-                    {tag}
+                    <span className="inline-flex min-h-[14px] items-center justify-center">{tag}</span>
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="ml-1.5 inline-flex size-4 items-center justify-center rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                      className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-[#606d76] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[#0b191f]"
                       aria-label={`Remove ${tag}`}
                     >
                       <X size={10} />
@@ -534,7 +665,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   </span>
                 ))}
                 {addingTag && (
-                  <span className="rounded-[16px] border border-[#cdd2d5] px-1 py-1">
+                  <span className="inline-flex items-center rounded-[16px] border border-[#cdd2d5] bg-white px-3 py-1.5">
                     <input
                       ref={tagInputRef}
                       type="text"
@@ -542,43 +673,67 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       onChange={(e) => setTagDraft(e.target.value)}
                       onBlur={saveTag}
                       onKeyDown={(e) => { if (e.key === 'Enter') saveTag(); if (e.key === 'Escape') setAddingTag(false); }}
-                      className="w-24 border-0 bg-transparent text-[14px] font-medium text-[#606d76] outline-none"
+                      className="w-24 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76] outline-none placeholder:text-[#606d76]/60"
                     />
                   </span>
                 )}
               </div>
             </section>
 
-            {/* ─── Due Date ─── */}
+            {/* ─── Estimated effort ─── */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Due Date</p>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
-                    >
-                      <CalendarPlus size={14} />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar
-                      mode="single"
-                      selected={dueDate}
-                      onSelect={handleDueDateChange}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <p className="text-[16px] font-medium text-[#0b191f]">Estimated effort</p>
+                {task.estimated_hours == null && !addingEffort ? (
+                  <button
+                    type="button"
+                    onClick={startAddEffort}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 text-[14px] font-medium text-[#0b191f]"
+                  >
+                    Add <Plus size={16} />
+                  </button>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
-                {dueDate ? (
-                  <span className="rounded-[16px] bg-[#0b191f] px-4 py-1 text-[14px] font-medium text-white">
-                    {formatDueDate(dueDate.toISOString())}
+                {task.estimated_hours != null && !addingEffort ? (
+                  <span className="group relative inline-flex items-center gap-1.5 rounded-[16px] bg-[#0b191f] px-4 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-white">
+                    <span className="inline-flex min-h-[14px] items-center justify-center">
+                      {formatEstimatedEffortLabel(task.estimated_hours)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={clearEffort}
+                      className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-white/80 opacity-0 transition-opacity group-hover:opacity-100 hover:text-white"
+                      aria-label="Remove estimated effort"
+                    >
+                      <X size={10} />
+                    </button>
                   </span>
-                ) : (
-                  <p className="text-[13px] text-[#727d83]">No due date set</p>
+                ) : null}
+                {addingEffort && (
+                  <span className="inline-flex items-center rounded-[16px] border border-[#cdd2d5] bg-white px-3 py-1.5">
+                    <input
+                      ref={effortInputRef}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Hours"
+                      value={effortDraft}
+                      onChange={(e) => setEffortDraft(e.target.value)}
+                      onBlur={saveEffort}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEffort();
+                        if (e.key === 'Escape') {
+                          setAddingEffort(false);
+                          setEffortDraft('');
+                        }
+                      }}
+                      className="w-20 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76] outline-none placeholder:text-[#606d76]/60"
+                    />
+                  </span>
                 )}
+                {task.estimated_hours == null && !addingEffort ? (
+                  <p className="w-full text-[13px] text-[#727d83]">No effort set</p>
+                ) : null}
               </div>
             </section>
 
@@ -598,66 +753,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <p className="text-[13px] text-[#727d83]">No attachments yet</p>
               ) : (
                 <div className="space-y-3">
-                  {mappedAttachments.map((attachment) => {
-                    const linkHref = getAttachmentLinkHref(attachment);
-                    const linkLabel = getAttachmentLinkLabel(attachment);
-                    return (
-                      <div key={attachment.id} className="flex items-center gap-2">
-                        <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-[#ededed] pr-2">
-                          <div className="flex w-[50px] items-center justify-center bg-[#edf0f3]">
-                            {attachment.kind === 'link' ? (
-                              <Link2 className="size-4 text-[#606d76]" />
-                            ) : (
-                              <FileText className="size-4 text-[#606d76]" />
-                            )}
-                          </div>
-                          <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-[#ededed] px-4 py-1.5">
-                            {attachment.kind === 'link' && linkHref ? (
-                              <a
-                                href={linkHref}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="truncate text-[16px] font-medium text-[#0b191f] hover:underline"
-                              >
-                                {linkLabel}
-                              </a>
-                            ) : attachment.kind === 'file' ? (
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  try {
-                                    const { blob, filename } = await downloadTaskAttachment(attachment.id);
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = filename || attachment.filename;
-                                    a.click();
-                                    URL.revokeObjectURL(url);
-                                  } catch { /* handled */ }
-                                }}
-                                className="truncate text-left text-[16px] font-medium text-[#0b191f] hover:underline"
-                              >
-                                {attachment.filename}
-                              </button>
-                            ) : (
-                              <p className="truncate text-[16px] font-medium text-[#0b191f]">{attachment.filename}</p>
-                            )}
-                            {attachment.kind === 'file' && attachment.size ? (
-                              <p className="text-[12px] text-[#727d83]">{attachment.size}</p>
-                            ) : null}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => deleteAttachmentMutation.mutate(attachment.id)}
-                          disabled={deleteAttachmentMutation.isPending}
-                          className="text-[#606d76]"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    );
-                  })}
+                  {mappedAttachments.map((attachment) => (
+                    <TaskResourceRow
+                      key={attachment.id}
+                      attachment={attachment}
+                      onDelete={() => deleteAttachmentMutation.mutate(attachment.id)}
+                      deletePending={deleteAttachmentMutation.isPending}
+                    />
+                  ))}
                 </div>
               )}
             </section>

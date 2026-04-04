@@ -16,6 +16,8 @@ export interface TaskAPIResponse {
     milestone_id?: number | null;
     assigned_to?: number | null;
     due_date?: string | null;
+    /** Estimated effort in hours (time tracking). */
+    estimated_hours?: number | null;
     scope_weight?: ScopeWeight | null;
     checklists?: Array<{ id?: string; text: string; done: boolean }> | null;
     created_at?: string;

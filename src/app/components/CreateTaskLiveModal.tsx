@@ -3,7 +3,6 @@
 import { useCallback, useRef, useState } from "react";
 import {
   ArrowLeft,
-  CalendarPlus,
   Check,
   ChevronDown,
   Flag,
@@ -20,12 +19,10 @@ import {
   DialogPortal,
 } from "./ui/dialog";
 import { cn } from "./ui/utils";
-import { Calendar } from "./ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { useCreateTask, useProjectMembers } from "@/api/hooks";
+import { formatEstimatedEffortLabel } from "@/api";
 import type { ScopeWeight } from "@/types/task";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
-import { format } from "date-fns";
 
 type ChecklistRow = { id: string; text: string; done: boolean };
 
@@ -65,7 +62,9 @@ export function CreateTaskLiveModal({
   const [tags, setTags] = useState<string[]>([]);
   const [addingTag, setAddingTag] = useState(false);
   const [tagDraft, setTagDraft] = useState("New tag");
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [estimatedHours, setEstimatedHours] = useState<number | null>(null);
+  const [addingEffort, setAddingEffort] = useState(false);
+  const [effortDraft, setEffortDraft] = useState("");
   const [scope, setScope] = useState<ScopeWeight>("M");
   const [scopeOpen, setScopeOpen] = useState(false);
   const [assignedTo, setAssignedTo] = useState<number | null>(null);
@@ -74,6 +73,7 @@ export function CreateTaskLiveModal({
 
   const titleRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const effortInputRef = useRef<HTMLInputElement>(null);
 
   const reset = useCallback(() => {
     setTitle("");
@@ -82,7 +82,9 @@ export function CreateTaskLiveModal({
     setTags([]);
     setAddingTag(false);
     setTagDraft("New tag");
-    setDueDate(undefined);
+    setEstimatedHours(null);
+    setAddingEffort(false);
+    setEffortDraft("");
     setScope("M");
     setScopeOpen(false);
     setAssignedTo(null);
@@ -133,6 +135,21 @@ export function CreateTaskLiveModal({
     setTags((prev) => prev.filter((t) => t !== tag));
   };
 
+  const parseEffortHours = (raw: string): number | null => {
+    const t = raw.trim().replace(/h$/i, "");
+    if (t === "") return null;
+    const n = Number(t);
+    if (!Number.isFinite(n) || n < 0) return null;
+    return n;
+  };
+
+  const commitEffort = () => {
+    setAddingEffort(false);
+    const hours = parseEffortHours(effortDraft);
+    setEffortDraft("");
+    if (hours !== null) setEstimatedHours(hours);
+  };
+
   const handleCreate = () => {
     if (!title.trim()) {
       titleRef.current?.focus();
@@ -145,7 +162,8 @@ export function CreateTaskLiveModal({
         description: description.trim() || null,
         status: "todo",
         scope_weight: scope,
-        due_date: dueDate ? dueDate.toISOString().split("T")[0] : null,
+        due_date: null,
+        estimated_hours: estimatedHours,
         assigned_to: assignedTo,
         milestone_id: milestoneId ? Number(milestoneId) : null,
         checklists: checklists
@@ -204,7 +222,7 @@ export function CreateTaskLiveModal({
 
           {/* ─── Scrollable body ─── */}
           <div
-            className="z-[2] min-h-0 flex-1 overflow-x-clip overflow-y-auto px-9 py-6"
+            className="scrollbar-hide z-[2] min-h-0 flex-1 overflow-x-clip overflow-y-auto px-9 py-6"
             style={{
               backgroundImage:
                 "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
@@ -298,9 +316,9 @@ export function CreateTaskLiveModal({
                   {tags.map((tag) => (
                     <div
                       key={tag}
-                      className="group flex items-center justify-center gap-1 rounded-[16px] border border-solid border-[#cdd2d5] px-4 py-1"
+                      className="group inline-flex items-center justify-center gap-1.5 rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5"
                     >
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium whitespace-nowrap text-[#606d76]">
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal whitespace-nowrap text-[#606d76]">
                         {tag}
                       </p>
                       <button
@@ -314,7 +332,7 @@ export function CreateTaskLiveModal({
                     </div>
                   ))}
                   {addingTag && (
-                    <div className="flex items-center justify-center gap-1 rounded-[16px] border border-solid border-[#24B5F8] px-4 py-1">
+                    <div className="inline-flex items-center justify-center rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5">
                       <input
                         ref={tagInputRef}
                         type="text"
@@ -325,7 +343,7 @@ export function CreateTaskLiveModal({
                           if (e.key === "Enter") commitTag();
                           if (e.key === "Escape") { setAddingTag(false); setTagDraft("New tag"); }
                         }}
-                        className="w-24 border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] outline-none"
+                        className="w-24 border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76] outline-none placeholder:text-[#606d76]/60"
                       />
                     </div>
                   )}
@@ -334,52 +352,73 @@ export function CreateTaskLiveModal({
 
               {DIVIDER}
 
-              {/* ── Due Date ── */}
+              {/* ── Estimated effort ── */}
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
                   <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                    Due Date
+                    Estimated effort
                   </p>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
-                        aria-label="Set due date"
-                      >
-                        <CalendarPlus size={16} className="text-[#0b191f]" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                      <Calendar
-                        mode="single"
-                        selected={dueDate}
-                        onSelect={(d) => setDueDate(d ?? undefined)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  {estimatedHours == null && !addingEffort ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddingEffort(true);
+                        setEffortDraft("");
+                        setTimeout(() => {
+                          effortInputRef.current?.focus();
+                        }, 0);
+                      }}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]"
+                    >
+                      Add <Plus size={16} />
+                    </button>
+                  ) : null}
                 </div>
-                {dueDate && (
-                  <div className="flex flex-wrap gap-2">
-                    <div className="flex items-center gap-2 rounded-[16px] bg-[#0b191f] py-1 pr-3 pl-4">
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium whitespace-nowrap text-white">
-                        {format(dueDate, "MMM d, yyyy")}
+                <div className="flex w-full flex-wrap gap-2">
+                  {estimatedHours != null && !addingEffort ? (
+                    <div className="group inline-flex items-center gap-1.5 rounded-[16px] bg-[#0b191f] px-4 py-1.5">
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-white">
+                        {formatEstimatedEffortLabel(estimatedHours)}
                       </p>
                       <button
                         type="button"
-                        onClick={() => setDueDate(undefined)}
-                        className="inline-flex border-0 bg-transparent p-0 text-white/70 hover:text-white"
-                        aria-label="Clear due date"
+                        onClick={() => {
+                          setEstimatedHours(null);
+                          setAddingEffort(false);
+                          setEffortDraft("");
+                        }}
+                        className="inline-flex size-4 items-center justify-center text-white/80 opacity-0 transition-opacity group-hover:opacity-100 hover:text-white"
+                        aria-label="Remove estimated effort"
                       >
-                        <X size={14} />
+                        <X size={12} />
                       </button>
                     </div>
-                  </div>
-                )}
-                {!dueDate && (
-                  <p className="font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">No due date set</p>
-                )}
+                  ) : null}
+                  {addingEffort && (
+                    <div className="inline-flex items-center rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5">
+                      <input
+                        ref={effortInputRef}
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Hours"
+                        value={effortDraft}
+                        onChange={(e) => setEffortDraft(e.target.value)}
+                        onBlur={commitEffort}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitEffort();
+                          if (e.key === "Escape") {
+                            setAddingEffort(false);
+                            setEffortDraft("");
+                          }
+                        }}
+                        className="w-20 border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76] outline-none placeholder:text-[#606d76]/60"
+                      />
+                    </div>
+                  )}
+                  {estimatedHours == null && !addingEffort ? (
+                    <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">No effort set</p>
+                  ) : null}
+                </div>
               </div>
 
               {DIVIDER}
@@ -411,7 +450,7 @@ export function CreateTaskLiveModal({
                         className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] text-[#0b191f] outline-none placeholder:text-[#a3aab0]"
                       />
                     </div>
-                    <div className="max-h-[180px] overflow-y-auto">
+                    <div className="scrollbar-hide max-h-[180px] overflow-y-auto">
                       {filteredMembers.map((m) => (
                         <button
                           key={m.userId}
@@ -516,7 +555,7 @@ export function CreateTaskLiveModal({
                           <button
                             type="button"
                             onClick={() => toggleChecklist(item.id)}
-                            className="w-full cursor-pointer text-left font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#0b191f] opacity-50 line-through"
+                            className="w-full cursor-pointer text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
                           >
                             {item.text}
                           </button>
@@ -530,7 +569,7 @@ export function CreateTaskLiveModal({
                               if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                             }}
                             placeholder="Checklist item..."
-                            className="w-full border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
+                            className="w-full border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
                           />
                         )}
                       </div>

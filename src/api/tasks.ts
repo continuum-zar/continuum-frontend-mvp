@@ -44,12 +44,16 @@ export async function updateTask(
         status?: TaskStatus;
         scope_weight?: ScopeWeight;
         due_date?: string | null;
+        estimated_hours?: number | null;
         linked_repo?: string | null;
         linked_branch?: string | null;
         checklists?: TaskChecklistItemUpdate[];
     }
 ): Promise<TaskAPIResponse> {
-    const payload: Record<string, TaskStatus | ScopeWeight | string | null | TaskChecklistItemUpdate[] | undefined> = {};
+    const payload: Record<
+        string,
+        TaskStatus | ScopeWeight | string | number | null | TaskChecklistItemUpdate[] | undefined
+    > = {};
 
     if (body.title !== undefined) {
         payload.title = body.title;
@@ -65,6 +69,9 @@ export async function updateTask(
     }
     if (body.due_date !== undefined) {
         payload.due_date = body.due_date;
+    }
+    if (body.estimated_hours !== undefined) {
+        payload.estimated_hours = body.estimated_hours;
     }
     if (body.linked_repo !== undefined) {
         payload.linked_repo = body.linked_repo;
@@ -88,6 +95,7 @@ export interface CreateTaskBody {
     status?: 'todo' | 'in_progress' | 'done';
     scope_weight?: ScopeWeight;
     due_date?: string | null;
+    estimated_hours?: number | null;
     assigned_to?: number | null;
     milestone_id?: number | null;
     checklists?: Array<{ text: string; done?: boolean }> | null;

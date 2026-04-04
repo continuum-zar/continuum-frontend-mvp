@@ -3,7 +3,6 @@
 import type { DragEvent, ReactNode } from "react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { Plus } from "lucide-react";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 
 import { useProjectTasks, useUpdateTaskStatus } from "@/api/hooks";
@@ -20,6 +19,8 @@ const imgLucidePaperclip = mcpAsset("c4929b2e-a9fc-4fce-913e-ecf4dafe6944");
 const imgLucideMessageCircle = mcpAsset("ff8c6057-7f55-46be-8899-4cb59d2eda1a");
 const imgLucideSearch1 = mcpAsset("c5ee61c3-f628-42e7-b456-58f9c49a5cfe");
 const imgVector10 = mcpAsset("0d58a9e0-9d27-4eb3-ad07-b2ad64a15f10");
+/** Plus icon — To-do column “Create task” (same asset as mock Get started kanban, DashboardPlaceholder). */
+const imgVector11 = mcpAsset("4912f83a-d378-4c38-9bf2-ce38aa20cc19");
 const imgVector12 = mcpAsset("64e38728-fa1b-4a8c-97d3-cbb7f586a27c");
 const imgLucideSquircleDashed = mcpAsset("e2efeca9-31cd-4cf9-ac56-b2799ee8a450");
 const imgLucideCircleCheckBig = mcpAsset("244bb570-3aed-481d-8cf9-f067c69c50b0");
@@ -365,11 +366,18 @@ export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: G
         </div>
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); setCreateTaskOpen(true); }}
-          className="inline-flex items-center justify-center overflow-clip border-0 bg-transparent p-[5px] rounded-[6px] shrink-0 cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            setCreateTaskOpen(true);
+          }}
+          className="content-stretch flex shrink-0 cursor-pointer items-center overflow-clip border-0 bg-transparent p-[5px] relative rounded-[6px]"
           aria-label="Create task"
         >
-          <Plus size={14} className="text-[#606d76]" strokeWidth={2} />
+          <div className="relative shrink-0 size-[14px]">
+            <div className="absolute inset-[-5.36%]">
+              <img alt="" className="block max-w-none size-full" src={imgVector11} />
+            </div>
+          </div>
         </button>
       </div>
     </div>

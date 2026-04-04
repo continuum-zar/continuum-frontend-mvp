@@ -74,6 +74,7 @@ export {
     mapMember,
     mapMilestoneStatus,
     formatDueDate,
+    formatEstimatedEffortLabel,
     mapAttachment,
     getAttachmentLinkHref,
     getAttachmentLinkLabel,
