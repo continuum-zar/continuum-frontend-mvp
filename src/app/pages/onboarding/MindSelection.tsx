@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Check } from "lucide-react";
+import { onboardingRootClassName } from "./onboardingViewportStyles";
 
 const mindOptions = [
   "Career building",
@@ -16,25 +17,9 @@ const mindOptions = [
   "Other",
 ];
 
-function getInitialSelectedMind(): string[] {
-  const saved = localStorage.getItem("continuum_mind_interests");
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved) as string[];
-      if (Array.isArray(parsed)) {
-        const valid = parsed.filter((m) => mindOptions.includes(m));
-        if (valid.length) return valid;
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return [];
-}
-
 export default function MindSelection() {
   const navigate = useNavigate();
-  const [selectedMind, setSelectedMind] = useState<string[]>(getInitialSelectedMind);
+  const [selectedMind, setSelectedMind] = useState<string[]>([]);
 
   const handleMindClick = (option: string) => {
     setSelectedMind((prev) => {
@@ -55,12 +40,12 @@ export default function MindSelection() {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard-placeholder/entry");
+    navigate("/loading", { state: { from: "onboarding" } });
   };
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center"
+      className={onboardingRootClassName}
       style={{
         background: "linear-gradient(180deg, #B2E6F7 -17.26%, #FFFFFF 17.31%)",
         paddingTop: "40px",

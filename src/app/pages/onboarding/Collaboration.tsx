@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import { ChevronLeft } from "lucide-react";
 import UsageOptionCard from "../../components/onboarding/UsageOptionCard";
+import { onboardingRootClassName } from "./onboardingViewportStyles";
 
 type CollaborationMode = "with-others" | "on-my-own";
 
@@ -18,7 +19,7 @@ export default function Collaboration() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center"
+      className={onboardingRootClassName}
       style={{
         background: "linear-gradient(180deg, #B2E6F7 -17.26%, #FFFFFF 17.31%)",
         paddingTop: "40px",

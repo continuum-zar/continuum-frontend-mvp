@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { ChevronLeft, Check } from "lucide-react";
+import { onboardingRootClassName } from "./onboardingViewportStyles";
 
 const features = [
   "Automations",
@@ -24,27 +25,11 @@ const features = [
   "Other",
 ];
 
-function getInitialSelectedFeatures(): string[] {
-  const saved = localStorage.getItem("continuum_feature_interests");
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved) as string[];
-      if (Array.isArray(parsed)) {
-        const valid = parsed.filter((f) => features.includes(f));
-        if (valid.length) return valid;
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return [];
-}
-
 export default function FeatureInterestSelection() {
   const navigate = useNavigate();
   const location = useLocation();
   const fromMind = (location.state as { from?: string } | null)?.from === "mind";
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(getInitialSelectedFeatures);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
   const handleFeatureClick = (feature: string) => {
     setSelectedFeatures((prev) => {
@@ -65,12 +50,12 @@ export default function FeatureInterestSelection() {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard-placeholder/entry");
+    navigate("/loading", { state: { from: "onboarding" } });
   };
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center"
+      className={onboardingRootClassName}
       style={{
         background: "linear-gradient(180deg, #B2E6F7 -17.26%, #FFFFFF 17.31%)",
         paddingTop: "40px",

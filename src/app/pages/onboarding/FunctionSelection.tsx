@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Check } from "lucide-react";
+import { onboardingRootClassName } from "./onboardingViewportStyles";
 
 const functions = [
   "Administrative assistance",
@@ -15,25 +16,9 @@ const functions = [
   "Software development",
 ];
 
-function getInitialSelectedFunctions(): string[] {
-  const saved = localStorage.getItem("continuum_functions");
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved) as string[];
-      if (Array.isArray(parsed)) {
-        const valid = parsed.filter((f) => functions.includes(f));
-        if (valid.length) return valid;
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return [];
-}
-
 export default function FunctionSelection() {
   const navigate = useNavigate();
-  const [selectedFunctions, setSelectedFunctions] = useState<string[]>(getInitialSelectedFunctions);
+  const [selectedFunctions, setSelectedFunctions] = useState<string[]>([]);
 
   const handleFunctionClick = (fn: string) => {
     setSelectedFunctions((prev) => {
@@ -54,12 +39,12 @@ export default function FunctionSelection() {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard-placeholder/entry");
+    navigate("/loading", { state: { from: "onboarding" } });
   };
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center"
+      className={onboardingRootClassName}
       style={{
         background: "linear-gradient(180deg, #B2E6F7 -17.26%, #FFFFFF 17.31%)",
         paddingTop: "40px",

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Check } from "lucide-react";
+import { onboardingRootClassName } from "./onboardingViewportStyles";
 
 const useCases = [
   "Design sprints",
@@ -17,25 +18,9 @@ const useCases = [
   "Other",
 ];
 
-function getInitialSelectedUseCases(): string[] {
-  const saved = localStorage.getItem("continuum_use_cases");
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved) as string[];
-      if (Array.isArray(parsed)) {
-        const valid = parsed.filter((u) => useCases.includes(u));
-        if (valid.length) return valid;
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return [];
-}
-
 export default function UseCaseSelection() {
   const navigate = useNavigate();
-  const [selectedUseCases, setSelectedUseCases] = useState<string[]>(getInitialSelectedUseCases);
+  const [selectedUseCases, setSelectedUseCases] = useState<string[]>([]);
 
   const handleUseCaseClick = (useCase: string) => {
     setSelectedUseCases((prev) => {
@@ -56,12 +41,12 @@ export default function UseCaseSelection() {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard-placeholder/entry");
+    navigate("/loading", { state: { from: "onboarding" } });
   };
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center"
+      className={onboardingRootClassName}
       style={{
         background: "linear-gradient(180deg, #B2E6F7 -17.26%, #FFFFFF 17.31%)",
         paddingTop: "40px",

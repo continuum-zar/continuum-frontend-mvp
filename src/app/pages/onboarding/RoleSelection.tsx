@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Check } from "lucide-react";
+import { onboardingRootClassName } from "./onboardingViewportStyles";
 
 function getRoleBackPath(): string {
   const usage = localStorage.getItem("continuum_usage_mode");
@@ -20,27 +21,9 @@ const roles = [
   "Other",
 ];
 
-function getInitialSelectedRoles(): string[] {
-  const saved = localStorage.getItem("continuum_roles");
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved) as string[];
-      if (Array.isArray(parsed)) {
-        const valid = parsed.filter((r) => roles.includes(r));
-        if (valid.length) return valid;
-      }
-    } catch {
-      // ignore
-    }
-  }
-  const legacy = localStorage.getItem("continuum_role");
-  if (legacy && roles.includes(legacy)) return [legacy];
-  return [];
-}
-
 export default function OnboardingRoleSelection() {
   const navigate = useNavigate();
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(getInitialSelectedRoles);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const handleRoleClick = (role: string) => {
     setSelectedRoles((prev) => {
@@ -61,12 +44,12 @@ export default function OnboardingRoleSelection() {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard-placeholder/entry");
+    navigate("/loading", { state: { from: "onboarding" } });
   };
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center"
+      className={onboardingRootClassName}
       style={{
         background: "linear-gradient(180deg, #B2E6F7 -17.26%, #FFFFFF 17.31%)",
         paddingTop: "40px",
