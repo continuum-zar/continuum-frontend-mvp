@@ -1,14 +1,18 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
+import { SESSION_POST_ONBOARDING_WELCOME_KEY } from '@/app/components/welcome/welcomeModalAssets';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
 
 const LOADING_DURATION_MS = 2500;
 
 export function Loading() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    const fromOnboarding = (location.state as { from?: string } | null)?.from === 'onboarding';
+
     const minDelay = new Promise<void>((resolve) => {
       window.setTimeout(resolve, LOADING_DURATION_MS);
     });
@@ -17,16 +21,26 @@ export function Loading() {
 
     Promise.all([minDelay, pathPromise])
       .then(([, path]) => {
-        if (!cancelled) navigate(path, { replace: true });
+        if (!cancelled) {
+          if (fromOnboarding) {
+            sessionStorage.setItem(SESSION_POST_ONBOARDING_WELCOME_KEY, '1');
+          }
+          navigate(path, { replace: true });
+        }
       })
       .catch(() => {
-        if (!cancelled) navigate('/dashboard-placeholder/get-started', { replace: true });
+        if (!cancelled) {
+          if (fromOnboarding) {
+            sessionStorage.setItem(SESSION_POST_ONBOARDING_WELCOME_KEY, '1');
+          }
+          navigate('/dashboard-placeholder/get-started', { replace: true });
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, location.state]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[#A8E5FE] to-[#FAF8F4] p-10">

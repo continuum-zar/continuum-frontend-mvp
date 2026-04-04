@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { DragEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
@@ -6,6 +6,7 @@ import { GetStartedKanbanLive } from "../components/dashboard-placeholder/GetSta
 import { isApiProjectId } from "../data/dashboardPlaceholderProjects";
 
 import { useProjectMembers } from "@/api/hooks";
+import { useAuthStore } from "@/store/authStore";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
@@ -14,6 +15,11 @@ import { DashboardLeftRail } from "../components/dashboard-placeholder/Dashboard
 import { LogTimeModal } from "../components/dashboard-placeholder/LogTimeModal";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
+import { WelcomeToContinuumModal } from "../components/welcome/WelcomeToContinuumModal";
+import {
+  SESSION_POST_ONBOARDING_WELCOME_KEY,
+  welcomeModalDismissedKeyForUser,
+} from "../components/welcome/welcomeModalAssets";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgLucideTimer = mcpAsset("5b386900-0988-47bc-b5fd-da0ce6db2015");
@@ -279,12 +285,32 @@ export function DashboardPlaceholder() {
   const [logTimeOpen, setLogTimeOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
+  const [welcomeToContinuumOpen, setWelcomeToContinuumOpen] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get("project");
   const milestoneParam = searchParams.get("milestone");
   const isLiveBoard = projectParam != null && isApiProjectId(projectParam);
   const liveProjectId = isLiveBoard && projectParam ? Number(projectParam) : null;
+  const userId = useAuthStore((s) => s.user?.id);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!userId) return;
+    if (localStorage.getItem(welcomeModalDismissedKeyForUser(userId)) === "1") return;
+    if (sessionStorage.getItem(SESSION_POST_ONBOARDING_WELCOME_KEY) !== "1") return;
+    setWelcomeToContinuumOpen(true);
+  }, [userId]);
+
+  const handleWelcomeToContinuumOpenChange = (open: boolean) => {
+    setWelcomeToContinuumOpen(open);
+    if (!open) {
+      if (userId) {
+        localStorage.setItem(welcomeModalDismissedKeyForUser(userId), "1");
+      }
+      sessionStorage.removeItem(SESSION_POST_ONBOARDING_WELCOME_KEY);
+    }
+  };
   const liveMembersQuery = useProjectMembers(liveProjectId, { enabled: liveProjectId != null });
   const liveMembers: Member[] = liveMembersQuery.data ?? [];
   const liveHeaderVisibleMembers = liveMembers.slice(0, LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX);
@@ -1339,6 +1365,7 @@ export function DashboardPlaceholder() {
       <LogTimeModal open={logTimeOpen} onOpenChange={setLogTimeOpen} />
       <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} projectId={isLiveBoard ? Number(projectParam) : undefined} />
       <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} showQuickActions={false} />
+      <WelcomeToContinuumModal open={welcomeToContinuumOpen} onOpenChange={handleWelcomeToContinuumOpenChange} />
     </div>
   );
 }
