@@ -36,6 +36,7 @@ import {
     fetchTask,
     fetchProjectTasks,
     fetchAllTasks,
+    createTask,
     updateTaskStatus,
     updateTask,
     deleteTask,
@@ -53,6 +54,7 @@ import {
 import { fetchLoggedHours, createLoggedHour } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
 import type { Task, TaskStatus, ScopeWeight } from '@/types/task';
+import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
 
 /** Normalize FastAPI error detail into a single message. */
@@ -105,6 +107,21 @@ export function useAllTasks(options?: { enabled?: boolean }) {
         queryKey: projectKeys.allTasks(),
         queryFn: fetchAllTasks,
         enabled: options?.enabled,
+    });
+}
+
+export function useCreateTask() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateTaskBody) => createTask(body),
+        onSuccess: (_data, body) => {
+            queryClient.invalidateQueries({ queryKey: projectKeys.tasks(body.project_id) });
+            queryClient.invalidateQueries({ queryKey: projectKeys.allTasks() });
+            toast.success('Task created');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to create task'));
+        },
     });
 }
 
@@ -314,6 +331,8 @@ export function useUpdateTask() {
     return useMutation({
         mutationFn: ({
             taskId,
+            title,
+            description,
             status,
             scope_weight,
             due_date,
@@ -322,13 +341,15 @@ export function useUpdateTask() {
             checklists,
         }: {
             taskId: string | number;
+            title?: string;
+            description?: string | null;
             status?: TaskStatus;
             scope_weight?: ScopeWeight;
             due_date?: string | null;
             linked_repo?: string | null;
             linked_branch?: string | null;
             checklists?: Array<{ id?: string; text: string; done: boolean }>;
-        }) => updateTask(taskId, { status, scope_weight, due_date, linked_repo, linked_branch, checklists }),
+        }) => updateTask(taskId, { title, description, status, scope_weight, due_date, linked_repo, linked_branch, checklists }),
         onSuccess: (_data, { taskId }) => {
             // Show success toast
             toast.success('Task updated successfully');

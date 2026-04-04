@@ -2,7 +2,9 @@
 
 import type { DragEvent, ReactNode } from "react";
 import { useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
+import { Plus } from "lucide-react";
+import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 
 import { useProjectTasks, useUpdateTaskStatus } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
@@ -36,7 +38,6 @@ function columnForTaskStatus(status: TaskStatus): ColumnId {
   return "completed";
 }
 
-const STATIC_TASK_DETAIL_PATH = "/dashboard-placeholder/task/1";
 
 export type GetStartedKanbanLiveProps = {
   projectId: number;
@@ -47,6 +48,7 @@ export type GetStartedKanbanLiveProps = {
 
 export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: GetStartedKanbanLiveProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const tasksQuery = useProjectTasks(projectId);
   const updateStatusMutation = useUpdateTaskStatus(projectId);
   const pendingMoveRef = useRef(new Set<string>());
@@ -68,6 +70,7 @@ export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: G
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<ColumnId | null>(null);
+  const [createTaskOpen, setCreateTaskOpen] = useState(false);
 
   const handleMove = (taskId: string, newStatus: TaskStatus) => {
     if (pendingMoveRef.current.has(taskId)) return;
@@ -165,7 +168,7 @@ export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: G
         onDragStart={handleDragStart(task.id)}
         onDragEnd={handleDragEnd}
         onDragOver={handleCardDragOver}
-        onClick={() => navigate(STATIC_TASK_DETAIL_PATH)}
+        onClick={() => navigate(`/dashboard-placeholder/task/${task.id}?${searchParams.toString()}`)}
       >
         <div
           className={`bg-white ${isDragging ? "border-2 border-[#24B5F8]" : "border border-[#ebedee]"} border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full`}
@@ -360,6 +363,14 @@ export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: G
             </div>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setCreateTaskOpen(true); }}
+          className="inline-flex items-center justify-center overflow-clip border-0 bg-transparent p-[5px] rounded-[6px] shrink-0 cursor-pointer"
+          aria-label="Create task"
+        >
+          <Plus size={14} className="text-[#606d76]" strokeWidth={2} />
+        </button>
       </div>
     </div>
   );
@@ -409,33 +420,41 @@ export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: G
   );
 
   return (
-    <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]">
-      {colWrap(
-        "todo",
-        <>
-          {byColumn.todo.map(renderLiveCard)}
-          {byColumn.todo.length === 0 && (
-            <p className="text-[13px] text-[#727d83]">No tasks in To-do{milestoneId ? " for this milestone" : ""}.</p>
-          )}
-        </>,
-        todoHeader
-      )}
-      {colWrap(
-        "in-progress",
-        <>
-          {byColumn["in-progress"].map(renderLiveCard)}
-          {byColumn["in-progress"].length === 0 && <p className="text-[13px] text-[#727d83]">No tasks in progress.</p>}
-        </>,
-        inProgressHeader
-      )}
-      {colWrap(
-        "completed",
-        <>
-          {byColumn.completed.map(renderLiveCard)}
-          {byColumn.completed.length === 0 && <p className="text-[13px] text-[#727d83]">No completed tasks.</p>}
-        </>,
-        doneHeader
-      )}
-    </div>
+    <>
+      <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]">
+        {colWrap(
+          "todo",
+          <>
+            {byColumn.todo.map(renderLiveCard)}
+            {byColumn.todo.length === 0 && (
+              <p className="text-[13px] text-[#727d83]">No tasks in To-do{milestoneId ? " for this milestone" : ""}.</p>
+            )}
+          </>,
+          todoHeader
+        )}
+        {colWrap(
+          "in-progress",
+          <>
+            {byColumn["in-progress"].map(renderLiveCard)}
+            {byColumn["in-progress"].length === 0 && <p className="text-[13px] text-[#727d83]">No tasks in progress.</p>}
+          </>,
+          inProgressHeader
+        )}
+        {colWrap(
+          "completed",
+          <>
+            {byColumn.completed.map(renderLiveCard)}
+            {byColumn.completed.length === 0 && <p className="text-[13px] text-[#727d83]">No completed tasks.</p>}
+          </>,
+          doneHeader
+        )}
+      </div>
+      <CreateTaskLiveModal
+        open={createTaskOpen}
+        onOpenChange={setCreateTaskOpen}
+        projectId={projectId}
+        milestoneId={milestoneId}
+      />
+    </>
   );
 }

@@ -35,10 +35,12 @@ export async function fetchTask(taskId: number | string): Promise<TaskAPIRespons
 /** Checklist item shape for task update (matches API TaskChecklistItem). */
 export type TaskChecklistItemUpdate = { id?: string; text: string; done: boolean };
 
-/** Update task with multiple fields (status, scope_weight, due_date, linked_repo, linked_branch, checklists). Returns updated task from API. */
+/** Update task with multiple fields. Returns updated task from API. */
 export async function updateTask(
     taskId: number | string,
     body: {
+        title?: string;
+        description?: string | null;
         status?: TaskStatus;
         scope_weight?: ScopeWeight;
         due_date?: string | null;
@@ -49,6 +51,12 @@ export async function updateTask(
 ): Promise<TaskAPIResponse> {
     const payload: Record<string, TaskStatus | ScopeWeight | string | null | TaskChecklistItemUpdate[] | undefined> = {};
 
+    if (body.title !== undefined) {
+        payload.title = body.title;
+    }
+    if (body.description !== undefined) {
+        payload.description = body.description;
+    }
     if (body.status !== undefined) {
         payload.status = body.status === 'in-progress' ? 'in_progress' : body.status;
     }
@@ -69,6 +77,26 @@ export async function updateTask(
     }
 
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
+    return data;
+}
+
+/** Payload for creating a new task. */
+export interface CreateTaskBody {
+    title: string;
+    project_id: number;
+    description?: string | null;
+    status?: 'todo' | 'in_progress' | 'done';
+    scope_weight?: ScopeWeight;
+    due_date?: string | null;
+    assigned_to?: number | null;
+    milestone_id?: number | null;
+    checklists?: Array<{ text: string; done?: boolean }> | null;
+    labels?: string[] | null;
+}
+
+/** Create a task. POST /tasks/ */
+export async function createTask(body: CreateTaskBody): Promise<TaskAPIResponse> {
+    const { data } = await api.post<TaskAPIResponse>('/tasks/', body);
     return data;
 }
 

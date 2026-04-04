@@ -20,6 +20,7 @@ export {
 export type { DownloadProjectAttachmentResult } from './projects';
 export {
     fetchTask,
+    createTask,
     updateTask,
     deleteTask,
     fetchProjectTasks,
@@ -51,6 +52,7 @@ export type {
     TaskContextResponse,
     RelatedTasksResponse,
     RelatedTaskItem,
+    CreateTaskBody,
 } from './tasks';
 export {
     fetchRepositories,
@@ -82,6 +84,7 @@ export {
     useProject,
     useProjectTasks,
     useAllTasks,
+    useCreateTask,
     useTask,
     useProjectMilestones,
     useProjectMembers,
