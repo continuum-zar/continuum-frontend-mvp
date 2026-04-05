@@ -4,9 +4,9 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Download, FileText, Link2, X } from "lucide-react";
+import { Download, FileText, Link2, Loader2, X } from "lucide-react";
 
 import {
   downloadProjectAttachment,
@@ -17,9 +17,12 @@ import {
   useDeleteProjectAttachment,
   useProjectAttachments,
   useProjectRepositories,
-  useUnlinkRepository,
   useProjectMembers,
+  useScanRepository,
+  useUnlinkRepository,
+  useWikiScanStatus,
 } from "@/api";
+import type { ScanStatusResponse } from "@/api";
 import { toast } from "sonner";
 import type { Attachment } from "@/types/attachment";
 import type { Member } from "@/types/member";
@@ -224,12 +227,45 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
   );
 }
 
-function LiveRepositoryRow({ repo, projectId }: { repo: Repository; projectId: number }) {
+function repositoryStatusSubtitle(
+  scan: ScanStatusResponse | undefined,
+  scanLoading: boolean,
+): string {
+  if (scanLoading && !scan) return "Loading status…";
+  const isScanning = scan?.is_scanning ?? false;
+  if (isScanning) return "Indexing…";
+  const files = scan?.files_indexed ?? 0;
+  const lastRaw = scan?.last_scanned_at;
+  const lastAt =
+    lastRaw && !Number.isNaN(Date.parse(lastRaw)) ? new Date(lastRaw) : null;
+  const parts: string[] = [];
+  if (files > 0) parts.push(`${files} file${files === 1 ? "" : "s"} indexed`);
+  if (lastAt) {
+    parts.push(`Last indexed ${formatDistanceToNow(lastAt, { addSuffix: true })}`);
+  }
+  if (parts.length > 0) return parts.join(" · ");
+  return "Not indexed yet";
+}
+
+function LiveRepositoryRow({
+  repo,
+  projectId,
+  scanStatus,
+  scanLoading,
+  onIndex,
+  isIndexPending,
+}: {
+  repo: Repository;
+  projectId: number;
+  scanStatus: ScanStatusResponse | undefined;
+  scanLoading: boolean;
+  onIndex: () => void;
+  isIndexPending: boolean;
+}) {
   const unlinkMutation = useUnlinkRepository(projectId);
-  const lastIndexed =
-    repo.updatedAt && !Number.isNaN(new Date(repo.updatedAt).getTime())
-      ? `Last indexed ${formatDistanceToNow(new Date(repo.updatedAt), { addSuffix: true })}`
-      : "—";
+  const isScanning = (scanStatus?.is_scanning ?? false) || isIndexPending;
+  const subtitle = repositoryStatusSubtitle(scanStatus, scanLoading);
+  const indexDisabled = isScanning;
 
   const handleRemove = () => {
     if (!window.confirm("Disconnect this repository from the project?")) return;
@@ -247,15 +283,22 @@ function LiveRepositoryRow({ repo, projectId }: { repo: Repository; projectId: n
             <p className="truncate text-[16px] text-[#0b191f]" title={repo.repositoryUrl}>
               {repo.repositoryUrl}
             </p>
-            <p className="max-w-full truncate text-[12px] text-[#727d83]" title={lastIndexed}>
-              {lastIndexed}
+            <p className="max-w-full truncate text-[12px] text-[#727d83]" title={subtitle}>
+              {subtitle}
             </p>
           </div>
-          <div className="flex shrink-0 items-center justify-center rounded border border-solid border-[#ededed] bg-white px-1 py-0.5">
-            <span className="font-['Satoshi',sans-serif] text-[11px] font-medium whitespace-nowrap text-[#727d83]">
-              Index
-            </span>
-          </div>
+          <button
+            type="button"
+            disabled={indexDisabled}
+            onClick={onIndex}
+            title="Index this repository so AI can use code context"
+            className="flex shrink-0 items-center justify-center gap-1 rounded border border-solid border-[#ededed] bg-white px-2 py-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium whitespace-nowrap text-[#727d83] outline-none hover:bg-[#f7f8f9] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isScanning ? (
+              <Loader2 className="size-3 shrink-0 animate-spin" strokeWidth={2} aria-hidden />
+            ) : null}
+            {isScanning ? "Indexing…" : "Index"}
+          </button>
         </div>
       </div>
       <button
@@ -281,10 +324,29 @@ export function WelcomeEmptyProjectBody({
 }) {
   const [addResourceOpen, setAddResourceOpen] = useState(false);
   const [linkRepoOpen, setLinkRepoOpen] = useState(false);
+  const previouslyScanningRepoIdsRef = useRef<Set<number>>(new Set());
 
   const attachmentsQuery = useProjectAttachments(projectId);
   const repositoriesQuery = useProjectRepositories(projectId);
   const membersQuery = useProjectMembers(projectId);
+  const wikiScanStatusQuery = useWikiScanStatus(projectId);
+  const scanRepositoryMutation = useScanRepository(projectId);
+
+  useEffect(() => {
+    const data = wikiScanStatusQuery.data;
+    if (!data) return;
+    const nowScanning = new Set(data.filter((s) => s.is_scanning).map((s) => s.repository_id));
+    const prev = previouslyScanningRepoIdsRef.current;
+    const finished = [...prev].filter((id) => !nowScanning.has(id));
+    if (finished.length > 0) {
+      toast.success(
+        finished.length === 1
+          ? "Repository indexing complete."
+          : `${finished.length} repositories finished indexing.`,
+      );
+    }
+    previouslyScanningRepoIdsRef.current = nowScanning;
+  }, [wikiScanStatusQuery.data]);
 
   const attachments = (attachmentsQuery.data ?? []).map(mapAttachment);
   const repositories = repositoriesQuery.data ?? [];
@@ -346,9 +408,23 @@ export function WelcomeEmptyProjectBody({
           <EmptyPlaceholderCard icon={imgLucideGitBranch} title="No repositories connected" />
         ) : (
           <div className="flex w-full flex-col gap-4">
-            {repositories.map((repo) => (
-              <LiveRepositoryRow key={repo.id} repo={repo} projectId={projectId} />
-            ))}
+            {repositories.map((repo) => {
+              const scanStatus = wikiScanStatusQuery.data?.find((s) => s.repository_id === repo.id);
+              const isIndexPending =
+                scanRepositoryMutation.isPending &&
+                scanRepositoryMutation.variables?.repository_id === repo.id;
+              return (
+                <LiveRepositoryRow
+                  key={repo.id}
+                  repo={repo}
+                  projectId={projectId}
+                  scanStatus={scanStatus}
+                  scanLoading={wikiScanStatusQuery.isLoading}
+                  isIndexPending={isIndexPending}
+                  onIndex={() => scanRepositoryMutation.mutate({ repository_id: repo.id })}
+                />
+              );
+            })}
           </div>
         )}
       </div>

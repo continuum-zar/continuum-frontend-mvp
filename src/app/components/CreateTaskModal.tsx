@@ -1,18 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, FileText, Link2, Plus, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Dialog,
-  DialogClose,
   DialogOverlay,
   DialogPortal,
 } from "./ui/dialog";
 import { cn } from "./ui/utils";
 import { AddResourceModal } from "./welcome/AddResourceModal";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
-import { welcomeResourcesMock, type WelcomeResourceItem } from "@/app/data/welcomeDashboardMock";
 import { formatEstimatedEffortLabel } from "@/api";
 
 const imgLucideArrowLeft =
@@ -23,14 +21,8 @@ const imgVector15 =
   mcpAsset("ed075df4-e80e-41eb-a544-5369dfb77a46");
 const imgLucideTag =
   mcpAsset("d427a1f8-33d2-4b4d-a88d-0d6788ed82e6");
-const imgLucideCheck =
-  mcpAsset("f17b7c55-8260-41c2-9b91-6892f419b0f9");
 const imgLucideUserRoundPlus1 =
   mcpAsset("3b9ddb70-8dce-456b-9932-8b226f04049a");
-const imgLucideCheck1 =
-  mcpAsset("023443fc-c32a-461b-8dbd-55d6e32cd451");
-const imgComponent34 =
-  mcpAsset("0a33d0b2-07cc-4490-b6ee-909fecb0efb5");
 const DEFAULT_TASK_TITLE = "Set up high-fidelity prototypes with conditional logic";
 const DEFAULT_TASK_DESCRIPTION =
   "A long description goes here, this space will only show two lines before truncation. ";
@@ -42,6 +34,8 @@ export type CreateTaskModalPrefill = {
   description: string;
   descriptionMeta?: string;
   checklist?: ChecklistRow[];
+  /** AI-generated labels (e.g. backend, security). Shown as tag pills when present. */
+  labels?: string[];
 };
 
 type CreateTaskModalProps = {
@@ -121,55 +115,14 @@ export function CreateTaskModal({
     }
   }, [open, prefill, prefillKey]);
 
-  const renderResourceRow = (item: WelcomeResourceItem) => {
-    if (item.kind === "link") {
-      return (
-        <div key={item.id} className="flex w-full items-center gap-2">
-          <div className="flex min-h-[34px] min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
-            <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
-              <Link2 className="size-4 text-[#606d76]" strokeWidth={1.75} />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
-              <p className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
-                {item.url}
-              </p>
-            </div>
-          </div>
-          <button type="button" className="inline-flex shrink-0 text-[#606d76]" aria-label="Remove resource">
-            <X className="size-4" strokeWidth={1.75} />
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <div key={item.id} className="flex w-full items-center gap-2">
-        <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
-          <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
-            <FileText className="size-4 text-[#606d76]" strokeWidth={1.75} />
-          </div>
-          <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
-            <p className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
-              {item.name}
-            </p>
-            <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">
-              {item.sizeLabel}
-            </p>
-          </div>
-        </div>
-        <button type="button" className="inline-flex shrink-0 text-[#606d76]" aria-label="Remove resource">
-          <X className="size-4" strokeWidth={1.75} />
-        </button>
-      </div>
-    );
-  };
-
   const showCarousel = Boolean(carousel && carousel.total > 1);
   const canPrev = showCarousel && carousel!.index > 0;
   const canNext = showCarousel && carousel!.index < carousel!.total - 1;
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={() => {}}>
       <AddResourceModal open={addResourceOpen} onOpenChange={setAddResourceOpen} />
       <DialogPortal>
         <DialogOverlay className="bg-black/25" />
@@ -177,12 +130,9 @@ export function CreateTaskModal({
           <button
             type="button"
             aria-label="Previous task"
-            data-task-carousel-nav=""
-            onClick={(e) => {
-              e.stopPropagation();
-              carousel!.onPrev();
-            }}
-            className="fixed top-1/2 left-4 z-[60] flex size-12 -translate-y-1/2 items-center justify-center rounded-[999px] border-0 bg-white shadow-md md:left-8"
+            onClick={() => carousel!.onPrev()}
+            style={{ pointerEvents: "auto" }}
+            className="fixed top-1/2 left-4 z-[60] flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[999px] border-0 bg-white shadow-md md:left-8"
           >
             <ChevronLeft className="size-8 text-[#0b191f]" strokeWidth={1.5} />
           </button>
@@ -191,21 +141,15 @@ export function CreateTaskModal({
           <button
             type="button"
             aria-label="Next task"
-            data-task-carousel-nav=""
-            onClick={(e) => {
-              e.stopPropagation();
-              carousel!.onNext();
-            }}
-            className="fixed top-1/2 right-4 z-[60] flex size-12 -translate-y-1/2 items-center justify-center rounded-[999px] border-0 bg-white shadow-md md:right-8"
+            onClick={() => carousel!.onNext()}
+            style={{ pointerEvents: "auto" }}
+            className="fixed top-1/2 right-4 z-[60] flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[999px] border-0 bg-white shadow-md md:right-8"
           >
             <ChevronRight className="size-8 text-[#0b191f]" strokeWidth={1.5} />
           </button>
         )}
         {showCarousel && (
-          <div
-            className="fixed bottom-8 left-1/2 z-[60] -translate-x-1/2"
-            data-task-carousel-nav=""
-          >
+          <div className="fixed bottom-8 left-1/2 z-[60] -translate-x-1/2" style={{ pointerEvents: "auto" }}>
             <div
               className="flex gap-2 rounded-[99px] bg-white/90 p-2 shadow-sm backdrop-blur-[10px]"
               role="tablist"
@@ -226,16 +170,10 @@ export function CreateTaskModal({
         )}
         <DialogPrimitive.Content
           aria-describedby={undefined}
-          onPointerDownOutside={(e) => {
-            if ((e.target as HTMLElement).closest("[data-task-carousel-nav]")) {
-              e.preventDefault();
-            }
-          }}
-          onInteractOutside={(e) => {
-            if ((e.target as HTMLElement).closest("[data-task-carousel-nav]")) {
-              e.preventDefault();
-            }
-          }}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={() => onOpenChange(false)}
           className={cn(
             "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(886px,90vh)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
           )}
@@ -243,17 +181,16 @@ export function CreateTaskModal({
           <DialogPrimitive.Title className="sr-only">{headerTitle}</DialogPrimitive.Title>
 
           <div className="z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
-            <DialogClose asChild>
-              <button
-                type="button"
-                className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
-                aria-label="Back"
-              >
-                <span className="relative block size-5">
-                  <img alt="" className="block size-full max-w-none" src={imgLucideArrowLeft} />
-                </span>
-              </button>
-            </DialogClose>
+            <button
+              type="button"
+              className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
+              aria-label="Back"
+              onClick={() => onOpenChange(false)}
+            >
+              <span className="relative block size-5">
+                <img alt="" className="block size-full max-w-none" src={imgLucideArrowLeft} />
+              </span>
+            </button>
             <div className="pointer-events-none absolute left-1/2 top-[25px] flex -translate-x-1/2 flex-col items-center gap-3">
               <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
                 {headerTitle}
@@ -279,7 +216,7 @@ export function CreateTaskModal({
           >
             <div className="flex w-full flex-col gap-6 pb-6">
               <div className="flex w-full items-center bg-white py-2">
-                <p className="min-w-0 flex-1 font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">
+                <p className="min-w-0 flex-1 break-words font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">
                   {taskTitle}
                 </p>
               </div>
@@ -288,12 +225,14 @@ export function CreateTaskModal({
                 <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
                   Description
                 </p>
-                <div className="flex h-[106px] w-full flex-col justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 pt-4 pb-2">
-                  <p className="w-full font-['Satoshi',sans-serif] text-[16px] font-medium text-[#606d76]">
-                    {taskDescription}
-                  </p>
-                  <div className="flex w-full items-center justify-end opacity-[0.32]">
-                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium whitespace-nowrap text-[#606d76]">
+                <div className="flex max-h-[min(240px,40vh)] w-full min-h-[120px] flex-col overflow-hidden rounded-[8px] border border-solid border-[#e9e9e9] bg-white">
+                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-2">
+                    <p className="whitespace-pre-wrap break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-relaxed text-[#0b191f]">
+                      {taskDescription}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center justify-end border-t border-[#e9e9e9]/80 px-4 py-2 opacity-[0.5]">
+                    <p className="font-['Satoshi',sans-serif] text-[12px] font-medium whitespace-nowrap text-[#606d76]">
                       {taskDescriptionMeta}
                     </p>
                   </div>
@@ -322,29 +261,22 @@ export function CreateTaskModal({
                   </div>
                 </div>
                 <div className="flex w-full flex-wrap content-start items-start gap-2">
-                  <div className="inline-flex items-center justify-center gap-2 rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5">
-                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal whitespace-nowrap text-[#606d76]">
-                      Wireframes
+                  {(prefill?.labels ?? []).length > 0 ? (
+                    prefill!.labels!.map((label, i) => (
+                      <div
+                        key={`${label}-${i}`}
+                        className="inline-flex max-w-full items-center rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5"
+                      >
+                        <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[14px] font-medium leading-snug text-[#606d76]">
+                          {label}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
+                      No tags
                     </p>
-                    <img alt="" className="size-4 opacity-70" src={imgLucideCheck} />
-                  </div>
-                  {[
-                    "Prototypes",
-                    "User Flows",
-                    "Design Systems",
-                    "Usability Testing",
-                    "Final Mockups",
-                    "User Testing Feedback",
-                  ].map((label) => (
-                    <div
-                      key={label}
-                      className="inline-flex items-center justify-center rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5"
-                    >
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal whitespace-nowrap text-[#606d76]">
-                        {label}
-                      </p>
-                    </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -447,52 +379,9 @@ export function CreateTaskModal({
                     <img alt="" className="size-4" src={imgLucideUserRoundPlus1} />
                   </div>
                 </div>
-                <div className="flex w-full flex-wrap items-center gap-4">
-                  <div className="relative inline-flex shrink-0 flex-none">
-                    <div className="box-border flex size-[36px] min-h-[36px] min-w-[36px] max-h-[36px] max-w-[36px] flex-none items-center justify-center overflow-hidden rounded-full border-[1.5px] border-solid border-white bg-[#e19c02] [aspect-ratio:1/1]">
-                      <span className="leading-none font-['Satoshi',sans-serif] text-[13.5px] font-medium text-white">
-                        FA
-                      </span>
-                    </div>
-                    <span className="absolute -right-px -bottom-px box-border flex size-[12px] min-h-[12px] min-w-[12px] flex-none items-center justify-center overflow-hidden rounded-full border-[1.5px] border-solid border-white bg-black [aspect-ratio:1/1]">
-                      <img alt="" className="block size-[7px] shrink-0 object-contain" src={imgLucideCheck1} />
-                    </span>
-                  </div>
-                  <div className="relative inline-flex shrink-0 flex-none">
-                    <div className="box-border flex size-[36px] min-h-[36px] min-w-[36px] max-h-[36px] max-w-[36px] flex-none items-center justify-center overflow-hidden rounded-full border-[1.5px] border-solid border-white bg-[#f17173] [aspect-ratio:1/1]">
-                      <span className="leading-none font-['Satoshi',sans-serif] text-[13.5px] font-medium text-white">
-                        GB
-                      </span>
-                    </div>
-                    <span className="absolute -right-px -bottom-px box-border flex size-[12px] min-h-[12px] min-w-[12px] flex-none items-center justify-center overflow-hidden rounded-full border-[1.5px] border-solid border-white bg-black [aspect-ratio:1/1]">
-                      <img alt="" className="block size-[7px] shrink-0 object-contain" src={imgLucideCheck1} />
-                    </span>
-                  </div>
-                  <div className="inline-flex size-[36px] min-h-[36px] min-w-[36px] max-h-[36px] max-w-[36px] flex-none shrink-0 items-center justify-center overflow-hidden rounded-full border-[1.5px] border-solid border-white bg-[#815cf8] [aspect-ratio:1/1]">
-                    <span className="leading-none font-['Satoshi',sans-serif] text-[13.5px] font-medium text-white">
-                      HC
-                    </span>
-                  </div>
-                  <div className="inline-flex size-[36px] min-h-[36px] min-w-[36px] max-h-[36px] max-w-[36px] flex-none shrink-0 overflow-hidden rounded-full border-[1.5px] border-solid border-white [aspect-ratio:1/1]">
-                    <img
-                      alt=""
-                      className="h-full w-full min-h-0 min-w-0 flex-none object-cover"
-                      height={36}
-                      src={imgComponent34}
-                      width={36}
-                    />
-                  </div>
-                  <div className="relative inline-flex shrink-0 flex-none">
-                    <div className="box-border flex size-[36px] min-h-[36px] min-w-[36px] max-h-[36px] max-w-[36px] flex-none items-center justify-center overflow-hidden rounded-full border-[1.5px] border-solid border-white bg-[#3899fa] [aspect-ratio:1/1]">
-                      <span className="leading-none font-['Satoshi',sans-serif] text-[13.5px] font-medium text-white">
-                        JE
-                      </span>
-                    </div>
-                    <span className="absolute -right-px -bottom-px box-border flex size-[12px] min-h-[12px] min-w-[12px] flex-none items-center justify-center overflow-hidden rounded-full border-[1.5px] border-solid border-white bg-black [aspect-ratio:1/1]">
-                      <img alt="" className="block size-[7px] shrink-0 object-contain" src={imgLucideCheck1} />
-                    </span>
-                  </div>
-                </div>
+                <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
+                  Not assigned
+                </p>
               </div>
 
               <div className="relative h-0 w-full shrink-0">
@@ -515,14 +404,14 @@ export function CreateTaskModal({
                     <Plus className="size-4 text-[#0b191f]" strokeWidth={2} />
                   </button>
                 </div>
-                <div className="flex w-full max-w-[363px] flex-col gap-2">
+                <div className="flex w-full max-w-[363px] flex-col gap-3">
                   {checklistItems.map((item) => (
-                    <div key={item.id} className="flex w-full min-w-0 items-center">
+                    <div key={item.id} className="flex w-full min-w-0 items-start gap-0">
                       <button
                         type="button"
                         onClick={() => toggleChecklist(item.id)}
                         className={cn(
-                          "flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-solid transition-colors",
+                          "mt-1 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-solid transition-colors",
                           item.done
                             ? "border-0 bg-[#24B5F8]"
                             : "border-[#ebedee] bg-[#f9f9f9]",
@@ -531,26 +420,29 @@ export function CreateTaskModal({
                       >
                         {item.done && <Check className="size-[13px] text-white" strokeWidth={2.5} />}
                       </button>
-                      <div className="min-w-0 flex-1 overflow-hidden px-4 py-1">
+                      <div className="min-w-0 flex-1 px-4 py-0.5">
                         {item.done ? (
                           <button
                             type="button"
                             onClick={() => toggleChecklist(item.id)}
-                            className="w-full cursor-pointer text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
+                            className="w-full cursor-pointer text-left break-words whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
                           >
                             {item.text}
                           </button>
                         ) : (
-                          <input
-                            type="text"
+                          <textarea
                             value={item.text}
                             onChange={(e) => updateChecklistText(item.id, e.target.value)}
                             onBlur={() => removeChecklistIfEmpty(item.id)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                (e.target as HTMLTextAreaElement).blur();
+                              }
                             }}
                             placeholder="Checklist item..."
-                            className="w-full border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
+                            rows={2}
+                            className="max-h-[min(160px,30vh)] min-h-[2.5rem] w-full resize-none overflow-y-auto border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
                           />
                         )}
                       </div>
@@ -579,26 +471,27 @@ export function CreateTaskModal({
                     <Plus className="size-4" strokeWidth={2} />
                   </button>
                 </div>
-                <div className="flex w-full flex-col gap-4">{welcomeResourcesMock.map(renderResourceRow)}</div>
+                <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
+                  No resources
+                </p>
               </div>
             </div>
           </div>
 
           <div className="z-[1] flex w-full shrink-0 items-center justify-end border-t border-solid border-[#ebedee] bg-white px-9 py-4">
-            <DialogClose asChild>
-              <button
-                type="button"
-                className="flex h-10 cursor-pointer items-center justify-center rounded-[8px] border-0 px-4 py-2"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(164.88deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(100.84deg, rgb(36, 181, 248) 1.258%, rgb(85, 33, 254) 269.28%), linear-gradient(90deg, rgb(36, 181, 248) 0%, rgb(36, 181, 248) 100%)",
-                }}
-              >
-                <span className="font-['Inter',sans-serif] text-[14px] font-semibold text-white">
-                  {resolvedSubmitLabel}
-                </span>
-              </button>
-            </DialogClose>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="flex h-10 cursor-pointer items-center justify-center rounded-[8px] border-0 px-4 py-2"
+              style={{
+                backgroundImage:
+                  "linear-gradient(164.88deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(100.84deg, rgb(36, 181, 248) 1.258%, rgb(85, 33, 254) 269.28%), linear-gradient(90deg, rgb(36, 181, 248) 0%, rgb(36, 181, 248) 100%)",
+              }}
+            >
+              <span className="font-['Inter',sans-serif] text-[14px] font-semibold text-white">
+                {resolvedSubmitLabel}
+              </span>
+            </button>
           </div>
         </DialogPrimitive.Content>
       </DialogPortal>

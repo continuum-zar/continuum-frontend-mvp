@@ -1,10 +1,19 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Check, Minus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowUp, Check, Loader2, Minus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+import {
+  generateTasks,
+  confirmTasks,
+  getApiErrorMessage,
+  projectKeys,
+} from "@/api";
+import type { GeneratedTask, WikiConfirmTaskItem } from "@/api";
 import {
   Dialog,
   DialogOverlay,
@@ -14,6 +23,7 @@ import { cn } from "../ui/utils";
 import {
   CreateTaskModal,
   type CreateTaskModalPrefill,
+  type ChecklistRow,
 } from "../CreateTaskModal";
 
 /** Figma — base panel 14:3223 / welcome mock 14:3453, 395×537 */
@@ -49,68 +59,54 @@ const SUGGESTED_PROMPTS = [
 const MOCK_AI_BODY =
   "42% of weighted scope is complete. There have been 3 structural updates in the last sprint. Signals are Stable based on hours-per-scope efficiency. 2 tasks are currently flagged as stalled or missing scope.";
 
-/** Figma 16:18149 / 15:3934 — get started answer */
-const MOCK_GET_STARTED_SUMMARY = "I created 7 tickets under UX Strategy.";
-
-/** Same shape as CreateTaskModal prefill — duplicated for carousel QA */
-type GetStartedTaskRow = CreateTaskModalPrefill & { id: string };
-
-const GET_STARTED_TASK_SEEDS: GetStartedTaskRow[] = [
-  {
-    id: "t1",
-    title: "Bug Fix Request for User Interface",
-    description:
-      "A long description goes here, this space will only show two lines before truncation.",
-    descriptionMeta: "85/100 Characters",
-    checklist: [
-      { id: "t1a", text: "Verify all UI elements render correctly", done: false },
-      { id: "t1b", text: "Confirm data is displayed accurately", done: false },
-      { id: "t1c", text: "Validate input fields accept correct data", done: true },
-    ],
-  },
-  {
-    id: "t2",
-    title: "Feature Request for Dark Mode",
-    description:
-      "A long description goes here, this space will only show two lines before truncation.",
-    descriptionMeta: "72/100 Characters",
-    checklist: [
-      { id: "t2a", text: "Audit color tokens for dark palette", done: false },
-      { id: "t2b", text: "Ensure smooth transitions between views", done: false },
-      { id: "t2c", text: "Test responsiveness on different devices", done: true },
-    ],
-  },
-  {
-    id: "t3",
-    title: "Accessibility audit for onboarding flow",
-    description:
-      "A long description goes here, this space will only show two lines before truncation.",
-    descriptionMeta: "91/100 Characters",
-    checklist: [
-      { id: "t3a", text: "Check focus order and keyboard paths", done: false },
-      { id: "t3b", text: "Validate screen reader labels", done: false },
-      { id: "t3c", text: "Check for console errors or warnings", done: true },
-    ],
-  },
-];
-
-const GET_STARTED_PREFILLED_TASKS: GetStartedTaskRow[] = [
-  ...GET_STARTED_TASK_SEEDS,
-  ...GET_STARTED_TASK_SEEDS.map((t) => ({
-    ...t,
-    id: `${t.id}-dup`,
-    title: `${t.title} (duplicate)`,
-    checklist: t.checklist?.map((c) => ({ ...c, id: `${c.id}-dup` })),
-  })),
-];
-
 const THINKING_MS = 1600;
-const GET_STARTED_CONNECTING_MS = 2200;
-const GET_STARTED_CREATING_MS = 2200;
 
 type ChatPhase = "welcome" | "thinking" | "responded" | "getStartedLoading" | "getStartedAnswer";
 
-type LoadingSubphase = "connecting" | "creating";
+function mapGeneratedTaskToPrefill(task: GeneratedTask, idx: number): CreateTaskModalPrefill {
+  const checklist: ChecklistRow[] = (task.checklist ?? []).map((c, ci) => ({
+    id: `gen-${idx}-${ci}`,
+    text: c.title,
+    done: c.is_completed ?? false,
+  }));
+  const rawLabels = task.labels ?? [];
+  const labels = rawLabels.map((l) => String(l).trim()).filter(Boolean);
+
+  return {
+    title: task.title,
+    description: task.description ?? "",
+    descriptionMeta: `${(task.description ?? "").length}/10000 Characters`,
+    checklist,
+    labels,
+  };
+}
+
+function mapGeneratedTaskToConfirmItem(
+  task: GeneratedTask,
+  projectId: number,
+  milestoneId: number | null,
+): WikiConfirmTaskItem {
+  return {
+    title: task.title,
+    description: task.description ?? null,
+    project_id: projectId,
+    milestone_id: milestoneId,
+    scope_weight: task.scope_weight,
+    status: "todo",
+    checklists:
+      task.checklist?.length > 0
+        ? task.checklist.map((c) => ({ text: c.title, done: c.is_completed ?? false }))
+        : null,
+    labels: task.labels && task.labels.length > 0 ? task.labels : null,
+  };
+}
+
+/** URL `milestone` query is a numeric string; backend expects integer or null. */
+function parseMilestoneIdParam(param: string | null | undefined): number | null {
+  if (param == null || param === "") return null;
+  const n = Number(param);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
 
 function ChevronDown({ className }: { className?: string }) {
   return (
@@ -129,53 +125,65 @@ type WelcomeAiChatModalProps = {
   onOpenChange: (open: boolean) => void;
   /** When false, hides suggested prompt chips (e.g. Get started / board FAB). Default true. */
   showQuickActions?: boolean;
+  /** Required for task generation when showQuickActions=false (board FAB). */
+  projectId?: number | null;
+  /** Current kanban milestone from `?milestone=` — bulk-created tasks are assigned to this milestone. */
+  milestoneId?: string | null;
 };
 
-export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true }: WelcomeAiChatModalProps) {
+export function WelcomeAiChatModal({
+  open,
+  onOpenChange,
+  showQuickActions = true,
+  projectId,
+  milestoneId: milestoneIdParam,
+}: WelcomeAiChatModalProps) {
+  const queryClient = useQueryClient();
+
   const [phase, setPhase] = useState<ChatPhase>("welcome");
   const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
-  const [loadingSubphase, setLoadingSubphase] = useState<LoadingSubphase>("connecting");
   const [draftMessage, setDraftMessage] = useState("");
-  const [showTicketToast, setShowTicketToast] = useState(false);
   const [taskReviewOpen, setTaskReviewOpen] = useState(false);
   const [taskReviewIndex, setTaskReviewIndex] = useState(0);
+
+  // Real API state (getStarted / !showQuickActions flow)
+  const [generatedTasks, setGeneratedTasks] = useState<GeneratedTask[]>([]);
+  const [generatedSummary, setGeneratedSummary] = useState("");
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  /** Always matches latest generated list so Create All never closes over an empty array. */
+  const generatedTasksRef = useRef<GeneratedTask[]>([]);
+  generatedTasksRef.current = generatedTasks;
+
+  const milestoneIdForConfirm = useMemo(
+    () => parseMilestoneIdParam(milestoneIdParam ?? null),
+    [milestoneIdParam],
+  );
 
   useEffect(() => {
     if (!open) {
       setPhase("welcome");
       setSelectedPrompt(null);
-      setLoadingSubphase("connecting");
       setDraftMessage("");
-      setShowTicketToast(false);
       setTaskReviewOpen(false);
       setTaskReviewIndex(0);
+      setGeneratedTasks([]);
+      setGeneratedSummary("");
+      setApiError(null);
+      setConfirming(false);
+      setConfirmed(false);
+      abortRef.current?.abort();
+      abortRef.current = null;
     }
   }, [open]);
 
+  // showQuickActions=true mock "thinking -> responded" transition
   useEffect(() => {
     if (phase !== "thinking" || !showQuickActions) return;
     const t = window.setTimeout(() => setPhase("responded"), THINKING_MS);
     return () => window.clearTimeout(t);
-  }, [phase, showQuickActions]);
-
-  useEffect(() => {
-    if (phase !== "getStartedLoading") return;
-    if (loadingSubphase === "connecting") {
-      const t = window.setTimeout(() => setLoadingSubphase("creating"), GET_STARTED_CONNECTING_MS);
-      return () => window.clearTimeout(t);
-    }
-    const t = window.setTimeout(() => setPhase("getStartedAnswer"), GET_STARTED_CREATING_MS);
-    return () => window.clearTimeout(t);
-  }, [phase, loadingSubphase]);
-
-  useEffect(() => {
-    if (phase !== "getStartedAnswer" || showQuickActions) return;
-    const show = window.setTimeout(() => setShowTicketToast(true), 600);
-    const hide = window.setTimeout(() => setShowTicketToast(false), 5600);
-    return () => {
-      window.clearTimeout(show);
-      window.clearTimeout(hide);
-    };
   }, [phase, showQuickActions]);
 
   const startPrompt = (text: string) => {
@@ -183,21 +191,86 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
     setPhase("thinking");
   };
 
-  const submitGetStartedPrompt = () => {
+  const submitGetStartedPrompt = useCallback(async () => {
     const text = draftMessage.trim();
-    if (!text) return;
+    if (!text || !projectId) return;
     setSelectedPrompt(text);
     setDraftMessage("");
-    setLoadingSubphase("connecting");
+    setApiError(null);
     setPhase("getStartedLoading");
-  };
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const res = await generateTasks(projectId, { prompt: text, max_tasks: 10 });
+      if (controller.signal.aborted) return;
+
+      setGeneratedTasks(res.tasks);
+      const count = res.tasks.length;
+      setGeneratedSummary(
+        count === 0
+          ? "I couldn't generate any tasks from that prompt. Try being more specific."
+          : count === 1
+            ? "I generated 1 task based on your request."
+            : `I generated ${count} tasks based on your request.`,
+      );
+      setPhase("getStartedAnswer");
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      const msg = getApiErrorMessage(
+        err,
+        "Task generation failed. Make sure the repository is indexed and try again.",
+      );
+      setApiError(msg);
+      setPhase("getStartedAnswer");
+    }
+  }, [draftMessage, projectId]);
 
   const stopGetStarted = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
     setPhase("welcome");
     setSelectedPrompt(null);
-    setLoadingSubphase("connecting");
-    setShowTicketToast(false);
+    setGeneratedTasks([]);
+    setGeneratedSummary("");
+    setApiError(null);
   };
+
+  const handleConfirmAll = useCallback(async () => {
+    const pid = projectId;
+    const tasks = generatedTasksRef.current;
+    if (pid == null || !Number.isFinite(pid) || tasks.length === 0 || confirming || confirmed) {
+      if (showQuickActions === false && (pid == null || !Number.isFinite(pid))) {
+        toast.error("Missing project context. Open the AI chat from a project board.");
+      }
+      return;
+    }
+    setConfirming(true);
+    try {
+      const items = tasks.map((t) => mapGeneratedTaskToConfirmItem(t, pid, milestoneIdForConfirm));
+      const res = await confirmTasks(pid, { tasks: items });
+      if (res.created_count < 1) {
+        toast.error("No tasks were created. Try again.");
+        return;
+      }
+      setConfirmed(true);
+      toast.success(res.created_count === 1 ? "Created 1 task" : `Created ${res.created_count} tasks`);
+      await queryClient.invalidateQueries({ queryKey: projectKeys.tasks(pid) });
+      await queryClient.refetchQueries({ queryKey: projectKeys.tasks(pid) });
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to create tasks. Try again."));
+    } finally {
+      setConfirming(false);
+    }
+  }, [
+    projectId,
+    milestoneIdForConfirm,
+    confirming,
+    confirmed,
+    queryClient,
+    showQuickActions,
+  ]);
 
   const isChat = phase !== "welcome";
   const isGetStartedFlow = !showQuickActions;
@@ -205,22 +278,27 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
   const showHeaderEllipsis = showQuickActions && (phase === "thinking" || phase === "responded");
 
   const taskReviewPrefill = useMemo((): CreateTaskModalPrefill | undefined => {
-    const row = GET_STARTED_PREFILLED_TASKS[taskReviewIndex];
-    if (!row) return undefined;
-    return {
-      title: row.title,
-      description: row.description,
-      descriptionMeta: row.descriptionMeta,
-      checklist: row.checklist,
-    };
-  }, [taskReviewIndex]);
+    const task = generatedTasks[taskReviewIndex];
+    if (!task) return undefined;
+    return mapGeneratedTaskToPrefill(task, taskReviewIndex);
+  }, [generatedTasks, taskReviewIndex]);
 
   return (
+  <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="bg-black/25" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
+          onPointerDownOutside={(e) => {
+            if (taskReviewOpen) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (taskReviewOpen) e.preventDefault();
+          }}
+          onFocusOutside={(e) => {
+            if (taskReviewOpen) e.preventDefault();
+          }}
           className={cn(
             "isolate data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2 fixed z-50 flex flex-col items-start overflow-hidden rounded-[19px] border border-solid border-[#edecea] bg-white shadow-[0px_86px_24px_0px_rgba(11,25,31,0),0px_55px_22px_0px_rgba(11,25,31,0.01),0px_31px_19px_0px_rgba(11,25,31,0.03),0px_14px_14px_0px_rgba(11,25,31,0.04),0px_3px_8px_0px_rgba(11,25,31,0.05)] duration-200",
             "bottom-6 right-6 top-auto left-auto max-h-[min(537px,calc(100vh-32px))] w-[min(395px,calc(100vw-32px))] max-w-[395px] translate-x-0 translate-y-0",
@@ -230,7 +308,7 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
         >
           <DialogPrimitive.Title className="sr-only">AI assistant</DialogPrimitive.Title>
 
-          {/* Header — welcome: 14:3453; active: 14:3531 / 14:3595 */}
+          {/* Header */}
           <div
             className={cn(
               "relative z-10 flex w-full shrink-0 items-center justify-between",
@@ -355,7 +433,8 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
                     <ComposerWelcome
                       draft={draftMessage}
                       onDraftChange={setDraftMessage}
-                      onSubmitGetStarted={isGetStartedFlow ? submitGetStartedPrompt : undefined}
+                      onSubmitGetStarted={isGetStartedFlow ? () => void submitGetStartedPrompt() : undefined}
+                      disabled={!projectId && isGetStartedFlow}
                     />
                   </div>
                 </div>
@@ -366,7 +445,7 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
               <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-x-clip overflow-y-auto bg-white px-[15px] pb-4 pt-12">
                 <div className="flex w-full flex-col items-end justify-center gap-4">
                   <div className="flex w-full items-start justify-center gap-2 whitespace-nowrap text-center font-['Inter',sans-serif] text-[11px] font-medium leading-[normal] text-[#727d83]">
-                    <p>Tuesday, Jan 27</p>
+                    <p>Today</p>
                     <p>Continuum AI</p>
                   </div>
                   <div className="flex h-8 shrink-0 items-center justify-center rounded-[32px] bg-[#edf0f3] px-4 py-2">
@@ -375,24 +454,8 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
                     </p>
                   </div>
                   <div className="w-full">
-                    {phase === "thinking" && (
-                      <div className="flex w-full flex-col items-end rounded-[16px]">
-                        <div className="flex w-full flex-col items-end gap-5">
-                          <div className="flex w-full flex-col items-start gap-2">
-                            <div className="flex w-full items-center gap-2 opacity-50">
-                              <div
-                                className="size-5 shrink-0 rounded-full border-2 border-[#2E96F9] border-t-transparent animate-spin"
-                                aria-hidden
-                              />
-                              <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
-                                Thinking...
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {phase === "getStartedLoading" && (
+                    {/* Thinking state (mock for showQuickActions, real for getStarted) */}
+                    {(phase === "thinking" || phase === "getStartedLoading") && (
                       <div className="flex w-full flex-col items-end rounded-[16px]">
                         <div className="flex w-full flex-col items-end gap-5">
                           <div className="flex w-full flex-col items-start gap-2">
@@ -406,6 +469,8 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
                         </div>
                       </div>
                     )}
+
+                    {/* Mock responded (showQuickActions path) */}
                     {phase === "responded" && (
                       <div className="flex w-full flex-col items-end rounded-[16px]">
                         <div className="flex w-full flex-col items-end gap-5">
@@ -425,6 +490,8 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
                         </div>
                       </div>
                     )}
+
+                    {/* Real AI answer with generated tasks */}
                     {phase === "getStartedAnswer" && (
                       <div className="flex w-full flex-col items-end rounded-[16px]">
                         <div className="flex w-full flex-col items-end gap-5">
@@ -437,27 +504,71 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
                                 Thought
                               </p>
                             </div>
-                            <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-[#0b191f]">
-                              {MOCK_GET_STARTED_SUMMARY}
-                            </p>
-                            <div className="mt-1 w-full rounded-[12px] border border-solid border-[#ededed] bg-white p-3">
-                              <ul className="flex flex-col gap-1">
-                                {GET_STARTED_PREFILLED_TASKS.map((task, i) => (
-                                  <li key={task.id} className="list-none">
+
+                            {apiError ? (
+                              <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-[#dc2626]">
+                                {apiError}
+                              </p>
+                            ) : (
+                              <>
+                                <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-[#0b191f]">
+                                  {generatedSummary}
+                                </p>
+
+                                {generatedTasks.length > 0 && (
+                                  <>
+                                    <div className="mt-1 w-full rounded-[12px] border border-solid border-[#ededed] bg-white p-3">
+                                      <ul className="flex flex-col gap-1">
+                                        {generatedTasks.map((task, i) => (
+                                          <li key={`${task.title}-${i}`} className="list-none">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setTaskReviewIndex(i);
+                                                setTaskReviewOpen(true);
+                                              }}
+                                              className="w-full rounded-md border-0 bg-transparent py-1.5 text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f] transition-colors hover:bg-[#f5f5f5]"
+                                            >
+                                              {task.title}
+                                            </button>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+
                                     <button
                                       type="button"
-                                      onClick={() => {
-                                        setTaskReviewIndex(i);
-                                        setTaskReviewOpen(true);
-                                      }}
-                                      className="w-full rounded-md border-0 bg-transparent py-1.5 text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f] transition-colors hover:bg-[#f5f5f5]"
+                                      disabled={confirming || confirmed}
+                                      onClick={() => void handleConfirmAll()}
+                                      className={cn(
+                                        "mt-2 flex w-full items-center justify-center gap-2 rounded-[8px] px-4 py-2 font-['Satoshi',sans-serif] text-[13px] font-bold outline-none transition-colors",
+                                        confirmed
+                                          ? "cursor-default bg-[#d7fede] text-[#108e27]"
+                                          : confirming
+                                            ? "cursor-wait bg-[#2798f5]/80 text-white"
+                                            : "cursor-pointer bg-[#2798f5] text-white hover:bg-[#1e87e0]",
+                                      )}
                                     >
-                                      {task.title}
+                                      {confirmed ? (
+                                        <>
+                                          <Check className="size-4 shrink-0" strokeWidth={2} />
+                                          Tasks Created
+                                        </>
+                                      ) : confirming ? (
+                                        <>
+                                          <Loader2 className="size-4 shrink-0 animate-spin" strokeWidth={2} />
+                                          Creating...
+                                        </>
+                                      ) : (
+                                        <>
+                                          Create All Tasks
+                                        </>
+                                      )}
                                     </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
+                                  </>
+                                )}
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -468,7 +579,7 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
               <div className="relative z-10 mt-auto w-full shrink-0 px-[15px] pb-[15px]">
                 {phase === "getStartedLoading" && (
                   <div className="relative z-40 mb-4 flex w-full justify-center">
-                    <GetStartedTaskBar loadingSubphase={loadingSubphase} onStop={stopGetStarted} />
+                    <GetStartedTaskBar onStop={stopGetStarted} />
                   </div>
                 )}
                 {phase === "thinking" || phase === "getStartedLoading" ? (
@@ -480,43 +591,30 @@ export function WelcomeAiChatModal({ open, onOpenChange, showQuickActions = true
             </div>
           )}
         </DialogPrimitive.Content>
-        {showTicketToast && isGetStartedFlow && (
-          <div
-            className="animate-in fade-in slide-in-from-bottom-4 fixed bottom-8 left-1/2 z-[100] flex -translate-x-1/2 flex-col items-start rounded-[8px] bg-[#0b191f] py-2 shadow-[0px_26px_7px_0px_rgba(21,21,21,0),0px_16px_7px_0px_rgba(21,21,21,0),0px_9px_6px_0px_rgba(21,21,21,0.01),0px_4px_4px_0px_rgba(21,21,21,0.02),0px_1px_2px_0px_rgba(21,21,21,0.03)] duration-300"
-            role="status"
-            data-node-id="15:3937"
-          >
-            <div className="flex items-center gap-3 px-4 py-1">
-              <div className="relative size-4 shrink-0 rounded-[666px] bg-[#1ed760]">
-                <Check className="absolute left-[2.5px] top-[2.5px] size-2.5 text-white" strokeWidth={3} aria-hidden />
-              </div>
-              <p className="font-['Inter',sans-serif] text-[16px] font-medium not-italic leading-[normal] whitespace-nowrap text-white">
-                Created 7 tickets
-              </p>
-            </div>
-          </div>
-        )}
-        {isGetStartedFlow && phase === "getStartedAnswer" && (
-          <CreateTaskModal
-            open={taskReviewOpen}
-            onOpenChange={setTaskReviewOpen}
-            prefill={taskReviewPrefill}
-            prefillKey={taskReviewIndex}
-            headerTitle="Create Task"
-            submitLabel="Update Task"
-            carousel={{
-              index: taskReviewIndex,
-              total: GET_STARTED_PREFILLED_TASKS.length,
-              onPrev: () => setTaskReviewIndex((i) => Math.max(0, i - 1)),
-              onNext: () =>
-                setTaskReviewIndex((i) =>
-                  Math.min(GET_STARTED_PREFILLED_TASKS.length - 1, i + 1),
-                ),
-            }}
-          />
-        )}
       </DialogPortal>
     </Dialog>
+
+    {/* Task review modal — rendered outside the parent Dialog to avoid nested Radix dismiss conflicts */}
+    {isGetStartedFlow && phase === "getStartedAnswer" && generatedTasks.length > 0 && (
+      <CreateTaskModal
+        open={taskReviewOpen}
+        onOpenChange={setTaskReviewOpen}
+        prefill={taskReviewPrefill}
+        prefillKey={taskReviewIndex}
+        headerTitle="Review Task"
+        submitLabel="Close"
+        carousel={{
+          index: taskReviewIndex,
+          total: generatedTasks.length,
+          onPrev: () => setTaskReviewIndex((i) => Math.max(0, i - 1)),
+          onNext: () =>
+            setTaskReviewIndex((i) =>
+              Math.min(generatedTasks.length - 1, i + 1),
+            ),
+        }}
+      />
+    )}
+  </>
   );
 }
 
@@ -524,12 +622,14 @@ function ComposerWelcome({
   draft,
   onDraftChange,
   onSubmitGetStarted,
+  disabled,
 }: {
   draft: string;
   onDraftChange: (value: string) => void;
   onSubmitGetStarted?: () => void;
+  disabled?: boolean;
 }) {
-  const canSend = Boolean(onSubmitGetStarted && draft.trim());
+  const canSend = Boolean(onSubmitGetStarted && draft.trim() && !disabled);
 
   return (
     <div className="relative mb-[-11px] flex h-[88px] shrink-0 flex-col items-start justify-between rounded-[14px] border border-solid border-[#edecea] bg-white pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
@@ -542,13 +642,13 @@ function ComposerWelcome({
           value={draft}
           onChange={(e) => onDraftChange(e.target.value)}
           onKeyDown={(e) => {
-            if (!onSubmitGetStarted) return;
+            if (!canSend) return;
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              onSubmitGetStarted();
+              onSubmitGetStarted?.();
             }
           }}
-          placeholder="Do anything with AI..."
+          placeholder={disabled ? "Open a project board to use AI..." : "Do anything with AI..."}
           rows={1}
           className="min-h-0 w-full flex-1 resize-none border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
         />
@@ -605,19 +705,12 @@ function SpinnerGradientThinking() {
   );
 }
 
-function GetStartedTaskBar({
-  loadingSubphase,
-  onStop,
-}: {
-  loadingSubphase: LoadingSubphase;
-  onStop: () => void;
-}) {
-  const label = loadingSubphase === "connecting" ? "Connecting to repository..." : "Creating ticket...";
+function GetStartedTaskBar({ onStop }: { onStop: () => void }) {
   return (
     <div className="pointer-events-auto w-full max-w-[368px] shadow-[0px_12px_24px_rgba(11,25,31,0.12)]">
       <div className="flex items-center gap-2 rounded-[16px] bg-[#0b191f] py-2 pl-4 pr-2">
         <p className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-white">
-          {label}
+          Generating tasks...
         </p>
         <button
           type="button"

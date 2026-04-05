@@ -1418,7 +1418,13 @@ export function DashboardPlaceholder() {
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
       <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} projectId={isLiveBoard ? Number(projectParam) : undefined} />
-      <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} showQuickActions={false} />
+      <WelcomeAiChatModal
+        open={aiChatOpen}
+        onOpenChange={setAiChatOpen}
+        showQuickActions={false}
+        projectId={liveProjectId}
+        milestoneId={milestoneParam}
+      />
       <WelcomeToContinuumModal open={welcomeToContinuumOpen} onOpenChange={handleWelcomeToContinuumOpenChange} />
     </div>
   );

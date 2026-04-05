@@ -84,7 +84,7 @@ export async function generateTasks(
 ): Promise<GenerateTasksResponse> {
     const { data } = await api.post<GenerateTasksResponse>(
         `/projects/${projectId}/wiki/generate`,
-        { prompt: body.prompt, max_tasks: body.max_tasks ?? 5 }
+        { prompt: body.prompt, max_tasks: body.max_tasks ?? 10 }
     );
     return data;
 }
