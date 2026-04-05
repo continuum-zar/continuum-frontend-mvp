@@ -15,6 +15,7 @@ export interface LoggedHourEntry {
 /** Backend response for a single logged hour entry (GET /api/v1/logged-hours). */
 export interface LoggedHourResponse {
     id: number | string;
+    task_id?: number | string | null;
     project_name: string;
     task_title: string;
     hours: number;
@@ -28,6 +29,8 @@ export interface LoggedHourResponse {
 
 export interface FetchLoggedHoursParams {
     project_id?: number | string;
+    /** Filter to a single task (GET /logged-hours/ supports task_id). */
+    task_id?: number | string;
     start_date?: string;
     end_date?: string;
     limit?: number;
@@ -55,6 +58,7 @@ export async function fetchLoggedHours(params?: FetchLoggedHoursParams): Promise
     const { data: body } = await api.get<PaginatedResponse<LoggedHourResponse>>('/logged-hours/', {
         params: {
             ...(params?.project_id != null && params.project_id !== '' && { project_id: params.project_id }),
+            ...(params?.task_id != null && params.task_id !== '' && { task_id: params.task_id }),
             ...(params?.start_date && { start_date: params.start_date }),
             ...(params?.end_date && { end_date: params.end_date }),
             ...(params?.limit != null && { limit: params.limit }),
@@ -62,6 +66,57 @@ export async function fetchLoggedHours(params?: FetchLoggedHoursParams): Promise
     });
     const rows = body?.data ?? [];
     return rows.map(mapLoggedHourToTimeEntry);
+}
+
+/** Sum decimal hours for the current user's entries on a task (high limit). */
+export async function sumLoggedHoursForTask(params: {
+    project_id: number | string;
+    task_id: number | string;
+}): Promise<number> {
+    const { data: body } = await api.get<PaginatedResponse<LoggedHourResponse>>('/logged-hours/', {
+        params: {
+            project_id: params.project_id,
+            task_id: params.task_id,
+            limit: 1000,
+        },
+    });
+    return (body?.data ?? []).reduce((sum, row) => sum + (Number(row.hours) || 0), 0);
+}
+
+/** One task line after aggregating GET /logged-hours/?project_id= for invoice prefill. */
+export interface TaskHoursAggregate {
+    title: string;
+    hours: number;
+}
+
+/**
+ * Sum hours per task for the current user on a project (no task filter).
+ * Groups by task_id when present; otherwise by normalized task title.
+ */
+export async function aggregateLoggedHoursByTaskForProject(
+    projectId: number | string,
+): Promise<TaskHoursAggregate[]> {
+    const { data: body } = await api.get<PaginatedResponse<LoggedHourResponse>>('/logged-hours/', {
+        params: {
+            project_id: projectId,
+            limit: 1000,
+        },
+    });
+    const rows = body?.data ?? [];
+    const map = new Map<string, { title: string; hours: number }>();
+    for (const row of rows) {
+        const title = (row.task_title ?? '').trim() || 'General';
+        const tid = row.task_id != null && row.task_id !== '' ? String(row.task_id) : null;
+        const key = tid ?? `__t:${title}`;
+        const h = Number(row.hours) || 0;
+        const prev = map.get(key);
+        if (prev) {
+            prev.hours += h;
+        } else {
+            map.set(key, { title, hours: h });
+        }
+    }
+    return Array.from(map.values()).sort((a, b) => b.hours - a.hours);
 }
 
 /** Body for creating a logged hour (POST /api/v1/logged-hours). Manual entry: project_id + optional task_id; timer flow may use task_id only. Provide either hours or duration_minutes. */

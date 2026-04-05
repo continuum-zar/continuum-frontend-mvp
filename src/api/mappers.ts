@@ -41,6 +41,7 @@ export function mapProjectDetail(res: ProjectDetailAPIResponse): ProjectDetail {
         id: res.id,
         name: res.name ?? `Project ${res.id}`,
         description: res.description ?? 'Track progress and manage tasks for the project',
+        ...(res.client_id != null ? { clientId: res.client_id } : {}),
     };
 }
 
