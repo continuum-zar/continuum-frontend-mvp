@@ -374,17 +374,6 @@ export function WelcomeEmptyProjectBody({
   const repositories = repositoriesQuery.data ?? [];
   const members = membersQuery.data ?? [];
 
-  /** Set to `false` (and delete `previewCommits`) after confirming commits gauge visuals */
-  const previewCommitsGauge = true;
-  const previewCommits = { structural: 12, incremental: 7, trivial: 3 };
-  const trivialCommits = previewCommitsGauge ? previewCommits.trivial : (classificationData?.trivial ?? 0);
-  const incrementalCommits = previewCommitsGauge
-    ? previewCommits.incremental
-    : (classificationData?.incremental ?? 0);
-  const structuralCommits = previewCommitsGauge
-    ? previewCommits.structural
-    : (classificationData?.structural ?? 0);
-
   return (
     <div className="relative flex w-full min-w-0 flex-col items-center gap-16 pb-8 pt-12">
       <AddResourceModal
@@ -400,9 +389,9 @@ export function WelcomeEmptyProjectBody({
           hpsRatio={healthData?.hps_ratio ?? 0}
           completedWeight={statsData?.completed_weight ?? 0}
           totalWeight={statsData?.total_weight ?? 0}
-          trivialCommits={trivialCommits}
-          incrementalCommits={incrementalCommits}
-          structuralCommits={structuralCommits}
+          trivialCommits={classificationData?.trivial ?? 0}
+          incrementalCommits={classificationData?.incremental ?? 0}
+          structuralCommits={classificationData?.structural ?? 0}
         />
       </div>
 
