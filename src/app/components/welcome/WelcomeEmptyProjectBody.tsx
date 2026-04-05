@@ -4,7 +4,7 @@
  */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Download, FileText, Link2, Loader2, X } from "lucide-react";
 
@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   downloadProjectAttachment,
   fetchClassificationBreakdown,
+  fetchMemberContributions,
   fetchProjectHealth,
   fetchProjectStats,
   getApiErrorMessage,
@@ -62,9 +63,20 @@ function projectMemberRoleLabel(role: string): string {
   return "Developer";
 }
 
-function LiveTeamMemberCard({ member }: { member: Member }) {
+function LiveTeamMemberCard({
+  member,
+  totalHours,
+  tasksCompleted,
+}: {
+  member: Member;
+  /** null while contribution stats are loading */
+  totalHours: number | null;
+  tasksCompleted: number | null;
+}) {
   const bg = TEAM_AVATAR_BGS[member.id % TEAM_AVATAR_BGS.length];
   const roleLine = projectMemberRoleLabel(member.role);
+  const fmt = (n: number | null) =>
+    n === null ? "…" : String(Math.round(Number(n)));
   return (
     <div className="flex w-full max-w-[260px] shrink-0 flex-col gap-6 rounded-[12px] border border-solid border-[#ebedee] bg-white p-6 shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)]">
       <div className="flex h-10 w-full min-w-0 items-center">
@@ -87,11 +99,11 @@ function LiveTeamMemberCard({ member }: { member: Member }) {
       <div className="flex w-full flex-col gap-2 font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal">
         <div className="flex w-full items-center justify-between gap-2">
           <p className="text-[#727d83]">Total hours</p>
-          <p className="min-w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">0</p>
+          <p className="min-w-[34px] overflow-hidden text-ellipsis text-right tabular-nums text-[#0b191f]">{fmt(totalHours)}</p>
         </div>
         <div className="flex w-full items-center justify-between gap-2">
           <p className="text-[#727d83]">Task completed</p>
-          <p className="min-w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">0</p>
+          <p className="min-w-[34px] overflow-hidden text-ellipsis text-right tabular-nums text-[#0b191f]">{fmt(tasksCompleted)}</p>
         </div>
       </div>
     </div>
@@ -369,6 +381,23 @@ export function WelcomeEmptyProjectBody({
     enabled: projectId != null,
     staleTime: 60_000,
   });
+  const { data: memberContributions = [], isPending: contributionsLoading } = useQuery({
+    queryKey: ["projects", projectId, "member-contributions"],
+    queryFn: () => fetchMemberContributions(projectId),
+    enabled: projectId != null,
+    staleTime: 60_000,
+  });
+
+  const contributionByUserId = useMemo(() => {
+    const map = new Map<number, { total_hours: number; total_tasks_completed: number }>();
+    for (const c of memberContributions) {
+      map.set(c.user_id, {
+        total_hours: c.total_hours ?? 0,
+        total_tasks_completed: c.total_tasks_completed ?? 0,
+      });
+    }
+    return map;
+  }, [memberContributions]);
 
   const attachments = (attachmentsQuery.data ?? []).map(mapAttachment);
   const repositories = repositoriesQuery.data ?? [];
@@ -480,9 +509,17 @@ export function WelcomeEmptyProjectBody({
           <EmptyPlaceholderCard icon={imgLucideUsers} title="No members assigned" />
         ) : (
           <div className="flex w-full flex-wrap gap-4">
-            {members.map((m) => (
-              <LiveTeamMemberCard key={m.id} member={m} />
-            ))}
+            {members.map((m) => {
+              const stats = contributionByUserId.get(m.userId);
+              return (
+                <LiveTeamMemberCard
+                  key={m.id}
+                  member={m}
+                  totalHours={contributionsLoading ? null : (stats?.total_hours ?? 0)}
+                  tasksCompleted={contributionsLoading ? null : (stats?.total_tasks_completed ?? 0)}
+                />
+              );
+            })}
           </div>
         )}
       </div>
