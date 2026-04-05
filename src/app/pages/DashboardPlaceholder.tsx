@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { DragEvent } from "react";
+import { Timer } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { GetStartedKanbanLive } from "../components/dashboard-placeholder/GetStartedKanbanLive";
@@ -17,6 +18,7 @@ import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
+import type { Milestone } from "@/types/milestone";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
@@ -28,7 +30,6 @@ import {
 } from "../components/welcome/welcomeModalAssets";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
-const imgLucideTimer = mcpAsset("5b386900-0988-47bc-b5fd-da0ce6db2015");
 const imgEllipse21 = mcpAsset("a0e3fea4-5911-470e-aa3e-64387b06a92f");
 const imgEllipse23 = mcpAsset("2124fad3-f5ec-427e-8aff-5bda335eb761");
 const imgEllipse22 = mcpAsset("a56dc45a-533f-4e63-bc8b-51b4d45b59a1");
@@ -114,9 +115,7 @@ type Component4Props = {
 function Component4({ className }: Pick<Component4Props, "className">) {
   return (
     <div className={className || "bg-[#d7fede] content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px]"} data-node-id="7:846">
-      <div className="relative shrink-0 size-[16px]" data-name="lucide/timer" data-node-id="7:847">
-        <img alt="" className="absolute block max-w-none size-full" src={imgLucideTimer} />
-      </div>
+      <Timer aria-hidden className="relative shrink-0 size-4 text-[#108e27]" strokeWidth={1.5} data-name="lucide/timer" data-node-id="7:847" />
       <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#108e27] text-[14px] whitespace-nowrap" data-node-id="7:849">
         Sprint on track
       </p>
@@ -253,6 +252,87 @@ function Component4({ className }: Pick<Component4Props, "className">) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Matches welcome hero gauge bands (LiveProjectGauges): green ≥70%, amber 40–69%, red &lt;40%. */
+function sprintHealthFromCompletionPct(pct: number): { label: string; bgClass: string; textClass: string } {
+  if (pct >= 70) {
+    return {
+      label: "Sprint on track",
+      bgClass: "bg-[#d7fede]",
+      textClass: "text-[#108e27]",
+    };
+  }
+  if (pct >= 40) {
+    return {
+      label: "Sprint needs attention",
+      bgClass: "bg-[#fef9c3]",
+      textClass: "text-[#a16207]",
+    };
+  }
+  return {
+    label: "Sprint at risk",
+    bgClass: "bg-[#fee2e2]",
+    textClass: "text-[#b91c1c]",
+  };
+}
+
+function SprintBoardHeaderHealthPill({
+  isLiveBoard,
+  milestoneParam,
+  milestones,
+  milestonesLoading,
+}: {
+  isLiveBoard: boolean;
+  milestoneParam: string | null;
+  milestones: Milestone[] | undefined;
+  milestonesLoading: boolean;
+}) {
+  const staticClassName =
+    "bg-[#d7fede] content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0";
+  if (!isLiveBoard || milestoneParam == null) {
+    return <Component4 className={staticClassName} />;
+  }
+  const base =
+    "content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0";
+  if (milestonesLoading) {
+    return (
+      <div className={`${base} bg-[#f0f3f5]`} data-node-id="7:846">
+        <Timer aria-hidden className="relative shrink-0 size-4 text-[#606d76]" strokeWidth={1.5} data-name="lucide/timer" />
+        <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap">
+          …
+        </p>
+      </div>
+    );
+  }
+  const m = milestones?.find((x) => x.id === milestoneParam);
+  if (!m) {
+    return (
+      <div className={`${base} bg-[#f0f3f5]`} data-node-id="7:846">
+        <Timer aria-hidden className="relative shrink-0 size-4 text-[#606d76]" strokeWidth={1.5} data-name="lucide/timer" />
+        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap">
+          Milestone unavailable
+        </p>
+      </div>
+    );
+  }
+  const pct = m.progress?.completion_percentage ?? 0;
+  const { label, bgClass, textClass } = sprintHealthFromCompletionPct(pct);
+  return (
+    <div className={`${base} ${bgClass}`} data-node-id="7:846">
+      <Timer
+        aria-hidden
+        className={`relative shrink-0 size-4 ${textClass}`}
+        strokeWidth={1.5}
+        data-name="lucide/timer"
+      />
+      <p
+        className={`font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 ${textClass} text-[14px] whitespace-nowrap`}
+      >
+        {label}
+      </p>
     </div>
   );
 }
@@ -590,7 +670,12 @@ export function DashboardPlaceholder() {
                   </Link>
                 </div>
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2866">
-                  <Component4 className="bg-[#d7fede] content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0" />
+                  <SprintBoardHeaderHealthPill
+                    isLiveBoard={isLiveBoard}
+                    milestoneParam={milestoneParam}
+                    milestones={liveMilestonesQuery.data}
+                    milestonesLoading={liveMilestonesQuery.isLoading}
+                  />
                   <div className="bg-[#f0f3f5] content-stretch flex gap-[2px] h-[32px] items-center p-[2px] relative rounded-[8px] shrink-0 w-[251px]" data-node-id="7:2868">
                     <Link
                       to={sprintBoardHref}

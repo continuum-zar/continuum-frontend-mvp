@@ -106,6 +106,7 @@ export function mapMilestone(m: MilestoneAPIResponse): Milestone {
         status: mapMilestoneStatus(m.status ?? 'not_started'),
         desc: m.description ?? undefined,
         dueDateIso: m.due_date ?? null,
+        progress: m.progress ?? undefined,
     };
 }
 
