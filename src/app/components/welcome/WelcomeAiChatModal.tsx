@@ -2,7 +2,7 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ArrowUp, Check, Loader2, Minus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -11,6 +11,7 @@ import {
   generateTasks,
   confirmTasks,
   getApiErrorMessage,
+  postProjectQuery,
   projectKeys,
 } from "@/api";
 import type { GeneratedTask, WikiConfirmTaskItem } from "@/api";
@@ -62,6 +63,24 @@ const MOCK_AI_BODY =
 const THINKING_MS = 1600;
 
 type ChatPhase = "welcome" | "thinking" | "responded" | "getStartedLoading" | "getStartedAnswer";
+
+type ReportingMsg =
+  | { id: string; role: "user"; content: string }
+  | {
+      id: string;
+      role: "assistant";
+      content: string;
+      isError?: boolean;
+      confidence?: number;
+    };
+
+function isAbortError(err: unknown): boolean {
+  const e = err as { code?: string; name?: string };
+  return e?.code === "ERR_CANCELED" || e?.name === "CanceledError" || e?.name === "AbortError";
+}
+
+const REPORTING_LEARN_MORE =
+  "Continuum only answers from project data Continuum already tracks (tasks, hours, commits, health signals). It does not predict delivery dates, use general web knowledge, or answer unrelated topics. If something is not in the data, it will say so.";
 
 function mapGeneratedTaskToPrefill(task: GeneratedTask, idx: number): CreateTaskModalPrefill {
   const checklist: ChecklistRow[] = (task.checklist ?? []).map((c, ci) => ({
@@ -157,9 +176,20 @@ export function WelcomeAiChatModal({
   const generatedTasksRef = useRef<GeneratedTask[]>([]);
   generatedTasksRef.current = generatedTasks;
 
+  /** Project overview assistant: real Q&A via POST /projects/:id/query (not task generation). */
+  const [reportingThread, setReportingThread] = useState<ReportingMsg[]>([]);
+  const [reportingPending, setReportingPending] = useState(false);
+  const reportingAbortRef = useRef<AbortController | null>(null);
+  const reportingLockRef = useRef(false);
+
   const milestoneIdForConfirm = useMemo(
     () => parseMilestoneIdParam(milestoneIdParam ?? null),
     [milestoneIdParam],
+  );
+
+  const useReportingApi = useMemo(
+    () => Boolean(showQuickActions && projectId != null && Number(projectId) > 0),
+    [showQuickActions, projectId],
   );
 
   useEffect(() => {
@@ -176,17 +206,65 @@ export function WelcomeAiChatModal({
       setConfirmed(false);
       abortRef.current?.abort();
       abortRef.current = null;
+      setReportingThread([]);
+      setReportingPending(false);
+      reportingLockRef.current = false;
+      reportingAbortRef.current?.abort();
+      reportingAbortRef.current = null;
     }
   }, [open]);
 
-  // showQuickActions=true mock "thinking -> responded" transition
+  // showQuickActions=true mock "thinking -> responded" transition (welcome demo only — no projectId)
   useEffect(() => {
-    if (phase !== "thinking" || !showQuickActions) return;
+    if (phase !== "thinking" || !showQuickActions || useReportingApi) return;
     const t = window.setTimeout(() => setPhase("responded"), THINKING_MS);
     return () => window.clearTimeout(t);
-  }, [phase, showQuickActions]);
+  }, [phase, showQuickActions, useReportingApi]);
+
+  const sendReportingQuery = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || projectId == null || reportingLockRef.current) return;
+      reportingLockRef.current = true;
+      const pid = projectId;
+      const controller = new AbortController();
+      reportingAbortRef.current = controller;
+      setReportingPending(true);
+      setReportingThread((prev) => [...prev, { id: crypto.randomUUID(), role: "user", content: trimmed }]);
+      setDraftMessage("");
+      try {
+        const res = await postProjectQuery(pid, { query: trimmed }, { signal: controller.signal });
+        if (controller.signal.aborted) return;
+        setReportingThread((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: res.answer ?? "No response.",
+            confidence: res.confidence,
+          },
+        ]);
+      } catch (err) {
+        if (isAbortError(err)) return;
+        const msg = getApiErrorMessage(err, "Could not get an answer. Try again.");
+        setReportingThread((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "assistant", content: msg, isError: true },
+        ]);
+      } finally {
+        reportingLockRef.current = false;
+        setReportingPending(false);
+        reportingAbortRef.current = null;
+      }
+    },
+    [projectId],
+  );
 
   const startPrompt = (text: string) => {
+    if (useReportingApi) {
+      void sendReportingQuery(text);
+      return;
+    }
     setSelectedPrompt(text);
     setPhase("thinking");
   };
@@ -272,10 +350,29 @@ export function WelcomeAiChatModal({
     showQuickActions,
   ]);
 
-  const isChat = phase !== "welcome";
+  const isReportingChat = useReportingApi && (reportingThread.length > 0 || reportingPending);
+  const isChat = isReportingChat || (!useReportingApi && phase !== "welcome");
   const isGetStartedFlow = !showQuickActions;
-  const usePromptInHeader = showQuickActions && isChat && (phase === "thinking" || phase === "responded");
-  const showHeaderEllipsis = showQuickActions && (phase === "thinking" || phase === "responded");
+
+  const reportingHeaderSubtitle = useMemo(() => {
+    for (let i = reportingThread.length - 1; i >= 0; i--) {
+      if (reportingThread[i].role === "user") return reportingThread[i].content;
+    }
+    return null;
+  }, [reportingThread]);
+
+  const usePromptInHeader =
+    showQuickActions &&
+    isChat &&
+    (useReportingApi
+      ? reportingPending || reportingHeaderSubtitle != null
+      : phase === "thinking" || phase === "responded");
+
+  const showHeaderEllipsis =
+    showQuickActions &&
+    (useReportingApi
+      ? isReportingChat && (reportingPending || reportingThread.length > 0)
+      : phase === "thinking" || phase === "responded");
 
   const taskReviewPrefill = useMemo((): CreateTaskModalPrefill | undefined => {
     const task = generatedTasks[taskReviewIndex];
@@ -322,7 +419,7 @@ export function WelcomeAiChatModal({
                   usePromptInHeader ? "text-[#727d83]" : "text-[#151515]",
                 )}
               >
-                {usePromptInHeader ? selectedPrompt : "New AI chat"}
+                {usePromptInHeader ? (useReportingApi ? reportingHeaderSubtitle ?? "" : selectedPrompt) : "New AI chat"}
               </p>
               {usePromptInHeader ? (
                 <ChevronDown />
@@ -423,6 +520,7 @@ export function WelcomeAiChatModal({
                           <span className="leading-[normal]">The AI is restricted to reporting on system states. </span>
                           <button
                             type="button"
+                            title={REPORTING_LEARN_MORE}
                             className="border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[11px] font-medium not-italic leading-normal text-[#2E96F9]"
                           >
                             Learn more
@@ -433,13 +531,33 @@ export function WelcomeAiChatModal({
                     <ComposerWelcome
                       draft={draftMessage}
                       onDraftChange={setDraftMessage}
-                      onSubmitGetStarted={isGetStartedFlow ? () => void submitGetStartedPrompt() : undefined}
-                      disabled={!projectId && isGetStartedFlow}
+                      onSubmit={
+                        isGetStartedFlow
+                          ? () => void submitGetStartedPrompt()
+                          : useReportingApi
+                            ? () => void sendReportingQuery(draftMessage)
+                            : undefined
+                      }
+                      placeholder={
+                        useReportingApi
+                          ? "Ask about progress, health, or velocity…"
+                          : undefined
+                      }
+                      disabled={isGetStartedFlow && !projectId}
                     />
                   </div>
                 </div>
               </div>
             </>
+          ) : isReportingChat && useReportingApi ? (
+            <ReportingAssistantPanel
+              reportingThread={reportingThread}
+              reportingPending={reportingPending}
+              draftMessage={draftMessage}
+              setDraftMessage={setDraftMessage}
+              sendReportingQuery={sendReportingQuery}
+              onStopReporting={() => reportingAbortRef.current?.abort()}
+            />
           ) : (
             <div className="relative z-[5] flex min-h-0 w-full flex-1 flex-col">
               <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-x-clip overflow-y-auto bg-white px-[15px] pb-4 pt-12">
@@ -621,34 +739,41 @@ export function WelcomeAiChatModal({
 function ComposerWelcome({
   draft,
   onDraftChange,
-  onSubmitGetStarted,
+  onSubmit,
   disabled,
+  placeholder,
+  inputId = "welcome-ai-chat-input",
 }: {
   draft: string;
   onDraftChange: (value: string) => void;
-  onSubmitGetStarted?: () => void;
+  onSubmit?: () => void;
   disabled?: boolean;
+  placeholder?: string;
+  inputId?: string;
 }) {
-  const canSend = Boolean(onSubmitGetStarted && draft.trim() && !disabled);
+  const canSend = Boolean(onSubmit && draft.trim() && !disabled);
+  const placeholderText =
+    placeholder ??
+    (disabled ? "Open a project board to use AI..." : "Do anything with AI...");
 
   return (
     <div className="relative mb-[-11px] flex h-[88px] shrink-0 flex-col items-start justify-between rounded-[14px] border border-solid border-[#edecea] bg-white pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
       <div className="relative flex w-full shrink-0 items-center justify-center px-[13px]">
-        <label className="sr-only" htmlFor="welcome-ai-chat-input">
+        <label className="sr-only" htmlFor={inputId}>
           Message
         </label>
         <textarea
-          id="welcome-ai-chat-input"
+          id={inputId}
           value={draft}
           onChange={(e) => onDraftChange(e.target.value)}
           onKeyDown={(e) => {
             if (!canSend) return;
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              onSubmitGetStarted?.();
+              onSubmit?.();
             }
           }}
-          placeholder={disabled ? "Open a project board to use AI..." : "Do anything with AI..."}
+          placeholder={placeholderText}
           rows={1}
           className="min-h-0 w-full flex-1 resize-none border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
         />
@@ -677,7 +802,7 @@ function ComposerWelcome({
           <button
             type="button"
             disabled={!canSend}
-            onClick={() => onSubmitGetStarted?.()}
+            onClick={() => onSubmit?.()}
             aria-label="Send message"
             className={cn(
               "relative flex size-[26px] shrink-0 items-center justify-center rounded-[999px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#2E96F9] focus-visible:ring-offset-2 disabled:pointer-events-none",
@@ -700,6 +825,96 @@ function SpinnerGradientThinking() {
     <div className="relative size-4 shrink-0 animate-[spin_0.85s_linear_infinite]" aria-hidden>
       <div className="absolute inset-[-8.33%]">
         <img alt="" className="block size-full max-w-none" src={imgSpinnerRing} />
+      </div>
+    </div>
+  );
+}
+
+function ReportingAssistantPanel({
+  reportingThread,
+  reportingPending,
+  draftMessage,
+  setDraftMessage,
+  sendReportingQuery,
+  onStopReporting,
+}: {
+  reportingThread: ReportingMsg[];
+  reportingPending: boolean;
+  draftMessage: string;
+  setDraftMessage: (v: string) => void;
+  sendReportingQuery: (text: string) => void | Promise<void>;
+  onStopReporting: () => void;
+}) {
+  return (
+    <div className="relative z-[5] flex min-h-0 w-full flex-1 flex-col">
+      <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-x-clip overflow-y-auto bg-white px-[15px] pb-4 pt-12">
+        <div className="flex w-full flex-col items-stretch justify-start gap-4">
+          <div className="flex w-full items-start justify-center gap-2 whitespace-nowrap text-center font-['Inter',sans-serif] text-[11px] font-medium leading-[normal] text-[#727d83]">
+            <p>Today</p>
+            <p>Continuum AI</p>
+          </div>
+          {reportingThread.map((m) => (
+            <Fragment key={m.id}>
+              {m.role === "user" ? (
+                <div className="flex w-full justify-end">
+                  <div className="flex max-w-[min(100%,340px)] shrink-0 items-center justify-center rounded-[32px] bg-[#edf0f3] px-4 py-2">
+                    <p className="max-w-full whitespace-pre-wrap break-words text-left font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#0b191f]">
+                      {m.content}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex w-full flex-col items-start gap-2 rounded-[16px]">
+                  <div className="flex w-full items-center gap-1 opacity-50">
+                    <div className="relative size-4 shrink-0">
+                      <img alt="" className="absolute block size-full max-w-none" src={imgChevronRightThought} />
+                    </div>
+                    <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
+                      Thought
+                    </p>
+                  </div>
+                  <p
+                    className={cn(
+                      "w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic",
+                      m.isError ? "text-[#dc2626]" : "text-[#0b191f]",
+                    )}
+                  >
+                    {m.content}
+                  </p>
+                  {typeof m.confidence === "number" && m.confidence < 0.5 && !m.isError && (
+                    <p className="w-full font-['Inter',sans-serif] text-[11px] font-normal leading-[normal] text-[#b45309]">
+                      Lower confidence — verify against the project dashboard if needed.
+                    </p>
+                  )}
+                </div>
+              )}
+            </Fragment>
+          ))}
+          {reportingPending && (
+            <div className="flex w-full flex-col items-start gap-2 rounded-[16px]">
+              <div className="flex w-full items-center gap-2 opacity-50">
+                <SpinnerGradientThinking />
+                <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
+                  Thinking...
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="relative z-10 mt-auto w-full shrink-0 px-[15px] pb-[15px]">
+        {reportingPending ? (
+          <ComposerThinking onStop={onStopReporting} />
+        ) : (
+          <ComposerWelcome
+            draft={draftMessage}
+            onDraftChange={setDraftMessage}
+            onSubmit={() => void sendReportingQuery(draftMessage)}
+            placeholder="Ask a follow-up…"
+            disabled={false}
+            inputId="welcome-ai-chat-followup"
+          />
+        )}
       </div>
     </div>
   );
@@ -729,7 +944,7 @@ function GetStartedTaskBar({ onStop }: { onStop: () => void }) {
 }
 
 /** Figma 14:3531 — caret + stop control */
-function ComposerThinking() {
+function ComposerThinking({ onStop }: { onStop?: () => void }) {
   return (
     <div>
       <div className="flex h-[88px] shrink-0 flex-col items-start justify-between rounded-[14px] border border-solid border-[#edecea] bg-white pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
@@ -761,8 +976,10 @@ function ComposerThinking() {
             </p>
             <button
               type="button"
-              className="flex size-[26px] shrink-0 items-center justify-center overflow-clip rounded-[999px] bg-[#e7f2fc]"
+              onClick={onStop}
+              className="flex size-[26px] shrink-0 cursor-pointer items-center justify-center overflow-clip rounded-[999px] bg-[#e7f2fc] disabled:cursor-default disabled:opacity-50"
               aria-label="Stop generating"
+              disabled={!onStop}
             >
               <div className="relative size-3 shrink-0">
                 <img alt="" className="absolute block size-full max-w-none" src={imgLucideSquare} />

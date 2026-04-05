@@ -202,6 +202,7 @@ export type {
     ClientRecentActivityItem,
     ProjectQueryRequest,
     ProjectQueryResponse,
+    ProjectQuerySource,
 } from './dashboard';
 export {
     fetchInvoices,

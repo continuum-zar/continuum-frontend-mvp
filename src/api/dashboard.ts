@@ -192,13 +192,25 @@ export interface ProjectQueryRequest {
     query: string;
 }
 
+/** Structured signal sources returned with project query answers (matches API). */
+export interface ProjectQuerySource {
+    type: 'progress' | 'hps' | 'structural_commits' | 'health';
+    data: Record<string, unknown>;
+}
+
 export interface ProjectQueryResponse {
     answer: string;
     confidence?: number;
-    sources?: string[];
+    sources?: ProjectQuerySource[];
 }
 
-export async function postProjectQuery(projectId: number | string, body: ProjectQueryRequest): Promise<ProjectQueryResponse> {
-    const { data } = await api.post<ProjectQueryResponse>(`/projects/${projectId}/query`, body);
+export async function postProjectQuery(
+    projectId: number | string,
+    body: ProjectQueryRequest,
+    options?: { signal?: AbortSignal },
+): Promise<ProjectQueryResponse> {
+    const { data } = await api.post<ProjectQueryResponse>(`/projects/${projectId}/query`, body, {
+        signal: options?.signal,
+    });
     return data;
 }

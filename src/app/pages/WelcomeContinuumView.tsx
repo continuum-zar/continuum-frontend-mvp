@@ -277,7 +277,15 @@ export function WelcomeContinuumView() {
           </div>
         </div>
       </div>
-      <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} />
+      <WelcomeAiChatModal
+        open={aiChatOpen}
+        onOpenChange={setAiChatOpen}
+        projectId={
+          isApiRoute && routeProjectId && isApiProjectId(routeProjectId)
+            ? Number(routeProjectId)
+            : undefined
+        }
+      />
       <WelcomeShareProjectModal
         open={shareProjectOpen}
         onOpenChange={setShareProjectOpen}
