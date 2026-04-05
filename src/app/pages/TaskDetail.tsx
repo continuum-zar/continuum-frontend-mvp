@@ -337,8 +337,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       setStatus(taskStatusToDisplay(task.status ?? 'todo'));
       setScope((task.scope_weight ?? 'M') as string);
       setLocalChecklists(task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : []);
+      // Keep drafts in sync so "Update" does not send empty description/title when the user never opened edit mode.
+      if (!editingTitle) setTitleDraft(task.title ?? '');
+      if (!editingDesc) setDescDraft(task.description ?? '');
     }
-  }, [task]);
+  }, [task, editingTitle, editingDesc]);
 
   /* ─ navigation ─ */
   const handleNavigateBack = () => {
