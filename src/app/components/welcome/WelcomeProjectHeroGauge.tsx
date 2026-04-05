@@ -2,13 +2,9 @@
 
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
-/**
- * Large semicircle hero gauge (89 / “Project on track”) — shared by welcome demo
- * and new-project empty overview. Figma playground 35:10702–35:10707.
- */
-const imgHeroArcFilled =
-  mcpAsset("1c54c7ec-1cc0-4107-8c3d-ea141fcb2f4e");
+const imgHeroArcFilled = mcpAsset("1c54c7ec-1cc0-4107-8c3d-ea141fcb2f4e");
 
+/** Welcome Continuum demo gauge — static Figma image with hardcoded mock data. */
 export function WelcomeProjectHeroGauge() {
   return (
     <div className="relative h-[191px] w-full max-w-[815px] shrink-0" data-node-id="35:10702">

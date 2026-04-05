@@ -8,8 +8,12 @@ import { useEffect, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Download, FileText, Link2, Loader2, X } from "lucide-react";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   downloadProjectAttachment,
+  fetchClassificationBreakdown,
+  fetchProjectHealth,
+  fetchProjectStats,
   getApiErrorMessage,
   getAttachmentLinkHref,
   getAttachmentLinkLabel,
@@ -31,9 +35,8 @@ import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 import { AddResourceModal } from "./AddResourceModal";
 import { WelcomeLinkRepositoryModal } from "./WelcomeLinkRepositoryModal";
-import { WelcomeMetricsRow } from "./WelcomeMetricsRow";
+import { LiveHeroGauge, LiveMetricsRow } from "./LiveProjectGauges";
 import { WelcomeMilestoneTimeline } from "./WelcomeMilestoneTimeline";
-import { WelcomeProjectHeroGauge } from "./WelcomeProjectHeroGauge";
 
 const imgLucidePlus = mcpAsset("91e46d01-6ae8-4fc9-aa4e-13b1040fb3cf");
 const imgLucideActivity = mcpAsset("8b04e159-5943-4424-a1ff-8259ce5f1905");
@@ -348,6 +351,25 @@ export function WelcomeEmptyProjectBody({
     previouslyScanningRepoIdsRef.current = nowScanning;
   }, [wikiScanStatusQuery.data]);
 
+  const { data: statsData } = useQuery({
+    queryKey: ["projects", projectId, "stats"],
+    queryFn: () => fetchProjectStats(projectId),
+    enabled: projectId != null,
+    staleTime: 60_000,
+  });
+  const { data: healthData } = useQuery({
+    queryKey: ["projects", projectId, "health"],
+    queryFn: () => fetchProjectHealth(projectId),
+    enabled: projectId != null,
+    staleTime: 60_000,
+  });
+  const { data: classificationData } = useQuery({
+    queryKey: ["projects", projectId, "classification-breakdown"],
+    queryFn: () => fetchClassificationBreakdown(projectId),
+    enabled: projectId != null,
+    staleTime: 60_000,
+  });
+
   const attachments = (attachmentsQuery.data ?? []).map(mapAttachment);
   const repositories = repositoriesQuery.data ?? [];
   const members = membersQuery.data ?? [];
@@ -362,8 +384,15 @@ export function WelcomeEmptyProjectBody({
       <WelcomeLinkRepositoryModal open={linkRepoOpen} onOpenChange={setLinkRepoOpen} projectId={projectId} />
 
       <div className="flex w-full max-w-[815px] flex-col items-center gap-16">
-        <WelcomeProjectHeroGauge />
-        <WelcomeMetricsRow />
+        <LiveHeroGauge score={statsData?.progress_percentage ?? 0} />
+        <LiveMetricsRow
+          hpsRatio={healthData?.hps_ratio ?? 0}
+          completedWeight={statsData?.completed_weight ?? 0}
+          totalWeight={statsData?.total_weight ?? 0}
+          trivialCommits={classificationData?.trivial ?? 0}
+          incrementalCommits={classificationData?.incremental ?? 0}
+          structuralCommits={classificationData?.structural ?? 0}
+        />
       </div>
 
       <div className="flex w-full max-w-[815px] flex-col">

@@ -124,10 +124,12 @@ export {
     fetchUserRhythm,
     fetchProjectStaleWork,
     fetchClassificationBreakdown,
+    fetchProjectHealth,
     fetchClientProjects,
     fetchClientProjectProgress,
     postProjectQuery,
     fetchProjectStats,
+    fetchMemberContributions,
 } from './dashboard';
 export {
     fetchUserHours,
@@ -203,6 +205,7 @@ export type {
     ProjectQueryRequest,
     ProjectQueryResponse,
     ProjectQuerySource,
+    MemberContributionStats,
 } from './dashboard';
 export {
     fetchInvoices,

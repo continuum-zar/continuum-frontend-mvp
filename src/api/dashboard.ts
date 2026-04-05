@@ -20,6 +20,7 @@ export interface DashboardStats {
 export interface WeeklyVelocityData {
     week_number: number;
     week_start_date: string;
+    week_end_date?: string;
     velocity_score: number;
     rolling_avg: number;
     tasks_completed?: number;
@@ -130,9 +131,32 @@ export async function fetchProjectDashboard(projectId: number | string): Promise
     return data;
 }
 
-export async function fetchProjectVelocityReport(projectId: number | string): Promise<ProjectVelocityResponse> {
-    const { data } = await api.get<ProjectVelocityResponse>(`/projects/${projectId}/velocity-report`);
+export async function fetchProjectVelocityReport(
+    projectId: number | string,
+    weeks = 104,
+): Promise<ProjectVelocityResponse> {
+    const { data } = await api.get<ProjectVelocityResponse>(`/projects/${projectId}/velocity-report`, {
+        params: { weeks },
+    });
     return data;
+}
+
+/** Per-member contributions for Activity / team dashboards (matches API). */
+export interface MemberContributionStats {
+    user_id: number;
+    name: string;
+    role: string;
+    total_hours: number;
+    total_tasks_completed: number;
+    total_tasks_in_progress: number;
+    total_commits: number;
+    classification_breakdown: ClassificationBreakdown;
+    last_active_date?: string | null;
+}
+
+export async function fetchMemberContributions(projectId: number | string): Promise<MemberContributionStats[]> {
+    const { data } = await api.get<MemberContributionStats[]>(`/projects/${projectId}/member-contributions`);
+    return data ?? [];
 }
 
 export async function fetchMilestoneBurndown(milestoneId: number | string): Promise<MilestoneBurndownResponse> {
@@ -154,6 +178,19 @@ export async function fetchProjectStaleWork(projectId: number | string, threshol
     return data;
 }
 
+export interface ProjectHealthResponse {
+    project_id: number;
+    hps_ratio: number;
+    health_status: string;
+    overdue_count?: number;
+    unassigned_count?: number;
+}
+
+export async function fetchProjectHealth(projectId: number | string): Promise<ProjectHealthResponse> {
+    const { data } = await api.get<ProjectHealthResponse>(`/projects/${projectId}/health`);
+    return data;
+}
+
 export async function fetchClassificationBreakdown(projectId: number | string): Promise<ClassificationBreakdown> {
     const { data } = await api.get<ClassificationBreakdown>(`/projects/${projectId}/contributions/classification-breakdown`);
     return data;
@@ -167,6 +204,8 @@ export interface ProjectStatsResponse {
     total_overdue_tasks: number;
     total_tasks?: number;
     progress_percentage?: number;
+    completed_weight?: number;
+    total_weight?: number;
 }
 
 export async function fetchProjectStats(

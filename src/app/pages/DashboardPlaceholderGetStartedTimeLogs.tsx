@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState } from "react";
 import {
   Activity,
@@ -26,7 +27,13 @@ import { Link, useSearchParams } from "react-router";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { isApiProjectId, projectSprintHref, projectTimeLogsHref } from "../data/dashboardPlaceholderProjects";
 import type { LoggedHourEntry } from "@/api/loggedHours";
+import {
+  fetchMemberContributions,
+  fetchProjectVelocityReport,
+  type WeeklyVelocityData,
+} from "@/api/dashboard";
 import { useLoggedHours, useProject } from "@/api/hooks";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 
 const tabBtn = (active: boolean) =>
@@ -189,7 +196,6 @@ const Y_LABEL_TOPS = [0, 134, 268, 402, 536, 670] as const;
 
 /** Figma Graphi&Grid width (4:1638) — plot area scrolls horizontally when the column is narrower. */
 const TREND_PLOT_W = 1179;
-const TREND_CHART_MIN_W = Y_AXIS_W + TREND_PLOT_W;
 
 /** Figma 4:1978 — Task Completion Rate area chart (smooth line + fill) */
 const PERF_LINE = "#24B5F8";
@@ -207,12 +213,118 @@ const PERF_PLOT_VB_H = TREND_BAR_AREA_H;
 /** Figma singleLineArea inset-[22%_8.33%_0_8.33%] → x inset 8.33% of plot */
 const PERF_X_INSET_FR = 0.0833;
 
-function perfChartPoints(): { x: number; y: number; value: number }[] {
+function formatMemberRole(role: string): string {
+  const t = (role || "").trim();
+  if (!t) return "Member";
+  return t
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function weekStartIso(w: WeeklyVelocityData): string {
+  const v = w.week_start_date as string | Date;
+  return typeof v === "string" ? v : v.toISOString();
+}
+
+/** Map velocity weeks to chart rows — raw counts (hours, tasks, commits); y-axis uses a shared max. */
+function trendWeeksFromVelocity(
+  raw: WeeklyVelocityData[],
+): { label: string; totalHours: number; tasksCompleted: number; commits: number }[] {
+  if (raw.length === 0) return [];
+  return raw.map((w) => {
+    const d = parseISO(weekStartIso(w));
+    const label = isValid(d) ? format(d, "MMM d") : `W${w.week_number}`;
+    return {
+      label,
+      totalHours: Number(w.hours_logged ?? 0),
+      tasksCompleted: Math.round(Number(w.tasks_completed ?? 0)),
+      commits: Math.round(Number(w.commits_count ?? 0)),
+    };
+  });
+}
+
+/** Readable upper bound for the shared raw-value y-axis. */
+function niceTrendAxisMax(maxVal: number): number {
+  if (!Number.isFinite(maxVal) || maxVal <= 0) return 1;
+  const exp = Math.floor(Math.log10(maxVal));
+  const base = 10 ** exp;
+  const n = maxVal / base;
+  let ceil: number;
+  if (n <= 1) ceil = base;
+  else if (n <= 2) ceil = 2 * base;
+  else if (n <= 5) ceil = 5 * base;
+  else ceil = 10 * base;
+  return Math.max(ceil, maxVal);
+}
+
+function formatTrendAxisTick(n: number): string {
+  if (!Number.isFinite(n)) return "0";
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  if (Math.abs(n - Math.round(n)) < 0.01) return String(Math.round(n));
+  return n.toFixed(1);
+}
+
+function formatTrendBarLabel(n: number): string {
+  if (!Number.isFinite(n)) return "0";
+  if (Math.abs(n - Math.round(n)) < 0.05) return String(Math.round(n));
+  return n.toFixed(1);
+}
+
+function performanceWeeksFromVelocity(raw: WeeklyVelocityData[]): { label: string; value: number }[] {
+  return raw.map((w) => {
+    const d = parseISO(weekStartIso(w));
+    const label = isValid(d) ? format(d, "MMM d") : `W${w.week_number}`;
+    return {
+      label,
+      value: Math.min(100, Math.round(Number(w.velocity_score) || 0)),
+    };
+  });
+}
+
+/** Horizontal scroll with visible scrollbar (thumb) on Trends / Performance charts. */
+const CHART_H_SCROLL_CLASS =
+  "w-full min-w-0 overflow-x-auto overscroll-x-contain pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] [scrollbar-color:rgb(203_213_225)_rgb(241_245_249)] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-[#f1f5f9] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#cbd5e1] [&::-webkit-scrollbar-thumb]:hover:bg-[#94a3b8]";
+
+const EMPTY_CHART_WEEK_SLOTS = 8;
+
+/** Keeps axes/grid width when the API returns no weekly rows yet. */
+function emptyTrendWeeksPlaceholder(): {
+  label: string;
+  totalHours: number;
+  tasksCompleted: number;
+  commits: number;
+}[] {
+  return Array.from({ length: EMPTY_CHART_WEEK_SLOTS }, (_, i) => ({
+    label: `W${i + 1}`,
+    totalHours: 0,
+    tasksCompleted: 0,
+    commits: 0,
+  }));
+}
+
+function emptyPerfWeeksPlaceholder(): { label: string; value: number }[] {
+  return Array.from({ length: EMPTY_CHART_WEEK_SLOTS }, (_, i) => ({
+    label: `W${i + 1}`,
+    value: 0,
+  }));
+}
+
+function buildPerfChartPoints(weeks: readonly { value: number }[]): { x: number; y: number; value: number }[] {
+  const n = weeks.length;
+  if (n === 0) return [];
   const innerW = PERF_PLOT_VB_W * (1 - 2 * PERF_X_INSET_FR);
   const left = PERF_PLOT_VB_W * PERF_X_INSET_FR;
-  return ACTIVITY_PERF_WEEKS.map((w, i) => {
-    const x = left + ((i + 0.5) / 6) * innerW;
-    const y = PERF_PLOT_VB_H * (1 - w.value / 100);
+  return weeks.map((w, i) => {
+    const x = left + ((i + 0.5) / n) * innerW;
+    const y = PERF_PLOT_VB_H * (1 - Math.min(100, Math.max(0, w.value)) / 100);
     return { x, y, value: w.value };
   });
 }
@@ -262,16 +374,26 @@ function ActivityPerformanceLegendItem() {
   );
 }
 
-function ActivityPerformanceAreaChart() {
+function ActivityPerformanceAreaChart({
+  perfWeeks,
+}: {
+  /** When omitted, uses welcome demo data. */
+  perfWeeks?: { label: string; value: number }[];
+}) {
   const areaGradientId = useId().replace(/:/g, "");
-  const pts = perfChartPoints();
+  const weeks = perfWeeks ?? [...ACTIVITY_PERF_WEEKS];
+  const pts = buildPerfChartPoints(weeks);
   const yBottom = PERF_PLOT_VB_H;
   const areaD = perfAreaPathD(pts, yBottom);
   const lineD = smoothLinePathD(pts);
+  const nCols = Math.max(weeks.length, 1);
+  const showDataLayer = pts.length > 0 && pts.some((p) => p.value > 0);
+  const chartMinW = Y_AXIS_W + Math.max(TREND_PLOT_W, 120 * Math.max(weeks.length, 1));
 
   return (
     <div className="flex w-full min-w-0 flex-col p-2">
-      <div className="min-w-0 overflow-x-hidden">
+      <div className={CHART_H_SCROLL_CLASS}>
+        <div className="min-w-0" style={{ minWidth: chartMinW }}>
         <div className="flex w-full min-w-0" style={{ height: TREND_CHART_MAIN_H }}>
         <div
           className="relative shrink-0 text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]"
@@ -296,11 +418,11 @@ function ActivityPerformanceAreaChart() {
             ))}
           </div>
           <div className="pointer-events-none absolute inset-0">
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+            {Array.from({ length: nCols + 1 }, (_, i) => (
               <div
                 key={i}
                 className="absolute top-0 bottom-0 w-0 border-l border-dashed border-[#e4e4e7]"
-                style={{ left: `${(i / 6) * 100}%` }}
+                style={{ left: `${(i / nCols) * 100}%` }}
               />
             ))}
           </div>
@@ -321,23 +443,29 @@ function ActivityPerformanceAreaChart() {
                   <stop offset="100%" stopColor="rgb(45, 154, 249)" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
-              <path d={areaD} fill={`url(#${areaGradientId})`} />
-              <path d={lineD} fill="none" stroke={PERF_LINE} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              {pts.map((p) => (
-                <g key={`${p.x}-${p.y}`}>
-                  <circle cx={p.x} cy={p.y} r={6} fill={PERF_LINE} opacity={0.2} />
-                  <circle cx={p.x} cy={p.y} r={4} fill={PERF_LINE} stroke="#fff" strokeWidth={2} />
-                  <text
-                    x={p.x}
-                    y={p.y - 10}
-                    textAnchor="middle"
-                    fill="rgba(0,0,0,0.7)"
-                    style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif", fontSize: 12 }}
-                  >
-                    {p.value}
-                  </text>
-                </g>
-              ))}
+              {showDataLayer && (
+                <>
+                  <path d={areaD} fill={`url(#${areaGradientId})`} />
+                  <path d={lineD} fill="none" stroke={PERF_LINE} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  {pts.map((p) =>
+                    p.value > 0 ? (
+                      <g key={`${p.x}-${p.y}`}>
+                        <circle cx={p.x} cy={p.y} r={6} fill={PERF_LINE} opacity={0.2} />
+                        <circle cx={p.x} cy={p.y} r={4} fill={PERF_LINE} stroke="#fff" strokeWidth={2} />
+                        <text
+                          x={p.x}
+                          y={p.y - 10}
+                          textAnchor="middle"
+                          fill="rgba(0,0,0,0.7)"
+                          style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif", fontSize: 12 }}
+                        >
+                          {p.value}
+                        </text>
+                      </g>
+                    ) : null,
+                  )}
+                </>
+              )}
             </svg>
           </div>
         </div>
@@ -346,11 +474,12 @@ function ActivityPerformanceAreaChart() {
           className="flex h-[23px] w-full shrink-0 items-start pl-[29px] pt-0"
           style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
         >
-          {ACTIVITY_PERF_WEEKS.map((w) => (
+          {weeks.map((w) => (
             <div key={w.label} className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch">
               <p className="w-full text-center text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]">{w.label}</p>
             </div>
           ))}
+        </div>
         </div>
       </div>
       {/* Legends — Figma 4:2052 h 24, full width below Chart&Axis */}
@@ -383,20 +512,26 @@ function ActivityTrendBar({
   value,
   color,
   plotHeightPx,
+  scaleMax,
 }: {
   value: number;
   color: string;
   plotHeightPx: number;
+  /** Shared chart maximum (raw units); bar height = value / scaleMax. */
+  scaleMax: number;
 }) {
-  const barH = (value / 100) * plotHeightPx;
+  const denom = Math.max(scaleMax, 1e-9);
+  const barH = (Math.max(0, value) / denom) * plotHeightPx;
   return (
     <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col items-center justify-end">
-      <span
-        className="absolute left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap text-[10px] font-normal leading-[12px] text-[rgba(0,0,0,0.7)]"
-        style={{ bottom: `calc(${barH}px + 2px)`, fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
-      >
-        {value}
-      </span>
+      {value > 0 && (
+        <span
+          className="absolute left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap text-[10px] font-normal leading-[12px] text-[rgba(0,0,0,0.7)]"
+          style={{ bottom: `calc(${barH}px + 2px)`, fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
+        >
+          {formatTrendBarLabel(value)}
+        </span>
+      )}
       <div
         className="w-full opacity-80"
         style={{
@@ -410,22 +545,35 @@ function ActivityTrendBar({
 }
 
 /** Figma 4:1636 BarLineChart — horizontal scroll is scoped to the chart block only (like Performance’s chart card), not the whole middle panel. */
-function ActivityTrendsBarChart() {
-  const yTicks = [100, 80, 60, 40, 20, 0] as const;
+function ActivityTrendsBarChart({
+  trendWeeks,
+}: {
+  /** When omitted, uses welcome demo data. Values are raw hours / task count / commit count. */
+  trendWeeks?: { label: string; totalHours: number; tasksCompleted: number; commits: number }[];
+}) {
+  const weeks = trendWeeks ?? [...ACTIVITY_TRENDS_WEEKS];
+  const nWeeks = Math.max(weeks.length, 1);
+  const chartMinW = Y_AXIS_W + Math.max(TREND_PLOT_W, 120 * nWeeks);
+  const rawMax = Math.max(
+    1,
+    ...weeks.flatMap((w) => [w.totalHours, w.tasksCompleted, w.commits]),
+  );
+  const yAxisTop = niceTrendAxisMax(rawMax);
+  const yTickValues = [1, 0.8, 0.6, 0.4, 0.2, 0].map((f) => yAxisTop * f);
 
   return (
     <div className="flex w-full min-w-0 flex-col p-2">
-      <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain scrollbar-hide [-webkit-overflow-scrolling:touch]">
-        <div className="min-w-0" style={{ minWidth: TREND_CHART_MIN_W }}>
+      <div className={CHART_H_SCROLL_CLASS}>
+        <div className="min-w-0" style={{ minWidth: chartMinW }}>
           {/* MainChart row: yAxisLeft 29×685 + Graphi&Grid 1179×685 (Figma 4:1638) */}
           <div className="flex w-full min-w-0" style={{ height: TREND_CHART_MAIN_H }}>
           <div
             className="relative shrink-0 text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]"
             style={{ width: Y_AXIS_W, height: TREND_CHART_MAIN_H, fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
           >
-            {yTicks.map((t, i) => (
-              <span key={t} className="absolute right-0 whitespace-nowrap" style={{ top: Y_LABEL_TOPS[i] }}>
-                {t}
+            {yTickValues.map((t, i) => (
+              <span key={`${i}-${t}`} className="absolute right-0 whitespace-nowrap" style={{ top: Y_LABEL_TOPS[i] }}>
+                {formatTrendAxisTick(t)}
               </span>
             ))}
           </div>
@@ -442,17 +590,15 @@ function ActivityTrendsBarChart() {
                 />
               ))}
             </div>
-            {/* yLines — 7 vertical lines at 0, 1/6 … 1 of plot width (4:1654) */}
             <div className="pointer-events-none absolute inset-0">
-              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+              {Array.from({ length: nWeeks + 1 }, (_, i) => (
                 <div
                   key={i}
                   className="absolute top-0 bottom-0 w-0 border-l border-dashed border-[#e4e4e7]"
-                  style={{ left: `${(i / 6) * 100}%` }}
+                  style={{ left: `${(i / nWeeks) * 100}%` }}
                 />
               ))}
             </div>
-            {/* BarArea inset-[6px_0_7px_0] — 4:1662 */}
             <div
               className="absolute flex items-stretch"
               style={{
@@ -462,29 +608,39 @@ function ActivityTrendsBarChart() {
                 bottom: TREND_BAR_AREA_BOTTOM,
               }}
             >
-              {ACTIVITY_TRENDS_WEEKS.map((week) => (
+              {weeks.map((week) => (
                 <div
                   key={week.label}
                   className="flex h-full min-h-0 min-w-0 flex-1 items-stretch gap-0.5 px-[15px]"
                 >
-                  <ActivityTrendBar value={week.totalHours} color={TREND_BAR_HOURS} plotHeightPx={TREND_BAR_AREA_H} />
+                  <ActivityTrendBar
+                    value={week.totalHours}
+                    color={TREND_BAR_HOURS}
+                    plotHeightPx={TREND_BAR_AREA_H}
+                    scaleMax={yAxisTop}
+                  />
                   <ActivityTrendBar
                     value={week.tasksCompleted}
                     color={TREND_BAR_TASKS}
                     plotHeightPx={TREND_BAR_AREA_H}
+                    scaleMax={yAxisTop}
                   />
-                  <ActivityTrendBar value={week.commits} color={TREND_BAR_COMMITS} plotHeightPx={TREND_BAR_AREA_H} />
+                  <ActivityTrendBar
+                    value={week.commits}
+                    color={TREND_BAR_COMMITS}
+                    plotHeightPx={TREND_BAR_AREA_H}
+                    scaleMax={yAxisTop}
+                  />
                 </div>
               ))}
             </div>
           </div>
         </div>
-        {/* xAxis — 4:1759 h 23, labels align with BarGroup columns (pl 29 matches y-axis) */}
         <div
           className="flex h-[23px] w-full shrink-0 items-start pl-[29px] pt-0"
           style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
         >
-          {ACTIVITY_TRENDS_WEEKS.map((w) => (
+          {weeks.map((w) => (
             <div key={w.label} className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch">
               <p className="w-full text-center text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]">{w.label}</p>
             </div>
@@ -492,7 +648,6 @@ function ActivityTrendsBarChart() {
         </div>
         </div>
       </div>
-      {/* Legends — 4:1772 h 24 */}
       <div className="flex h-6 w-full shrink-0 items-start justify-center overflow-hidden pt-0">
         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0 px-2">
           <ActivityTrendsLegendItem color={TREND_BAR_HOURS} label="Total Hours" />
@@ -532,6 +687,46 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
 
   const [page, setPage] = useState(1);
   const [activityView, setActivityView] = useState<"members" | "trends" | "performance">("members");
+
+  const liveProjectNumericId = apiProjectId != null ? Number(apiProjectId) : null;
+  /** Welcome demo uses `populated`; real API projects always use live data. */
+  const activityPopulated = liveProjectNumericId != null || populated;
+
+  const { data: memberContributions = [], isPending: contributionsLoading, isError: contributionsError } = useQuery({
+    queryKey: ["projects", liveProjectNumericId, "member-contributions"],
+    queryFn: () => fetchMemberContributions(liveProjectNumericId!),
+    enabled: liveProjectNumericId != null,
+  });
+
+  const { data: velocityReport, isPending: velocityLoading } = useQuery({
+    queryKey: ["projects", liveProjectNumericId, "velocity-report", 104],
+    queryFn: () => fetchProjectVelocityReport(liveProjectNumericId!, 104),
+    enabled: liveProjectNumericId != null,
+  });
+
+  const velocityWeeks = velocityReport?.weeks ?? [];
+
+  /** Always enough slots for axes/grid; empty weeks use placeholder labels when API returns no rows. */
+  const trendChartWeeksDisplay = useMemo(() => {
+    const n = trendWeeksFromVelocity(velocityWeeks);
+    return n.length > 0 ? n : emptyTrendWeeksPlaceholder();
+  }, [velocityWeeks]);
+
+  const perfChartWeeksDisplay = useMemo(() => {
+    const n = performanceWeeksFromVelocity(velocityWeeks);
+    return n.length > 0 ? n : emptyPerfWeeksPlaceholder();
+  }, [velocityWeeks]);
+
+  const activityDateRangeLabel = useMemo(() => {
+    if (liveProjectNumericId == null || velocityWeeks.length === 0) return null;
+    const first = velocityWeeks[0];
+    const last = velocityWeeks[velocityWeeks.length - 1];
+    const a = parseISO(weekStartIso(first));
+    const endRaw = last.week_end_date;
+    const b = endRaw ? parseISO(endRaw) : a;
+    if (!isValid(a) || !isValid(b)) return null;
+    return `${format(a, "dd/MM/yyyy")} - ${format(b, "dd/MM/yyyy")}`;
+  }, [liveProjectNumericId, velocityWeeks]);
 
   const qsTimeLogs =
     apiProjectId != null
@@ -664,7 +859,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
           </div>
 
           {/* Title row — Activity + populated: title lives in toolbar column (Figma 4:1256) */}
-          {(mainTab === "time-logs" || (mainTab === "activity" && !populated)) && (
+          {(mainTab === "time-logs" || (mainTab === "activity" && !activityPopulated)) && (
             <div className="mt-4 flex items-center gap-2">
               <h1 className="text-[24px] font-medium text-[#0b191f]">
                 {mainTab === "activity" ? "Activity" : "Time Logs"}
@@ -678,7 +873,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
           {mainTab === "activity" && (
             <>
               {/* Activity toolbar — Figma 4:1255 (populated only); empty state is title + center only */}
-              {populated && (
+              {activityPopulated && (
                 <div className="mt-4 flex w-full flex-wrap items-end justify-center gap-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-4">
                     <div className="flex w-full items-center gap-2">
@@ -776,7 +971,9 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         className={`text-[14px] font-medium ${activityView === "trends" || activityView === "performance" ? "text-[#0b191f]" : "text-[#606d76]"}`}
                       >
                         {activityView === "trends" || activityView === "performance"
-                          ? "01/01/2026 - 01/03/2026"
+                          ? liveProjectNumericId != null && activityDateRangeLabel
+                            ? activityDateRangeLabel
+                            : "01/01/2026 - 01/03/2026"
                           : "Start Date-End Date"}
                       </span>
                       <Calendar className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} />
@@ -789,7 +986,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 </div>
               )}
 
-              {!populated && (
+              {!activityPopulated && (
                 <div className="flex min-h-[320px] flex-1 flex-col items-center justify-center py-12">
                   <div className="flex h-[114px] w-[286px] flex-col items-center justify-between text-[#727d83]">
                     <Timer className="size-12 stroke-[1.25]" strokeWidth={1.25} />
@@ -801,67 +998,147 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 </div>
               )}
 
-              {populated && activityView === "members" && (
+              {activityPopulated && activityView === "members" && (
                 <div className="mt-4 flex w-full flex-wrap content-start gap-4">
-                  {SAMPLE_ACTIVITY_MEMBERS.map((m) => (
-                    <div
-                      key={m.id}
-                      className={`flex w-[260px] shrink-0 flex-col items-start rounded-[12px] border border-[#ebedee] bg-white p-6 ${cardShadow}`}
-                    >
-                      <div className="flex w-full flex-col gap-6">
-                        <div className="flex h-10 w-full items-center rounded-[8px]">
-                          <div className="flex items-center gap-2">
-                            {m.avatar.kind === "photo" ? (
-                              <img
-                                src={m.avatar.src}
-                                alt=""
-                                className="size-[35px] shrink-0 rounded-full object-cover"
-                                width={35}
-                                height={35}
-                              />
-                            ) : (
-                              <div
-                                className="flex size-[35px] shrink-0 items-center justify-center rounded-full text-[13.13px] font-medium text-white"
-                                style={{ backgroundColor: m.avatar.bg }}
-                              >
-                                {m.avatar.text}
+                  {liveProjectNumericId != null ? (
+                    contributionsLoading ? (
+                      <p className="w-full text-[14px] font-medium text-[#727d83]">Loading members…</p>
+                    ) : contributionsError ? (
+                      <p className="w-full text-[14px] font-medium text-red-600">Could not load member activity.</p>
+                    ) : memberContributions.length === 0 ? (
+                      <p className="w-full text-[14px] font-medium text-[#727d83]">No members in this project yet.</p>
+                    ) : (
+                      memberContributions.map((m) => {
+                        const displayName = m.name?.trim() || "Member";
+                        const bg = memberAvatarBackground(m.user_id);
+                        const initials = initialsFromName(displayName);
+                        const commits = Math.round(m.total_commits ?? 0);
+                        const hours = Math.round(m.total_hours ?? 0);
+                        const done = Math.round(m.total_tasks_completed ?? 0);
+                        return (
+                          <div
+                            key={m.user_id}
+                            className={`flex w-[260px] shrink-0 flex-col items-start rounded-[12px] border border-[#ebedee] bg-white p-6 ${cardShadow}`}
+                          >
+                            <div className="flex w-full flex-col gap-6">
+                              <div className="flex h-10 w-full items-center rounded-[8px]">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <div
+                                    className="flex size-[35px] shrink-0 items-center justify-center rounded-full text-[13.13px] font-medium text-white"
+                                    style={{ backgroundColor: bg }}
+                                  >
+                                    {initials}
+                                  </div>
+                                  <div className="flex min-w-0 flex-col items-start justify-center">
+                                    <p className="max-w-full truncate text-[14px] font-medium text-[#0b191f]">{displayName}</p>
+                                    <p className="max-w-full truncate text-[12px] font-medium text-[#727d83]">
+                                      {formatMemberRole(m.role)}
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
-                            )}
-                            <div className="flex flex-col items-start justify-center whitespace-nowrap">
-                              <p className="text-[14px] font-medium text-[#0b191f]">{m.name}</p>
-                              <p className="text-[12px] font-medium text-[#727d83]">{m.role}</p>
+                              <div className="flex w-full flex-col gap-2 text-[14px] font-medium whitespace-nowrap">
+                                <div className="flex w-full items-center justify-between">
+                                  <span className="text-[#727d83]">Commits</span>
+                                  <span className="min-w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f] tabular-nums">
+                                    {commits}
+                                  </span>
+                                </div>
+                                <div className="flex w-full items-center justify-between">
+                                  <span className="text-[#727d83]">Total hours</span>
+                                  <span className="min-w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f] tabular-nums">
+                                    {hours}
+                                  </span>
+                                </div>
+                                <div className="flex w-full items-center justify-between">
+                                  <span className="text-[#727d83]">Task completed</span>
+                                  <span className="min-w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f] tabular-nums">
+                                    {done}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )
+                  ) : (
+                    SAMPLE_ACTIVITY_MEMBERS.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`flex w-[260px] shrink-0 flex-col items-start rounded-[12px] border border-[#ebedee] bg-white p-6 ${cardShadow}`}
+                      >
+                        <div className="flex w-full flex-col gap-6">
+                          <div className="flex h-10 w-full items-center rounded-[8px]">
+                            <div className="flex items-center gap-2">
+                              {m.avatar.kind === "photo" ? (
+                                <img
+                                  src={m.avatar.src}
+                                  alt=""
+                                  className="size-[35px] shrink-0 rounded-full object-cover"
+                                  width={35}
+                                  height={35}
+                                />
+                              ) : (
+                                <div
+                                  className="flex size-[35px] shrink-0 items-center justify-center rounded-full text-[13.13px] font-medium text-white"
+                                  style={{ backgroundColor: m.avatar.bg }}
+                                >
+                                  {m.avatar.text}
+                                </div>
+                              )}
+                              <div className="flex flex-col items-start justify-center whitespace-nowrap">
+                                <p className="text-[14px] font-medium text-[#0b191f]">{m.name}</p>
+                                <p className="text-[12px] font-medium text-[#727d83]">{m.role}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex w-full flex-col gap-2 text-[14px] font-medium whitespace-nowrap">
+                            <div className="flex w-full items-center justify-between">
+                              <span className="text-[#727d83]">Commits</span>
+                              <span className="w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">{m.commits}</span>
+                            </div>
+                            <div className="flex w-full items-center justify-between">
+                              <span className="text-[#727d83]">Total hours</span>
+                              <span className="w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">{m.totalHours}</span>
+                            </div>
+                            <div className="flex w-full items-center justify-between">
+                              <span className="text-[#727d83]">Task completed</span>
+                              <span className="w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">{m.tasksCompleted}</span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex w-full flex-col gap-2 text-[14px] font-medium whitespace-nowrap">
-                          <div className="flex w-full items-center justify-between">
-                            <span className="text-[#727d83]">Commits</span>
-                            <span className="w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">{m.commits}</span>
-                          </div>
-                          <div className="flex w-full items-center justify-between">
-                            <span className="text-[#727d83]">Total hours</span>
-                            <span className="w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">{m.totalHours}</span>
-                          </div>
-                          <div className="flex w-full items-center justify-between">
-                            <span className="text-[#727d83]">Task completed</span>
-                            <span className="w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">{m.tasksCompleted}</span>
-                          </div>
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               )}
 
-              {populated && activityView === "trends" && (
-                <div className="mt-4 w-full min-w-0 overflow-x-hidden rounded-[8px] border border-[#ebedee] bg-white">
-                  <ActivityTrendsBarChart />
+              {activityPopulated && activityView === "trends" && (
+                <div className="mt-4 w-full min-w-0 rounded-[8px] border border-[#ebedee] bg-white">
+                  {liveProjectNumericId != null ? (
+                    velocityLoading ? (
+                      <p className="p-8 text-center text-[14px] font-medium text-[#727d83]">Loading trends…</p>
+                    ) : (
+                      <ActivityTrendsBarChart trendWeeks={trendChartWeeksDisplay} />
+                    )
+                  ) : (
+                    <ActivityTrendsBarChart />
+                  )}
                 </div>
               )}
 
-              {populated && activityView === "performance" && (
-                <div className="mt-4 w-full min-w-0 overflow-x-hidden rounded-[8px] border border-[#ebedee] bg-white">
-                  <ActivityPerformanceAreaChart />
+              {activityPopulated && activityView === "performance" && (
+                <div className="mt-4 w-full min-w-0 rounded-[8px] border border-[#ebedee] bg-white">
+                  {liveProjectNumericId != null ? (
+                    velocityLoading ? (
+                      <p className="p-8 text-center text-[14px] font-medium text-[#727d83]">Loading performance…</p>
+                    ) : (
+                      <ActivityPerformanceAreaChart perfWeeks={perfChartWeeksDisplay} />
+                    )
+                  ) : (
+                    <ActivityPerformanceAreaChart />
+                  )}
                 </div>
               )}
             </>
