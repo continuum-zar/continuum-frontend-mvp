@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, Search } from "lucide-react";
+import { toast } from "sonner";
 import { Link, useLocation, useSearchParams } from "react-router";
 
-import { useProjectMilestones, useProjects } from "@/api/hooks";
+import { getApiErrorMessage, useAllTasks, useProjectMilestones, useProjects } from "@/api/hooks";
+import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { useAuthStore } from "@/store/authStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
@@ -11,6 +13,8 @@ import type { Project } from "@/types/project";
 
 import { CreateProjectModal } from "./CreateProjectModal";
 import { InvoiceModal } from "./InvoiceModal";
+import { LogTimeModal } from "./LogTimeModal";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "../ui/popover";
 import {
   DASHBOARD_WELCOME_PROJECT,
   WELCOME_PROJECT_ID,
@@ -417,8 +421,63 @@ function ApiProjectBlock({
 export function DashboardLeftRail() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
-  const [timeRecording, setTimeRecording] = useState(false);
-  const [elapsedSec, setElapsedSec] = useState(0);
+  const [taskPickerOpen, setTaskPickerOpen] = useState(false);
+  const [taskSearch, setTaskSearch] = useState("");
+  const taskSearchInputRef = useRef<HTMLInputElement>(null);
+  const [railPickerBoundary, setRailPickerBoundary] = useState<Element | null>(null);
+  const setRailPickerContainer = useCallback((node: HTMLDivElement | null) => {
+    setRailPickerBoundary(node);
+  }, []);
+
+  const selectedTask = useTimeRecordingStore((s) => s.selectedTask);
+  const setSelectedTask = useTimeRecordingStore((s) => s.setSelectedTask);
+  const isRecording = useTimeRecordingStore((s) => s.isRecording);
+  const startedAtMs = useTimeRecordingStore((s) => s.startedAtMs);
+  const startRecording = useTimeRecordingStore((s) => s.startRecording);
+  const stopRecordingOpenLogModal = useTimeRecordingStore((s) => s.stopRecordingOpenLogModal);
+  const logModalOpen = useTimeRecordingStore((s) => s.logModalOpen);
+  const timerPrefill = useTimeRecordingStore((s) => s.timerPrefill);
+  const manualLogProjectId = useTimeRecordingStore((s) => s.manualLogProjectId);
+  const closeLogModal = useTimeRecordingStore((s) => s.closeLogModal);
+
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!isRecording || startedAtMs == null) return;
+    const id = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [isRecording, startedAtMs]);
+
+  const elapsedSec =
+    isRecording && startedAtMs != null
+      ? Math.floor((Date.now() - startedAtMs) / 1000)
+      : 0;
+
+  /** Load as soon as the rail mounts so the picker isn’t empty while the query warms up after open. */
+  const {
+    data: allTasksForPicker = [],
+    isPending: allTasksPending,
+    isError: allTasksError,
+    error: allTasksErrorDetail,
+  } = useAllTasks({ enabled: true });
+
+  const filteredRailTasks = useMemo(() => {
+    const q = taskSearch.trim().toLowerCase();
+    if (!q) return allTasksForPicker;
+    return allTasksForPicker.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) ||
+        (t.project && t.project.toLowerCase().includes(q)),
+    );
+  }, [allTasksForPicker, taskSearch]);
+
+  useEffect(() => {
+    if (taskPickerOpen) {
+      setTimeout(() => taskSearchInputRef.current?.focus(), 0);
+    } else {
+      setTaskSearch("");
+    }
+  }, [taskPickerOpen]);
+
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get("project");
@@ -439,11 +498,6 @@ export function DashboardLeftRail() {
       : "?";
   const profileAvatarBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#f0f3f5";
 
-  useEffect(() => {
-    if (!timeRecording) return;
-    const id = window.setInterval(() => setElapsedSec((n) => n + 1), 1000);
-    return () => window.clearInterval(id);
-  }, [timeRecording]);
   const isHomeActive = pathname === "/dashboard-placeholder";
   const isInvoiceActive = invoiceOpen;
   const isAssignedActive = pathname.startsWith("/dashboard-placeholder/assigned");
@@ -563,33 +617,127 @@ export function DashboardLeftRail() {
         </div>
         </div>
         {/* Figma 13:560 — timer + divider + profile stacked with no extra vertical gap */}
-        <div className="flex w-full shrink-0 flex-col gap-0" data-node-id="7:2837">
-        {/* Figma 13:571–13:573 — timer + Select ticket + record (13:575, 13:588) */}
-        <div className="flex w-full shrink-0 items-center gap-2 pl-2 pr-0 py-1" data-name="Component 144">
+        <div
+          ref={setRailPickerContainer}
+          className="relative flex w-full shrink-0 flex-col gap-0"
+          data-node-id="7:2837"
+        >
+        {/* Figma 13:571–13:573 — timer + Select ticket + record; popover anchored to full row, opens above */}
+        <Popover open={taskPickerOpen} onOpenChange={setTaskPickerOpen} modal={false}>
+          <PopoverAnchor
+            className="pointer-events-none absolute inset-0 z-0 min-h-[48px] w-full"
+            aria-hidden
+          />
+          <div
+            className="relative z-[1] flex w-full shrink-0 items-center gap-2 pl-2 pr-0 py-1"
+            data-name="Component 144"
+          >
               <div className="flex min-w-0 flex-1 flex-col justify-center gap-0 leading-none">
                 <p className="whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
                   {formatHms(elapsedSec)}
                 </p>
-                <button
-                  type="button"
-                  className="mt-0.5 flex items-start gap-0.5 rounded-sm text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Select ticket"
-                >
-                  <span className="whitespace-nowrap font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
-                    Select ticket
-                  </span>
-                  <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
-                </button>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={isRecording}
+                      className="mt-0.5 flex max-w-full items-start gap-0.5 rounded-sm text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label="Select task"
+                    >
+                      <span className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                        {selectedTask ? selectedTask.title : "Select ticket"}
+                      </span>
+                      <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
+                    </button>
+                  </PopoverTrigger>
               </div>
               <LeftRailRecordButton
-                recording={timeRecording}
+                recording={isRecording}
                 onToggle={() => {
-                  setTimeRecording((r) => {
-                    if (r) setElapsedSec(0);
-                    return !r;
-                  });
+                  if (isRecording) {
+                    stopRecordingOpenLogModal();
+                  } else {
+                    if (!selectedTask) {
+                      toast.error("Select a task first");
+                      return;
+                    }
+                    const ok = startRecording();
+                    if (!ok) toast.error("Select a task first");
+                  }
                 }}
               />
+          </div>
+                  <PopoverContent
+                    align="center"
+                    side="top"
+                    sideOffset={6}
+                    collisionBoundary={railPickerBoundary ?? undefined}
+                    collisionPadding={8}
+                    className="z-[100] w-[212px] min-w-[212px] max-w-[212px] border border-solid border-[#e9e9e9] p-0 shadow-lg"
+                    onOpenAutoFocus={(e) => {
+                      e.preventDefault();
+                      taskSearchInputRef.current?.focus();
+                    }}
+                  >
+                    {/*
+                      Do not tie panel height to --radix-popper-available-height alone: with side=top near
+                      the viewport bottom it can become ~0 and hide the list. Use min-h + fixed max on the list.
+                    */}
+                    <div className="flex max-h-[min(320px,70vh)] min-h-[168px] flex-col overflow-hidden rounded-[8px] bg-white">
+                      <div className="flex shrink-0 items-center gap-2 border-b border-[#f0f0f0] px-3 py-2">
+                        <Search className="size-4 shrink-0 text-[#9fa5a8]" strokeWidth={2} />
+                        <input
+                          ref={taskSearchInputRef}
+                          type="text"
+                          value={taskSearch}
+                          onChange={(e) => setTaskSearch(e.target.value)}
+                          placeholder="Search tasks…"
+                          className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                          aria-label="Search tasks"
+                        />
+                      </div>
+                      <div className="scrollbar-hide min-h-[120px] max-h-[240px] overflow-y-auto py-1">
+                        {allTasksPending ? (
+                          <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-[#9fa5a8]">
+                            Loading…
+                          </p>
+                        ) : allTasksError ? (
+                          <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-[#c45c5c]">
+                            {getApiErrorMessage(allTasksErrorDetail, "Couldn’t load tasks")}
+                          </p>
+                        ) : filteredRailTasks.length === 0 ? (
+                          <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-[#9fa5a8]">
+                            {allTasksForPicker.length === 0 ? "No tasks" : "No matches"}
+                          </p>
+                        ) : (
+                          filteredRailTasks.map((t) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTask(t);
+                                setTaskPickerOpen(false);
+                              }}
+                              className={cn(
+                                "flex w-full flex-col gap-0.5 px-3 py-2 text-left font-['Satoshi',sans-serif] text-[13px] transition-colors hover:bg-[#f5f7f8]",
+                                selectedTask?.id === t.id && "bg-[#f0f8ff]",
+                              )}
+                            >
+                              <span className="flex w-full items-center gap-2">
+                                <span className="min-w-0 flex-1 truncate text-[#0b191f]">{t.title}</span>
+                                {selectedTask?.id === t.id ? (
+                                  <Check className="size-3.5 shrink-0 text-[#2798f5]" strokeWidth={2} />
+                                ) : null}
+                              </span>
+                              {t.project ? (
+                                <span className="truncate text-[11px] font-medium text-[#727d83]">{t.project}</span>
+                              ) : null}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
         </div>
         <div
           className="pointer-events-none hidden gap-[12px] px-[12px] py-0"
@@ -634,10 +782,18 @@ export function DashboardLeftRail() {
             </div>
           </div>
         </div>
-        </div>
       </div>
       <CreateProjectModal open={createProjectOpen} onOpenChange={setCreateProjectOpen} />
       <InvoiceModal open={invoiceOpen} onOpenChange={setInvoiceOpen} />
+      <LogTimeModal
+        open={logModalOpen}
+        onOpenChange={(o) => {
+          if (!o) closeLogModal();
+        }}
+        projectId={timerPrefill?.projectId ?? manualLogProjectId ?? undefined}
+        prefillTaskId={timerPrefill?.taskId}
+        prefillHours={timerPrefill?.hours}
+      />
     </>
   );
 }

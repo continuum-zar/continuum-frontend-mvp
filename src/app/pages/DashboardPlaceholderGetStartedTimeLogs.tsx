@@ -20,10 +20,14 @@ import {
   ScrollText,
   UsersRound,
 } from "lucide-react";
+import { format, isValid, parseISO } from "date-fns";
 import { Link, useSearchParams } from "react-router";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
-import { LogTimeModal } from "../components/dashboard-placeholder/LogTimeModal";
+import { isApiProjectId, projectSprintHref, projectTimeLogsHref } from "../data/dashboardPlaceholderProjects";
+import type { LoggedHourEntry } from "@/api/loggedHours";
+import { useLoggedHours, useProject } from "@/api/hooks";
+import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 
 const tabBtn = (active: boolean) =>
   `rounded-[8px] px-4 py-2 text-[14px] font-medium ${
@@ -36,9 +40,7 @@ type TimeLogRow = {
   id: string;
   task: string;
   date: string;
-  timePeriod: string;
   duration: string;
-  billable: string;
 };
 
 const PAGE_SIZE = 10;
@@ -65,10 +67,31 @@ const SAMPLE_LOGS: TimeLogRow[] = TASK_TITLES.map((task, i) => ({
   id: String(i + 1),
   task,
   date: `${22 + (i % 8)} December 2025`,
-  timePeriod: ["08:00-17:30", "09:00-12:00", "10:00-16:00", "08:30-17:00"][i % 4],
   duration: `${(i % 8) + 1}.${i % 2 === 0 ? "5" : "0"}h`,
-  billable: i % 6 === 4 ? "No" : "Yes",
 }));
+
+function formatLoggedDate(iso: string): string {
+  const raw = iso.includes("T") ? iso : `${iso}T12:00:00`;
+  const d = parseISO(raw);
+  if (!isValid(d)) return iso;
+  return format(d, "d MMMM yyyy");
+}
+
+function formatDurationFromMinutes(minutes: number): string {
+  const h = minutes / 60;
+  if (!Number.isFinite(h) || h <= 0) return "—";
+  const rounded = Math.round(h * 10) / 10;
+  return rounded % 1 === 0 ? `${rounded}h` : `${rounded.toFixed(1)}h`;
+}
+
+function mapLoggedHourToTimeLogRow(entry: LoggedHourEntry): TimeLogRow {
+  return {
+    id: entry.id,
+    task: entry.task,
+    date: formatLoggedDate(entry.date),
+    duration: formatDurationFromMinutes(entry.duration),
+  };
+}
 
 type ActivityMemberRow = {
   id: string;
@@ -489,19 +512,35 @@ function buildGetStartedSearchParams(populated: boolean, tab: "time-logs" | "act
   return `?${p.toString()}`;
 }
 
+
 export function DashboardPlaceholderGetStartedTimeLogs() {
   const [searchParams, setSearchParams] = useSearchParams();
-  /** Default: show sample data (opt out with `?populated=0`). */
+  /** Default: show sample data (opt out with `?populated=0`). Ignored when `project` is a real API id. */
   const populated = searchParams.get("populated") !== "0";
   /** Default: Activity tab (`?tab=time-logs` for time log table). */
   const mainTab: "time-logs" | "activity" =
     searchParams.get("tab") === "time-logs" ? "time-logs" : "activity";
-  const [logTimeOpen, setLogTimeOpen] = useState(false);
+  const projectParam = searchParams.get("project");
+  const milestoneParam = searchParams.get("milestone");
+  const apiProjectId = projectParam != null && isApiProjectId(projectParam) ? projectParam : null;
+
+  const { data: loggedEntries = [], isPending: logsLoading, isError: logsError } = useLoggedHours(
+    apiProjectId,
+    { limit: 200, enabled: apiProjectId != null },
+  );
+  const projectQuery = useProject(apiProjectId != null ? Number(apiProjectId) : null);
+
   const [page, setPage] = useState(1);
   const [activityView, setActivityView] = useState<"members" | "trends" | "performance">("members");
 
-  const qsTimeLogs = buildGetStartedSearchParams(populated, "time-logs");
-  const qsActivity = buildGetStartedSearchParams(populated, "activity");
+  const qsTimeLogs =
+    apiProjectId != null
+      ? projectTimeLogsHref(apiProjectId, "time-logs", milestoneParam ?? undefined)
+      : `/dashboard-placeholder/get-started/time-logs${buildGetStartedSearchParams(populated, "time-logs")}`;
+  const qsActivity =
+    apiProjectId != null
+      ? projectTimeLogsHref(apiProjectId, "activity", milestoneParam ?? undefined)
+      : `/dashboard-placeholder/get-started/time-logs${buildGetStartedSearchParams(populated, "activity")}`;
 
   useEffect(() => {
     if (searchParams.toString() === "") {
@@ -509,7 +548,23 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
     }
   }, [searchParams, setSearchParams]);
 
-  const logs = useMemo(() => (populated ? SAMPLE_LOGS : []), [populated]);
+  const logs = useMemo(() => {
+    if (apiProjectId != null) {
+      return loggedEntries.map(mapLoggedHourToTimeLogRow);
+    }
+    return populated ? SAMPLE_LOGS : [];
+  }, [apiProjectId, loggedEntries, populated]);
+
+  const totalHoursLabel = useMemo(() => {
+    if (apiProjectId != null) {
+      const totalMin = loggedEntries.reduce((s, e) => s + e.duration, 0);
+      const h = totalMin / 60;
+      if (!Number.isFinite(h) || h <= 0) return "0 hours";
+      const rounded = Math.round(h * 10) / 10;
+      return rounded % 1 === 0 ? `${rounded} hours` : `${rounded.toFixed(1)} hours`;
+    }
+    return "102.5 hours";
+  }, [apiProjectId, loggedEntries]);
 
   const totalPages = Math.max(1, Math.ceil(logs.length / PAGE_SIZE));
 
@@ -520,11 +575,18 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
 
   useEffect(() => {
     setPage(1);
-  }, [populated]);
+  }, [populated, apiProjectId]);
 
   useEffect(() => {
     setPage((p) => Math.min(Math.max(1, p), totalPages));
   }, [totalPages]);
+
+  const breadcrumbProjectLabel =
+    apiProjectId != null ? projectQuery.data?.name ?? (projectQuery.isPending ? "…" : "Project") : "UX Strategy";
+  const sprintBoardLink =
+    apiProjectId != null
+      ? projectSprintHref(apiProjectId, milestoneParam ?? undefined)
+      : "/dashboard-placeholder/get-started";
 
   return (
     <>
@@ -548,7 +610,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 <span className="inline-flex size-4 items-center justify-center">
                   <span className="text-[14px]">›</span>
                 </span>
-                <span className="text-[16px] font-medium">UX Strategy</span>
+                <span className="text-[16px] font-medium">{breadcrumbProjectLabel}</span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex h-8 items-center gap-2 rounded-[999px] bg-[#d7fede] px-4 py-2">
@@ -557,19 +619,19 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 </div>
                 <div className="flex h-8 items-center gap-0.5 rounded-[8px] bg-[#f0f3f5] p-0.5">
                   <Link
-                    to="/dashboard-placeholder/get-started"
+                    to={sprintBoardLink}
                     className={`inline-flex h-9 items-center justify-center rounded-[8px] px-4 no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${tabBtn(false)}`}
                   >
                     Sprint
                   </Link>
                   <Link
-                    to={`/dashboard-placeholder/get-started/time-logs${qsTimeLogs}`}
+                    to={qsTimeLogs}
                     className={`inline-flex h-9 items-center justify-center rounded-[8px] px-4 no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${tabBtn(mainTab === "time-logs")}`}
                   >
                     Time logs
                   </Link>
                   <Link
-                    to={`/dashboard-placeholder/get-started/time-logs${qsActivity}`}
+                    to={qsActivity}
                     className={`inline-flex h-9 items-center justify-center rounded-[8px] px-4 no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${tabBtn(mainTab === "activity")}`}
                   >
                     Activity
@@ -808,7 +870,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
           {mainTab === "time-logs" && (
             <>
           {/* KPI cards — Figma 40:7972 / 40:8052 / 40:8053 + 40:8077: h-[149px], p-[24px], gap-[16px] between cards */}
-          {populated && (
+          {(populated || apiProjectId != null) && (
             <div className="mt-6 flex w-full min-w-0 flex-wrap gap-4">
               {/* Total Hours — 40:8053 */}
               <div className="flex h-[149px] w-[375px] shrink-0 flex-col justify-between rounded-[12px] border border-[#ebedee] bg-white p-6">
@@ -816,40 +878,46 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <p className="text-[16px] font-medium leading-normal text-[#727d83]">Total Hours</p>
                     <p className="h-[38px] max-w-[291px] text-[24px] font-medium leading-none text-[#0b191f]">
-                      102.5 hours
+                      {totalHoursLabel}
                     </p>
                   </div>
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-[#ededed] bg-white">
                     <Timer className="size-4" strokeWidth={1.5} />
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <TrendingUp className="size-4 shrink-0 text-[#108e27]" strokeWidth={1.5} />
-                  <span className="text-[16px] font-normal leading-normal text-[#108e27]">5.5hrs</span>
-                  <span className="text-[16px] font-normal leading-normal text-[#727d83]">up from last week</span>
-                </div>
-              </div>
-              {/* Total Rate Due — 40:8077 */}
-              <div className="flex h-[149px] w-[375px] shrink-0 flex-col items-end justify-between rounded-[12px] border border-[#ebedee] bg-white p-6">
-                <div className="flex items-start gap-1">
-                  <div className="flex flex-col items-end gap-1">
-                    <p className="text-[16px] font-medium leading-normal text-[#727d83]">Total Rate Due</p>
-                    <p className="h-[38px] max-w-[291px] text-right text-[24px] font-medium leading-none text-[#0b191f]">
-                      R20,500
-                    </p>
+                {apiProjectId != null ? (
+                  <p className="text-[16px] font-normal leading-normal text-[#727d83]">Logged for this project</p>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <TrendingUp className="size-4 shrink-0 text-[#108e27]" strokeWidth={1.5} />
+                    <span className="text-[16px] font-normal leading-normal text-[#108e27]">5.5hrs</span>
+                    <span className="text-[16px] font-normal leading-normal text-[#727d83]">up from last week</span>
                   </div>
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-[#ededed] bg-white">
-                    <ScrollText className="size-4" strokeWidth={1.5} />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 text-[16px] font-medium leading-normal text-[#606d76]"
-                >
-                  Generate invoice
-                  <ChevronRight className="size-4 shrink-0" strokeWidth={1.5} />
-                </button>
+                )}
               </div>
+              {/* Total Rate Due — demo only (no billing aggregate in API yet) */}
+              {apiProjectId == null && (
+                <div className="flex h-[149px] w-[375px] shrink-0 flex-col items-end justify-between rounded-[12px] border border-[#ebedee] bg-white p-6">
+                  <div className="flex items-start gap-1">
+                    <div className="flex flex-col items-end gap-1">
+                      <p className="text-[16px] font-medium leading-normal text-[#727d83]">Total Rate Due</p>
+                      <p className="h-[38px] max-w-[291px] text-right text-[24px] font-medium leading-none text-[#0b191f]">
+                        R20,500
+                      </p>
+                    </div>
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-[#ededed] bg-white">
+                      <ScrollText className="size-4" strokeWidth={1.5} />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 text-[16px] font-medium leading-normal text-[#606d76]"
+                  >
+                    Generate invoice
+                    <ChevronRight className="size-4 shrink-0" strokeWidth={1.5} />
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -885,7 +953,11 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
               </div>
               <button
                 type="button"
-                onClick={() => setLogTimeOpen(true)}
+                onClick={() =>
+                  useTimeRecordingStore
+                    .getState()
+                    .openLogModalManual(apiProjectId != null ? Number(apiProjectId) : null)
+                }
                 className="flex h-10 items-center gap-2 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-bold text-white"
               >
                 <Plus className="size-4" />
@@ -894,8 +966,20 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
             </div>
           </div>
 
+          {/* Loading / error / empty — real project uses API */}
+          {apiProjectId != null && logsLoading && (
+            <div className="mt-6 flex min-h-[200px] flex-col items-center justify-center py-12 text-[14px] font-medium text-[#727d83]">
+              Loading time logs…
+            </div>
+          )}
+          {apiProjectId != null && logsError && !logsLoading && (
+            <div className="mt-6 flex min-h-[200px] flex-col items-center justify-center py-12 text-[14px] font-medium text-[#c45c5c]">
+              Couldn&apos;t load time logs. Try again later.
+            </div>
+          )}
+
           {/* Empty state — Figma 40:7879 */}
-          {logs.length === 0 && (
+          {logs.length === 0 && !logsLoading && !logsError && (
             <div className="flex min-h-[320px] flex-1 flex-col items-center justify-center py-12">
               <div className="flex w-[286px] flex-col items-center gap-4 text-[#727d83]">
                 <Timer className="size-12 stroke-[1.25]" />
@@ -906,16 +990,15 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
           )}
 
           {/* Table + pagination — pagination below table, centered (Figma 40:7972, 40:8395, 40:7998) */}
-          {logs.length > 0 && (
+          {logs.length > 0 && !logsError && (
             <div className="mt-6 flex w-full min-w-0 flex-col gap-6">
               <div className="w-full min-w-0 overflow-hidden rounded-t-[8px]">
                 {/* Table header + rows — list row Figma 40:8154; horizontal rules only (no vertical row borders) */}
                 <div className="flex items-center gap-6 rounded-t-[8px] border-b border-t border-[#ebedee] bg-[#f0f3f5] px-4 py-3 text-[16px] font-medium text-[#606d76]">
                   <span className="min-w-0 flex-1">Task</span>
                   <span className="w-[180px] shrink-0">Date</span>
-                  <span className="w-[124px] shrink-0">Time Period</span>
                   <span className="w-[124px] shrink-0">Duration</span>
-                  <span className="w-[52px] shrink-0">Billable</span>
+                  <span className="w-[56px] shrink-0">Billable</span>
                   <div className="flex w-[56px] shrink-0 justify-end" aria-hidden>
                     <span className="sr-only">Actions</span>
                   </div>
@@ -934,13 +1017,10 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                       {row.date}
                     </p>
                     <p className="w-[124px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium leading-normal text-[#697378]">
-                      {row.timePeriod}
-                    </p>
-                    <p className="w-[124px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium leading-normal text-[#697378]">
                       {row.duration}
                     </p>
-                    <p className="w-[52px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium leading-normal text-[#697378]">
-                      {row.billable}
+                    <p className="w-[56px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium leading-normal text-[#697378]">
+                      Yes
                     </p>
                     <div className="flex shrink-0 items-center gap-2">
                       <button
@@ -1057,7 +1137,6 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
           </section>
         </div>
       </div>
-      <LogTimeModal open={logTimeOpen} onOpenChange={setLogTimeOpen} />
     </>
   );
 }

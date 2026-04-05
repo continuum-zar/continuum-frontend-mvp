@@ -1,43 +1,50 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Check, Plus, Search } from "lucide-react";
+import { Check, Loader2, Plus, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "../ui/utils";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
-import { useProjectTasks } from "@/api/hooks";
+import { getApiErrorMessage, useAllTasks, useCreateLoggedHour, useProjectTasks } from "@/api/hooks";
+import { suggestLogTimeDescription } from "@/api/loggedHours";
 
 /** Figma playground node 25:10140 */
 const imgLucideArrowLeft =
   mcpAsset("2117706d-83d3-4c1d-9e0b-71c1454e8c99");
 const imgLucideChevronDown =
   mcpAsset("8faeee75-ddf6-4f27-b584-6f1616dedbea");
-const imgLucideBot =
-  mcpAsset("45ca08ef-a09e-466c-a13b-102083214a38");
-const DESC_MAX = 100;
+/** Matches backend LoggedHourCreate.description max_length (1000). */
+const DESC_MAX = 1000;
 
-const placeholderDescription =
-  "A long description goes here, this space will only show two lines before truncation.";
-
-const AI_SUGGESTED_DESCRIPTION =
-  "Focused on component specs and edge cases for the checkout flow. Synced with design on spacing tokens.";
+const placeholderDescription = "What did you work on?";
 
 type LogTimeModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** When set, task list loads from this project (API). Omit on demo routes without a project. */
+  /** When set, task list loads from this project. When null/undefined, lists tasks from all projects the user can access. */
   projectId?: number | null;
+  /** When opening from the timer stop flow, pre-select task and hours */
+  prefillTaskId?: string;
+  prefillHours?: string;
 };
 
-export function LogTimeModal({ open, onOpenChange, projectId }: LogTimeModalProps) {
+export function LogTimeModal({
+  open,
+  onOpenChange,
+  projectId,
+  prefillTaskId,
+  prefillHours,
+}: LogTimeModalProps) {
   const [taskId, setTaskId] = useState("");
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
   const [hoursSpent, setHoursSpent] = useState("");
   const [description, setDescription] = useState("");
+  const [aiSuggesting, setAiSuggesting] = useState(false);
   const taskSearchInputRef = useRef<HTMLInputElement>(null);
   /** Dialog surface for Radix popper collision — keeps task dropdown inside the modal. */
   const [dialogBoundary, setDialogBoundary] = useState<Element | null>(null);
@@ -45,26 +52,59 @@ export function LogTimeModal({ open, onOpenChange, projectId }: LogTimeModalProp
     setDialogBoundary(node);
   }, []);
 
-  const { data: projectTasks = [], isLoading: tasksLoading } = useProjectTasks(
+  const { data: projectTasks = [], isLoading: loadingProjectTasks } = useProjectTasks(
     projectId != null ? projectId : undefined,
   );
+  const { data: allTasks = [], isLoading: loadingAllTasks } = useAllTasks({
+    enabled: open && projectId == null,
+  });
+  const createLoggedHour = useCreateLoggedHour();
 
-  const filteredTasks = useMemo(() => {
+  const tasksLoading = projectId != null ? loadingProjectTasks : loadingAllTasks;
+
+  type TaskRow = { id: string; title: string; subtitle?: string };
+
+  const filteredTasks: TaskRow[] = useMemo(() => {
     const q = taskSearch.trim().toLowerCase();
-    if (!q) return projectTasks;
-    return projectTasks.filter((t) => t.title.toLowerCase().includes(q));
-  }, [projectTasks, taskSearch]);
+    if (projectId != null) {
+      const list = projectTasks;
+      const f = !q ? list : list.filter((t) => t.title.toLowerCase().includes(q));
+      return f.map((t) => ({ id: t.id, title: t.title }));
+    }
+    const list = allTasks;
+    const f = !q
+      ? list
+      : list.filter(
+          (t) =>
+            t.title.toLowerCase().includes(q) ||
+            (t.project && t.project.toLowerCase().includes(q)),
+        );
+    return f.map((t) => ({ id: t.id, title: t.title, subtitle: t.project || undefined }));
+  }, [projectId, projectTasks, allTasks, taskSearch]);
 
-  const selectedTask = projectTasks.find((t) => t.id === taskId);
+  const selectedTask = useMemo((): TaskRow | undefined => {
+    if (!taskId) return undefined;
+    if (projectId != null) {
+      const t = projectTasks.find((x) => x.id === taskId);
+      return t ? { id: t.id, title: t.title } : undefined;
+    }
+    const t = allTasks.find((x) => x.id === taskId);
+    return t ? { id: t.id, title: t.title, subtitle: t.project || undefined } : undefined;
+  }, [taskId, projectId, projectTasks, allTasks]);
 
   useEffect(() => {
     if (!open) return;
-    setTaskId("");
     setTaskPickerOpen(false);
     setTaskSearch("");
-    setHoursSpent("");
     setDescription("");
-  }, [open]);
+    if (prefillTaskId) {
+      setTaskId(prefillTaskId);
+      setHoursSpent(prefillHours ?? "");
+    } else {
+      setTaskId("");
+      setHoursSpent("");
+    }
+  }, [open, prefillTaskId, prefillHours]);
 
   useEffect(() => {
     if (taskPickerOpen) {
@@ -80,12 +120,60 @@ export function LogTimeModal({ open, onOpenChange, projectId }: LogTimeModalProp
     hoursSpent.trim() !== "" &&
     Number.isFinite(hoursNum) &&
     hoursNum > 0 &&
-    projectId != null;
+    !tasksLoading;
 
   const descLen = description.length;
 
-  const handleWriteWithAI = () => {
-    setDescription(AI_SUGGESTED_DESCRIPTION.slice(0, DESC_MAX));
+  const handleWriteWithAI = async () => {
+    const resolvedProjectId =
+      projectId != null ? projectId : allTasks.find((t) => t.id === taskId)?.project_id ?? null;
+    if (resolvedProjectId == null) {
+      toast.error("Select a task first so we know which project to use for commit history.");
+      return;
+    }
+    setAiSuggesting(true);
+    try {
+      const { suggested_description } = await suggestLogTimeDescription({
+        project_id: resolvedProjectId,
+        ...(taskId !== "" ? { task_id: taskId } : {}),
+      });
+      setDescription(suggested_description.slice(0, DESC_MAX));
+      toast.success("Description generated");
+    } catch (e) {
+      toast.error(
+        getApiErrorMessage(
+          e,
+          "Couldn’t generate a description. Select a task (for task + checklist), ensure commits are indexed, or write your own.",
+        ),
+      );
+    } finally {
+      setAiSuggesting(false);
+    }
+  };
+
+  const handleSubmitLogTime = async () => {
+    if (!canSubmit) return;
+    const resolvedProjectId =
+      projectId != null
+        ? projectId
+        : allTasks.find((t) => t.id === taskId)?.project_id ?? null;
+    if (resolvedProjectId == null) {
+      toast.error("Could not resolve project for this task.");
+      return;
+    }
+    try {
+      await createLoggedHour.mutateAsync({
+        project_id: resolvedProjectId,
+        task_id: taskId,
+        hours: hoursNum,
+        ...(description.trim() !== "" && { description: description.trim() }),
+        date: new Date().toISOString().slice(0, 10),
+      });
+      toast.success("Time logged");
+      onOpenChange(false);
+    } catch {
+      /* toast from mutation */
+    }
   };
 
   return (
@@ -136,8 +224,7 @@ export function LogTimeModal({ open, onOpenChange, projectId }: LogTimeModalProp
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full flex-col gap-1">
                   <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">Task</p>
-                  {projectId != null ? (
-                    <Popover open={taskPickerOpen} onOpenChange={setTaskPickerOpen} modal={false}>
+                  <Popover open={taskPickerOpen} onOpenChange={setTaskPickerOpen} modal={false}>
                       <PopoverTrigger asChild>
                         <button
                           type="button"
@@ -195,7 +282,9 @@ export function LogTimeModal({ open, onOpenChange, projectId }: LogTimeModalProp
                               </p>
                             ) : filteredTasks.length === 0 ? (
                               <p className="px-3 py-3 text-center font-['Satoshi',sans-serif] text-[13px] text-[#9fa5a8]">
-                                {projectTasks.length === 0 ? "No tasks in this project" : "No matching tasks"}
+                                {(projectId != null ? projectTasks.length === 0 : allTasks.length === 0)
+                                  ? "No tasks available"
+                                  : "No matching tasks"}
                               </p>
                             ) : (
                               filteredTasks.map((t) => (
@@ -209,13 +298,18 @@ export function LogTimeModal({ open, onOpenChange, projectId }: LogTimeModalProp
                                     setTaskPickerOpen(false);
                                   }}
                                   className={cn(
-                                    "flex w-full items-center gap-2 px-3 py-2.5 text-left font-['Satoshi',sans-serif] text-[14px] transition-colors hover:bg-[#f5f7f8]",
+                                    "flex w-full flex-col gap-0.5 px-3 py-2.5 text-left font-['Satoshi',sans-serif] text-[14px] transition-colors hover:bg-[#f5f7f8]",
                                     taskId === t.id && "bg-[#f0f8ff]",
                                   )}
                                 >
-                                  <span className="min-w-0 flex-1 truncate text-[#0b191f]">{t.title}</span>
-                                  {taskId === t.id ? (
-                                    <Check className="size-4 shrink-0 text-[#2798f5]" strokeWidth={2} />
+                                  <span className="flex w-full min-w-0 items-center gap-2">
+                                    <span className="min-w-0 flex-1 truncate text-[#0b191f]">{t.title}</span>
+                                    {taskId === t.id ? (
+                                      <Check className="size-4 shrink-0 text-[#2798f5]" strokeWidth={2} />
+                                    ) : null}
+                                  </span>
+                                  {t.subtitle ? (
+                                    <span className="truncate text-[12px] font-medium text-[#727d83]">{t.subtitle}</span>
                                   ) : null}
                                 </button>
                               ))
@@ -224,17 +318,6 @@ export function LogTimeModal({ open, onOpenChange, projectId }: LogTimeModalProp
                         </div>
                       </PopoverContent>
                     </Popover>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled
-                      className="flex h-10 w-full cursor-not-allowed items-center justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2 text-left font-['Satoshi',sans-serif] text-[16px] font-medium text-[#9fa5a8] opacity-60 outline-none"
-                      aria-label="Select task"
-                    >
-                      <span className="min-w-0 flex-1 truncate">Open a project board to select tasks</span>
-                      <img alt="" className="ml-2 size-4 shrink-0" src={imgLucideChevronDown} aria-hidden />
-                    </button>
-                  )}
                 </div>
 
                 <div className="flex w-1/2 min-w-0 flex-col gap-1">
@@ -255,29 +338,48 @@ export function LogTimeModal({ open, onOpenChange, projectId }: LogTimeModalProp
               {/* Description + Write with AI — Figma I25:10140;2488:110979 */}
               <div className="flex w-full flex-col justify-center gap-1">
                 <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">Description</p>
-                <div className="flex h-[106px] w-full flex-col justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 pb-2 pt-4">
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value.slice(0, DESC_MAX))}
-                    placeholder={placeholderDescription}
-                    maxLength={DESC_MAX}
-                    rows={2}
-                    className="min-h-0 w-full resize-none border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus:ring-0"
-                    aria-label="Description"
-                  />
-                  <div className="flex w-full items-center justify-end gap-2.5">
+                <div className="flex min-h-[140px] w-full flex-col justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 pb-2 pt-4">
+                  <div className="relative min-h-[88px] w-full">
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value.slice(0, DESC_MAX))}
+                      placeholder={placeholderDescription}
+                      maxLength={DESC_MAX}
+                      rows={4}
+                      readOnly={aiSuggesting}
+                      aria-busy={aiSuggesting}
+                      className="min-h-[88px] w-full resize-none border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus:ring-0"
+                      aria-label="Description"
+                    />
+                    {aiSuggesting ? (
+                      <div
+                        className="pointer-events-none absolute inset-0 z-[1] flex items-start gap-2 bg-white"
+                        aria-hidden
+                      >
+                        <Loader2
+                          className="mt-0.5 size-4 shrink-0 animate-spin text-[#9fa5a8]"
+                          strokeWidth={2}
+                        />
+                        <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#9fa5a8]">
+                          Thinking...
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="flex w-full items-center justify-end gap-2.5 pt-1">
                     <p className="shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] opacity-[0.32]">
                       {descLen}/{DESC_MAX} Characters
                     </p>
                     <button
                       type="button"
-                      onClick={handleWriteWithAI}
-                      className="inline-flex h-[19px] shrink-0 cursor-pointer items-center justify-center gap-1 rounded-[4px] border border-solid border-[#2798f5] bg-white px-1 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40"
-                      aria-label="Write with AI"
+                      disabled={aiSuggesting}
+                      onClick={() => void handleWriteWithAI()}
+                      className={cn(
+                        "inline-flex h-[19px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-solid border-[#2798f5] bg-white px-2 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40",
+                        "disabled:cursor-wait disabled:border-[#2798f5] disabled:bg-white disabled:opacity-100",
+                      )}
+                      aria-label="Write with AI using recent commits, or task description and completed checklist"
                     >
-                      <span className="relative block size-[14px] shrink-0">
-                        <img alt="" className="absolute block size-full max-w-none" src={imgLucideBot} />
-                      </span>
                       <span className="font-['Satoshi',sans-serif] text-[11px] font-medium whitespace-nowrap text-[#2798f5]">
                         Write with AI
                       </span>
@@ -292,27 +394,31 @@ export function LogTimeModal({ open, onOpenChange, projectId }: LogTimeModalProp
               <div className="w-[119px] shrink-0">
                 <button
                   type="button"
-                  disabled={!canSubmit}
+                  disabled={!canSubmit || createLoggedHour.isPending}
+                  onClick={() => void handleSubmitLogTime()}
                   className={cn(
                     "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border-0 px-4 py-2 outline-none",
-                    canSubmit
+                    canSubmit && !createLoggedHour.isPending
                       ? "cursor-pointer bg-[#2798f5] text-white hover:bg-[#1e87e0]"
                       : "cursor-not-allowed bg-[rgba(96,109,118,0.1)]",
                   )}
-                  aria-disabled={!canSubmit}
+                  aria-disabled={!canSubmit || createLoggedHour.isPending}
                 >
                   <Plus
                     size={16}
-                    className={cn("shrink-0", canSubmit ? "text-white" : "text-[#606d76] opacity-50")}
+                    className={cn(
+                      "shrink-0",
+                      canSubmit && !createLoggedHour.isPending ? "text-white" : "text-[#606d76] opacity-50",
+                    )}
                     strokeWidth={2}
                   />
                   <span
                     className={cn(
                       "font-['Inter',sans-serif] text-[14px] font-semibold",
-                      canSubmit ? "text-white" : "text-[#606d76] opacity-50",
+                      canSubmit && !createLoggedHour.isPending ? "text-white" : "text-[#606d76] opacity-50",
                     )}
                   >
-                    Log Time
+                    {createLoggedHour.isPending ? "Saving…" : "Log Time"}
                   </span>
                 </button>
               </div>

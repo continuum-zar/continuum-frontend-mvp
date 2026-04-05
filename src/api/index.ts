@@ -145,8 +145,16 @@ export {
     createLoggedHour,
     downloadLoggedHoursCsv,
     fetchTasksForTimeLog,
+    suggestLogTimeDescription,
 } from './loggedHours';
-export type { LoggedHourResponse, LoggedHourEntry, FetchLoggedHoursParams, CreateLoggedHourBody } from './loggedHours';
+export type {
+    LoggedHourResponse,
+    LoggedHourEntry,
+    FetchLoggedHoursParams,
+    CreateLoggedHourBody,
+    SuggestLogTimeDescriptionBody,
+    SuggestLogTimeDescriptionResponse,
+} from './loggedHours';
 export {
     fetchActiveWorkSession,
     startWorkSession,

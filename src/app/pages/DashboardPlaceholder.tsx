@@ -8,16 +8,17 @@ import {
   isApiProjectId,
   projectMainHref,
   projectSprintHref,
+  projectTimeLogsHref,
 } from "../data/dashboardPlaceholderProjects";
 
 import { useProject, useProjectMembers, useProjectMilestones } from "@/api/hooks";
 import { useAuthStore } from "@/store/authStore";
+import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
-import { LogTimeModal } from "../components/dashboard-placeholder/LogTimeModal";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
 import { WelcomeToContinuumModal } from "../components/welcome/WelcomeToContinuumModal";
@@ -287,7 +288,6 @@ const LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX = 5;
 
 export function DashboardPlaceholder() {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
-  const [logTimeOpen, setLogTimeOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
   const [welcomeToContinuumOpen, setWelcomeToContinuumOpen] = useState(false);
@@ -593,7 +593,7 @@ export function DashboardPlaceholder() {
                   <Component4 className="bg-[#d7fede] content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0" />
                   <div className="bg-[#f0f3f5] content-stretch flex gap-[2px] h-[32px] items-center p-[2px] relative rounded-[8px] shrink-0 w-[251px]" data-node-id="7:2868">
                     <Link
-                      to="/dashboard-placeholder/get-started"
+                      to={sprintBoardHref}
                       className="bg-white border border-[#ededed] border-solid content-stretch flex h-[36px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       data-name="Component 2"
                       data-node-id="7:2869"
@@ -603,7 +603,15 @@ export function DashboardPlaceholder() {
                       </p>
                     </Link>
                     <Link
-                      to="/dashboard-placeholder/get-started/time-logs?populated=1&tab=time-logs"
+                      to={
+                        isLiveBoard && projectParam != null && isApiProjectId(projectParam)
+                          ? projectTimeLogsHref(
+                              projectParam,
+                              "time-logs",
+                              milestoneParam ?? undefined,
+                            )
+                          : "/dashboard-placeholder/get-started/time-logs?populated=1&tab=time-logs"
+                      }
                       className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       data-name="Component 3"
                       data-node-id="7:2871"
@@ -613,7 +621,15 @@ export function DashboardPlaceholder() {
                       </p>
                     </Link>
                     <Link
-                      to="/dashboard-placeholder/get-started/time-logs?populated=1&tab=activity"
+                      to={
+                        isLiveBoard && projectParam != null && isApiProjectId(projectParam)
+                          ? projectTimeLogsHref(
+                              projectParam,
+                              "activity",
+                              milestoneParam ?? undefined,
+                            )
+                          : "/dashboard-placeholder/get-started/time-logs?populated=1&tab=activity"
+                      }
                       className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       data-name="Component 4"
                       data-node-id="7:2874"
@@ -764,7 +780,9 @@ export function DashboardPlaceholder() {
                   <div className="flex flex-row items-center self-stretch">
                     <button
                       type="button"
-                      onClick={() => setLogTimeOpen(true)}
+                      onClick={() =>
+                        useTimeRecordingStore.getState().openLogModalManual(isLiveBoard ? liveProjectId : null)
+                      }
                       className="content-stretch flex h-full shrink-0 items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[10px]"
                       data-name="Component 4"
                       data-node-id="7:2904"
@@ -1399,7 +1417,6 @@ export function DashboardPlaceholder() {
         </button>
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
-      <LogTimeModal open={logTimeOpen} onOpenChange={setLogTimeOpen} projectId={isLiveBoard ? liveProjectId : undefined} />
       <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} projectId={isLiveBoard ? Number(projectParam) : undefined} />
       <WelcomeAiChatModal open={aiChatOpen} onOpenChange={setAiChatOpen} showQuickActions={false} />
       <WelcomeToContinuumModal open={welcomeToContinuumOpen} onOpenChange={handleWelcomeToContinuumOpenChange} />

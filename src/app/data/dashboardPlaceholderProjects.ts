@@ -42,6 +42,22 @@ export function projectSprintHref(projectId: string, milestoneId?: string): stri
 }
 
 /**
+ * Time logs / Activity views under get-started. Pass `milestoneId` so the URL round-trips back to the
+ * Sprint board with the same milestone (breadcrumb + title stay correct).
+ */
+export function projectTimeLogsHref(
+  projectId: string,
+  tab: "time-logs" | "activity",
+  milestoneId?: string,
+): string {
+  const q = new URLSearchParams();
+  q.set("project", projectId);
+  q.set("tab", tab);
+  if (milestoneId) q.set("milestone", milestoneId);
+  return `/dashboard-placeholder/get-started/time-logs?${q.toString()}`;
+}
+
+/**
  * Which project is expanded in the rail (sprint child may show when milestones exist). Null = none.
  */
 export function expandedProjectFromLocation(pathname: string, projectParam: string | null): string | null {

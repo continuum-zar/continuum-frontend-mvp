@@ -17,7 +17,9 @@ export interface TaskOption {
 
 /** Fetch all tasks for the current user's projects (no project_id). For time log task dropdown. */
 export async function fetchAllTasks(): Promise<TaskOption[]> {
-    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/');
+    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/', {
+        params: { limit: 500, skip: 0 },
+    });
     return (data.data ?? []).map((t) => ({
         id: String(t.id),
         title: t.title ?? '',
