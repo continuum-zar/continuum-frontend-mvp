@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { toast } from "sonner";
-import { Link, useLocation, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 
 import { getApiErrorMessage, useAllTasks, useProjectMilestones, useProjects } from "@/api/hooks";
 import { useTimeRecordingStore } from "@/store/timeRecordingStore";
@@ -41,6 +41,9 @@ const imgLucideFolderDot = mcpAsset("bf89c9ce-bf7d-4173-a31e-93e57f09f941");
 const imgVector105 = mcpAsset("17833d32-ab5b-4ab4-99e5-73910456563c");
 const imgLucideSettings = mcpAsset("b6f4bb01-1341-4aa3-b63b-d4e00aa8f650");
 const imgVector7 = mcpAsset("f982bdec-baa8-4afc-b88d-5e64cbe35a27");
+/** Create project menu icons — Figma menu frame 77:14517 (folder + bot vectors; nodes 77:14522 / 77:14527). */
+const imgCreateMenuFolder = mcpAsset("433ffa8e-6a28-4076-9096-ab132955a110");
+const imgCreateMenuBot = mcpAsset("ac888056-fd87-49b0-b71f-ae04de07e7e9");
 
 /** Same ordering as ProjectBoard milestone tabs (timeline order). */
 function sortMilestonesForNav(list: Milestone[]): Milestone[] {
@@ -420,6 +423,8 @@ function ApiProjectBlock({
 }
 
 export function DashboardLeftRail() {
+  const navigate = useNavigate();
+  const [createProjectMenuOpen, setCreateProjectMenuOpen] = useState(false);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -551,22 +556,66 @@ export function DashboardLeftRail() {
                   className="content-stretch flex flex-col items-start overflow-clip px-[2.667px] py-[7.333px] relative rounded-[4px] shrink-0 w-[16px]"
                   type="Ellipse"
                 />
-                <button
-                  type="button"
-                  onClick={() => setCreateProjectOpen(true)}
-                  className="inline-flex size-[16px] shrink-0 items-center justify-center overflow-clip rounded-[16px] border-0 bg-transparent p-0"
-                  aria-label="Create project"
-                  data-name="Component 35"
-                  data-node-id="I7:2828;2172:27469"
-                >
-                  <div className="relative size-[16px]">
-                    <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
-                      <div className="absolute inset-[-5.36%]">
-                        <img alt="" className="block max-w-none size-full" src={imgVector5} />
+                <Popover open={createProjectMenuOpen} onOpenChange={setCreateProjectMenuOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex size-[16px] shrink-0 items-center justify-center overflow-clip rounded-[16px] border-0 bg-transparent p-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label="Create project"
+                      aria-expanded={createProjectMenuOpen}
+                      aria-haspopup="dialog"
+                      data-name="Component 35"
+                      data-node-id="I7:2828;2172:27469"
+                    >
+                      <div className="relative size-[16px]">
+                        <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
+                          <div className="absolute inset-[-5.36%]">
+                            <img alt="" className="block max-w-none size-full" src={imgVector5} />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </button>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="start"
+                    side="bottom"
+                    sideOffset={6}
+                    className="z-[100] w-[min(260px,calc(100vw-2rem))] border border-solid border-[#ebedee] p-1 shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]"
+                  >
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-[#151515] outline-none transition-colors hover:bg-[#f5f7f8] focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => {
+                        setCreateProjectMenuOpen(false);
+                        setCreateProjectOpen(true);
+                      }}
+                    >
+                      <span
+                        className="relative h-[16px] w-[16px] shrink-0 overflow-clip"
+                        aria-hidden
+                      >
+                        <img alt="" className="block size-full max-w-none" src={imgCreateMenuFolder} />
+                      </span>
+                      Create manually
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-[#151515] outline-none transition-colors hover:bg-[#f5f7f8] focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => {
+                        setCreateProjectMenuOpen(false);
+                        navigate("/dashboard-placeholder/ai-planner");
+                      }}
+                    >
+                      <span
+                        className="relative h-[16px] w-[16px] shrink-0 overflow-clip"
+                        aria-hidden
+                      >
+                        <img alt="" className="block size-full max-w-none" src={imgCreateMenuBot} />
+                      </span>
+                      Create with AI
+                    </button>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>

@@ -41,6 +41,11 @@ const DashboardPlaceholderAssigned = lazy(() =>
 const DashboardPlaceholderCreated = lazy(() =>
   import("./pages/DashboardPlaceholderCreated").then((m) => ({ default: m.DashboardPlaceholderCreated }))
 );
+const DashboardPlaceholderAIPlanner = lazy(() =>
+  import("./pages/DashboardPlaceholderAIPlanner").then((m) => ({
+    default: m.DashboardPlaceholderAIPlanner,
+  }))
+);
 const DashboardPlaceholderGetStartedTimeLogs = lazy(() =>
   import("./pages/DashboardPlaceholderGetStartedTimeLogs").then((m) => ({
     default: m.DashboardPlaceholderGetStartedTimeLogs,
@@ -220,6 +225,16 @@ export const router = createBrowserRouter([
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
           <DashboardPlaceholderCreated />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/dashboard-placeholder/ai-planner",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <DashboardPlaceholderAIPlanner />
         </Suspense>
       </AuthGuard>
     ),

@@ -280,6 +280,53 @@ function TasksGauge({ completed, total }: { completed: number; total: number }) 
   );
 }
 
+/** Horseshoe arc confidence gauge (same geometry as {@link TasksGauge}) — fill tracks 0–100%. */
+export function PlannerConfidenceGauge({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(100, value));
+  const fillDeg = (pct / 100) * SM_SWEEP;
+  const fillColor =
+    pct >= 70 ? "#22c55e" : pct >= 40 ? "#eab308" : pct > 0 ? "#2798f5" : BG_GREY;
+
+  const bgGrad = `conic-gradient(from ${SM_CSS_START}deg at 50% 50%, ${BG_GREY} 0deg ${SM_SWEEP}deg, transparent ${SM_SWEEP}deg 360deg)`;
+  const fGrad = `conic-gradient(from ${SM_CSS_START}deg at 50% 50%, ${fillColor} 0deg ${fillDeg}deg, transparent ${fillDeg}deg 360deg)`;
+
+  const startPt = smArcPoint(0);
+  const endPt = smArcPoint(1);
+  const tipPt = smArcPoint(pct / 100);
+
+  return (
+    <div className="relative h-[81.592px] w-[82.864px] shrink-0">
+      <div className="absolute top-0 left-0 h-[66.484px] w-[82.864px]">
+        <div style={{ ...smCircleBase, background: bgGrad }} />
+        {pct > 0 && <div style={{ ...smCircleBase, background: fGrad }} />}
+        <Cap
+          cx={startPt.x}
+          cy={startPt.y}
+          size={SM_STROKE}
+          color={pct > 0 ? fillColor : BG_GREY}
+        />
+        <Cap cx={endPt.x} cy={endPt.y} size={SM_STROKE} color={BG_GREY} />
+        {pct > 0 && pct < 100 && (
+          <Cap cx={tipPt.x} cy={tipPt.y} size={SM_STROKE} color={fillColor} />
+        )}
+      </div>
+      <p className="absolute top-[18px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[26px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
+        {Math.round(pct)}%
+      </p>
+      {pct > 0 && pct < 100 && (
+        <div
+          className="absolute z-[2] size-[8.672px]"
+          style={{ left: tipPt.x - 4.336, top: tipPt.y - 4.336 }}
+        >
+          <div className="absolute inset-[-44.44%]">
+            <img alt="" className="block size-full max-w-none" src={imgGaugeIndicator} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ================================================================
    Commits gauge — segmented arc
    ================================================================ */

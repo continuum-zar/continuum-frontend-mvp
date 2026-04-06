@@ -4,18 +4,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import {
     ArrowLeft,
-    Send,
-    Upload,
+    ArrowUp,
     FileText,
     X,
     Loader2,
     ChevronDown,
     ChevronRight,
     Check,
-    AlertCircle,
+    Info,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import {
     Collapsible,
@@ -34,51 +32,32 @@ import type {
     ProjectPlan,
     PlannedMilestone,
 } from '@/api/planner';
+import { PlannerConfidenceGauge } from '@/app/components/welcome/LiveProjectGauges';
+import {
+    aiPlannerBotIconSrc,
+    aiPlannerComposerPlusSrc,
+    aiPlannerComposerSendSquareSrc,
+    aiPlannerComposerSettingsSrc,
+} from '../assets/dashboardPlaceholderAssets';
+import { cn } from '../components/ui/utils';
+import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 
 type Phase = 'chat' | 'plan_review' | 'creating' | 'complete';
 
-// ---------------------------------------------------------------------------
-// Confidence ring SVG
-// ---------------------------------------------------------------------------
-function ConfidenceRing({ value }: { value: number }) {
-    const radius = 40;
-    const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (value / 100) * circumference;
+/** Shown when the API returns no missing_areas yet (Figma empty-state education list). */
+const DEFAULT_MISSING_HINTS = [
+    'Core objectives / goals',
+    'Key features / requirements',
+    'Tech stack / architecture preferences',
+    'Scope / timeline constraints',
+    'Target users / audience',
+    'Success criteria',
+] as const;
 
-    const color =
-        value >= 70
-            ? 'stroke-emerald-500'
-            : value >= 40
-              ? 'stroke-amber-500'
-              : 'stroke-red-500';
-
-    return (
-        <div className="relative flex items-center justify-center">
-            <svg width="100" height="100" className="-rotate-90">
-                <circle
-                    cx="50"
-                    cy="50"
-                    r={radius}
-                    fill="none"
-                    className="stroke-muted"
-                    strokeWidth="6"
-                />
-                <circle
-                    cx="50"
-                    cy="50"
-                    r={radius}
-                    fill="none"
-                    className={`${color} transition-all duration-700 ease-out`}
-                    strokeWidth="6"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={offset}
-                    strokeLinecap="round"
-                />
-            </svg>
-            <span className="absolute text-lg font-bold">{Math.round(value)}%</span>
-        </div>
-    );
-}
+export type AIProjectPlannerProps = {
+    /** When true, fills the dashboard-placeholder shell and uses placeholder routes for back / project links. */
+    embedded?: boolean;
+};
 
 // ---------------------------------------------------------------------------
 // Milestone card (plan review)
@@ -182,7 +161,7 @@ function MilestoneCard({
 // ---------------------------------------------------------------------------
 // Main page component
 // ---------------------------------------------------------------------------
-export function AIProjectPlanner() {
+export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     const navigate = useNavigate();
 
     // Chat state
@@ -192,6 +171,8 @@ export function AIProjectPlanner() {
     const [confidence, setConfidence] = useState(0);
     const [missingAreas, setMissingAreas] = useState<string[]>([]);
     const [readyToPlan, setReadyToPlan] = useState(false);
+    /** UI-only: matches Figma “Auto” affordance next to the composer submit control. */
+    const [autoMode, setAutoMode] = useState(true);
 
     // Plan state
     const [phase, setPhase] = useState<Phase>('chat');
@@ -200,6 +181,11 @@ export function AIProjectPlanner() {
     // Refs
     const chatEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const chatAbortRef = useRef<AbortController | null>(null);
+    const composerTextareaRef = useAutosizeTextarea(input, {
+        minPx: 40,
+        maxPx: 200,
+    });
 
     // Mutations
     const chatMutation = usePlannerChat();
@@ -213,14 +199,28 @@ export function AIProjectPlanner() {
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages, scrollToBottom]);
+    }, [
+        messages,
+        scrollToBottom,
+        confidence,
+        missingAreas,
+        readyToPlan,
+        chatMutation.isPending,
+    ]);
 
     // -----------------------------------------------------------------------
     // Handlers
     // -----------------------------------------------------------------------
+    const handleStopChat = useCallback(() => {
+        chatAbortRef.current?.abort();
+    }, []);
+
     const handleSend = async () => {
         const text = input.trim();
         if (!text || chatMutation.isPending) return;
+
+        const controller = new AbortController();
+        chatAbortRef.current = controller;
 
         const userMsg: PlannerMessage = { role: 'user', content: text };
         const updatedMessages = [...messages, userMsg];
@@ -231,6 +231,7 @@ export function AIProjectPlanner() {
             const res = await chatMutation.mutateAsync({
                 messages: updatedMessages,
                 file_contents: fileContents,
+                signal: controller.signal,
             });
 
             const assistantMsg: PlannerMessage = {
@@ -241,8 +242,20 @@ export function AIProjectPlanner() {
             setConfidence(res.confidence);
             setMissingAreas(res.missing_areas);
             setReadyToPlan(res.ready_to_plan);
-        } catch {
-            // Error toast handled by hook
+        } catch (err: unknown) {
+            const e = err as { code?: string; name?: string };
+            const aborted =
+                e?.code === 'ERR_CANCELED' ||
+                e?.name === 'CanceledError' ||
+                e?.name === 'AbortError';
+            if (aborted) {
+                setMessages((prev) => prev.slice(0, -1));
+                setInput(text);
+            }
+        } finally {
+            if (chatAbortRef.current === controller) {
+                chatAbortRef.current = null;
+            }
         }
     };
 
@@ -292,7 +305,15 @@ export function AIProjectPlanner() {
                 `Project created with ${res.milestone_count} milestones and ${res.task_count} tasks`,
             );
             setPhase('complete');
-            setTimeout(() => navigate(`/projects/${res.project_id}`), 1500);
+            setTimeout(
+                () =>
+                    navigate(
+                        embedded
+                            ? `/dashboard-placeholder/project/${res.project_id}`
+                            : `/projects/${res.project_id}`,
+                    ),
+                1500,
+            );
         } catch {
             setPhase('plan_review');
         }
@@ -308,41 +329,52 @@ export function AIProjectPlanner() {
     // -----------------------------------------------------------------------
     const totalPlannedTasks = plan?.milestones.reduce((s, m) => s + m.tasks.length, 0) ?? 0;
 
+    const backHref = embedded ? '/dashboard-placeholder/get-started' : '/projects';
+
+    const displayMissingAreas =
+        missingAreas.length > 0 ? missingAreas : [...DEFAULT_MISSING_HINTS];
+
+    /** Hide when ready unless the API still lists unhandled gaps. */
+    const showMissingContextSection =
+        !readyToPlan || missingAreas.length > 0;
+
+    const missingContextRows =
+        readyToPlan && missingAreas.length > 0
+            ? missingAreas
+            : displayMissingAreas;
+
+    /** After at least one exchange, highlight gaps in red (matches “More details needed”). */
+    const emphasizeMissingContextRows =
+        messages.length > 0 &&
+        (!readyToPlan || missingAreas.length > 0);
+
     return (
-        <div className="h-[calc(100vh-4rem)] flex flex-col">
-            {/* Header */}
-            <div className="border-b border-border px-6 py-4 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/projects')}>
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <div>
-                        <h1 className="text-lg font-semibold">AI Project Planner</h1>
-                        <p className="text-xs text-muted-foreground">
-                            {phase === 'chat' && 'Describe your project and let AI build the plan'}
-                            {phase === 'plan_review' && 'Review the generated plan'}
-                            {phase === 'creating' && 'Creating your project...'}
-                            {phase === 'complete' && 'Project created successfully!'}
-                        </p>
+        <div
+            className={
+                embedded ? 'flex h-full min-h-0 flex-col' : 'flex h-[calc(100vh-4rem)] flex-col'
+            }
+        >
+            {/* Header — chat phase uses the in-canvas header (Figma 77:13461); other phases keep this bar */}
+            {phase !== 'chat' && (
+                <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
+                    <div className="flex items-center gap-3">
+                        <Button variant="ghost" size="icon" onClick={() => navigate(backHref)}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <div>
+                            <h1 className="text-lg font-semibold">AI Project Planner</h1>
+                            <p className="text-xs text-muted-foreground">
+                                {phase === 'plan_review' && 'Review the generated plan'}
+                                {phase === 'creating' && 'Creating your project...'}
+                                {phase === 'complete' && 'Project created successfully!'}
+                            </p>
+                        </div>
                     </div>
                 </div>
-
-                {phase === 'chat' && (
-                    <Button
-                        onClick={handleGeneratePlan}
-                        disabled={!readyToPlan || generateMutation.isPending}
-                        className="gap-2"
-                    >
-                        {generateMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : null}
-                        Generate Plan
-                    </Button>
-                )}
-            </div>
+            )}
 
             {/* Body */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex min-h-0 flex-1 overflow-hidden">
                 {/* ---- CHAT PHASE ---- */}
                 <AnimatePresence mode="wait">
                     {phase === 'chat' && (
@@ -351,204 +383,400 @@ export function AIProjectPlanner() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="flex-1 flex overflow-hidden"
+                            className="flex min-h-0 flex-1 overflow-hidden"
                         >
-                            {/* Chat panel */}
-                            <div className="flex-1 flex flex-col min-w-0">
-                                <div className="flex-1 overflow-y-auto px-6 py-4">
-                                    <div className="max-w-2xl mx-auto space-y-4 min-h-full">
-                                        {messages.length === 0 && (
-                                            <div className="flex flex-col items-center justify-center py-20 text-center">
-                                                <h3 className="text-lg font-medium mb-2">
-                                                    Start by describing your project
-                                                </h3>
-                                                <p className="text-sm text-muted-foreground max-w-md">
-                                                    Tell me about the software project you want to
-                                                    plan. You can also upload a project spec or
-                                                    requirements document.
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {messages.map((msg, i) => (
-                                            <motion.div
-                                                key={i}
-                                                initial={{ opacity: 0, y: 8 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                            >
-                                                <div
-                                                    className={`max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
-                                                        msg.role === 'user'
-                                                            ? 'bg-primary text-primary-foreground'
-                                                            : 'bg-muted'
-                                                    }`}
-                                                >
-                                                    {msg.content}
-                                                </div>
-                                            </motion.div>
-                                        ))}
-
-                                        {chatMutation.isPending && (
-                                            <div className="flex justify-start">
-                                                <div className="bg-muted rounded-lg px-4 py-3 flex items-center gap-2">
-                                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                                    <span className="text-sm text-muted-foreground">
-                                                        Thinking...
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <div ref={chatEndRef} />
-                                    </div>
+                            {/* Main column — Figma 77:13458–77:13509 */}
+                            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                                {/* Header — Figma 77:13461 */}
+                                <div className="relative flex shrink-0 items-center justify-between rounded-t-2xl px-9 py-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate(backHref)}
+                                        className="inline-flex size-5 shrink-0 items-center justify-center rounded-md text-[#0b191f] transition-colors hover:bg-black/[0.04]"
+                                        aria-label="Back"
+                                    >
+                                        <ArrowLeft className="size-5" strokeWidth={2} />
+                                    </button>
+                                    <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                                        AI Project Planner
+                                    </p>
+                                    <div className="size-5 shrink-0" aria-hidden />
                                 </div>
 
-                                {/* Input area */}
-                                <div className="border-t border-border p-4 shrink-0">
-                                    <div className="max-w-2xl mx-auto">
-                                        {/* Uploaded files */}
-                                        {fileContents.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                                {fileContents.map((fc, i) => (
-                                                    <span
-                                                        key={i}
-                                                        className="inline-flex items-center gap-1.5 bg-secondary text-secondary-foreground rounded-md px-2.5 py-1 text-xs"
-                                                    >
-                                                        <FileText className="h-3 w-3" />
-                                                        {fc.filename}
-                                                        <button
-                                                            onClick={() => handleRemoveFile(i)}
-                                                            className="hover:bg-muted-foreground/20 rounded p-0.5"
-                                                        >
-                                                            <X className="h-3 w-3" />
-                                                        </button>
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        <div className="flex gap-2">
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                className="hidden"
-                                                accept=".txt,.md,.pdf,.docx"
-                                                onChange={handleFileUpload}
-                                            />
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="shrink-0"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={uploadMutation.isPending}
-                                            >
-                                                {uploadMutation.isPending ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Upload className="h-4 w-4" />
+                                <div
+                                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                                    style={{
+                                        backgroundImage:
+                                            'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
+                                    }}
+                                >
+                                    <div className="mx-auto flex h-full min-h-0 w-full max-w-[600px] min-w-[min(100%,403px)] flex-col">
+                                        <div className="min-h-0 flex-1 overflow-y-auto px-9 py-6">
+                                            <div className="mx-auto flex min-h-full max-w-[600px] flex-col gap-4">
+                                                {messages.length === 0 && (
+                                                    <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                                                        <div className="flex size-12 shrink-0 items-center justify-center">
+                                                            <img
+                                                                src={aiPlannerBotIconSrc}
+                                                                alt=""
+                                                                className="size-12 max-h-full max-w-full object-contain"
+                                                                aria-hidden
+                                                            />
+                                                        </div>
+                                                        <div className="flex max-w-md flex-col gap-1 text-center leading-normal">
+                                                            <p className="font-['Satoshi',sans-serif] text-[20px] font-bold leading-normal text-[#727D83]">
+                                                                Start by describing your project
+                                                            </p>
+                                                            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal text-[#727D83]">
+                                                                Tell me about the software project you
+                                                                want to plan. You can also upload a
+                                                                project spec or requirements document.
+                                                            </p>
+                                                        </div>
+                                                    </div>
                                                 )}
-                                            </Button>
-                                            <Textarea
-                                                placeholder="Describe your project, paste requirements, or ask a question..."
-                                                value={input}
-                                                onChange={(e) => setInput(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                                        e.preventDefault();
-                                                        handleSend();
-                                                    }
-                                                }}
-                                                className="min-h-[44px] max-h-[120px] resize-none"
-                                                rows={1}
-                                            />
-                                            <Button
-                                                size="icon"
-                                                className="shrink-0"
-                                                onClick={handleSend}
-                                                disabled={!input.trim() || chatMutation.isPending}
-                                            >
-                                                <Send className="h-4 w-4" />
-                                            </Button>
+
+                                                {/* Chat turns — Figma 77:13823: user = pill #edf0f3 / assistant = Inter 13px plain left */}
+                                                {messages.map((msg, i) => (
+                                                    <motion.div
+                                                        key={`${msg.role}-${i}`}
+                                                        initial={{ opacity: 0, y: 8 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className={
+                                                            msg.role === 'user'
+                                                                ? 'flex w-full justify-end'
+                                                                : 'flex w-full justify-start'
+                                                        }
+                                                    >
+                                                        {msg.role === 'user' ? (
+                                                            <div className="max-w-[85%] rounded-[32px] bg-[#edf0f3] px-4 py-2 text-left font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] whitespace-pre-wrap">
+                                                                {msg.content}
+                                                            </div>
+                                                        ) : (
+                                                            <p className="w-full min-w-0 whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f]">
+                                                                {msg.content}
+                                                            </p>
+                                                        )}
+                                                    </motion.div>
+                                                ))}
+
+                                                {chatMutation.isPending && (
+                                                    <div className="flex w-full justify-start">
+                                                        <div className="flex items-center gap-2 font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#727d83]">
+                                                            <Loader2
+                                                                className="size-4 shrink-0 animate-spin"
+                                                                aria-hidden
+                                                            />
+                                                            <span>Thinking...</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div ref={chatEndRef} />
+                                            </div>
+                                        </div>
+
+                                        {/* Composer — Figma input area (target node 77:13681; structure from 77:13509 — MCP could not resolve 77:13681) */}
+                                        <div className="shrink-0 bg-gradient-to-b from-transparent to-white px-4 pb-4">
+                                            <div className="mx-auto w-full max-w-[600px]">
+                                                {fileContents.length > 0 && (
+                                                    <div className="mb-2 flex flex-wrap gap-2">
+                                                        {fileContents.map((fc, i) => (
+                                                            <span
+                                                                key={i}
+                                                                className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-2.5 py-1 text-xs text-secondary-foreground"
+                                                            >
+                                                                <FileText className="h-3 w-3" />
+                                                                {fc.filename}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        handleRemoveFile(i)
+                                                                    }
+                                                                    className="rounded p-0.5 hover:bg-muted-foreground/20"
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </button>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept=".txt,.md,.pdf,.docx"
+                                                    onChange={handleFileUpload}
+                                                />
+
+                                                <div
+                                                    className={cn(
+                                                        'overflow-hidden rounded-[14px] border border-solid border-[#edecea] bg-white shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]',
+                                                    )}
+                                                >
+                                                    <div className="relative flex min-h-[88px] shrink-0 flex-col gap-1 bg-white pb-[7px] pt-[11px]">
+                                                        <div className="relative flex w-full min-h-0 items-start justify-center px-[13px]">
+                                                            <label
+                                                                className="sr-only"
+                                                                htmlFor="ai-planner-chat-input"
+                                                            >
+                                                                Message
+                                                            </label>
+                                                            <textarea
+                                                                ref={
+                                                                    composerTextareaRef
+                                                                }
+                                                                id="ai-planner-chat-input"
+                                                                placeholder="Do anything with AI..."
+                                                                value={input}
+                                                                onChange={(e) =>
+                                                                    setInput(
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                onKeyDown={(e) => {
+                                                                    if (
+                                                                        e.key !==
+                                                                            'Enter' ||
+                                                                        e.shiftKey
+                                                                    ) {
+                                                                        return;
+                                                                    }
+                                                                    if (
+                                                                        !input.trim() ||
+                                                                        chatMutation.isPending
+                                                                    ) {
+                                                                        return;
+                                                                    }
+                                                                    e.preventDefault();
+                                                                    handleSend();
+                                                                }}
+                                                                rows={1}
+                                                                className="max-h-[200px] min-h-[40px] w-full resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
+                                                            />
+                                                        </div>
+                                                        <div className="flex shrink-0 items-center justify-between px-[11px]">
+                                                            <div className="flex items-center gap-[7px]">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        fileInputRef.current?.click()
+                                                                    }
+                                                                    disabled={
+                                                                        uploadMutation.isPending
+                                                                    }
+                                                                    className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center p-0 disabled:opacity-50"
+                                                                    aria-label="Upload file"
+                                                                >
+                                                                    {uploadMutation.isPending ? (
+                                                                        <Loader2 className="h-[18px] w-[18px] animate-spin text-[#727d83]" />
+                                                                    ) : (
+                                                                        <img
+                                                                            src={
+                                                                                aiPlannerComposerPlusSrc
+                                                                            }
+                                                                            alt=""
+                                                                            width={18}
+                                                                            height={18}
+                                                                            className="h-[18px] w-[18px] object-contain"
+                                                                            aria-hidden
+                                                                        />
+                                                                    )}
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center p-0 opacity-50"
+                                                                    aria-label="Composer options"
+                                                                    title="Coming soon"
+                                                                >
+                                                                    <img
+                                                                        src={
+                                                                            aiPlannerComposerSettingsSrc
+                                                                        }
+                                                                        alt=""
+                                                                        width={18}
+                                                                        height={18}
+                                                                        className="h-[18px] w-[18px] object-contain"
+                                                                        aria-hidden
+                                                                    />
+                                                                </button>
+                                                            </div>
+                                                            <div className="flex items-center gap-[10px]">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setAutoMode((v) => !v)
+                                                                    }
+                                                                    className={cn(
+                                                                        "font-['Satoshi',sans-serif] text-[13px] font-medium tracking-[-0.13px] text-[#727d83] transition-opacity",
+                                                                        autoMode && 'opacity-100',
+                                                                        !autoMode &&
+                                                                            'line-through opacity-40',
+                                                                    )}
+                                                                >
+                                                                    Auto
+                                                                </button>
+                                                                {chatMutation.isPending ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={handleStopChat}
+                                                                        className="flex size-[26px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-[999px] bg-[#e7f2fc]"
+                                                                        aria-label="Stop generating"
+                                                                    >
+                                                                        <span className="relative inline-flex size-3 shrink-0 items-center justify-center">
+                                                                            <img
+                                                                                src={
+                                                                                    aiPlannerComposerSendSquareSrc
+                                                                                }
+                                                                                alt=""
+                                                                                width={12}
+                                                                                height={12}
+                                                                                className="h-3 w-3 object-contain"
+                                                                                aria-hidden
+                                                                            />
+                                                                        </span>
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={handleSend}
+                                                                        disabled={!input.trim()}
+                                                                        aria-label="Send message"
+                                                                        className={cn(
+                                                                            'relative flex size-[26px] shrink-0 items-center justify-center rounded-[999px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#2E96F9] focus-visible:ring-offset-2 disabled:pointer-events-none',
+                                                                            input.trim()
+                                                                                ? 'cursor-pointer bg-[#2E96F9] text-white'
+                                                                                : 'cursor-default bg-[#f9f9f8] text-[#727d83] opacity-40',
+                                                                        )}
+                                                                    >
+                                                                        <ArrowUp
+                                                                            className="size-[18px] shrink-0"
+                                                                            strokeWidth={2}
+                                                                            aria-hidden
+                                                                        />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Context sidebar */}
-                            <div className="w-72 border-l border-border p-5 shrink-0 hidden lg:flex flex-col gap-5">
-                                <div className="flex flex-col items-center gap-2">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Context Confidence
+                            {/* Confidence & context — Figma 77:13510, 77:13667 */}
+                            <aside className="relative hidden h-full min-h-0 w-[362px] shrink-0 flex-col border-l border-[#ebedee] bg-gradient-to-b from-white to-[#f9f9f9] lg:flex">
+                                <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pl-9 pr-[52px] pt-4 pb-28">
+                                    <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                                        Confidence Index
                                     </p>
-                                    <ConfidenceRing value={confidence} />
-                                    {confidence >= 70 ? (
-                                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                                            <Check className="h-3 w-3" /> Ready to generate plan
+
+                                    <div className="flex items-center gap-6">
+                                        <PlannerConfidenceGauge value={confidence} />
+                                        <p
+                                            className={cn(
+                                                "font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal",
+                                                confidence >= 70 && readyToPlan
+                                                    ? 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-emerald-600'
+                                                    : 'max-w-[147px] text-[#eb4335]',
+                                            )}
+                                        >
+                                            {confidence >= 70 && readyToPlan ? (
+                                                <>
+                                                    <Check className="size-4 shrink-0" />
+                                                    Ready to generate plan
+                                                </>
+                                            ) : (
+                                                'More details needed'
+                                            )}
                                         </p>
-                                    ) : confidence > 0 ? (
-                                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                                            More detail needed
-                                        </p>
+                                    </div>
+
+                                    {showMissingContextSection ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                                                Missing context
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            {missingContextRows.map((area, i) => (
+                                                <div
+                                                    key={`${area}-${i}`}
+                                                    className="flex items-start gap-0"
+                                                >
+                                                    <Info
+                                                        className={cn(
+                                                            'mt-0.5 size-4 shrink-0',
+                                                            emphasizeMissingContextRows
+                                                                ? 'text-[#eb4335]'
+                                                                : 'text-[#0b191f]',
+                                                        )}
+                                                    />
+                                                    <p
+                                                        className={cn(
+                                                            'flex-1 px-4 py-1 font-sans text-[13px] leading-[19px]',
+                                                            emphasizeMissingContextRows
+                                                                ? 'text-[#eb4335]'
+                                                                : 'text-[#0b191f]',
+                                                        )}
+                                                    >
+                                                        {area}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                     ) : null}
+
+                                    {fileContents.length > 0 && (
+                                        <div>
+                                            <p className="mb-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
+                                                Uploaded files
+                                            </p>
+                                            <div className="space-y-1">
+                                                {fileContents.map((fc, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="flex items-center gap-2 text-xs"
+                                                    >
+                                                        <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+                                                        <span className="truncate">{fc.filename}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {missingAreas.length > 0 && (
-                                    <div>
-                                        <p className="text-xs font-medium text-muted-foreground mb-2">
-                                            Missing context
-                                        </p>
-                                        <div className="space-y-1.5">
-                                            {missingAreas.map((area, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="flex items-start gap-2 text-xs text-muted-foreground"
-                                                >
-                                                    <AlertCircle className="h-3 w-3 mt-0.5 shrink-0 text-amber-500" />
-                                                    <span>{area}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {fileContents.length > 0 && (
-                                    <div>
-                                        <p className="text-xs font-medium text-muted-foreground mb-2">
-                                            Uploaded files
-                                        </p>
-                                        <div className="space-y-1">
-                                            {fileContents.map((fc, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="flex items-center gap-2 text-xs"
-                                                >
-                                                    <FileText className="h-3 w-3 text-muted-foreground" />
-                                                    <span className="truncate">{fc.filename}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="mt-auto">
-                                    <Button
-                                        className="w-full gap-2"
+                                <div className="absolute bottom-0 left-0 right-0 border-t border-[#ebedee] bg-white px-9 py-4">
+                                    <button
+                                        type="button"
                                         onClick={handleGeneratePlan}
                                         disabled={!readyToPlan || generateMutation.isPending}
+                                        className={cn(
+                                            'flex h-10 w-full items-center justify-center rounded-lg font-semibold transition-colors',
+                                            !readyToPlan || generateMutation.isPending
+                                                ? 'bg-[rgba(96,109,118,0.1)] text-[14px] text-[#606d76] opacity-50'
+                                                : 'bg-gradient-to-br from-[#24b5f8] to-[#5521fe] text-[14px] text-white shadow-sm hover:opacity-95',
+                                        )}
                                     >
                                         {generateMutation.isPending ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <Loader2 className="mr-2 size-4 animate-spin" />
                                         ) : null}
-                                        Generate Plan
-                                    </Button>
+                                        Generate plan
+                                    </button>
                                     {!readyToPlan && confidence > 0 && (
-                                        <p className="text-[10px] text-muted-foreground text-center mt-2">
+                                        <p className="mt-2 text-center text-[10px] text-muted-foreground">
                                             Provide more context to unlock plan generation
                                         </p>
                                     )}
                                 </div>
-                            </div>
+                            </aside>
                         </motion.div>
                     )}
 

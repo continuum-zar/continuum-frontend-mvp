@@ -76,14 +76,28 @@ export async function uploadPlannerFile(file: File): Promise<FileContent> {
     return data;
 }
 
+function isAbortLike(err: unknown): boolean {
+    const e = err as { code?: string; name?: string };
+    return (
+        e?.code === 'ERR_CANCELED' ||
+        e?.name === 'CanceledError' ||
+        e?.name === 'AbortError'
+    );
+}
+
 export async function sendPlannerChat(
     messages: PlannerMessage[],
     file_contents: FileContent[],
+    options?: { signal?: AbortSignal },
 ): Promise<PlannerChatResponse> {
-    const { data } = await api.post<PlannerChatResponse>('/planner/chat', {
-        messages,
-        file_contents,
-    });
+    const { data } = await api.post<PlannerChatResponse>(
+        '/planner/chat',
+        {
+            messages,
+            file_contents,
+        },
+        { signal: options?.signal },
+    );
     return data;
 }
 
@@ -127,11 +141,14 @@ export function usePlannerChat() {
         mutationFn: ({
             messages,
             file_contents,
+            signal,
         }: {
             messages: PlannerMessage[];
             file_contents: FileContent[];
-        }) => sendPlannerChat(messages, file_contents),
+            signal?: AbortSignal;
+        }) => sendPlannerChat(messages, file_contents, { signal }),
         onError: (err: unknown) => {
+            if (isAbortLike(err)) return;
             toast.error(getApiErrorMessage(err, 'Chat request failed'));
         },
     });
