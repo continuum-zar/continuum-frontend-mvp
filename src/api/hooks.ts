@@ -36,6 +36,7 @@ import {
     fetchTask,
     fetchProjectTasks,
     fetchAllTasks,
+    fetchTasksAssignedToUser,
     createTask,
     updateTaskStatus,
     updateTask,
@@ -110,6 +111,24 @@ export function useAllTasks(options?: { enabled?: boolean }) {
     });
 }
 
+/** Tasks assigned to the current user (Sprint list on Assigned to Me). */
+export function useAssignedToMeTasks(options?: { enabled?: boolean }) {
+    const userId = useAuthStore((s) => s.user?.id);
+    const numericUserId =
+        userId != null && /^\d+$/.test(String(userId).trim()) ? Number(String(userId).trim()) : null;
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    return useQuery({
+        queryKey: projectKeys.assignedToMeTasks(userId),
+        queryFn: () => fetchTasksAssignedToUser(numericUserId!),
+        enabled:
+            (options?.enabled !== false) &&
+            isAuthenticated &&
+            numericUserId != null &&
+            Number.isFinite(numericUserId),
+        staleTime: 60 * 1000,
+    });
+}
+
 export function useCreateTask() {
     const queryClient = useQueryClient();
     return useMutation({
@@ -117,6 +136,7 @@ export function useCreateTask() {
         onSuccess: (_data, body) => {
             queryClient.invalidateQueries({ queryKey: projectKeys.tasks(body.project_id) });
             queryClient.invalidateQueries({ queryKey: projectKeys.allTasks() });
+            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
             toast.success('Task created');
         },
         onError: (err) => {
@@ -247,6 +267,7 @@ export function useUpdateTaskStatus(projectId: number | string | undefined | nul
         },
         onSettled: () => {
             if (key) queryClient.invalidateQueries({ queryKey: key });
+            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
         },
     });
 }

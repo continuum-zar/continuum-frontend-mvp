@@ -13,8 +13,14 @@ export function DashboardPlaceholderTaskView() {
   const isRealTask = projectParam != null && isApiProjectId(projectParam);
 
   const handleBack = () => {
-    const qs = searchParams.toString();
-    navigate(`/dashboard-placeholder/get-started${qs ? `?${qs}` : ""}`);
+    if (searchParams.get("from") === "assigned") {
+      navigate("/dashboard-placeholder/assigned");
+      return;
+    }
+    const qs = new URLSearchParams(searchParams);
+    qs.delete("from");
+    const rest = qs.toString();
+    navigate(`/dashboard-placeholder/get-started${rest ? `?${rest}` : ""}`);
   };
 
   return (

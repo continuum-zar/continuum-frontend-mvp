@@ -1,29 +1,44 @@
 import { useMemo, useState } from "react";
+import { format, isValid, parseISO } from "date-fns";
+import { useNavigate } from "react-router";
 import { Bell, Ellipsis, Flag, GripVertical, Share, Target } from "lucide-react";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
+import { useAssignedToMeTasks } from "@/api/hooks";
+import { useAuthStore } from "@/store/authStore";
+import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
+import type { TaskAPIResponse } from "@/types/task";
 
-type AssignedTask = {
-  id: number;
-  task: string;
-  project: string;
-  description: string;
-  assignees: string[];
-  dueDate: string;
-  progress: string;
-};
+function checklistProgressPercent(task: TaskAPIResponse): string {
+  const items = task.checklists ?? [];
+  if (items.length === 0) return "0%";
+  const done = items.filter((c) => c.done).length;
+  return `${Math.round((done / items.length) * 100)}%`;
+}
 
-const SPRINT_TASKS: AssignedTask[] = [
-  {
-    id: 1,
-    task: "Task title goes here",
-    project: "Untitled long project_name_1",
-    description:
-      "A long description goes here, this space will only show two lines before truncation",
-    assignees: ["FA", "AS", "GV"],
-    dueDate: "22 December 2025",
-    progress: "0%",
-  },
-];
+function formatDueDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = parseISO(iso);
+  if (!isValid(d)) return "—";
+  return format(d, "d MMMM yyyy");
+}
+
+function userInitials(first?: string, last?: string, email?: string): string {
+  const a = first?.trim()?.[0] ?? "";
+  const b = last?.trim()?.[0] ?? "";
+  if (a || b) return `${a}${b}`.toUpperCase();
+  const e = email?.trim();
+  if (e && e.length >= 2) return e.slice(0, 2).toUpperCase();
+  return "?";
+}
+
+/** Same destination as Kanban / list task cards: dashboard-placeholder task shell + TaskDetail. */
+function placeholderTaskHref(row: TaskAPIResponse): string {
+  const q = new URLSearchParams();
+  q.set("project", String(row.project_id));
+  if (row.milestone_id != null) q.set("milestone", String(row.milestone_id));
+  q.set("from", "assigned");
+  return `/dashboard-placeholder/task/${row.id}?${q.toString()}`;
+}
 
 const tabBtn = (active: boolean) =>
   `rounded-[8px] px-4 py-2 text-[14px] font-medium ${
@@ -33,12 +48,20 @@ const tabBtn = (active: boolean) =>
   }`;
 
 export function DashboardPlaceholderAssigned() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<"Sprint" | "Time logs" | "Activity">("Sprint");
+  const user = useAuthStore((s) => s.user);
+  const { data: assignedTasks = [], isLoading, isError, refetch } = useAssignedToMeTasks({
+    enabled: tab === "Sprint",
+  });
 
-  const tasks = useMemo(
-    () => (tab === "Sprint" ? SPRINT_TASKS : []),
-    [tab]
+  const assigneeInitials = useMemo(
+    () => userInitials(user?.first_name, user?.last_name, user?.email),
+    [user?.first_name, user?.last_name, user?.email]
   );
+  const assigneeBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#e19c02";
+
+  const tasks = tab === "Sprint" ? assignedTasks : [];
 
   return (
     <div
@@ -89,12 +112,35 @@ export function DashboardPlaceholderAssigned() {
               </div>
             </div>
 
-            {tasks.length === 0 ? (
+            {tab !== "Sprint" ? (
               <div className="flex flex-1 items-center justify-center">
                 <div className="flex w-[286px] flex-col items-center gap-4 text-[#727d83]">
                   <Target size={48} />
                   <p className="text-[20px] font-bold">No Tasks Assigned to Me</p>
                   <p className="text-[14px]">TBA</p>
+                </div>
+              </div>
+            ) : isLoading ? (
+              <div className="flex flex-1 items-center justify-center py-16 text-[#727d83]">
+                <p className="text-[14px]">Loading tasks…</p>
+              </div>
+            ) : isError ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-[#727d83]">
+                <p className="text-[14px]">Could not load tasks.</p>
+                <button
+                  type="button"
+                  className="rounded-[8px] border border-[#ebedee] px-3 py-1.5 text-[14px] text-[#0b191f]"
+                  onClick={() => void refetch()}
+                >
+                  Retry
+                </button>
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="flex flex-1 items-center justify-center">
+                <div className="flex w-[286px] flex-col items-center gap-4 text-[#727d83]">
+                  <Target size={48} />
+                  <p className="text-[20px] font-bold">No Tasks Assigned to Me</p>
+                  <p className="text-[14px]">Tasks assigned to you will appear here.</p>
                 </div>
               </div>
             ) : (
@@ -106,37 +152,56 @@ export function DashboardPlaceholderAssigned() {
                   <p>Assignee</p>
                   <p>Due Date</p>
                   <p>Priority</p>
-                  <p>Progres</p>
+                  <p>Progress</p>
                   <span />
                 </div>
                 {tasks.map((row) => (
                   <div
                     key={row.id}
-                    className="grid grid-cols-[225px_185px_292px_72px_124px_52px_56px_24px] items-center gap-6 border-b border-[#ebedee] bg-white px-4 py-1"
+                    role="button"
+                    tabIndex={0}
+                    className="grid cursor-pointer grid-cols-[225px_185px_292px_72px_124px_52px_56px_24px] items-center gap-6 border-b border-[#ebedee] bg-white px-4 py-1 transition-colors hover:bg-[#fafbfc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#24B5F8]"
+                    onClick={() => navigate(placeholderTaskHref(row))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(placeholderTaskHref(row));
+                      }
+                    }}
                   >
-                    <div className="flex items-center gap-2">
-                      <GripVertical size={16} className="text-[#727d83]" />
-                      <p className="text-[16px] text-[#131617]">{row.task}</p>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <GripVertical size={16} className="pointer-events-none shrink-0 text-[#727d83]" aria-hidden />
+                      <p className="min-w-0 truncate text-[16px] text-[#131617]">{row.title || "Untitled task"}</p>
                     </div>
-                    <p className="truncate text-[14px] text-[#727d83]">{row.project}</p>
-                    <p className="line-clamp-2 text-[14px] text-[#727d83]">{row.description}</p>
+                    <p className="truncate text-[14px] text-[#727d83]">
+                      {row.project_name?.trim() || `Project ${row.project_id}`}
+                    </p>
+                    <p className="line-clamp-2 text-[14px] text-[#727d83]">
+                      {row.description?.trim() || "—"}
+                    </p>
                     <div className="flex items-center">
-                      {row.assignees.map((a, i) => (
-                        <div
-                          key={a}
-                          className={`-mr-2 flex h-6 w-6 items-center justify-center rounded-full border border-white text-[9px] text-white ${i === 0 ? "bg-[#e19c02]" : i === 1 ? "bg-[#f17173]" : "bg-[#9da2f7]"}`}
-                        >
-                          {a}
-                        </div>
-                      ))}
+                      <div
+                        className="flex h-6 w-6 items-center justify-center rounded-full border border-white text-[9px] text-white"
+                        style={{ backgroundColor: assigneeBg }}
+                        title={user?.email ?? "You"}
+                      >
+                        {assigneeInitials}
+                      </div>
                     </div>
-                    <p className="text-[14px] text-[#697378]">{row.dueDate}</p>
+                    <p className="text-[14px] text-[#697378]">{formatDueDate(row.due_date)}</p>
                     <div className="flex justify-center text-[#697378]">
-                      <Flag size={16} />
+                      <Flag size={16} aria-hidden />
                     </div>
-                    <p className="text-[14px] text-[#697378]">{row.progress}</p>
+                    <p className="text-[14px] text-[#697378]">{checklistProgressPercent(row)}</p>
                     <div className="flex justify-center text-[#697378]">
-                      <Ellipsis size={16} />
+                      <button
+                        type="button"
+                        className="rounded p-0.5 hover:bg-[#f0f3f5]"
+                        aria-label="Task options"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Ellipsis size={16} />
+                      </button>
                     </div>
                   </div>
                 ))}
