@@ -145,6 +145,9 @@ export const projectKeys = {
     /** Tasks assigned to a user (GET /tasks/?assigned_to=) — scoped under projects for cache invalidation. */
     assignedToMeTasks: (userId: string | number | undefined | null) =>
         [...projectKeys.all, 'assigned-tasks', userId ?? 'signed-out'] as const,
+    /** Tasks created by a user (GET /tasks/?created_by=). */
+    createdByMeTasks: (userId: string | number | undefined | null) =>
+        [...projectKeys.all, 'created-tasks', userId ?? 'signed-out'] as const,
     milestones: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'milestones'] as const,
     members: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'members'] as const,
     repositories: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'repositories'] as const,

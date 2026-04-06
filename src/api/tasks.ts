@@ -23,6 +23,14 @@ export async function fetchTasksAssignedToUser(assignedUserId: number): Promise<
     return data.data ?? [];
 }
 
+/** Tasks created by a given user across all projects the current user can access. */
+export async function fetchTasksCreatedByUser(creatorUserId: number): Promise<TaskAPIResponse[]> {
+    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/', {
+        params: { created_by: creatorUserId, limit: 500, skip: 0 },
+    });
+    return data.data ?? [];
+}
+
 /** Fetch all tasks for the current user's projects (no project_id). For time log task dropdown. */
 export async function fetchAllTasks(): Promise<TaskOption[]> {
     const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/', {

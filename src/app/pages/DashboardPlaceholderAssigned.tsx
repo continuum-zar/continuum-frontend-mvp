@@ -65,17 +65,17 @@ export function DashboardPlaceholderAssigned() {
 
   return (
     <div
-      className="box-border flex h-screen min-h-0 w-full flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
+      className="box-border flex h-screen min-h-0 w-full min-w-0 flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
       style={{
         backgroundImage:
           "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)",
       }}
     >
-      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col items-stretch gap-2">
-        <div className="isolate flex min-h-0 w-full min-w-0 flex-1 flex-row items-stretch gap-[10px]">
-          <DashboardLeftRail />
+      <div className="isolate flex min-h-0 w-full min-w-0 flex-1 flex-row items-stretch gap-[10px]">
+        <DashboardLeftRail />
 
-          <section className="z-[1] flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-x-clip overflow-y-auto rounded-[8px] border border-[#ebedee] bg-white px-6 py-4 shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
+        <section className="z-[1] flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-[#ebedee] bg-white shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
+          <div className="relative z-20 flex shrink-0 flex-col gap-4 bg-white px-6 pt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-[#606d76]">
                 <Target size={16} />
@@ -111,21 +111,27 @@ export function DashboardPlaceholderAssigned() {
                 </button>
               </div>
             </div>
+          </div>
 
-            {tab !== "Sprint" ? (
-              <div className="flex flex-1 items-center justify-center">
-                <div className="flex w-[286px] flex-col items-center gap-4 text-[#727d83]">
+          {tab !== "Sprint" ? (
+            <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
+              <div className="flex flex-col items-center gap-4 py-16 text-[#727d83]">
+                <div className="flex w-[286px] flex-col items-center gap-4">
                   <Target size={48} />
                   <p className="text-[20px] font-bold">No Tasks Assigned to Me</p>
                   <p className="text-[14px]">TBA</p>
                 </div>
               </div>
-            ) : isLoading ? (
-              <div className="flex flex-1 items-center justify-center py-16 text-[#727d83]">
+            </div>
+          ) : isLoading ? (
+            <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
+              <div className="flex flex-col items-center justify-center py-16 text-[#727d83]">
                 <p className="text-[14px]">Loading tasks…</p>
               </div>
-            ) : isError ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-[#727d83]">
+            </div>
+          ) : isError ? (
+            <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
+              <div className="flex flex-col items-center justify-center gap-3 py-16 text-[#727d83]">
                 <p className="text-[14px]">Could not load tasks.</p>
                 <button
                   type="button"
@@ -135,17 +141,21 @@ export function DashboardPlaceholderAssigned() {
                   Retry
                 </button>
               </div>
-            ) : tasks.length === 0 ? (
-              <div className="flex flex-1 items-center justify-center">
-                <div className="flex w-[286px] flex-col items-center gap-4 text-[#727d83]">
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
+              <div className="flex flex-col items-center py-16 text-[#727d83]">
+                <div className="flex w-[286px] flex-col items-center gap-4">
                   <Target size={48} />
                   <p className="text-[20px] font-bold">No Tasks Assigned to Me</p>
                   <p className="text-[14px]">Tasks assigned to you will appear here.</p>
                 </div>
               </div>
-            ) : (
-              <div className="w-full overflow-hidden rounded-t-[8px]">
-                <div className="grid grid-cols-[225px_185px_292px_72px_124px_52px_56px_24px] items-center gap-6 border-b border-[#ebedee] bg-[#f0f3f5] px-4 py-3 text-[16px] text-[#606d76]">
+            </div>
+          ) : (
+            <>
+              <div className="relative z-10 shrink-0 border-b border-[#ebedee] bg-[#f0f3f5] px-6 pt-4">
+                <div className="grid grid-cols-[225px_185px_292px_72px_124px_52px_56px_24px] items-center gap-6 rounded-t-[8px] px-4 py-3 text-[16px] text-[#606d76]">
                   <p>Task</p>
                   <p>Project</p>
                   <p>Description</p>
@@ -155,6 +165,8 @@ export function DashboardPlaceholderAssigned() {
                   <p>Progress</p>
                   <span />
                 </div>
+              </div>
+              <div className="scrollbar-none relative z-0 min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 overscroll-y-contain">
                 {tasks.map((row) => (
                   <div
                     key={row.id}
@@ -206,9 +218,9 @@ export function DashboardPlaceholderAssigned() {
                   </div>
                 ))}
               </div>
-            )}
-          </section>
-        </div>
+            </>
+          )}
+        </section>
       </div>
     </div>
   );

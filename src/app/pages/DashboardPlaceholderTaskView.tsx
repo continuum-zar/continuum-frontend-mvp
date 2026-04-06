@@ -17,6 +17,10 @@ export function DashboardPlaceholderTaskView() {
       navigate("/dashboard-placeholder/assigned");
       return;
     }
+    if (searchParams.get("from") === "created") {
+      navigate("/dashboard-placeholder/created");
+      return;
+    }
     const qs = new URLSearchParams(searchParams);
     qs.delete("from");
     const rest = qs.toString();

@@ -37,6 +37,7 @@ import {
     fetchProjectTasks,
     fetchAllTasks,
     fetchTasksAssignedToUser,
+    fetchTasksCreatedByUser,
     createTask,
     updateTaskStatus,
     updateTask,
@@ -129,6 +130,24 @@ export function useAssignedToMeTasks(options?: { enabled?: boolean }) {
     });
 }
 
+/** Tasks created by the current user (Deliverables on Created by Me). */
+export function useCreatedByMeTasks(options?: { enabled?: boolean }) {
+    const userId = useAuthStore((s) => s.user?.id);
+    const numericUserId =
+        userId != null && /^\d+$/.test(String(userId).trim()) ? Number(String(userId).trim()) : null;
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    return useQuery({
+        queryKey: projectKeys.createdByMeTasks(userId),
+        queryFn: () => fetchTasksCreatedByUser(numericUserId!),
+        enabled:
+            (options?.enabled !== false) &&
+            isAuthenticated &&
+            numericUserId != null &&
+            Number.isFinite(numericUserId),
+        staleTime: 60 * 1000,
+    });
+}
+
 export function useCreateTask() {
     const queryClient = useQueryClient();
     return useMutation({
@@ -137,6 +156,7 @@ export function useCreateTask() {
             queryClient.invalidateQueries({ queryKey: projectKeys.tasks(body.project_id) });
             queryClient.invalidateQueries({ queryKey: projectKeys.allTasks() });
             queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
+            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
             toast.success('Task created');
         },
         onError: (err) => {
@@ -268,6 +288,7 @@ export function useUpdateTaskStatus(projectId: number | string | undefined | nul
         onSettled: () => {
             if (key) queryClient.invalidateQueries({ queryKey: key });
             queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
+            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
         },
     });
 }
