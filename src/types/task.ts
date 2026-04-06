@@ -52,6 +52,8 @@ export interface Task {
     estimatedHours?: number;
     checklists: { total: number; completed: number };
     milestoneId: string;
+    /** ISO date from API (`due_date`), for list view */
+    dueDate?: string | null;
 }
 
 export type ActivityType =

@@ -4,6 +4,7 @@ import type { DragEvent, ReactNode } from "react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
+import { SprintKanbanListView } from "./SprintKanbanListView";
 
 import { useProjectTasks, useUpdateTaskStatus } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
@@ -45,9 +46,16 @@ export type GetStartedKanbanLiveProps = {
   milestoneId: string | null;
   /** Project members (for assignee initials on cards). */
   members?: Member[];
+  /** Board columns vs list table — same task data. */
+  view?: "board" | "list";
 };
 
-export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: GetStartedKanbanLiveProps) {
+export function GetStartedKanbanLive({
+  projectId,
+  milestoneId,
+  members = [],
+  view = "board",
+}: GetStartedKanbanLiveProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tasksQuery = useProjectTasks(projectId);
@@ -98,6 +106,12 @@ export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: G
     const ghostCard = ghost.querySelector(".bg-white") as HTMLElement | null;
     if (ghostCard) {
       ghostCard.style.border = "2px solid #24B5F8";
+      // List view row — match Figma drag card (rounded-[8px], lifted shadow) vs board rounded-[16px].
+      if (ghostCard.classList.contains("list-kanban-drag-surface")) {
+        ghostCard.style.borderRadius = "8px";
+        ghostCard.style.boxShadow =
+          "0px 20px 6px 0px rgba(26,59,84,0), 0px 13px 5px 0px rgba(26,59,84,0), 0px 7px 4px 0px rgba(26,59,84,0.01), 0px 3px 3px 0px rgba(26,59,84,0.03), 0px 1px 2px 0px rgba(26,59,84,0.03)";
+      }
     }
     ghost.style.width = `${el.offsetWidth}px`;
     ghost.style.position = "fixed";
@@ -308,6 +322,34 @@ export function GetStartedKanbanLive({ projectId, milestoneId, members = [] }: G
       <div className="content-stretch relative z-[1] flex w-full min-h-[200px] flex-1 items-center justify-center gap-[16px] px-4 text-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
         Could not load tasks for this project.
       </div>
+    );
+  }
+
+  if (view === "list") {
+    return (
+      <>
+        <SprintKanbanListView
+          tasks={filtered}
+          members={members}
+          projectId={projectId}
+          milestoneId={milestoneId}
+          onCreateTask={() => setCreateTaskOpen(true)}
+          draggingId={draggingId}
+          dragOverCol={dragOverCol}
+          onTaskDragStart={handleDragStart}
+          onTaskDragEnd={handleDragEnd}
+          onTaskDragOver={handleCardDragOver}
+          onColumnDragOver={handleColumnDragOver}
+          onColumnDragLeave={handleColumnDragLeave}
+          onColumnDrop={handleDrop}
+        />
+        <CreateTaskLiveModal
+          open={createTaskOpen}
+          onOpenChange={setCreateTaskOpen}
+          projectId={projectId}
+          milestoneId={milestoneId}
+        />
+      </>
     );
   }
 

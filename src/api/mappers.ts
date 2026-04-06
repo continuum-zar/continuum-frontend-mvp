@@ -69,6 +69,7 @@ export function mapTask(t: TaskAPIResponse): Task {
         comments: t.comment_count ?? 0,
         checklists: { total: totalChecklists, completed: completedChecklists },
         milestoneId: t.milestone_id != null ? String(t.milestone_id) : '',
+        dueDate: t.due_date ?? null,
     };
 }
 

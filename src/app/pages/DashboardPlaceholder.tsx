@@ -371,6 +371,8 @@ export function DashboardPlaceholder() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
   const [welcomeToContinuumOpen, setWelcomeToContinuumOpen] = useState(false);
+  /** Live sprint area only: board vs list (same tasks). */
+  const [sprintView, setSprintView] = useState<"board" | "list">("board");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get("project");
@@ -774,18 +776,52 @@ export function DashboardPlaceholder() {
               </div>
               <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2900">
                 <div className="content-stretch flex gap-[8px] h-[40px] items-center relative rounded-[10px] shrink-0" data-name="Component 121" data-node-id="7:2901">
-                  <div className="bg-[#cfecff] content-stretch flex gap-[8px] h-full items-center justify-center overflow-clip px-[16px] py-[8px] relative rounded-[8px] shrink-0" data-name="Component 2" data-node-id="I7:2901;2444:24560">
+                  <button
+                    type="button"
+                    disabled={!isLiveBoard}
+                    onClick={() => isLiveBoard && setSprintView("board")}
+                    aria-pressed={!isLiveBoard || sprintView === "board"}
+                    className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
+                      !isLiveBoard || sprintView === "board"
+                        ? "bg-[#cfecff] px-[16px] py-[8px]"
+                        : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                    }`}
+                    data-name="Component 2"
+                    data-node-id="I7:2901;2444:24560"
+                  >
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/square-kanban" data-node-id="I7:2901;2444:24561">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideSquareKanban} />
                     </div>
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap" data-node-id="I7:2901;2444:24563">
-                      Board
-                    </p>
-                  </div>
-                  <button className="bg-[#edf0f3] content-stretch cursor-pointer flex gap-[8px] h-full items-center justify-center overflow-clip px-[16px] py-[8px] relative rounded-[8px] shrink-0 w-[40px]" data-name="Component 3" data-node-id="I7:2901;2444:24564">
+                    {!isLiveBoard || sprintView === "board" ? (
+                      <p
+                        className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap"
+                        data-node-id="I7:2901;2444:24563"
+                      >
+                        Board
+                      </p>
+                    ) : null}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!isLiveBoard}
+                    onClick={() => isLiveBoard && setSprintView("list")}
+                    aria-pressed={isLiveBoard && sprintView === "list"}
+                    className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
+                      isLiveBoard && sprintView === "list"
+                        ? "bg-[#cfecff] px-[16px] py-[8px]"
+                        : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                    } ${!isLiveBoard ? "cursor-default" : ""}`}
+                    data-name="Component 3"
+                    data-node-id="I7:2901;2444:24564"
+                  >
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/list" data-node-id="I7:2901;2444:24565">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideList} />
                     </div>
+                    {isLiveBoard && sprintView === "list" ? (
+                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
+                        List
+                      </p>
+                    ) : null}
                   </button>
                   <button className="bg-[#edf0f3] content-stretch cursor-pointer flex gap-[8px] h-full items-center justify-center overflow-clip px-[16px] py-[8px] relative rounded-[8px] shrink-0 w-[40px]" data-name="Component 5" data-node-id="I7:2901;2444:24568">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/square-chart-gantt" data-node-id="I7:2901;2444:24569">
@@ -889,6 +925,7 @@ export function DashboardPlaceholder() {
                 projectId={Number(projectParam)}
                 milestoneId={milestoneParam}
                 members={liveMembers}
+                view={sprintView}
               />
             ) : (
               <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]" data-node-id="7:2908">
