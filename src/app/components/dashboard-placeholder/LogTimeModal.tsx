@@ -17,6 +17,8 @@ const imgLucideArrowLeft =
   mcpAsset("2117706d-83d3-4c1d-9e0b-71c1454e8c99");
 const imgLucideChevronDown =
   mcpAsset("8faeee75-ddf6-4f27-b584-6f1616dedbea");
+/** Write with AI — lucide/bot from Figma (Log Time modal e.g. 67:11958 / frame 67:11909). */
+const imgLucideBotWriteWithAI = mcpAsset("790f567f-db28-4799-97c8-45a80588ceaf");
 /** Matches backend LoggedHourCreate.description max_length (1000). */
 const DESC_MAX = 1000;
 
@@ -375,11 +377,18 @@ export function LogTimeModal({
                       disabled={aiSuggesting}
                       onClick={() => void handleWriteWithAI()}
                       className={cn(
-                        "inline-flex h-[19px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-solid border-[#2798f5] bg-white px-2 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40",
+                        "inline-flex h-[19px] shrink-0 cursor-pointer items-center justify-center gap-1 rounded-[4px] border border-solid border-[#2798f5] bg-white px-2 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40",
                         "disabled:cursor-wait disabled:border-[#2798f5] disabled:bg-white disabled:opacity-100",
                       )}
                       aria-label="Write with AI using recent commits, or task description and completed checklist"
                     >
+                      <div className="relative size-[14px] shrink-0" aria-hidden>
+                        <img
+                          alt=""
+                          className="absolute block max-w-none size-full"
+                          src={imgLucideBotWriteWithAI}
+                        />
+                      </div>
                       <span className="font-['Satoshi',sans-serif] text-[11px] font-medium whitespace-nowrap text-[#2798f5]">
                         Write with AI
                       </span>
