@@ -14,6 +14,7 @@ import type { Project } from "@/types/project";
 import { CreateProjectModal } from "./CreateProjectModal";
 import { InvoiceModal } from "./InvoiceModal";
 import { LogTimeModal } from "./LogTimeModal";
+import { SettingsModal } from "./SettingsModal";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "../ui/popover";
 import {
   DASHBOARD_WELCOME_PROJECT,
@@ -421,6 +422,7 @@ function ApiProjectBlock({
 export function DashboardLeftRail() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
   const taskSearchInputRef = useRef<HTMLInputElement>(null);
@@ -753,7 +755,16 @@ export function DashboardLeftRail() {
           </p>
         </div>
         <div className="h-px w-full shrink-0 bg-[#ebedee]" data-node-id="7:2842" aria-hidden />
-        <div className="content-stretch flex h-[40px] items-center justify-between relative rounded-[8px] shrink-0 w-full" data-name="Component 13" data-node-id="7:2843">
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="content-stretch flex h-[40px] w-full shrink-0 cursor-pointer items-center justify-between rounded-[8px] border-0 bg-transparent p-0 text-left outline-none ring-offset-2 transition-colors hover:bg-[rgba(237,240,243,0.85)] focus-visible:ring-2 focus-visible:ring-ring"
+          data-name="Component 13"
+          data-node-id="7:2843"
+          aria-expanded={settingsOpen}
+          aria-haspopup="dialog"
+          aria-label="Account and settings"
+        >
           <div className="content-stretch flex min-w-0 gap-[8px] items-center relative shrink-0" data-node-id="7:2844">
             <div
               className="content-stretch flex shrink-0 items-center justify-center relative rounded-[999px] size-[24px] border border-solid border-white"
@@ -781,10 +792,11 @@ export function DashboardLeftRail() {
               </div>
             </div>
           </div>
-        </div>
+        </button>
       </div>
       <CreateProjectModal open={createProjectOpen} onOpenChange={setCreateProjectOpen} />
       <InvoiceModal open={invoiceOpen} onOpenChange={setInvoiceOpen} />
+      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
       <LogTimeModal
         open={logModalOpen}
         onOpenChange={(o) => {
