@@ -11,6 +11,7 @@ import { cn } from "../ui/utils";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { getApiErrorMessage, useAllTasks, useCreateLoggedHour, useProjectTasks } from "@/api/hooks";
 import { suggestLogTimeDescription } from "@/api/loggedHours";
+import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
 
 /** Figma playground node 25:10140 */
 const imgLucideArrowLeft =
@@ -48,6 +49,10 @@ export function LogTimeModal({
   const [description, setDescription] = useState("");
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const taskSearchInputRef = useRef<HTMLInputElement>(null);
+  const descriptionTextareaRef = useAutosizeTextarea(description, {
+    minPx: 88,
+    maxPx: 280,
+  });
   /** Dialog surface for Radix popper collision — keeps task dropdown inside the modal. */
   const [dialogBoundary, setDialogBoundary] = useState<Element | null>(null);
   const setDialogContentNode = useCallback((node: HTMLDivElement | null) => {
@@ -340,17 +345,18 @@ export function LogTimeModal({
               {/* Description + Write with AI — Figma I25:10140;2488:110979 */}
               <div className="flex w-full flex-col justify-center gap-1">
                 <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">Description</p>
-                <div className="flex min-h-[140px] w-full flex-col justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 pb-2 pt-4">
-                  <div className="relative min-h-[88px] w-full">
+                <div className="flex w-full min-h-[120px] flex-col justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 pb-2 pt-4">
+                  <div className="relative w-full min-h-0">
                     <textarea
+                      ref={descriptionTextareaRef}
                       value={description}
                       onChange={(e) => setDescription(e.target.value.slice(0, DESC_MAX))}
                       placeholder={placeholderDescription}
                       maxLength={DESC_MAX}
-                      rows={4}
+                      rows={1}
                       readOnly={aiSuggesting}
                       aria-busy={aiSuggesting}
-                      className="min-h-[88px] w-full resize-none border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus:ring-0"
+                      className="max-h-[280px] w-full resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium leading-relaxed text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus:ring-0"
                       aria-label="Description"
                     />
                     {aiSuggesting ? (

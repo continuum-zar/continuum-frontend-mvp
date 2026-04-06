@@ -2,7 +2,14 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ArrowUp, Check, Loader2, Minus } from "lucide-react";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -14,6 +21,7 @@ import {
   postProjectQuery,
   projectKeys,
 } from "@/api";
+import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
 import type { GeneratedTask, WikiConfirmTaskItem } from "@/api";
 import {
   Dialog,
@@ -751,18 +759,20 @@ function ComposerWelcome({
   placeholder?: string;
   inputId?: string;
 }) {
+  const textareaRef = useAutosizeTextarea(draft, { minPx: 40, maxPx: 200 });
   const canSend = Boolean(onSubmit && draft.trim() && !disabled);
   const placeholderText =
     placeholder ??
     (disabled ? "Open a project board to use AI..." : "Do anything with AI...");
 
   return (
-    <div className="relative mb-[-11px] flex h-[88px] shrink-0 flex-col items-start justify-between rounded-[14px] border border-solid border-[#edecea] bg-white pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
-      <div className="relative flex w-full shrink-0 items-center justify-center px-[13px]">
+    <div className="relative mb-[-11px] flex min-h-[88px] shrink-0 flex-col items-stretch gap-1 rounded-[14px] border border-solid border-[#edecea] bg-white pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
+      <div className="relative flex w-full min-h-0 items-start justify-center px-[13px]">
         <label className="sr-only" htmlFor={inputId}>
           Message
         </label>
         <textarea
+          ref={textareaRef}
           id={inputId}
           value={draft}
           onChange={(e) => onDraftChange(e.target.value)}
@@ -775,7 +785,7 @@ function ComposerWelcome({
           }}
           placeholder={placeholderText}
           rows={1}
-          className="min-h-0 w-full flex-1 resize-none border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
+          className="max-h-[200px] min-h-[40px] w-full resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
         />
       </div>
       <div className="relative flex w-full shrink-0 items-center justify-between px-[11px]">

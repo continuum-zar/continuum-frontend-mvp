@@ -1,5 +1,6 @@
 "use client";
 
+import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
@@ -12,6 +13,35 @@ import { cn } from "./ui/utils";
 import { AddResourceModal } from "./welcome/AddResourceModal";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { formatEstimatedEffortLabel } from "@/api";
+import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
+
+function ChecklistItemTextarea({
+  value,
+  onChange,
+  onBlur,
+  onKeyDown,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onBlur: () => void;
+  onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
+  placeholder: string;
+}) {
+  const ref = useAutosizeTextarea(value, { minPx: 40, maxPx: 160 });
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+      placeholder={placeholder}
+      rows={1}
+      className="max-h-[160px] w-full resize-none overflow-y-auto border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
+    />
+  );
+}
 
 const imgLucideArrowLeft =
   mcpAsset("27ca96dc-a695-48d3-8f22-628b8eb437bd");
@@ -430,9 +460,9 @@ export function CreateTaskModal({
                             {item.text}
                           </button>
                         ) : (
-                          <textarea
+                          <ChecklistItemTextarea
                             value={item.text}
-                            onChange={(e) => updateChecklistText(item.id, e.target.value)}
+                            onChange={(v) => updateChecklistText(item.id, v)}
                             onBlur={() => removeChecklistIfEmpty(item.id)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && !e.shiftKey) {
@@ -441,8 +471,6 @@ export function CreateTaskModal({
                               }
                             }}
                             placeholder="Checklist item..."
-                            rows={2}
-                            className="max-h-[min(160px,30vh)] min-h-[2.5rem] w-full resize-none overflow-y-auto border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
                           />
                         )}
                       </div>

@@ -5,6 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ArrowLeft, CalendarPlus } from "lucide-react";
 
 import { useCreateMilestone, useUpdateMilestone } from "@/api/hooks";
+import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import { cn } from "../ui/utils";
@@ -53,6 +54,10 @@ export function CreateMilestoneModal({
   const [dueDate, setDueDate] = useState("");
   const [isNameFocused, setIsNameFocused] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const descriptionTextareaRef = useAutosizeTextarea(description, {
+    minPx: 56,
+    maxPx: 200,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -170,11 +175,13 @@ export function CreateMilestoneModal({
 
             <div className="flex w-full flex-col gap-1">
               <p className="text-[14px] font-medium text-[#606d76]">Description</p>
-              <div className="flex h-[106px] flex-col justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 pb-2 pt-4 focus-within:border-[#1466ff]">
+              <div className="flex min-h-[106px] w-full flex-col gap-2 rounded-[8px] border border-[#e9e9e9] bg-white px-4 pb-2 pt-4 focus-within:border-[#1466ff]">
                 <textarea
+                  ref={descriptionTextareaRef}
                   placeholder="Add description here..."
                   maxLength={80}
-                  className="size-full resize-none border-none p-0 text-[16px] font-medium text-[#0b191f] placeholder:text-[#606d76]/40 focus:outline-none focus:ring-0"
+                  rows={1}
+                  className="w-full max-h-[200px] resize-none overflow-y-auto border-none p-0 text-[16px] font-medium leading-relaxed text-[#0b191f] placeholder:text-[#606d76]/40 focus:outline-none focus:ring-0"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />

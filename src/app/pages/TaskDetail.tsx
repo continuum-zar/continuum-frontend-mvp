@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams } from 'react-router';
 import {
@@ -326,7 +327,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [scopeDropdownOpen, setScopeDropdownOpen] = useState(false);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const descTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const descTextareaRef = useAutosizeTextarea(descDraft, { minPx: 106, maxPx: 560 });
   const tagInputRef = useRef<HTMLInputElement>(null);
   const effortInputRef = useRef<HTMLInputElement>(null);
   const checklistInputRef = useRef<HTMLInputElement>(null);
@@ -574,14 +575,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     onChange={(e) => setDescDraft(e.target.value)}
                     onBlur={saveDesc}
                     onKeyDown={(e) => { if (e.key === 'Escape') { setEditingDesc(false); } }}
-                    className="min-h-[106px] w-full resize-none rounded-[8px] border border-[#e9e9e9] bg-white p-4 text-[16px] font-medium text-[#0b191f] outline-none focus:ring-2 focus:ring-[#24b5f8]/40"
+                    className="max-h-[560px] w-full resize-none overflow-y-auto rounded-[8px] border border-[#e9e9e9] bg-white p-4 text-[16px] font-medium leading-relaxed text-[#0b191f] outline-none focus:ring-2 focus:ring-[#24b5f8]/40"
                   />
                 ) : (
                   <div
                     className="min-h-[106px] cursor-text rounded-[8px] border border-[#e9e9e9] bg-white p-4"
                     onClick={startEditDesc}
                   >
-                    <p className="text-[16px] font-medium text-[#0b191f]">
+                    <p className="whitespace-pre-wrap text-[16px] font-medium leading-relaxed text-[#0b191f]">
                       {task.description || 'Click to add a description…'}
                     </p>
                   </div>

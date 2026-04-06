@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
 import {
   ArrowLeft,
   Check,
@@ -74,6 +75,10 @@ export function CreateTaskLiveModal({
   const titleRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
   const effortInputRef = useRef<HTMLInputElement>(null);
+  const descriptionTextareaRef = useAutosizeTextarea(description, {
+    minPx: 72,
+    maxPx: 400,
+  });
 
   const reset = useCallback(() => {
     setTitle("");
@@ -247,11 +252,12 @@ export function CreateTaskLiveModal({
                   Description
                 </p>
                 <textarea
+                  ref={descriptionTextareaRef}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add a description..."
-                  rows={3}
-                  className="w-full resize-none rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#606d76] outline-none placeholder:text-[#cdd2d5]"
+                  rows={1}
+                  className="max-h-[400px] w-full resize-none overflow-y-auto rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium leading-relaxed text-[#606d76] outline-none placeholder:text-[#cdd2d5]"
                 />
               </div>
 
