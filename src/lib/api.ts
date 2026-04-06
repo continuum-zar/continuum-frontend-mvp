@@ -1,8 +1,25 @@
 import axios from 'axios';
 
-// When VITE_API_BASE_URL is unset, requests go to /api/v1 (same origin) and are proxied by Vite (see vite.config proxy).
+/**
+ * API base URL for axios.
+ * - If `VITE_API_BASE_URL` is set (e.g. `/api/v1` or `https://api.example.com/api/v1`), that wins.
+ * - Otherwise, default to same-origin `/api/v1`. In dev this routes through the Vite proxy
+ *   (configured with long timeouts in vite.config.mjs to handle slow LLM requests).
+ */
+export function resolveApiBaseURL(): string {
+    const explicit = import.meta.env.VITE_API_BASE_URL;
+    if (typeof explicit === 'string' && explicit.trim() !== '') {
+        return explicit.trim();
+    }
+    return '/api/v1';
+}
+
+const apiBaseURL = resolveApiBaseURL();
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+    baseURL: apiBaseURL,
+    // Default ceiling for slow endpoints (planner LLM). Per-request calls can still override.
+    timeout: 600_000,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -79,7 +96,7 @@ api.interceptors.response.use(
                         const { useAuthStore } = await import('../store/authStore');
 
                         // Call refresh token endpoint using fresh axios instance to avoid interceptors
-                        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || '/api/v1'}/auth/refresh-token`, {
+                        const response = await axios.post(`${apiBaseURL}/auth/refresh-token`, {
                             refresh_token: refreshToken
                         });
 

@@ -14,7 +14,6 @@ import {
     Info,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import {
     Collapsible,
     CollapsibleContent,
@@ -59,8 +58,11 @@ export type AIProjectPlannerProps = {
     embedded?: boolean;
 };
 
+const PLAN_CARD_SHADOW =
+    'shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]';
+
 // ---------------------------------------------------------------------------
-// Milestone card (plan review)
+// Milestone card (plan review) — AI planner visual language
 // ---------------------------------------------------------------------------
 function MilestoneCard({
     milestone,
@@ -71,77 +73,76 @@ function MilestoneCard({
 }) {
     const [open, setOpen] = useState(index === 0);
 
-    const scopeColor: Record<string, string> = {
-        XS: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
-        S: 'bg-blue-500/15 text-blue-700 dark:text-blue-400',
-        M: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
-        L: 'bg-orange-500/15 text-orange-700 dark:text-orange-400',
-        XL: 'bg-red-500/15 text-red-700 dark:text-red-400',
-    };
-
     return (
         <Collapsible open={open} onOpenChange={setOpen}>
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="border border-border rounded-lg bg-card overflow-hidden"
+                className={cn(
+                    'overflow-hidden rounded-xl border border-[#edecea] bg-white',
+                    PLAN_CARD_SHADOW,
+                )}
             >
                 <CollapsibleTrigger asChild>
-                    <button className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/40 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold">
+                    <button
+                        type="button"
+                        className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-[#f9fafb]"
+                    >
+                        <div className="flex min-w-0 items-center gap-3">
+                            <span className="shrink-0 tabular-nums font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f]">
                                 {index + 1}
                             </span>
-                            <div>
-                                <h4 className="font-semibold text-sm">{milestone.name}</h4>
+                            <div className="min-w-0">
+                                <h4 className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                                    {milestone.name}
+                                </h4>
                                 {milestone.description && (
-                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                    <p className="mt-0.5 line-clamp-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#727d83]">
                                         {milestone.description}
                                     </p>
                                 )}
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-[10px]">
+                        <div className="flex shrink-0 items-center gap-2">
+                            <span className="rounded-full bg-[#edf0f3] px-2.5 py-1 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]">
                                 {milestone.tasks.length} tasks
-                            </Badge>
+                            </span>
                             {open ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                <ChevronDown className="size-4 text-[#727d83]" />
                             ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                <ChevronRight className="size-4 text-[#727d83]" />
                             )}
                         </div>
                     </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                    <div className="border-t border-border px-4 py-3 space-y-2">
+                    <div className="space-y-2 border-t border-[#edecea] px-4 py-3">
                         {milestone.tasks.map((task, ti) => (
                             <div
                                 key={ti}
-                                className="flex items-start gap-3 p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors"
+                                className="flex items-start gap-3 rounded-lg bg-[#f9fafb] p-3 transition-colors hover:bg-[#f3f4f6]"
                             >
-                                <div className="mt-0.5 h-4 w-4 rounded border border-border flex-shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-sm font-medium">{task.title}</span>
-                                        <span
-                                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${scopeColor[task.scope_weight] ?? 'bg-muted text-muted-foreground'}`}
-                                        >
-                                            {task.scope_weight}
+                                <span className="mt-0.5 shrink-0 tabular-nums font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f]">
+                                    {ti + 1}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f]">
+                                            {task.title}
                                         </span>
                                     </div>
                                     {task.description && (
-                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                        <p className="mt-1 line-clamp-2 font-['Inter',sans-serif] text-[12px] leading-[18px] text-[#727d83]">
                                             {task.description}
                                         </p>
                                     )}
                                     {task.labels.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                        <div className="mt-2 flex flex-wrap gap-1">
                                             {task.labels.map((l, li) => (
                                                 <span
                                                     key={li}
-                                                    className="text-[10px] px-1.5 py-0.5 rounded-sm bg-secondary text-secondary-foreground"
+                                                    className="rounded bg-[#edf0f3] px-1.5 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]"
                                                 >
                                                     {l}
                                                 </span>
@@ -356,14 +357,16 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
         >
             {/* Header — chat phase uses the in-canvas header (Figma 77:13461); other phases keep this bar */}
             {phase !== 'chat' && (
-                <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
+                <div className="flex shrink-0 items-center justify-between border-b border-[#ebedee] bg-white px-6 py-4">
                     <div className="flex items-center gap-3">
                         <Button variant="ghost" size="icon" onClick={() => navigate(backHref)}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                         <div>
-                            <h1 className="text-lg font-semibold">AI Project Planner</h1>
-                            <p className="text-xs text-muted-foreground">
+                            <h1 className="font-['Satoshi',sans-serif] text-lg font-semibold text-[#0b191f]">
+                                AI Project Planner
+                            </h1>
+                            <p className="font-['Satoshi',sans-serif] text-xs font-medium text-[#727d83]">
                                 {phase === 'plan_review' && 'Review the generated plan'}
                                 {phase === 'creating' && 'Creating your project...'}
                                 {phase === 'complete' && 'Project created successfully!'}
@@ -411,6 +414,21 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                     }}
                                 >
                                     <div className="mx-auto flex h-full min-h-0 w-full max-w-[600px] min-w-[min(100%,403px)] flex-col">
+                                        {generateMutation.isPending ? (
+                                            <div className="flex min-h-[min(70vh,520px)] flex-1 flex-col items-center justify-center gap-3 px-9 py-16">
+                                                <Loader2
+                                                    className="size-10 shrink-0 animate-spin text-[#2E96F9]"
+                                                    aria-hidden
+                                                />
+                                                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#595959]">
+                                                    Generating your plan...
+                                                </p>
+                                                <p className="max-w-sm text-center font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#727d83]">
+                                                    This can take a few minutes. Hang tight.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <>
                                         <div className="min-h-0 flex-1 overflow-y-auto px-9 py-6">
                                             <div className="mx-auto flex min-h-full max-w-[600px] flex-col gap-4">
                                                 {messages.length === 0 && (
@@ -664,6 +682,8 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                                 </div>
                                             </div>
                                         </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -787,61 +807,70 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="flex-1 overflow-auto"
+                            className="min-h-0 flex-1 overflow-auto"
+                            style={{
+                                backgroundImage:
+                                    'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
+                            }}
                         >
-                            <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
-                                {/* Plan header */}
+                            <div className="mx-auto max-w-3xl space-y-8 px-9 py-10">
                                 <div>
-                                    <Badge variant="secondary" className="mb-3 text-xs">
+                                    <span className="mb-3 inline-flex rounded-full bg-[#edf0f3] px-3 py-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
                                         Generated Plan
-                                    </Badge>
-                                    <h2 className="text-2xl font-bold mb-2">
+                                    </span>
+                                    <h2 className="mb-2 font-['Satoshi',sans-serif] text-[24px] font-bold leading-tight tracking-tight text-[#0b191f]">
                                         {plan.project_name}
                                     </h2>
-                                    <p className="text-muted-foreground text-sm leading-relaxed">
+                                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-[#727d83]">
                                         {plan.project_description}
                                     </p>
                                 </div>
 
-                                {/* Summary */}
                                 {plan.summary && (
-                                    <div className="bg-muted/40 border border-border rounded-lg p-5">
-                                        <h3 className="text-sm font-semibold mb-2">Plan Summary</h3>
-                                        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                    <div
+                                        className={cn(
+                                            'rounded-2xl border border-[#edecea] bg-white p-5',
+                                            PLAN_CARD_SHADOW,
+                                        )}
+                                    >
+                                        <h3 className="mb-2 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f]">
+                                            Plan Summary
+                                        </h3>
+                                        <p className="whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] leading-[21px] text-[#606d76]">
                                             {plan.summary}
                                         </p>
                                     </div>
                                 )}
 
-                                {/* Stats row */}
                                 <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                        <div className="text-2xl font-bold">
-                                            {plan.milestones.length}
+                                    {(
+                                        [
+                                            [String(plan.milestones.length), 'Milestones'],
+                                            [String(totalPlannedTasks), 'Tasks'],
+                                            [`${Math.round(confidence)}%`, 'Confidence'],
+                                        ] as const
+                                    ).map(([value, label]) => (
+                                        <div
+                                            key={label}
+                                            className={cn(
+                                                'rounded-xl border border-[#edecea] bg-white p-5 text-center',
+                                                PLAN_CARD_SHADOW,
+                                            )}
+                                        >
+                                            <div className="font-['Satoshi',sans-serif] text-[28px] font-bold leading-none text-[#0b191f]">
+                                                {value}
+                                            </div>
+                                            <div className="mt-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                                                {label}
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            Milestones
-                                        </div>
-                                    </div>
-                                    <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                        <div className="text-2xl font-bold">
-                                            {totalPlannedTasks}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">Tasks</div>
-                                    </div>
-                                    <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                        <div className="text-2xl font-bold">
-                                            {Math.round(confidence)}%
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            Confidence
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
 
-                                {/* Milestones */}
                                 <div>
-                                    <h3 className="text-sm font-semibold mb-3">Milestones</h3>
+                                    <h3 className="mb-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                                        Milestones
+                                    </h3>
                                     <div className="space-y-3">
                                         {plan.milestones.map((ms, i) => (
                                             <MilestoneCard
@@ -853,24 +882,31 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                     </div>
                                 </div>
 
-                                {/* Actions */}
-                                <div className="flex items-center justify-between pt-6 border-t border-border">
-                                    <Button variant="outline" onClick={handleBackToChat}>
-                                        <ArrowLeft className="mr-2 h-4 w-4" />
+                                <div className="flex items-center justify-between border-t border-[#ebedee] pt-8">
+                                    <button
+                                        type="button"
+                                        onClick={handleBackToChat}
+                                        className="inline-flex h-11 items-center gap-2 rounded-lg border border-[#edecea] bg-white px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-sm transition-colors hover:bg-[#f9fafb]"
+                                    >
+                                        <ArrowLeft className="size-4 shrink-0" />
                                         Back to Chat
-                                    </Button>
-                                    <Button
+                                    </button>
+                                    <button
+                                        type="button"
                                         onClick={handleApprovePlan}
                                         disabled={approveMutation.isPending}
-                                        className="gap-2"
+                                        className={cn(
+                                            "inline-flex h-11 items-center gap-2 rounded-lg px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white shadow-sm transition-opacity disabled:opacity-60",
+                                            'bg-gradient-to-br from-[#24b5f8] to-[#5521fe] hover:opacity-95',
+                                        )}
                                     >
                                         {approveMutation.isPending ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <Loader2 className="size-4 shrink-0 animate-spin" />
                                         ) : (
-                                            <Check className="h-4 w-4" />
+                                            <Check className="size-4 shrink-0" />
                                         )}
                                         Approve & Create Project
-                                    </Button>
+                                    </button>
                                 </div>
                             </div>
                         </motion.div>
@@ -882,16 +918,20 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                             key="creating"
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="flex-1 flex items-center justify-center"
+                            className="flex flex-1 items-center justify-center"
+                            style={{
+                                backgroundImage:
+                                    'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
+                            }}
                         >
-                            <div className="text-center space-y-4">
+                            <div className="space-y-4 px-6 text-center">
                                 {phase === 'creating' ? (
                                     <>
-                                        <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-                                        <h3 className="text-lg font-semibold">
+                                        <Loader2 className="mx-auto size-12 animate-spin text-[#2E96F9]" />
+                                        <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]">
                                             Creating your project...
                                         </h3>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
                                             Setting up milestones and tasks
                                         </p>
                                     </>
@@ -906,12 +946,12 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                                 damping: 15,
                                             }}
                                         >
-                                            <Check className="h-16 w-16 text-emerald-500 mx-auto" />
+                                            <Check className="mx-auto size-16 text-emerald-500" />
                                         </motion.div>
-                                        <h3 className="text-lg font-semibold">
+                                        <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]">
                                             Project created!
                                         </h3>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
                                             Redirecting to your project board...
                                         </p>
                                     </>

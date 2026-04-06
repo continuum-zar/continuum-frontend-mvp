@@ -12,7 +12,7 @@ services:
       # Let the container reach the host (e.g. backend on localhost:8001)
       - "host.docker.internal:host-gateway"
     environment:
-      # Do NOT set VITE_API_BASE_URL — keeping it unset forces axios to use the relative
-      # path "/api/v1" so all requests go through the Vite proxy (no CORS issues).
-      - VITE_PROXY_TARGET=http://host.docker.internal:8001 # Proxy /api to backend on host
+      # Unset VITE_API_BASE_URL: dev server defaults to direct http://127.0.0.1:8001/api/v1 from the
+      # browser (avoids Vite proxy dropping long LLM responses). Set VITE_API_BASE_URL=/api/v1 to proxy.
+      - VITE_PROXY_TARGET=http://host.docker.internal:8001
     restart: unless-stopped

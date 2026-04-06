@@ -58,18 +58,35 @@ import type { CreateLoggedHourBody } from './loggedHours';
 import type { Task, TaskStatus, ScopeWeight } from '@/types/task';
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
+import axios from 'axios';
 
 /** Normalize FastAPI error detail into a single message. */
 export function getApiErrorMessage(err: unknown, fallback: string): string {
-    const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
-    const detail = data?.detail;
-    if (typeof detail === 'string') return detail;
-    if (Array.isArray(detail) && detail.length > 0) {
-        const messages = detail
-            .map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d)))
-            .filter(Boolean);
-        return messages.length > 0 ? messages.join('. ') : fallback;
+    if (axios.isAxiosError(err)) {
+        const data = err.response?.data as { detail?: string | Array<{ msg?: string }> } | undefined;
+        const detail = data?.detail;
+        if (typeof detail === 'string') return detail;
+        if (Array.isArray(detail) && detail.length > 0) {
+            const messages = detail
+                .map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d)))
+                .filter(Boolean);
+            if (messages.length > 0) return messages.join('. ');
+        }
+        // No HTTP response: dropped connection, proxy/gateway timeout, DNS, CORS, client timeout, etc.
+        // The server may still have completed the request — err.message explains the client-side failure.
+        if (!err.response && err.message) return err.message;
+    } else {
+        const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
+        const detail = data?.detail;
+        if (typeof detail === 'string') return detail;
+        if (Array.isArray(detail) && detail.length > 0) {
+            const messages = detail
+                .map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d)))
+                .filter(Boolean);
+            return messages.length > 0 ? messages.join('. ') : fallback;
+        }
     }
+    if (err instanceof Error && err.message) return err.message;
     return fallback;
 }
 

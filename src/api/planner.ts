@@ -101,16 +101,38 @@ export async function sendPlannerChat(
     return data;
 }
 
+/** Axios may leave the body as a string if JSON parsing was skipped; unwrap once. */
+function coerceJsonPayload<T>(data: unknown): T {
+    if (typeof data === 'string') {
+        try {
+            return JSON.parse(data) as T;
+        } catch {
+            throw new Error('Invalid JSON in generate-plan response');
+        }
+    }
+    return data as T;
+}
+
 export async function generatePlan(
     messages: PlannerMessage[],
     file_contents: FileContent[],
 ): Promise<GeneratePlanResponse> {
-    const { data } = await api.post<GeneratePlanResponse>('/planner/generate-plan', {
+    const { data: raw } = await api.post<unknown>('/planner/generate-plan', {
         messages,
         file_contents,
     }, {
-        timeout: 300_000,
+        timeout: 600_000,
     });
+    const data = coerceJsonPayload<GeneratePlanResponse>(raw);
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !('plan' in data) ||
+        data.plan == null ||
+        typeof (data as GeneratePlanResponse).confidence !== 'number'
+    ) {
+        throw new Error('Unexpected generate-plan response shape');
+    }
     return data;
 }
 
@@ -118,7 +140,7 @@ export async function approvePlan(plan: ProjectPlan): Promise<ApprovePlanRespons
     const { data } = await api.post<ApprovePlanResponse>('/planner/approve-plan', {
         plan,
     }, {
-        timeout: 300_000,
+        timeout: 600_000,
     });
     return data;
 }
