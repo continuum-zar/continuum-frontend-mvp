@@ -29,6 +29,8 @@ import type { Task, TaskStatus } from '@/types/task';
 import type { Milestone } from '@/types/milestone';
 import type { Repository } from '@/types/repository';
 import type { RepositoryProvider } from '@/types/repository';
+import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
+import { parseApiUtcDateTime } from '@/lib/parseApiUtcDateTime';
 import {
   useProject,
   useProjectTasks,
@@ -389,12 +391,16 @@ export function ProjectBoard() {
   }, [milestonesQuery.data]);
   const milestonesLoading = milestonesQuery.isLoading;
 
+  const navigateToPlaceholderBoard = useCallback(() => {
+    void resolveDefaultBoardPath().then((path) => navigate(path));
+  }, [navigate]);
+
   useEffect(() => {
     if (!projectId || isNaN(Number(projectId))) {
-      navigate('/projects');
+      navigateToPlaceholderBoard();
       return;
     }
-  }, [projectId, navigate]);
+  }, [projectId, navigateToPlaceholderBoard]);
 
   useEffect(() => {
     const state = location.state as { newTaskCreated?: boolean } | null;
@@ -650,7 +656,7 @@ export function ProjectBoard() {
     <div className="p-8">
       {/* Header */}
       <div className="mb-8 flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/projects')}>
+        <Button variant="ghost" size="icon" onClick={navigateToPlaceholderBoard}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 flex items-center justify-between">
@@ -1343,9 +1349,8 @@ export function ProjectBoard() {
                   (scanRepositoryMutation.isPending &&
                     scanRepositoryMutation.variables?.repository_id === repo.id);
                 const filesIndexed = scanStatus?.files_indexed ?? 0;
-                const lastScanned = scanStatus?.last_scanned_at
-                  ? new Date(scanStatus.last_scanned_at).toLocaleString()
-                  : null;
+                const lastScannedAt = parseApiUtcDateTime(scanStatus?.last_scanned_at);
+                const lastScanned = lastScannedAt ? lastScannedAt.toLocaleString() : null;
                 return (
                   <li
                     key={repo.id}

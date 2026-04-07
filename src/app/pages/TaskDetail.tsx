@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams } from 'react-router';
+import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
 import {
   ArrowLeft,
   Activity,
@@ -269,10 +270,12 @@ function TaskNotFound() {
         <p className="mb-6 text-[14px] text-[#727d83]">The task you're looking for doesn't exist or has been deleted.</p>
         <button
           type="button"
-          onClick={() => navigate('/projects')}
+          onClick={() => {
+            void resolveDefaultBoardPath().then((path) => navigate(path));
+          }}
           className="rounded-[8px] bg-[#24B5F8] px-6 py-2 text-[14px] font-bold text-white"
         >
-          Go to Projects
+          Go to board
         </button>
       </div>
     </div>

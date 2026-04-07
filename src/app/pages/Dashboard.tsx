@@ -34,7 +34,21 @@ import {
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
 import { effectiveDashboardRole } from '@/lib/utils/roleMapping';
-import { projectKeys, fetchProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, fetchClientProjects, fetchClientProjectProgress, postProjectQuery, fetchProjectStats } from '@/api';
+import {
+  useProjects,
+  fetchProjectDashboard,
+  fetchProjectVelocityReport,
+  useProjectMilestones,
+  fetchMilestoneBurndown,
+  useProjectMembers,
+  fetchUserRhythm,
+  fetchClassificationBreakdown,
+  fetchProjectStaleWork,
+  fetchClientProjects,
+  fetchClientProjectProgress,
+  postProjectQuery,
+  fetchProjectStats,
+} from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import {
   Bar,
@@ -123,10 +137,8 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
 
   // Projects list – only PM/Developer need the full project list;
   // Client role uses client-projects instead. Key matches useProjects / layout prefetch.
-  const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useQuery({
-    queryKey: projectKeys.listForUser(user?.id),
-    queryFn: fetchProjects,
-    enabled: userRole !== 'Client' && user != null && user.id != null && String(user.id) !== '',
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects({
+    enabled: userRole !== 'Client',
   });
   const hasProjectSelected = selectedProject !== "";
 
@@ -286,6 +298,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     queryKey: ['client-projects'],
     queryFn: fetchClientProjects,
     enabled: userRole === 'Client',
+    staleTime: 3 * 60_000,
   });
 
   const clientProjectId = userRole === 'Client' && clientProjectsList.length > 0

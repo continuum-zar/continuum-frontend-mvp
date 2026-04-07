@@ -112,8 +112,8 @@ export function ClientPortal() {
                     </div>
 
                     <div className="mt-8 text-center pt-8 border-t border-border">
-                        <Link to="/invoices">
-                            <Button variant="outline">View Project Invoices</Button>
+                        <Link to="/dashboard-placeholder">
+                            <Button variant="outline">Back to overview</Button>
                         </Link>
                     </div>
                 </motion.div>

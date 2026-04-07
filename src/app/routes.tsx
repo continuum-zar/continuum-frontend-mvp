@@ -12,13 +12,9 @@ import { RouteSkeleton } from "./components/ui/RouteSkeleton";
 import { LandingRoute } from "./pages/public/LandingRoute";
 
 // Lazy-loaded pages
-const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
-const ProjectsList = lazy(() => import("./pages/ProjectsList").then(m => ({ default: m.ProjectsList })));
 const ProjectBoard = lazy(() => import("./pages/ProjectBoard").then(m => ({ default: m.ProjectBoard })));
 const TaskDetail = lazy(() => import("./pages/TaskDetail").then(m => ({ default: m.TaskDetail })));
-const TimeTracking = lazy(() => import("./pages/TimeTracking").then(m => ({ default: m.TimeTracking })));
 const CreateTask = lazy(() => import("./pages/CreateTask").then(m => ({ default: m.CreateTask })));
-const Invoices = lazy(() => import("./pages/Invoices").then(m => ({ default: m.Invoices })));
 const ClientPortal = lazy(() => import("./pages/ClientPortal").then(m => ({ default: m.ClientPortal })));
 const RoleSelection = lazy(() => import("./pages/RoleSelection").then(m => ({ default: m.RoleSelection })));
 const AIProjectPlanner = lazy(() => import("./pages/AIProjectPlanner").then(m => ({ default: m.AIProjectPlanner })));
@@ -239,6 +235,42 @@ export const router = createBrowserRouter([
       </AuthGuard>
     ),
   },
+  /** Legacy hub URLs → dashboard-placeholder (bookmarks). */
+  {
+    path: "/dashboard",
+    element: (
+      <AuthGuard>
+        <Navigate to="/dashboard-placeholder" replace />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/projects",
+    element: (
+      <AuthGuard>
+        <PostAuthBoardRedirect />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/time",
+    element: (
+      <AuthGuard>
+        <Navigate
+          to="/dashboard-placeholder/get-started/time-logs?populated=1&tab=time-logs"
+          replace
+        />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/invoices",
+    element: (
+      <AuthGuard>
+        <Navigate to="/dashboard-placeholder" replace />
+      </AuthGuard>
+    ),
+  },
   {
     element: (
       <AuthGuard>
@@ -246,22 +278,6 @@ export const router = createBrowserRouter([
       </AuthGuard>
     ),
     children: [
-      {
-        path: "dashboard",
-        element: (
-          <Suspense fallback={<RouteSkeleton />}>
-            <Dashboard />
-          </Suspense>
-        ),
-      },
-      {
-        path: "projects",
-        element: (
-          <Suspense fallback={<RouteSkeleton />}>
-            <ProjectsList />
-          </Suspense>
-        ),
-      },
       {
         path: "projects/ai-planner",
         element: (
@@ -291,22 +307,6 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteSkeleton />}>
             <CreateTask />
-          </Suspense>
-        ),
-      },
-      {
-        path: "time",
-        element: (
-          <Suspense fallback={<RouteSkeleton />}>
-            <TimeTracking />
-          </Suspense>
-        ),
-      },
-      {
-        path: "invoices",
-        element: (
-          <Suspense fallback={<RouteSkeleton />}>
-            <Invoices />
           </Suspense>
         ),
       },

@@ -30,11 +30,20 @@ function formatTimelineDateLabel(iso: string | null | undefined): string {
   return `${dd}-${mm}-${yyyy}`;
 }
 
+function milestoneDueTimeMs(m: Milestone): number {
+  if (!m.dueDateIso) return Number.POSITIVE_INFINITY;
+  const raw = m.dueDateIso.includes("T") ? m.dueDateIso : `${m.dueDateIso}T12:00:00`;
+  const t = new Date(raw).getTime();
+  return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
+}
+
+/** Earliest due date first so the list reads as a forward timeline (past → future). */
 function sortMilestonesForTimeline(list: Milestone[]): Milestone[] {
   return [...list].sort((a, b) => {
-    const ta = a.dueDateIso ? new Date(a.dueDateIso.includes("T") ? a.dueDateIso : `${a.dueDateIso}T12:00:00`).getTime() : 0;
-    const tb = b.dueDateIso ? new Date(b.dueDateIso.includes("T") ? b.dueDateIso : `${b.dueDateIso}T12:00:00`).getTime() : 0;
-    return tb - ta;
+    const ta = milestoneDueTimeMs(a);
+    const tb = milestoneDueTimeMs(b);
+    if (ta !== tb) return ta - tb;
+    return String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" });
   });
 }
 
@@ -58,7 +67,15 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
 
   const rows = useMemo(() => {
     if (!isLive) {
-      return welcomeMilestoneTimelineMock.map((m) => ({
+      const demo = [...welcomeMilestoneTimelineMock].sort((a, b) => {
+        const pa = a.dateLabel.split("-").map(Number);
+        const pb = b.dateLabel.split("-").map(Number);
+        const da = pa.length === 3 ? new Date(pa[2], pa[1] - 1, pa[0]).getTime() : 0;
+        const db = pb.length === 3 ? new Date(pb[2], pb[1] - 1, pb[0]).getTime() : 0;
+        if (da !== db) return da - db;
+        return String(a.title).localeCompare(String(b.title), undefined, { sensitivity: "base" });
+      });
+      return demo.map((m) => ({
         id: m.id,
         dateLabel: m.dateLabel,
         title: m.title,

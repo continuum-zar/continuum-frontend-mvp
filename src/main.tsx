@@ -13,6 +13,7 @@ const queryClient = new QueryClient({
       // Keep unused cache around for 5 minutes by default to avoid
       // refetching when users navigate back and forth between views.
       gcTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
     },
   },
 });

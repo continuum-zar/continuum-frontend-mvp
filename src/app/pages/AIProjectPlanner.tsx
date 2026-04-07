@@ -170,6 +170,8 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     const [input, setInput] = useState('');
     const [fileContents, setFileContents] = useState<FileContent[]>([]);
     const [confidence, setConfidence] = useState(0);
+    /** Set when /generate-plan succeeds; shown on plan review stat cards (distinct from chat gauge). */
+    const [planConfidence, setPlanConfidence] = useState<number | null>(null);
     const [missingAreas, setMissingAreas] = useState<string[]>([]);
     const [readyToPlan, setReadyToPlan] = useState(false);
     /** UI-only: matches Figma “Auto” affordance next to the composer submit control. */
@@ -288,7 +290,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                 file_contents: fileContents,
             });
             setPlan(res.plan);
-            setConfidence(res.confidence);
+            setPlanConfidence(res.confidence);
             setPhase('plan_review');
         } catch {
             // Error toast handled by hook
@@ -323,6 +325,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     const handleBackToChat = () => {
         setPhase('chat');
         setPlan(null);
+        setPlanConfidence(null);
     };
 
     // -----------------------------------------------------------------------
@@ -330,7 +333,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     // -----------------------------------------------------------------------
     const totalPlannedTasks = plan?.milestones.reduce((s, m) => s + m.tasks.length, 0) ?? 0;
 
-    const backHref = embedded ? '/dashboard-placeholder/get-started' : '/projects';
+    const backHref = embedded ? '/dashboard-placeholder/get-started' : '/dashboard-placeholder/entry';
 
     const displayMissingAreas =
         missingAreas.length > 0 ? missingAreas : [...DEFAULT_MISSING_HINTS];
@@ -415,11 +418,16 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                 >
                                     <div className="mx-auto flex h-full min-h-0 w-full max-w-[600px] min-w-[min(100%,403px)] flex-col">
                                         {generateMutation.isPending ? (
-                                            <div className="flex min-h-[min(70vh,520px)] flex-1 flex-col items-center justify-center gap-3 px-9 py-16">
-                                                <Loader2
-                                                    className="size-10 shrink-0 animate-spin text-[#2E96F9]"
-                                                    aria-hidden
-                                                />
+                                            <div className="flex min-h-[min(70vh,520px)] flex-1 flex-col items-center justify-center gap-5 px-9 py-16">
+                                                <p
+                                                    className="animate-pulse-soft bg-clip-text font-['Sarina',cursive] text-[42px] font-normal leading-none tracking-[-0.85px] text-transparent"
+                                                    style={{
+                                                        backgroundImage:
+                                                            'linear-gradient(135.275deg, rgb(36, 181, 248) 4.6217%, rgb(85, 33, 254) 148.53%)',
+                                                    }}
+                                                >
+                                                    Continuum
+                                                </p>
                                                 <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#595959]">
                                                     Generating your plan...
                                                 </p>
@@ -502,18 +510,29 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                                         {fileContents.map((fc, i) => (
                                                             <span
                                                                 key={i}
-                                                                className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-2.5 py-1 text-xs text-secondary-foreground"
+                                                                className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm"
                                                             >
-                                                                <FileText className="h-3 w-3" />
-                                                                {fc.filename}
+                                                                <span
+                                                                    className="flex w-9 shrink-0 items-center justify-center self-stretch bg-[#edf0f3]"
+                                                                    aria-hidden
+                                                                >
+                                                                    <FileText
+                                                                        className="size-4 shrink-0 text-[#606d76]"
+                                                                        strokeWidth={1.75}
+                                                                    />
+                                                                </span>
+                                                                <span className="min-w-0 max-w-[220px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[320px]">
+                                                                    {fc.filename}
+                                                                </span>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() =>
                                                                         handleRemoveFile(i)
                                                                     }
-                                                                    className="rounded p-0.5 hover:bg-muted-foreground/20"
+                                                                    className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-[#606d76] hover:text-[#0b191f]"
+                                                                    aria-label={`Remove ${fc.filename}`}
                                                                 >
-                                                                    <X className="h-3 w-3" />
+                                                                    <X className="size-3.5" strokeWidth={2} />
                                                                 </button>
                                                             </span>
                                                         ))}
@@ -755,17 +774,27 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
 
                                     {fileContents.length > 0 && (
                                         <div>
-                                            <p className="mb-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
+                                            <p className="mb-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#727d83]">
                                                 Uploaded files
                                             </p>
-                                            <div className="space-y-1">
+                                            <div className="space-y-2">
                                                 {fileContents.map((fc, i) => (
                                                     <div
                                                         key={i}
-                                                        className="flex items-center gap-2 text-xs"
+                                                        className="flex min-w-0 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white"
                                                     >
-                                                        <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
-                                                        <span className="truncate">{fc.filename}</span>
+                                                        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
+                                                            <FileText
+                                                                className="size-4 shrink-0 text-[#606d76]"
+                                                                strokeWidth={1.75}
+                                                                aria-hidden
+                                                            />
+                                                        </div>
+                                                        <div className="flex min-h-[44px] min-w-0 flex-1 items-center border-l border-solid border-[#ededed] px-3 py-1.5">
+                                                            <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal text-[#0b191f]">
+                                                                {fc.filename}
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -785,10 +814,9 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                                 : 'bg-gradient-to-br from-[#24b5f8] to-[#5521fe] text-[14px] text-white shadow-sm hover:opacity-95',
                                         )}
                                     >
-                                        {generateMutation.isPending ? (
-                                            <Loader2 className="mr-2 size-4 animate-spin" />
-                                        ) : null}
-                                        Generate plan
+                                        {generateMutation.isPending
+                                            ? 'Generating plan…'
+                                            : 'Generate plan'}
                                     </button>
                                     {!readyToPlan && confidence > 0 && (
                                         <p className="mt-2 text-center text-[10px] text-muted-foreground">
@@ -847,7 +875,12 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                         [
                                             [String(plan.milestones.length), 'Milestones'],
                                             [String(totalPlannedTasks), 'Tasks'],
-                                            [`${Math.round(confidence)}%`, 'Confidence'],
+                                            [
+                                                planConfidence != null
+                                                    ? `${Math.round(planConfidence)}%`
+                                                    : '—',
+                                                'Confidence',
+                                            ],
                                         ] as const
                                     ).map(([value, label]) => (
                                         <div

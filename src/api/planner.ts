@@ -72,6 +72,7 @@ export async function uploadPlannerFile(file: File): Promise<FileContent> {
     formData.append('file', file);
     const { data } = await api.post<FileContent>('/planner/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 600_000,
     });
     return data;
 }
@@ -96,21 +97,9 @@ export async function sendPlannerChat(
             messages,
             file_contents,
         },
-        { signal: options?.signal },
+        { signal: options?.signal, timeout: 600_000 },
     );
     return data;
-}
-
-/** Axios may leave the body as a string if JSON parsing was skipped; unwrap once. */
-function coerceJsonPayload<T>(data: unknown): T {
-    if (typeof data === 'string') {
-        try {
-            return JSON.parse(data) as T;
-        } catch {
-            throw new Error('Invalid JSON in generate-plan response');
-        }
-    }
-    return data as T;
 }
 
 export async function generatePlan(
@@ -123,7 +112,8 @@ export async function generatePlan(
     }, {
         timeout: 600_000,
     });
-    const data = coerceJsonPayload<GeneratePlanResponse>(raw);
+
+    const data = (typeof raw === 'string' ? JSON.parse(raw) : raw) as GeneratePlanResponse;
     if (
         !data ||
         typeof data !== 'object' ||

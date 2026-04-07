@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
-import { toast } from 'sonner';
 
 export function Login() {
   const navigate = useNavigate();
@@ -52,7 +51,6 @@ export function Login() {
 
     try {
       await login({ email, password });
-      toast.success('Welcome back!');
       navigate('/loading', { state: { from: 'login' } });
     } catch (err) {
       console.error('Login error:', err);

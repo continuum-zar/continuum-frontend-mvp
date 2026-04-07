@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { toast } from 'sonner';
 
 import { SESSION_POST_ONBOARDING_WELCOME_KEY } from '@/app/components/welcome/welcomeModalAssets';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
@@ -11,13 +12,25 @@ export function Loading() {
   const location = useLocation();
 
   useEffect(() => {
-    const fromOnboarding = (location.state as { from?: string } | null)?.from === 'onboarding';
+    const navState = location.state as { from?: string } | null;
+    const fromOnboarding = navState?.from === 'onboarding';
+    const fromLogin = navState?.from === 'login';
 
     const minDelay = new Promise<void>((resolve) => {
       window.setTimeout(resolve, LOADING_DURATION_MS);
     });
     const pathPromise = resolveDefaultBoardPath();
     let cancelled = false;
+
+    const afterNavigateWelcomeBack = () => {
+      if (!fromLogin) return;
+      // Run after Loading unmounts and the next screen has painted (avoid toast on top of loading UI).
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          toast.success('Welcome back!');
+        });
+      });
+    };
 
     Promise.all([minDelay, pathPromise])
       .then(([, path]) => {
@@ -26,6 +39,7 @@ export function Loading() {
             sessionStorage.setItem(SESSION_POST_ONBOARDING_WELCOME_KEY, '1');
           }
           navigate(path, { replace: true });
+          afterNavigateWelcomeBack();
         }
       })
       .catch(() => {
@@ -34,6 +48,7 @@ export function Loading() {
             sessionStorage.setItem(SESSION_POST_ONBOARDING_WELCOME_KEY, '1');
           }
           navigate('/dashboard-placeholder/get-started', { replace: true });
+          afterNavigateWelcomeBack();
         }
       });
 
@@ -55,21 +70,6 @@ export function Loading() {
           Time track with one click...
         </p>
       </div>
-
-      <style>{`
-        @keyframes pulse-soft {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.4;
-          }
-        }
-
-        .animate-pulse-soft {
-          animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-      `}</style>
     </div>
   );
 }

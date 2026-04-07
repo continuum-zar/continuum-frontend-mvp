@@ -6,6 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
+import { parseApiUtcDateTime } from "@/lib/parseApiUtcDateTime";
 import { Download, FileText, Link2, Loader2, X } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
@@ -250,9 +251,7 @@ function repositoryStatusSubtitle(
   const isScanning = scan?.is_scanning ?? false;
   if (isScanning) return "Indexing…";
   const files = scan?.files_indexed ?? 0;
-  const lastRaw = scan?.last_scanned_at;
-  const lastAt =
-    lastRaw && !Number.isNaN(Date.parse(lastRaw)) ? new Date(lastRaw) : null;
+  const lastAt = parseApiUtcDateTime(scan?.last_scanned_at);
   const parts: string[] = [];
   if (files > 0) parts.push(`${files} file${files === 1 ? "" : "s"} indexed`);
   if (lastAt) {

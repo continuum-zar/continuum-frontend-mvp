@@ -36,13 +36,14 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         }
     }, [isInitialized, accessToken, fetchError, handleCheckAuth]);
 
-    /** Sarina + Satoshi: only for onboarding, placeholder, and role-selection — not main /dashboard */
+    /** Sarina + Satoshi: onboarding, placeholder shell, and role-selection */
     useEffect(() => {
         const p = location.pathname;
         if (
             p.startsWith('/onboarding') ||
             p.startsWith('/dashboard-placeholder') ||
-            p.startsWith('/role-selection')
+            p.startsWith('/role-selection') ||
+            p.startsWith('/projects/ai-planner')
         ) {
             void import('@/styles/load-decorative-fonts');
         }

@@ -250,6 +250,7 @@ export async function postProjectQuery(
 ): Promise<ProjectQueryResponse> {
     const { data } = await api.post<ProjectQueryResponse>(`/projects/${projectId}/query`, body, {
         signal: options?.signal,
+        timeout: 600_000,
     });
     return data;
 }

@@ -35,6 +35,7 @@ import {
 import { useLoggedHours, useProject } from "@/api/hooks";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { useTimeRecordingStore } from "@/store/timeRecordingStore";
+import { useTimeTracking } from "../context/TimeTrackingContext";
 
 const tabBtn = (active: boolean) =>
   `rounded-[8px] px-4 py-2 text-[14px] font-medium ${
@@ -670,6 +671,10 @@ function buildGetStartedSearchParams(populated: boolean, tab: "time-logs" | "act
 
 export function DashboardPlaceholderGetStartedTimeLogs() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { activate: activateTimeTracking } = useTimeTracking();
+  useEffect(() => {
+    activateTimeTracking();
+  }, [activateTimeTracking]);
   /** Default: show sample data (opt out with `?populated=0`). Ignored when `project` is a real API id. */
   const populated = searchParams.get("populated") !== "0";
   /** Default: Activity tab (`?tab=time-logs` for time log table). */

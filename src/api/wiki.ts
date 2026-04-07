@@ -64,7 +64,8 @@ export async function scanRepository(
 ): Promise<ScanStatusResponse> {
     const { data } = await api.post<ScanStatusResponse>(
         `/projects/${projectId}/wiki/scan`,
-        body
+        body,
+        { timeout: 600_000 },
     );
     return data;
 }
@@ -84,7 +85,8 @@ export async function generateTasks(
 ): Promise<GenerateTasksResponse> {
     const { data } = await api.post<GenerateTasksResponse>(
         `/projects/${projectId}/wiki/generate`,
-        { prompt: body.prompt, max_tasks: body.max_tasks ?? 10 }
+        { prompt: body.prompt, max_tasks: body.max_tasks ?? 10 },
+        { timeout: 600_000 },
     );
     return data;
 }
