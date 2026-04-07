@@ -3,9 +3,11 @@ import { fileURLToPath } from 'url'
 import { request as httpRequest } from 'node:http'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig } from 'vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const analyzeBundle = process.env.ANALYZE === '1'
 
 const PROXY_TARGET = process.env.VITE_PROXY_TARGET || 'http://localhost:8001'
 
@@ -95,6 +97,16 @@ export default defineConfig({
     react(),
     tailwindcss(),
     apiProxy(),
+    ...(analyzeBundle
+      ? [
+          visualizer({
+            filename: 'dist/stats.html',
+            gzipSize: true,
+            brotliSize: true,
+            open: false,
+          }),
+        ]
+      : []),
   ],
   resolve: {
     alias: {

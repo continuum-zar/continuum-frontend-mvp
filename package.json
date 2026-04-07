@@ -5,16 +5,16 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "build:analyze": "ANALYZE=1 vite build",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@emotion/react": "11.14.0",
-    "@emotion/styled": "11.14.1",
-    "@mui/icons-material": "7.3.5",
-    "@mui/material": "7.3.5",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource-variable/manrope": "^5.2.8",
+    "@fontsource/sarina": "^5.2.7",
     "@popperjs/core": "2.11.8",
     "@radix-ui/react-accordion": "1.2.3",
     "@radix-ui/react-alert-dialog": "1.1.6",
@@ -82,6 +82,7 @@
     "eslint-plugin-react-hooks": "5.0.0",
     "eslint-plugin-react-refresh": "0.4.14",
     "globals": "15.12.0",
+    "rollup-plugin-visualizer": "^5.12.0",
     "tailwindcss": "4.1.12",
     "typescript": "5.6.3",
     "typescript-eslint": "8.15.0",

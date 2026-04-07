@@ -386,7 +386,7 @@ export default function LandingPage() {
             <div className="h-[404.386px] pointer-events-none relative rounded-[9.829px] w-[423.44px]" data-name="WIP">
               <div aria-hidden="true" className="absolute inset-0 rounded-[9.829px]">
                 <div className="absolute inset-0 rounded-[9.829px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)" }} />
-                <img alt="" className="absolute max-w-none object-cover rounded-[9.829px] size-full" src={imgWip} />
+                <img alt="" className="absolute max-w-none object-cover rounded-[9.829px] size-full" src={imgWip} decoding="async" fetchPriority="high" />
               </div>
               <div aria-hidden="true" className="absolute border-[#ededed] border-[1.081px] border-solid inset-0 rounded-[9.829px] shadow-[0px_124.343px_34.6px_0px_rgba(26,58,84,0),0px_80.012px_31.356px_0px_rgba(26,58,84,0.01),0px_44.331px_27.031px_0px_rgba(26,58,84,0.05),0px_19.462px_19.462px_0px_rgba(26,58,84,0.09),0px_5.406px_10.812px_0px_rgba(26,58,84,0.1)]" />
             </div>
@@ -397,7 +397,7 @@ export default function LandingPage() {
             <div className="h-[404.39px] pointer-events-none relative rounded-[5.54px] w-[423.442px]" data-name="WIP">
               <div aria-hidden="true" className="absolute inset-0 rounded-[5.54px]">
                 <div className="absolute inset-0 rounded-[5.54px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)" }} />
-                <img alt="" className="absolute max-w-none object-cover rounded-[5.54px] size-full" src={imgWip1} />
+                <img alt="" className="absolute max-w-none object-cover rounded-[5.54px] size-full" src={imgWip1} loading="lazy" decoding="async" />
               </div>
               <div aria-hidden="true" className="absolute border-[#ededed] border-[1.081px] border-solid inset-0 rounded-[5.54px] shadow-[0px_124.345px_34.6px_0px_rgba(26,58,84,0),0px_80.013px_31.356px_0px_rgba(26,58,84,0.01),0px_44.332px_27.031px_0px_rgba(26,58,84,0.05),0px_19.463px_19.463px_0px_rgba(26,58,84,0.09),0px_5.406px_10.813px_0px_rgba(26,58,84,0.1)]" />
             </div>
@@ -406,7 +406,7 @@ export default function LandingPage() {
         <div className="-translate-x-1/2 absolute h-[515.841px] left-[calc(50%+0.4px)] pointer-events-none rounded-[7.54px] top-[25px] w-[794.248px]" data-name="WIP">
           <div aria-hidden="true" className="absolute inset-0 rounded-[7.54px]">
             <div className="absolute inset-0 rounded-[7.54px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)" }} />
-            <img alt="" className="absolute max-w-none object-cover rounded-[7.54px] size-full" src={imgWip2} />
+            <img alt="" className="absolute max-w-none object-cover rounded-[7.54px] size-full" src={imgWip2} loading="lazy" decoding="async" />
           </div>
           <div aria-hidden="true" className="absolute border-[#ededed] border-[1.379px] border-solid inset-0 rounded-[7.54px] shadow-[0px_300px_84px_0px_rgba(26,58,84,0),0px_192px_77px_0px_rgba(26,58,84,0.01),0px_108px_65px_0px_rgba(26,58,84,0.04),0px_48px_48px_0px_rgba(26,58,84,0.07),0px_12px_26px_0px_rgba(26,58,84,0.08)]" />
         </div>

@@ -1,10 +1,15 @@
 import { Outlet, NavLink, useNavigate } from 'react-router';
 import { PrefetchLink } from '../components/PrefetchLink';
 import {
-  projectKeys, fetchProjects,
-  invoiceKeys, fetchInvoices,
-  userHoursKeys, fetchUserHours,
-  getCurrentWeekRange
+  projectKeys,
+  fetchProjects,
+  fetchProjectDashboard,
+  fetchProjectVelocityReport,
+  invoiceKeys,
+  fetchInvoices,
+  userHoursKeys,
+  fetchUserHours,
+  getCurrentWeekRange,
 } from '../../api';
 import {
   LayoutDashboard,
@@ -94,13 +99,46 @@ export function DashboardLayout() {
               to={item.href}
               end={item.href === '/dashboard'}
               onPrefetch={(queryClient) => {
+                const uid = user?.id;
                 if (item.href === '/projects') {
-                  queryClient.prefetchQuery({ queryKey: projectKeys.all, queryFn: () => fetchProjects() });
+                  if (uid == null || uid === '') return;
+                  void queryClient.prefetchQuery({
+                    queryKey: projectKeys.listForUser(uid),
+                    queryFn: fetchProjects,
+                  });
+                } else if (item.href === '/dashboard') {
+                  if (uid == null || uid === '') return;
+                  void queryClient
+                    .prefetchQuery({
+                      queryKey: projectKeys.listForUser(uid),
+                      queryFn: fetchProjects,
+                    })
+                    .then(() => {
+                      const projects = queryClient.getQueryData<Awaited<ReturnType<typeof fetchProjects>>>(
+                        projectKeys.listForUser(uid)
+                      );
+                      const first = projects?.[0];
+                      if (first == null) return;
+                      const pid = String(first.id);
+                      void queryClient.prefetchQuery({
+                        queryKey: ['project-dashboard', pid],
+                        queryFn: () => fetchProjectDashboard(pid),
+                        staleTime: 2 * 60_000,
+                      });
+                      void queryClient.prefetchQuery({
+                        queryKey: ['velocity-report', pid],
+                        queryFn: () => fetchProjectVelocityReport(pid),
+                        staleTime: 2 * 60_000,
+                      });
+                    });
                 } else if (item.href === '/invoices') {
-                  queryClient.prefetchQuery({ queryKey: invoiceKeys.all, queryFn: () => fetchInvoices() });
+                  void queryClient.prefetchQuery({ queryKey: invoiceKeys.all, queryFn: () => fetchInvoices() });
                 } else if (item.href === '/time') {
                   const { start, end } = getCurrentWeekRange();
-                  queryClient.prefetchQuery({ queryKey: userHoursKeys.range(start, end), queryFn: () => fetchUserHours(start, end) });
+                  void queryClient.prefetchQuery({
+                    queryKey: userHoursKeys.range(start, end),
+                    queryFn: () => fetchUserHours(start, end),
+                  });
                 }
               }}
               className={({ isActive }) =>

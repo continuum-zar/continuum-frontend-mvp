@@ -1,4 +1,5 @@
 import { Navigate } from "react-router";
+import "@/styles/load-decorative-fonts";
 import { useAuthStore } from "@/store/authStore";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import LandingPage from "./LandingPage";

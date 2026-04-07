@@ -36,6 +36,18 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         }
     }, [isInitialized, accessToken, fetchError, handleCheckAuth]);
 
+    /** Sarina + Satoshi: only for onboarding, placeholder, and role-selection — not main /dashboard */
+    useEffect(() => {
+        const p = location.pathname;
+        if (
+            p.startsWith('/onboarding') ||
+            p.startsWith('/dashboard-placeholder') ||
+            p.startsWith('/role-selection')
+        ) {
+            void import('@/styles/load-decorative-fonts');
+        }
+    }, [location.pathname]);
+
     if (fetchError) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] p-6 max-w-md mx-auto space-y-4">

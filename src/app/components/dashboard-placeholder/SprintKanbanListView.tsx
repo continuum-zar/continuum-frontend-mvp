@@ -50,7 +50,7 @@ export type SprintKanbanListViewProps = {
 export function SprintKanbanListView({
   tasks,
   members,
-  projectId: _projectId,
+  projectId,
   milestoneId,
   onCreateTask,
   draggingId,
@@ -62,6 +62,7 @@ export function SprintKanbanListView({
   onColumnDragLeave,
   onColumnDrop,
 }: SprintKanbanListViewProps) {
+  void projectId;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const memberByUserId = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
