@@ -3,6 +3,7 @@ import type { PaginatedResponse } from '@/types/api';
 import type { ProjectAPIResponse, ProjectDetailAPIResponse } from '@/types/project';
 import type { MilestoneAPIResponse } from '@/types/milestone';
 import type { MemberAPIResponse } from '@/types/member';
+import type { ProjectInvitation } from '@/types/invitation';
 import type { AttachmentAPIResponse } from '@/types/attachment';
 import {
     mapProjectListItem,
@@ -111,12 +112,12 @@ export async function fetchMembers(projectId: number | string): Promise<Member[]
     return (data ?? []).map(mapMember);
 }
 
-/** Add a member to a project. Returns raw API response; call fetchMembers(projectId) to refresh. */
+/** Invite a user to a project (creates pending invitation + sends email). */
 export async function addMember(
     projectId: number | string,
     body: { email: string; role?: string }
-): Promise<MemberAPIResponse> {
-    const { data } = await api.post<MemberAPIResponse>(`/projects/${projectId}/members`, {
+): Promise<ProjectInvitation> {
+    const { data } = await api.post<ProjectInvitation>(`/projects/${projectId}/members`, {
         email: body.email,
         role: body.role ?? 'developer',
     });

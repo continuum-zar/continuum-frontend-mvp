@@ -13,6 +13,7 @@ import {
 } from '../components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { GlobalActiveSession } from '../components/ui/GlobalActiveSession';
+import { PendingInvitationsHost } from '../components/PendingInvitationsHost';
 import { useAuthStore } from '../../store/authStore';
 
 import { useRole } from '../context/RoleContext';
@@ -177,6 +178,7 @@ export function DashboardLayout() {
           </ErrorBoundary>
         </main>
       </div>
+      <PendingInvitationsHost />
     </div>
   );
 }

@@ -710,7 +710,7 @@ export function ProjectBoard() {
                         </SelectContent>
                       </Select>
                       <Button onClick={handleInvite} disabled={!inviteEmail?.trim() || addMemberMutation.isPending}>
-                        {addMemberMutation.isPending ? 'Adding…' : 'Invite'}
+                        {addMemberMutation.isPending ? 'Sending…' : 'Invite'}
                       </Button>
                     </div>
                     {inviteError && (

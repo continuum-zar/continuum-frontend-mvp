@@ -10,6 +10,7 @@ import { DashboardLayout } from "./layouts/DashboardLayout";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { RouteSkeleton } from "./components/ui/RouteSkeleton";
 import { LandingRoute } from "./pages/public/LandingRoute";
+import { InviteHandler } from "./pages/InviteHandler";
 
 // Lazy-loaded pages
 const ProjectBoard = lazy(() => import("./pages/ProjectBoard").then(m => ({ default: m.ProjectBoard })));
@@ -82,6 +83,10 @@ export const router = createBrowserRouter([
   {
     path: "/loading",
     Component: Loading,
+  },
+  {
+    path: "/invite",
+    element: <InviteHandler />,
   },
   {
     path: "/dashboard-placeholder/entry",

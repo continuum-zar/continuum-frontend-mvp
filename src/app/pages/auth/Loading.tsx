@@ -2,7 +2,10 @@ import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
-import { SESSION_POST_ONBOARDING_WELCOME_KEY } from '@/app/components/welcome/welcomeModalAssets';
+import {
+  SESSION_INVITE_TOKEN_KEY,
+  SESSION_POST_ONBOARDING_WELCOME_KEY,
+} from '@/app/components/welcome/welcomeModalAssets';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
 
 const LOADING_DURATION_MS = 2500;
@@ -12,9 +15,18 @@ export function Loading() {
   const location = useLocation();
 
   useEffect(() => {
-    const navState = location.state as { from?: string } | null;
+    const navState = location.state as { from?: string; inviteToken?: string } | null;
     const fromOnboarding = navState?.from === 'onboarding';
     const fromLogin = navState?.from === 'login';
+    let inviteToken: string | null = null;
+    try {
+      inviteToken =
+        (typeof navState?.inviteToken === 'string' && navState.inviteToken.trim() !== ''
+          ? navState.inviteToken.trim()
+          : null) ?? sessionStorage.getItem(SESSION_INVITE_TOKEN_KEY);
+    } catch {
+      inviteToken = null;
+    }
 
     const minDelay = new Promise<void>((resolve) => {
       window.setTimeout(resolve, LOADING_DURATION_MS);
@@ -38,7 +50,11 @@ export function Loading() {
           if (fromOnboarding) {
             sessionStorage.setItem(SESSION_POST_ONBOARDING_WELCOME_KEY, '1');
           }
-          navigate(path, { replace: true });
+          if (inviteToken && fromLogin) {
+            navigate(`/invite?token=${encodeURIComponent(inviteToken)}`, { replace: true });
+          } else {
+            navigate(path, { replace: true });
+          }
           afterNavigateWelcomeBack();
         }
       })
@@ -47,7 +63,11 @@ export function Loading() {
           if (fromOnboarding) {
             sessionStorage.setItem(SESSION_POST_ONBOARDING_WELCOME_KEY, '1');
           }
-          navigate('/dashboard-placeholder/get-started', { replace: true });
+          if (inviteToken && fromLogin) {
+            navigate(`/invite?token=${encodeURIComponent(inviteToken)}`, { replace: true });
+          } else {
+            navigate('/dashboard-placeholder/get-started', { replace: true });
+          }
           afterNavigateWelcomeBack();
         }
       });

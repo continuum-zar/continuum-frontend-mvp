@@ -257,7 +257,7 @@ export function WelcomeShareProjectModal({
                     className="inline-flex min-w-[88px] shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-0 px-4 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-bold text-white outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/50 disabled:cursor-not-allowed disabled:opacity-50"
                     style={{ backgroundImage: inviteButtonGradient }}
                   >
-                    {isLive && addMemberMutation.isPending ? "Adding…" : "Invite"}
+                    {isLive && addMemberMutation.isPending ? "Sending…" : "Invite"}
                   </button>
                 </div>
                 <div className="flex w-full flex-col gap-4">

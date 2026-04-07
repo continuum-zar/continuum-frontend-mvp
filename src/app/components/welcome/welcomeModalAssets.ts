@@ -1,5 +1,7 @@
 /** Session flag set by Loading after onboarding; cleared when the welcome modal is dismissed. */
 export const SESSION_POST_ONBOARDING_WELCOME_KEY = "continuum_post_onboarding_welcome";
+/** Project invite token from email link; survives login/sign-up until consumed on /invite. */
+export const SESSION_INVITE_TOKEN_KEY = "continuum_invite_token";
 /** Persisted after user dismisses the post-onboarding welcome modal so it does not reappear. */
 export const LS_WELCOME_MODAL_DISMISSED_KEY = "continuum_welcome_modal_dismissed";
 

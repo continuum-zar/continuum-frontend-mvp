@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { SESSION_INVITE_TOKEN_KEY } from '@/app/components/welcome/welcomeModalAssets';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 
 export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { login, isLoading, error, clearError } = useAuthStore();
   const prefilledEmail = (location.state as { email?: string } | null)?.email ?? '';
   const [email, setEmail] = useState(prefilledEmail);
@@ -18,6 +20,17 @@ export function Login() {
   useEffect(() => {
     return () => clearError();
   }, [clearError]);
+
+  useEffect(() => {
+    const t = searchParams.get('invite_token')?.trim();
+    if (t) {
+      try {
+        sessionStorage.setItem(SESSION_INVITE_TOKEN_KEY, t);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [searchParams]);
 
   const validateEmail = (value: string) => {
     if (!value.trim()) return 'Email is required';
@@ -51,7 +64,19 @@ export function Login() {
 
     try {
       await login({ email, password });
-      navigate('/loading', { state: { from: 'login' } });
+      let inviteToken: string | undefined;
+      try {
+        inviteToken =
+          searchParams.get('invite_token')?.trim() || sessionStorage.getItem(SESSION_INVITE_TOKEN_KEY) || undefined;
+      } catch {
+        inviteToken = undefined;
+      }
+      navigate('/loading', {
+        state: {
+          from: 'login',
+          ...(inviteToken ? { inviteToken } : {}),
+        },
+      });
     } catch (err) {
       console.error('Login error:', err);
     }
@@ -152,7 +177,16 @@ export function Login() {
 
               <div className="flex items-center justify-center gap-1">
                 <p className="text-sm text-[#9FA5A8]">Don't have an account?</p>
-                <Link to="/sign-up" className="text-sm text-[#252014] no-underline">Sign up</Link>
+                <Link
+                  to={
+                    searchParams.get('invite_token')?.trim()
+                      ? `/register?invite_token=${encodeURIComponent(searchParams.get('invite_token')!.trim())}`
+                      : '/sign-up'
+                  }
+                  className="text-sm text-[#252014] no-underline"
+                >
+                  Sign up
+                </Link>
               </div>
             </div>
           </form>

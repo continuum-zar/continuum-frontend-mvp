@@ -36,3 +36,18 @@ export async function resolveDefaultBoardPath(): Promise<string> {
     return FALLBACK_WELCOME_BOARD;
   }
 }
+
+/**
+ * Dashboard-placeholder sprint/Kanban URL for a specific project (same rules as default board pick).
+ */
+export async function resolveProjectBoardPath(projectId: string | number): Promise<string> {
+  const id = String(projectId);
+  try {
+    const milestones = await fetchMilestones(id);
+    const sorted = sortMilestonesForNav(milestones);
+    const firstMilestoneId = sorted[0]?.id;
+    return projectSprintHref(id, firstMilestoneId);
+  } catch {
+    return projectSprintHref(id);
+  }
+}

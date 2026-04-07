@@ -24,6 +24,7 @@ import { DashboardLeftRail } from "../components/dashboard-placeholder/Dashboard
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
 import { WelcomeToContinuumModal } from "../components/welcome/WelcomeToContinuumModal";
+import { PendingInvitationsHost } from "../components/PendingInvitationsHost";
 import {
   SESSION_POST_ONBOARDING_WELCOME_KEY,
   welcomeModalDismissedKeyForUser,
@@ -1547,6 +1548,7 @@ export function DashboardPlaceholder() {
         projectId={liveProjectId}
         milestoneId={milestoneParam}
       />
+      <PendingInvitationsHost />
       <WelcomeToContinuumModal open={welcomeToContinuumOpen} onOpenChange={handleWelcomeToContinuumOpenChange} />
     </div>
   );

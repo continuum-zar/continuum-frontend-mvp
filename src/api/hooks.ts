@@ -23,13 +23,20 @@ import {
     updateProject,
     deleteProject,
     projectKeys,
-    normalizeProjectKeyId,
     fetchProjectAttachments,
     uploadProjectAttachment,
     addProjectAttachmentLink,
     deleteProjectAttachment,
 } from './projects';
 export { projectKeys };
+import {
+    acceptInvitation,
+    declineInvitation,
+    fetchInvitationByToken,
+    fetchPendingInvitations,
+    invitationKeys,
+} from './invitations';
+export { invitationKeys };
 import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
 import {
@@ -398,18 +405,58 @@ export function useAddMember(projectId: number | string | undefined | null) {
     return useMutation({
         mutationFn: (body: { email: string; role?: string }) => addMember(projectId!, body),
         onSuccess: () => {
-            if (projectId != null && projectId !== '') {
-                const id = normalizeProjectKeyId(projectId);
-                void queryClient.invalidateQueries({ queryKey: projectKeys.members(id) });
-            }
-            toast.success('Member added to project');
+            void queryClient.invalidateQueries({ queryKey: invitationKeys.pending() });
+            toast.success('Invitation sent');
         },
         onError: (err: unknown) => {
             const status = (err as { response?: { status?: number } })?.response?.status;
-            let fallback = 'Failed to add member';
-            if (status === 404) fallback = 'User not found. They must have an account with this email.';
-            else if (status === 409) fallback = 'User is already a member of this project.';
+            let fallback = 'Failed to send invitation';
+            if (status === 409) fallback = 'User is already a member or an invitation is already pending.';
             toast.error(getApiErrorMessage(err, fallback));
+        },
+    });
+}
+
+export function usePendingInvitations(options?: { enabled?: boolean }) {
+    const userId = useAuthStore((s) => s.user?.id);
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const enabled =
+        Boolean(isAuthenticated && userId != null && userId !== '') &&
+        (options?.enabled !== undefined ? options.enabled : true);
+    return useQuery({
+        queryKey: [...invitationKeys.pending(), userId ?? 'signed-out'],
+        queryFn: fetchPendingInvitations,
+        enabled,
+    });
+}
+
+export function useInvitationByToken(token: string | null | undefined, options?: { enabled?: boolean }) {
+    const t = token?.trim() ?? '';
+    const enabled = Boolean(t) && (options?.enabled !== undefined ? options.enabled : true);
+    return useQuery({
+        queryKey: invitationKeys.byToken(t),
+        queryFn: () => fetchInvitationByToken(t),
+        enabled,
+    });
+}
+
+export function useAcceptInvitation() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (invitationId: number) => acceptInvitation(invitationId),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: invitationKeys.pending() });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+        },
+    });
+}
+
+export function useDeclineInvitation() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (invitationId: number) => declineInvitation(invitationId),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: invitationKeys.pending() });
         },
     });
 }
