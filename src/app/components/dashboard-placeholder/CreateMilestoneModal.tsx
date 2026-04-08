@@ -236,13 +236,13 @@ export function CreateMilestoneModal({
             </div>
 
             <div className="flex w-full justify-end">
-              <div className="w-[130px]">
+              <div className="min-w-[200px] shrink-0">
                 <button
                   type="button"
                   disabled={!name.trim() || !dueDate || pending}
                   onClick={() => void handleSubmit()}
                   className={cn(
-                    "inline-flex h-10 w-full items-center justify-center rounded-[8px] px-4 text-[14px] font-semibold transition-colors duration-200",
+                    "inline-flex h-10 w-full min-w-0 items-center justify-center whitespace-nowrap rounded-[8px] px-5 text-[14px] font-semibold transition-colors duration-200",
                     name.trim() && dueDate && !pending
                       ? "bg-[#1466ff] text-white hover:bg-[#0051e6]"
                       : "bg-[rgba(96,109,118,0.1)] text-[#606d76]/50"

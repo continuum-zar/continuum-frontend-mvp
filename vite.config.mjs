@@ -16,8 +16,16 @@ const PROXY_TARGET = process.env.VITE_PROXY_TARGET || 'http://localhost:8001'
  * connection alive while the backend processes long-running LLM calls.
  * JSON.parse ignores leading whitespace, so "   {json}" works perfectly.
  */
-const HEARTBEAT_PATHS = ['/api/v1/planner/generate-plan']
 const HEARTBEAT_INTERVAL_MS = 3_000
+
+/** POST routes that can take 10s+ (LLM); without heartbeats idle TCP sockets are dropped (Docker / some proxies). */
+function needsLlmHeartbeat(method, urlPath) {
+  if (method !== 'POST') return false
+  if (urlPath === '/api/v1/planner/generate-plan') return true
+  if (urlPath === '/api/v1/planner/chat') return true
+  if (/^\/api\/v1\/projects\/\d+\/wiki\/generate$/.test(urlPath)) return true
+  return false
+}
 
 /**
  * Custom /api proxy that replaces Vite's built-in http-proxy.
@@ -58,8 +66,7 @@ function apiProxy() {
         req.socket?.setKeepAlive(true, 5_000)
         req.socket?.setNoDelay(true)
 
-        const needsHeartbeat =
-          req.method === 'POST' && HEARTBEAT_PATHS.includes(urlPath)
+        const needsHeartbeat = needsLlmHeartbeat(req.method, urlPath)
 
         if (needsHeartbeat) {
           // ── Streaming heartbeat mode ──────────────────────────────

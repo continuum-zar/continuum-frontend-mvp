@@ -40,6 +40,7 @@ import {
 } from '../assets/dashboardPlaceholderAssets';
 import { cn } from '../components/ui/utils';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
+import { PlannerAssistantMarkdown } from '@/app/components/planner/PlannerAssistantMarkdown';
 
 type Phase = 'chat' | 'plan_review' | 'creating' | 'complete';
 
@@ -437,7 +438,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                             </div>
                                         ) : (
                                             <>
-                                        <div className="min-h-0 flex-1 overflow-y-auto px-9 py-6">
+                                        <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-9 py-6">
                                             <div className="mx-auto flex min-h-full max-w-[600px] flex-col gap-4">
                                                 {messages.length === 0 && (
                                                     <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
@@ -479,9 +480,11 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                                                 {msg.content}
                                                             </div>
                                                         ) : (
-                                                            <p className="w-full min-w-0 whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f]">
-                                                                {msg.content}
-                                                            </p>
+                                                            <div className="w-full min-w-0">
+                                                                <PlannerAssistantMarkdown
+                                                                    content={msg.content}
+                                                                />
+                                                            </div>
                                                         )}
                                                     </motion.div>
                                                 ))}
@@ -709,7 +712,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
 
                             {/* Confidence & context — Figma 77:13510, 77:13667 */}
                             <aside className="relative hidden h-full min-h-0 w-[362px] shrink-0 flex-col border-l border-[#ebedee] bg-gradient-to-b from-white to-[#f9f9f9] lg:flex">
-                                <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pl-9 pr-[52px] pt-4 pb-28">
+                                <div className="scrollbar-none min-h-0 flex-1 space-y-6 overflow-y-auto pl-9 pr-[52px] pt-4 pb-28">
                                     <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
                                         Confidence Index
                                     </p>
@@ -719,12 +722,12 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                         <p
                                             className={cn(
                                                 "font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal",
-                                                confidence >= 70 && readyToPlan
+                                                readyToPlan
                                                     ? 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-emerald-600'
                                                     : 'max-w-[147px] text-[#eb4335]',
                                             )}
                                         >
-                                            {confidence >= 70 && readyToPlan ? (
+                                            {readyToPlan ? (
                                                 <>
                                                     <Check className="size-4 shrink-0" />
                                                     Ready to generate plan
@@ -835,7 +838,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="min-h-0 flex-1 overflow-auto"
+                            className="scrollbar-none min-h-0 flex-1 overflow-auto"
                             style={{
                                 backgroundImage:
                                     'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
