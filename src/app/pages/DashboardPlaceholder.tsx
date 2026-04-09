@@ -21,6 +21,7 @@ import type { Member } from "@/types/member";
 import type { Milestone } from "@/types/milestone";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
+import { DiscordIntegrationModal } from "../components/dashboard-placeholder/DiscordIntegrationModal";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
 import { WelcomeToContinuumModal } from "../components/welcome/WelcomeToContinuumModal";
@@ -371,6 +372,7 @@ export function DashboardPlaceholder() {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
+  const [discordIntegrationOpen, setDiscordIntegrationOpen] = useState(false);
   const [welcomeToContinuumOpen, setWelcomeToContinuumOpen] = useState(false);
   /** Live sprint area only: board vs list (same tasks). */
   const [sprintView, setSprintView] = useState<"board" | "list">("board");
@@ -727,11 +729,18 @@ export function DashboardPlaceholder() {
                       </p>
                     </Link>
                   </div>
-                  <div className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px]" data-name="Component 5" data-node-id="7:2876">
+                  <button
+                    type="button"
+                    className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+                    data-name="Component 5"
+                    data-node-id="7:2876"
+                    aria-label="Discord notifications"
+                    onClick={() => setDiscordIntegrationOpen(true)}
+                  >
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="7:2877">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
                     </div>
-                  </div>
+                  </button>
                   <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 6" data-node-id="7:2879">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-cog" data-node-id="7:2880">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderCog} />
@@ -1541,6 +1550,11 @@ export function DashboardPlaceholder() {
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
       <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} projectId={isLiveBoard ? Number(projectParam) : undefined} />
+      <DiscordIntegrationModal
+        open={discordIntegrationOpen}
+        onOpenChange={setDiscordIntegrationOpen}
+        projectId={isLiveBoard && liveProjectId != null ? liveProjectId : undefined}
+      />
       <WelcomeAiChatModal
         open={aiChatOpen}
         onOpenChange={setAiChatOpen}
