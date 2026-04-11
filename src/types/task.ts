@@ -28,6 +28,7 @@ export interface TaskAPIResponse {
     closure_summary?: string | null;
     linked_repo?: string | null;
     linked_branch?: string | null;
+    linked_branch_full_ref?: string | null;
     labels?: string[];
 }
 

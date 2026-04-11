@@ -105,6 +105,27 @@ export async function updateTask(
     return data;
 }
 
+/** Attach or update the Git branch linked to a task. POST /tasks/{id}/linked-branch */
+export async function setTaskLinkedBranch(
+    taskId: number | string,
+    body: {
+        linked_repo: string;
+        linked_branch: string;
+        linked_branch_full_ref?: string | null;
+    }
+): Promise<TaskAPIResponse> {
+    const payload: {
+        linked_repo: string;
+        linked_branch: string;
+        linked_branch_full_ref?: string | null;
+    } = { linked_repo: body.linked_repo, linked_branch: body.linked_branch };
+    if (body.linked_branch_full_ref != null && body.linked_branch_full_ref !== '') {
+        payload.linked_branch_full_ref = body.linked_branch_full_ref;
+    }
+    const { data } = await api.post<TaskAPIResponse>(`/tasks/${taskId}/linked-branch`, payload);
+    return data;
+}
+
 /** Payload for creating a new task. */
 export interface CreateTaskBody {
     title: string;

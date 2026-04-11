@@ -33,12 +33,16 @@ import {
   useProjectMembers,
   useAddTaskLabel,
   useRemoveTaskLabel,
+  useProjectRepositories,
+  useRepositoryBranches,
+  useSetTaskLinkedBranch,
 } from '@/api';
 import { getApiErrorMessage } from '@/api/hooks';
 import type { Attachment } from '@/types/attachment';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { Member } from '@/types/member';
+import type { Repository } from '@/types/repository';
 import { AddTaskResourceModal } from '../components/AddTaskResourceModal';
 import { AssignMemberModal } from '../components/AssignMemberModal';
 
@@ -75,6 +79,25 @@ const SCOPE_OPTIONS: { value: ScopeWeight; label: string }[] = [
 ];
 
 const AVATAR_COLORS = ['#E8A303', '#EE7F84', '#7157E7', '#4A9FF8', '#10b981', '#f17173'];
+
+/** Provider full name for task.linked_repo / webhooks; fallback from URL or name. */
+function repoLinkedName(r: Repository): string {
+  const fn = r.fullName?.trim();
+  if (fn) return fn;
+  try {
+    const u = new URL(r.repositoryUrl);
+    const path = u.pathname.replace(/^\/+|\/+$/g, '');
+    if (path.includes('/')) return path;
+  } catch {
+    /* ignore */
+  }
+  return (r.repositoryName || '').trim();
+}
+
+function branchToFullRef(name: string): string {
+  if (name.startsWith('refs/')) return name;
+  return `refs/heads/${name}`;
+}
 
 function resolveAssigneeLabel(idStr: string | null | undefined, members: Member[] | undefined): string {
   if (idStr == null || idStr === '') return 'Unassigned';
@@ -309,6 +332,16 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const addTaskLabelMutation = useAddTaskLabel(taskId);
   const removeTaskLabelMutation = useRemoveTaskLabel(taskId);
   const taskDetailQueryKey = ['tasks', 'detail', taskId] as const;
+  const setLinkedBranchMutation = useSetTaskLinkedBranch();
+  const { data: projectRepos = [], isLoading: reposLoading } = useProjectRepositories(task?.project_id);
+  const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
+  const [repoDropdownOpen, setRepoDropdownOpen] = useState(false);
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const {
+    data: branchList = [],
+    isLoading: branchesLoading,
+    isFetching: branchesFetching,
+  } = useRepositoryBranches(task?.project_id, selectedRepoId);
 
   /* ─ local state ─ */
   const [status, setStatus] = useState('');
@@ -346,6 +379,21 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       if (!editingDesc) setDescDraft(task.description ?? '');
     }
   }, [task, editingTitle, editingDesc]);
+
+  /* Reset Git pickers when navigating to another task */
+  useEffect(() => {
+    setSelectedRepoId(null);
+    setRepoDropdownOpen(false);
+    setBranchDropdownOpen(false);
+  }, [task?.id]);
+
+  /* When the task has a linked repo from the API, select matching repository row */
+  useEffect(() => {
+    const lr = task?.linked_repo?.trim();
+    if (!lr || projectRepos.length === 0) return;
+    const match = projectRepos.find((r) => repoLinkedName(r).toLowerCase() === lr.toLowerCase());
+    if (match) setSelectedRepoId(match.id);
+  }, [task?.linked_repo, projectRepos]);
 
   /* ─ navigation ─ */
   const handleNavigateBack = () => {
@@ -495,6 +543,33 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     setScope(newScope);
     setScopeDropdownOpen(false);
     if (taskId) updateTaskMutation.mutate({ taskId, scope_weight: newScope as ScopeWeight });
+  };
+
+  const selectedRepo = selectedRepoId != null ? projectRepos.find((r) => r.id === selectedRepoId) : undefined;
+  const repoButtonLabel = () => {
+    if (selectedRepo) return repoLinkedName(selectedRepo) || selectedRepo.repositoryName;
+    const lr = task?.linked_repo?.trim();
+    if (lr) return lr;
+    return 'Select repository';
+  };
+
+  const handleRepoSelect = (repo: Repository) => {
+    setSelectedRepoId(repo.id);
+    setRepoDropdownOpen(false);
+    setBranchDropdownOpen(false);
+  };
+
+  const handleBranchSelect = (branchName: string) => {
+    if (!taskId || !selectedRepo) return;
+    const linked_repo = repoLinkedName(selectedRepo);
+    if (!linked_repo) return;
+    setBranchDropdownOpen(false);
+    setLinkedBranchMutation.mutate({
+      taskId,
+      linked_repo,
+      linked_branch: branchName,
+      linked_branch_full_ref: branchToFullRef(branchName),
+    });
   };
 
   const handleUpdateTask = async () => {
@@ -896,6 +971,108 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Development — linked Git branch */}
+          <div className="space-y-4">
+            <p className="text-[16px] font-medium text-[#0b191f]">Development</p>
+            {reposLoading ? (
+              <div className="h-[46px] w-full animate-pulse rounded-[8px] bg-[#e4eaec]" />
+            ) : projectRepos.length === 0 ? (
+              <p className="text-[13px] leading-snug text-[#727d83]">
+                Link a repository to this project first (project settings or onboarding), then you can attach a branch to
+                this task.
+              </p>
+            ) : (
+              <>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRepoDropdownOpen(!repoDropdownOpen);
+                      setBranchDropdownOpen(false);
+                    }}
+                    className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
+                  >
+                    <span className="min-w-0 truncate text-left text-[16px] font-medium text-[#0b191f]">
+                      {repoButtonLabel()}
+                    </span>
+                    <ChevronDown size={16} className="shrink-0" />
+                  </button>
+                  {repoDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-[240px] overflow-y-auto overflow-x-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md">
+                      {projectRepos.map((r) => {
+                        const name = repoLinkedName(r) || r.repositoryName;
+                        return (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => handleRepoSelect(r)}
+                            className={`flex w-full items-center px-4 py-3 text-left text-[14px] font-medium hover:bg-[#f0f3f5] ${
+                              selectedRepoId === r.id ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                            }`}
+                          >
+                            <span className="min-w-0 truncate">{name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {selectedRepoId != null && (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      disabled={branchesLoading && branchList.length === 0}
+                      onClick={() => {
+                        if (!(branchesLoading && branchList.length === 0)) {
+                          setBranchDropdownOpen(!branchDropdownOpen);
+                          setRepoDropdownOpen(false);
+                        }
+                      }}
+                      className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <span className="min-w-0 truncate text-left text-[16px] font-medium text-[#0b191f]">
+                        {branchesLoading && branchList.length === 0
+                          ? 'Loading branches…'
+                          : task?.linked_branch && selectedRepo && repoLinkedName(selectedRepo).toLowerCase() === (task.linked_repo || '').toLowerCase()
+                            ? task.linked_branch
+                            : 'Select branch'}
+                      </span>
+                      <ChevronDown size={16} className="shrink-0" />
+                    </button>
+                    {branchesFetching && branchList.length > 0 && (
+                      <p className="text-[12px] text-[#727d83]">Refreshing branches…</p>
+                    )}
+                    {branchDropdownOpen && !(branchesLoading && branchList.length === 0) && (
+                      <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-[240px] overflow-y-auto overflow-x-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md">
+                        {branchList.length === 0 && !branchesLoading ? (
+                          <p className="px-4 py-3 text-[13px] text-[#727d83]">No branches found.</p>
+                        ) : (
+                          branchList.map((b) => (
+                            <button
+                              key={b.name}
+                              type="button"
+                              onClick={() => handleBranchSelect(b.name)}
+                              disabled={setLinkedBranchMutation.isPending}
+                              className={`flex w-full items-center px-4 py-3 text-left text-[14px] font-medium hover:bg-[#f0f3f5] disabled:opacity-50 ${
+                                task?.linked_branch === b.name ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                              }`}
+                            >
+                              <span className="min-w-0 truncate">{b.name}</span>
+                              {b.default ? (
+                                <span className="ml-2 shrink-0 text-[11px] uppercase text-[#727d83]">default</span>
+                              ) : null}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Dates */}

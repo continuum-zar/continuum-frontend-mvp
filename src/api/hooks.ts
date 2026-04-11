@@ -48,6 +48,7 @@ import {
     createTask,
     updateTaskStatus,
     updateTask,
+    setTaskLinkedBranch,
     deleteTask,
     fetchTaskComments,
     createTaskComment,
@@ -509,6 +510,37 @@ export function useUpdateTask() {
         },
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to update task'));
+        },
+        onSettled: (_data, _err, variables) => {
+            invalidateTasksForCachedTaskProject(queryClient, variables.taskId);
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
+
+export function useSetTaskLinkedBranch() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            taskId,
+            linked_repo,
+            linked_branch,
+            linked_branch_full_ref,
+        }: {
+            taskId: string | number;
+            linked_repo: string;
+            linked_branch: string;
+            linked_branch_full_ref?: string | null;
+        }) => setTaskLinkedBranch(taskId, { linked_repo, linked_branch, linked_branch_full_ref }),
+        onSuccess: (_data, { taskId }) => {
+            toast.success('Branch linked to task');
+            if (taskId) {
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
+            }
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to link branch'));
         },
         onSettled: (_data, _err, variables) => {
             invalidateTasksForCachedTaskProject(queryClient, variables.taskId);
