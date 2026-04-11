@@ -6,6 +6,7 @@ import { Check, ChevronRight, LogOut, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
+import { getApiErrorMessage, updateCurrentUserProfile } from "@/api";
 import { useAuthStore } from "@/store/authStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
 
@@ -136,10 +137,12 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const authLoading = useAuthStore((s) => s.isLoading);
+  const checkAuth = useAuthStore((s) => s.checkAuth);
   const [section, setSection] = useState<SettingsSection>("general");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [occupation, setOccupation] = useState("");
+  const [gitCommitEmail, setGitCommitEmail] = useState("");
+  const [savePending, setSavePending] = useState(false);
   const [notificationPrefs, setNotificationPrefs] = useState(defaultNotificationPrefs);
   const [invoiceCurrency, setInvoiceCurrency] = useState<(typeof INVOICE_CURRENCIES)[number]>("ZAR");
   const [invoiceHourlyRate, setInvoiceHourlyRate] = useState("200");
@@ -153,11 +156,11 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     if (user) {
       setFirstName(user.first_name ?? "");
       setLastName(user.last_name ?? "");
-      setOccupation("");
+      setGitCommitEmail(user.git_commit_email?.trim() ?? "");
     } else {
       setFirstName("");
       setLastName("");
-      setOccupation("");
+      setGitCommitEmail("");
     }
   }, [open, user]);
 
@@ -187,7 +190,25 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       : "?";
   const avatarBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#e19c02";
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (section === "general") {
+      setSavePending(true);
+      try {
+        await updateCurrentUserProfile({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          git_commit_email: gitCommitEmail.trim() ? gitCommitEmail.trim() : null,
+        });
+        await checkAuth(true);
+        toast.success("Settings saved");
+        handleOpenChange(false);
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, "Could not save settings"));
+      } finally {
+        setSavePending(false);
+      }
+      return;
+    }
     toast.success("Settings saved");
     handleOpenChange(false);
   };
@@ -302,15 +323,19 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
                   <label className="flex flex-col gap-3">
                     <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                      Occupation
+                      Git commit email
                     </span>
                     <input
-                      type="text"
-                      value={occupation}
-                      onChange={(e) => setOccupation(e.target.value)}
-                      placeholder="e.g. Product Designer"
+                      type="email"
+                      value={gitCommitEmail}
+                      onChange={(e) => setGitCommitEmail(e.target.value)}
+                      placeholder="Same as Git author if different from login"
+                      autoComplete="email"
                       className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-ring"
                     />
+                    <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-[#727d83]">
+                      Used to attribute pushes when your Git config email differs from your Continuum account.
+                    </p>
                   </label>
                 </div>
               )}
@@ -485,10 +510,11 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={handleSave}
-                  className="h-10 rounded-[8px] bg-[#0b191f] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => void handleSave()}
+                  disabled={savePending}
+                  className="h-10 rounded-[8px] bg-[#0b191f] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Save
+                  {savePending ? "Saving…" : "Save"}
                 </button>
               </div>
             )}
