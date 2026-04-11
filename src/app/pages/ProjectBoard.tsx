@@ -1435,7 +1435,7 @@ export function ProjectBoard() {
             <h3 className="text-muted-foreground text-sm font-bold tracking-widest uppercase">Discord Integration</h3>
           </div>
           <p className="text-xs text-muted-foreground mb-3">
-            Discord Server Settings → Integrations → Webhooks. You’ll get notified on task creation and card movements (who moved it, task title, previous and new list).
+            Discord Server Settings → Integrations → Webhooks. Open the Discord integration modal from the dashboard bell to choose which project and task events notify this channel.
           </p>
           <div className="bg-card border border-border rounded-lg p-6">
             {integrationsQuery.isLoading ? (

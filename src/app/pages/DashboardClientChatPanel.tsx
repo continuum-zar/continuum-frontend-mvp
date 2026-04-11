@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Bot, Send } from 'lucide-react';
 import type { Variants } from 'motion/react';
+import { PlannerAssistantMarkdown } from '@/app/components/planner/PlannerAssistantMarkdown';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Avatar, AvatarFallback } from '@/app/components/ui/avatar';
@@ -49,7 +50,11 @@ export const DashboardClientChatPanel = memo(function DashboardClientChatPanel({
             <div
               className={`p-3 rounded-xl text-sm max-w-[85%] ${m.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-muted rounded-tl-none'}`}
             >
-              {m.content}
+              {m.role === 'user' ? (
+                m.content
+              ) : (
+                <PlannerAssistantMarkdown content={m.content} />
+              )}
             </div>
           </div>
         ))}

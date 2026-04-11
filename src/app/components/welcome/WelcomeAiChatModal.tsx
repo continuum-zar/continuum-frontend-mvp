@@ -34,6 +34,7 @@ import {
   type CreateTaskModalPrefill,
   type ChecklistRow,
 } from "../CreateTaskModal";
+import { PlannerAssistantMarkdown } from "../planner/PlannerAssistantMarkdown";
 
 /** Figma — base panel 14:3223 / welcome mock 14:3453, 395×537 */
 const imgChevronDown = mcpAsset("efd29821-4b68-45a8-a943-000591716212");
@@ -609,9 +610,7 @@ export function WelcomeAiChatModal({
                                 Thought
                               </p>
                             </div>
-                            <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-[#0b191f]">
-                              {MOCK_AI_BODY}
-                            </p>
+                            <PlannerAssistantMarkdown content={MOCK_AI_BODY} />
                           </div>
                         </div>
                       </div>
@@ -883,14 +882,13 @@ function ReportingAssistantPanel({
                       Thought
                     </p>
                   </div>
-                  <p
-                    className={cn(
-                      "w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic",
-                      m.isError ? "text-[#dc2626]" : "text-[#0b191f]",
-                    )}
-                  >
-                    {m.content}
-                  </p>
+                  {m.isError ? (
+                    <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-[#dc2626]">
+                      {m.content}
+                    </p>
+                  ) : (
+                    <PlannerAssistantMarkdown content={m.content} />
+                  )}
                   {typeof m.confidence === "number" && m.confidence < 0.5 && !m.isError && (
                     <p className="w-full font-['Inter',sans-serif] text-[11px] font-normal leading-[normal] text-[#b45309]">
                       Lower confidence — verify against the project dashboard if needed.

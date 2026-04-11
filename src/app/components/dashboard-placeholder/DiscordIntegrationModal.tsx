@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
 
 import {
   useCreateIntegration,
@@ -10,6 +10,11 @@ import {
   useTestIntegration,
   useUpdateIntegration,
 } from "@/api/hooks";
+
+import {
+  DEFAULT_NOTIFICATION_TRIGGERS,
+  type NotificationTriggers,
+} from "@/types/integration";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import { cn } from "../ui/utils";
@@ -24,12 +29,47 @@ type DiscordIntegrationModalProps = {
   projectId?: number | null;
 };
 
+const SECTIONS: {
+  title: string;
+  items: { key: keyof NotificationTriggers; label: string }[];
+}[] = [
+  {
+    title: "Project",
+    items: [
+      { key: "project_renamed", label: "Project renamed" },
+      { key: "project_member_joined", label: "Member joined" },
+      { key: "project_member_removed", label: "Member removed" },
+    ],
+  },
+  {
+    title: "Tasks",
+    items: [
+      { key: "task_created", label: "Task created" },
+      { key: "task_status_changed", label: "Task status changed" },
+      { key: "task_assignee_changed", label: "Assignee changed" },
+      { key: "task_deleted", label: "Task deleted" },
+      { key: "task_comment_added", label: "Comment added" },
+    ],
+  },
+  {
+    title: "Milestones",
+    items: [
+      { key: "milestone_created", label: "Milestone created" },
+      { key: "milestone_updated", label: "Milestone updated" },
+      { key: "milestone_deleted", label: "Milestone deleted" },
+    ],
+  },
+];
+
 export function DiscordIntegrationModal({
   open,
   onOpenChange,
   projectId,
 }: DiscordIntegrationModalProps) {
   const [webhookUrl, setWebhookUrl] = useState("");
+  const [triggers, setTriggers] = useState<NotificationTriggers>(
+    DEFAULT_NOTIFICATION_TRIGGERS,
+  );
   const hydratedFromServerRef = useRef(false);
 
   const integrationsQuery = useProjectIntegrations(
@@ -50,6 +90,7 @@ export function DiscordIntegrationModal({
     }
     if (projectId == null) {
       setWebhookUrl("");
+      setTriggers(DEFAULT_NOTIFICATION_TRIGGERS);
       return;
     }
     if (integrationsQuery.isLoading || !integrationsQuery.isSuccess) return;
@@ -59,6 +100,14 @@ export function DiscordIntegrationModal({
       (i) => i.integration_type === "discord",
     );
     setWebhookUrl(d?.webhook_url ?? "");
+    if (d?.notification_triggers) {
+      setTriggers({
+        ...DEFAULT_NOTIFICATION_TRIGGERS,
+        ...d.notification_triggers,
+      });
+    } else {
+      setTriggers(DEFAULT_NOTIFICATION_TRIGGERS);
+    }
   }, [
     open,
     projectId,
@@ -68,7 +117,10 @@ export function DiscordIntegrationModal({
   ]);
 
   const handleClose = (next: boolean) => {
-    if (!next) setWebhookUrl("");
+    if (!next) {
+      setWebhookUrl("");
+      setTriggers(DEFAULT_NOTIFICATION_TRIGGERS);
+    }
     onOpenChange(next);
   };
 
@@ -86,13 +138,17 @@ export function DiscordIntegrationModal({
       updateIntegration.mutate(
         {
           integrationId: discordIntegration.id,
-          body: { webhook_url: trimmed },
+          body: { webhook_url: trimmed, notification_triggers: triggers },
         },
         { onSuccess: () => handleClose(false) },
       );
     } else {
       createIntegration.mutate(
-        { integration_type: "discord", webhook_url: trimmed },
+        {
+          integration_type: "discord",
+          webhook_url: trimmed,
+          notification_triggers: triggers,
+        },
         { onSuccess: () => handleClose(false) },
       );
     }
@@ -112,6 +168,10 @@ export function DiscordIntegrationModal({
     !busy &&
     !testIntegration.isPending;
 
+  const toggleTrigger = (key: keyof NotificationTriggers) => {
+    setTriggers((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogPortal>
@@ -119,14 +179,14 @@ export function DiscordIntegrationModal({
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white font-['Satoshi',sans-serif] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            "fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white font-['Satoshi',sans-serif] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           )}
         >
           <DialogPrimitive.Title className="sr-only">
             Discord integration
           </DialogPrimitive.Title>
 
-          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="grid w-full grid-cols-[20px_1fr_20px] shrink-0 items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
             <DialogClose asChild>
               <button
                 type="button"
@@ -143,7 +203,7 @@ export function DiscordIntegrationModal({
           </div>
 
           <div
-            className="px-9 py-6"
+            className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-9 py-6"
             style={{
               backgroundImage:
                 "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
@@ -152,8 +212,8 @@ export function DiscordIntegrationModal({
             {projectId == null ? (
               <p className="text-left text-[15px] leading-relaxed text-[#606d76]">
                 Open one of your projects from the dashboard to link a Discord
-                webhook. You’ll get notifications for task creation and when
-                cards move on the board.
+                webhook. You can choose which project and task events send
+                notifications to your channel.
               </p>
             ) : integrationsQuery.isLoading ? (
               <div className="flex items-center justify-center gap-2 py-10 text-[14px] text-[#606d76]">
@@ -165,10 +225,11 @@ export function DiscordIntegrationModal({
                 Couldn’t load integration settings. Try again later.
               </p>
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-5">
                 <p className="text-[14px] leading-relaxed text-[#606d76]">
                   In Discord: Server Settings → Integrations → Webhooks. Paste
-                  the webhook URL below.
+                  the webhook URL below, then choose which events notify this
+                  channel.
                 </p>
                 <div className="flex flex-col gap-1">
                   <label
@@ -187,6 +248,56 @@ export function DiscordIntegrationModal({
                     className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76]/40 focus-visible:border-[#1466ff] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                   />
                 </div>
+
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="text-[15px] font-semibold text-[#0b191f]">
+                      Actions
+                    </p>
+                    <p className="text-[13px] text-[#606d76]">
+                      Select the events that trigger a notification.
+                    </p>
+                  </div>
+                  {SECTIONS.map((section) => (
+                    <div key={section.title} className="flex flex-col gap-2">
+                      <p className="text-[13px] font-semibold text-[#252014]">
+                        {section.title}
+                      </p>
+                      <ul className="flex flex-col gap-2 pl-0.5">
+                        {section.items.map(({ key, label }) => (
+                          <li key={key}>
+                            <button
+                              type="button"
+                              aria-pressed={triggers[key]}
+                              onClick={() => toggleTrigger(key)}
+                              className="flex w-full cursor-pointer items-center gap-2 rounded-[4px] py-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#24B5F8]/40"
+                            >
+                              <span
+                                className={cn(
+                                  "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-solid transition-colors",
+                                  triggers[key]
+                                    ? "border-0 bg-[#24B5F8]"
+                                    : "border-[#ebedee] bg-[#f9f9f9]",
+                                )}
+                                aria-hidden
+                              >
+                                {triggers[key] ? (
+                                  <Check
+                                    className="size-[13px] text-white"
+                                    strokeWidth={2.5}
+                                  />
+                                ) : null}
+                              </span>
+                              <span className="font-['Inter',sans-serif] text-[14px] font-normal leading-[19px] text-[#0b191f]">
+                                {label}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -203,9 +314,7 @@ export function DiscordIntegrationModal({
             {projectId != null && discordIntegration != null && (
               <button
                 type="button"
-                onClick={() =>
-                  testIntegration.mutate(discordIntegration.id)
-                }
+                onClick={() => testIntegration.mutate(discordIntegration.id)}
                 disabled={!canTest}
                 className={cn(
                   "inline-flex h-10 min-w-[100px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 text-[14px] font-semibold text-[#252014] transition-colors",

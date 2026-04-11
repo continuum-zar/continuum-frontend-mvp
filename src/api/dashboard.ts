@@ -229,6 +229,8 @@ export async function fetchClientProjectProgress(projectId: number | string): Pr
 
 export interface ProjectQueryRequest {
     query: string;
+    /** When true (default), backend includes semantic retrieval over indexed project content. */
+    use_rag?: boolean;
 }
 
 /** Structured signal sources returned with project query answers (matches API). */
