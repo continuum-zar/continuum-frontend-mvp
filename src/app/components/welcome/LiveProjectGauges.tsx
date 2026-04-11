@@ -331,9 +331,14 @@ export function PlannerConfidenceGauge({ value }: { value: number }) {
    Commits gauge — segmented arc
    ================================================================ */
 
-const COMMIT_GREEN = "#1ED760";
-const COMMIT_YELLOW = "#FAB707";
-const COMMIT_GREY = "#D1D5DB";
+/** Segments in {@link CommitsGauge} — reuse for commit-type pills (e.g. recent activity). */
+export const COMMIT_GAUGE_SHIPPED = "#1ED760";
+export const COMMIT_GAUGE_IN_PROGRESS = "#FAB707";
+export const COMMIT_GAUGE_TRIVIAL = "#D1D5DB";
+
+const COMMIT_GREEN = COMMIT_GAUGE_SHIPPED;
+const COMMIT_YELLOW = COMMIT_GAUGE_IN_PROGRESS;
+const COMMIT_GREY = COMMIT_GAUGE_TRIVIAL;
 
 function CommitsGauge({
   structural,

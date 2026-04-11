@@ -136,6 +136,8 @@ export {
     fetchProjectStats,
     fetchMemberContributions,
 } from './dashboard';
+export { fetchProjectGitContributions } from './gitContributions';
+export type { GitContributionRead, GitContributionClassification } from './gitContributions';
 export {
     fetchUserHours,
     fetchUserHoursByDay,

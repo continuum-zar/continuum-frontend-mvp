@@ -4,16 +4,17 @@
  */
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { parseApiUtcDateTime } from "@/lib/parseApiUtcDateTime";
-import { Download, FileText, Link2, Loader2, X } from "lucide-react";
+import { Download, ExternalLink, FileText, GitCommit, Link2, Loader2, X } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
 import {
   downloadProjectAttachment,
   fetchClassificationBreakdown,
   fetchMemberContributions,
+  fetchProjectGitContributions,
   fetchProjectHealth,
   fetchProjectStats,
   getApiErrorMessage,
@@ -28,7 +29,7 @@ import {
   useUnlinkRepository,
   useWikiScanStatus,
 } from "@/api";
-import type { ScanStatusResponse } from "@/api";
+import type { GitContributionClassification, GitContributionRead, ScanStatusResponse } from "@/api";
 import { toast } from "sonner";
 import type { Attachment } from "@/types/attachment";
 import type { Member } from "@/types/member";
@@ -37,7 +38,13 @@ import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 import { AddResourceModal } from "./AddResourceModal";
 import { WelcomeLinkRepositoryModal } from "./WelcomeLinkRepositoryModal";
-import { LiveHeroGauge, LiveMetricsRow } from "./LiveProjectGauges";
+import {
+  COMMIT_GAUGE_IN_PROGRESS,
+  COMMIT_GAUGE_SHIPPED,
+  COMMIT_GAUGE_TRIVIAL,
+  LiveHeroGauge,
+  LiveMetricsRow,
+} from "./LiveProjectGauges";
 import { WelcomeMilestoneTimeline } from "./WelcomeMilestoneTimeline";
 
 const imgLucidePlus = mcpAsset("91e46d01-6ae8-4fc9-aa4e-13b1040fb3cf");
@@ -133,6 +140,208 @@ function EmptyPlaceholderCard({ icon, title }: { icon: string; title: string }) 
         </div>
         <p className="font-['Satoshi',sans-serif] text-[16px] font-bold leading-normal text-[#727d83]">{title}</p>
       </div>
+    </div>
+  );
+}
+
+function firstCommitLine(text: string | null | undefined): string {
+  if (!text?.trim()) return "";
+  return text.trim().split(/\r?\n/)[0] ?? "";
+}
+
+function commitSummaryLine(c: GitContributionRead): string {
+  const line = firstCommitLine(c.commit_message);
+  if (line) return line.length > 120 ? `${line.slice(0, 117)}…` : line;
+  return `Commit ${c.commit_hash.slice(0, 7)}`;
+}
+
+/** Labels match the Commits gauge legend (Shipped / In Progress / Trivial). */
+function classificationLabel(classification: GitContributionClassification | null | undefined): string {
+  if (classification == null) return "Classifying…";
+  switch (classification) {
+    case "TRIVIAL":
+      return "Trivial";
+    case "INCREMENTAL":
+      return "In Progress";
+    case "STRUCTURAL":
+      return "Shipped";
+    default:
+      return "Classifying…";
+  }
+}
+
+function classificationPillProps(
+  classification: GitContributionClassification | null | undefined,
+): { className: string; style?: CSSProperties } {
+  const base =
+    "inline-flex shrink-0 rounded-full border border-solid px-2.5 py-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium leading-none";
+  if (classification == null) {
+    return {
+      className: `${base} border-[#ebedee] bg-[#f7f8f9] text-[#727d83]`,
+    };
+  }
+  switch (classification) {
+    case "STRUCTURAL":
+      return {
+        className: `${base} text-[#14532d]`,
+        style: {
+          borderColor: COMMIT_GAUGE_SHIPPED,
+          backgroundColor: "rgba(30, 215, 96, 0.14)",
+        },
+      };
+    case "INCREMENTAL":
+      return {
+        className: `${base} text-[#92400e]`,
+        style: {
+          borderColor: COMMIT_GAUGE_IN_PROGRESS,
+          backgroundColor: "rgba(250, 183, 7, 0.18)",
+        },
+      };
+    case "TRIVIAL":
+      return {
+        className: `${base} text-[#4b5563]`,
+        style: {
+          borderColor: COMMIT_GAUGE_TRIVIAL,
+          backgroundColor: "rgba(209, 213, 219, 0.45)",
+        },
+      };
+    default:
+      return {
+        className: `${base} border-[#ebedee] bg-[#f7f8f9] text-[#727d83]`,
+      };
+  }
+}
+
+/** Same calendar style as milestone timeline rows (dd-mm-yyyy). */
+function formatActivityTimelineDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = parseApiUtcDateTime(iso);
+  if (!d) return "—";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+const RECENT_ACTIVITY_PAGE_SIZE = 7;
+const RECENT_ACTIVITY_FETCH_LIMIT = 100;
+
+function LiveRecentActivityList({ projectId, members }: { projectId: number; members: Member[] }) {
+  const [activityExpanded, setActivityExpanded] = useState(false);
+
+  useEffect(() => {
+    setActivityExpanded(false);
+  }, [projectId]);
+
+  const memberNameByUserId = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const mem of members) {
+      m.set(mem.userId, mem.name);
+    }
+    return m;
+  }, [members]);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["projects", projectId, "git-contributions", "recent"],
+    queryFn: () => fetchProjectGitContributions(projectId, { limit: RECENT_ACTIVITY_FETCH_LIMIT }),
+    enabled: projectId != null,
+    staleTime: 30_000,
+    refetchInterval: 45_000,
+  });
+
+  const rows = data?.data ?? [];
+  const displayRows = useMemo(() => {
+    if (rows.length <= RECENT_ACTIVITY_PAGE_SIZE || activityExpanded) return rows;
+    return rows.slice(0, RECENT_ACTIVITY_PAGE_SIZE);
+  }, [rows, activityExpanded]);
+  const hasMoreThanPage = rows.length > RECENT_ACTIVITY_PAGE_SIZE;
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[185px] w-full items-center justify-center rounded-[12px] bg-white font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+        <Loader2 className="size-5 animate-spin" strokeWidth={2} aria-hidden />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex min-h-[120px] w-full items-center justify-center rounded-[12px] border border-solid border-[#ebedee] bg-white px-4 py-6 text-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+        Couldn&apos;t load recent activity.
+      </div>
+    );
+  }
+
+  if (rows.length === 0) {
+    return <EmptyPlaceholderCard icon={imgLucideActivity} title="No recent activity" />;
+  }
+
+  return (
+    <div className="flex w-full max-w-[474px] flex-col">
+      <div className="relative flex flex-col gap-4">
+        <div
+          className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
+          aria-hidden
+        />
+        {displayRows.map((c) => {
+          const author = c.user_name?.trim() || memberNameByUserId.get(c.user_id) || "Contributor";
+          const summary = commitSummaryLine(c);
+          const branchLabel = c.branch?.trim() || "default";
+          const titleLine = `${author} pushed to ${branchLabel}`;
+          const dateLabel = formatActivityTimelineDate(c.created_at);
+          return (
+            <div
+              key={c.id}
+              className="relative z-[1] flex max-w-[474px] items-start overflow-hidden rounded-[8px] pr-2"
+            >
+              <div className="flex w-[50px] shrink-0 justify-center">
+                <div
+                  className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]"
+                  aria-hidden
+                >
+                  <GitCommit className="size-4 text-[#606d76]" strokeWidth={2} />
+                </div>
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col justify-center py-1.5 pl-4 pr-2 font-['Satoshi',sans-serif] font-medium leading-normal">
+                <p className="w-[183px] max-w-full truncate text-[12px] text-[#727d83]" title={c.created_at ?? undefined}>
+                  {dateLabel}
+                </p>
+                <p className="text-[16px] text-[#0b191f]">{titleLine}</p>
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                  <span {...classificationPillProps(c.classification)}>
+                    {classificationLabel(c.classification)}
+                  </span>
+                  {c.commit_url ? (
+                    <a
+                      href={c.commit_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-w-0 max-w-full items-center gap-1 truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 hover:text-[#0d52cc]"
+                      title={summary}
+                    >
+                      <span className="min-w-0 truncate">{summary}</span>
+                      <ExternalLink className="size-3 shrink-0" strokeWidth={2} aria-hidden />
+                    </a>
+                  ) : (
+                    <p className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-[#727d83]" title={summary}>
+                      {summary}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {hasMoreThanPage ? (
+        <button
+          type="button"
+          onClick={() => setActivityExpanded((v) => !v)}
+          className="mt-2 self-start pl-[66px] font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 outline-none hover:text-[#0d52cc] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40"
+        >
+          {activityExpanded ? "Show less" : "Show more"}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -429,7 +638,7 @@ export function WelcomeEmptyProjectBody({
 
       <div className="flex w-full max-w-[815px] flex-col gap-4">
         <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Recent activity</p>
-        <EmptyPlaceholderCard icon={imgLucideActivity} title="No recent activity" />
+        <LiveRecentActivityList projectId={projectId} members={members} />
       </div>
 
       <div className="flex w-full max-w-[815px] flex-col gap-4">
