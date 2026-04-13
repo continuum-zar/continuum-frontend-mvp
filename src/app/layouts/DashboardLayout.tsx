@@ -18,6 +18,7 @@ import { useAuthStore } from '../../store/authStore';
 
 import { useRole } from '../context/RoleContext';
 import { ErrorBoundary } from '../ErrorBoundary';
+import { WORKSPACE_BASE, workspaceJoin } from '@/lib/workspacePaths';
 
 export function DashboardLayout() {
   const navigate = useNavigate();
@@ -27,8 +28,7 @@ export function DashboardLayout() {
   const logout = useAuthStore((state) => state.logout);
   const isLoading = useAuthStore((state) => state.isLoading);
 
-  const boardHref =
-    userRole === 'Client' ? '/dashboard-placeholder' : '/dashboard-placeholder/entry';
+  const boardHref = userRole === 'Client' ? WORKSPACE_BASE : workspaceJoin('entry');
   const boardLabel = userRole === 'Client' ? 'Dashboard' : 'Board';
 
   const displayName = user
@@ -67,7 +67,7 @@ export function DashboardLayout() {
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           <PrefetchLink
             to={boardHref}
-            end={boardHref === '/dashboard-placeholder'}
+            end={boardHref === WORKSPACE_BASE}
             onPrefetch={(queryClient) => {
               const uid = user?.id;
               if (uid == null || uid === '') return;

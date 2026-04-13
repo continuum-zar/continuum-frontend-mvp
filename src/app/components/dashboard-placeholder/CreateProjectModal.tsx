@@ -6,6 +6,7 @@ import { ArrowLeft, CalendarPlus } from "lucide-react";
 import { useNavigate } from "react-router";
 
 import { useCreateProject } from "@/api/hooks";
+import { projectMainHref } from "@/app/data/dashboardPlaceholderProjects";
 import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
@@ -52,7 +53,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
       setProjectName("");
       setDescription("");
       setDueDate("");
-      navigate(`/dashboard-placeholder/project/${data.id}`);
+      navigate(projectMainHref(String(data.id)));
     } catch {
       // Toast handled in useCreateProject
     }

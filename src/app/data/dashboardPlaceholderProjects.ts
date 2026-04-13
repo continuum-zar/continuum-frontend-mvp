@@ -1,7 +1,14 @@
 /**
- * Dashboard-placeholder routing helpers.
- * "welcome" = demo overview at /welcome; numeric ids = API projects at /project/:id.
+ * Workspace shell routing helpers.
+ * "welcome" = demo overview at /workspace/welcome; numeric ids = API projects at /workspace/project/:id.
  */
+
+import {
+  WORKSPACE_BASE,
+  WORKSPACE_SPRINT_SEGMENT,
+  isWorkspaceSprintSurfacePath,
+  workspaceJoin,
+} from "@/lib/workspacePaths";
 
 export const WELCOME_PROJECT_ID = "welcome" as const;
 
@@ -26,23 +33,23 @@ export function getDashboardProjectById(id: string) {
   return undefined;
 }
 
-/** Project overview: welcome uses /welcome; API projects use /project/:numericId */
+/** Project overview: welcome uses /workspace/welcome; API projects use /workspace/project/:numericId */
 export function projectMainHref(projectId: string): string {
-  if (projectId === WELCOME_PROJECT_ID) return "/dashboard-placeholder/welcome";
-  return `/dashboard-placeholder/project/${projectId}`;
+  if (projectId === WELCOME_PROJECT_ID) return workspaceJoin("welcome");
+  return workspaceJoin("project", projectId);
 }
 
 /** Sprint / kanban board. Optional milestone id scopes the nav row and `?milestone=` for deep links. */
 export function projectSprintHref(projectId: string, milestoneId?: string): string {
-  if (projectId === WELCOME_PROJECT_ID) return "/dashboard-placeholder/get-started";
+  if (projectId === WELCOME_PROJECT_ID) return workspaceJoin(WORKSPACE_SPRINT_SEGMENT);
   const q = new URLSearchParams();
   q.set("project", projectId);
   if (milestoneId) q.set("milestone", milestoneId);
-  return `/dashboard-placeholder/get-started?${q.toString()}`;
+  return `${workspaceJoin(WORKSPACE_SPRINT_SEGMENT)}?${q.toString()}`;
 }
 
 /**
- * Time logs / Activity views under get-started. Pass `milestoneId` so the URL round-trips back to the
+ * Time logs / Activity under `/workspace/sprint/time-logs`. Pass `milestoneId` so the URL round-trips back to the
  * Sprint board with the same milestone (breadcrumb + title stay correct).
  */
 export function projectTimeLogsHref(
@@ -54,34 +61,37 @@ export function projectTimeLogsHref(
   q.set("project", projectId);
   q.set("tab", tab);
   if (milestoneId) q.set("milestone", milestoneId);
-  return `/dashboard-placeholder/get-started/time-logs?${q.toString()}`;
+  return `${workspaceJoin(WORKSPACE_SPRINT_SEGMENT, "time-logs")}?${q.toString()}`;
 }
 
 /**
  * Which project is expanded in the rail (sprint child may show when milestones exist). Null = none.
  */
 export function expandedProjectFromLocation(pathname: string, projectParam: string | null): string | null {
-  if (pathname.startsWith("/dashboard-placeholder/welcome")) return WELCOME_PROJECT_ID;
-  if (pathname.startsWith("/dashboard-placeholder/project/")) {
-    const m = pathname.match(/^\/dashboard-placeholder\/project\/([^/]+)/);
+  if (pathname.startsWith(`${WORKSPACE_BASE}/welcome`)) return WELCOME_PROJECT_ID;
+  if (pathname.startsWith(`${WORKSPACE_BASE}/project/`)) {
+    const m = pathname.match(new RegExp(`^${escapeRegExp(WORKSPACE_BASE)}/project/([^/]+)`));
     const id = m?.[1];
     if (id && (id === WELCOME_PROJECT_ID || isApiProjectId(id))) return id;
   }
-  if (pathname.startsWith("/dashboard-placeholder/get-started")) {
+  if (isWorkspaceSprintSurfacePath(pathname)) {
     if (projectParam && (projectParam === WELCOME_PROJECT_ID || isApiProjectId(projectParam))) return projectParam;
     return WELCOME_PROJECT_ID;
   }
-  if (pathname.startsWith("/dashboard-placeholder/task/")) {
+  if (pathname.startsWith(`${WORKSPACE_BASE}/task/`)) {
     if (projectParam && (projectParam === WELCOME_PROJECT_ID || isApiProjectId(projectParam))) return projectParam;
     return WELCOME_PROJECT_ID;
   }
   return null;
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+}
+
 export function isSprintNavActive(projectId: string, pathname: string, projectParam: string | null): boolean {
   const onSprintSurface =
-    pathname.startsWith("/dashboard-placeholder/get-started") ||
-    pathname.startsWith("/dashboard-placeholder/task/");
+    isWorkspaceSprintSurfacePath(pathname) || pathname.startsWith(`${WORKSPACE_BASE}/task/`);
   if (!onSprintSurface) return false;
   if (projectId === WELCOME_PROJECT_ID) return !projectParam || projectParam === WELCOME_PROJECT_ID;
   return projectParam === projectId;
@@ -90,17 +100,17 @@ export function isSprintNavActive(projectId: string, pathname: string, projectPa
 /** True when viewing this project's overview (not the kanban sprint). */
 export function isProjectOverviewActive(projectId: string, pathname: string): boolean {
   if (projectId === WELCOME_PROJECT_ID) {
-    return pathname === "/dashboard-placeholder/welcome" || pathname.startsWith("/dashboard-placeholder/welcome/");
+    return pathname === workspaceJoin("welcome") || pathname.startsWith(`${workspaceJoin("welcome")}/`);
   }
   return (
-    pathname === `/dashboard-placeholder/project/${projectId}` ||
-    pathname.startsWith(`/dashboard-placeholder/project/${projectId}/`)
+    pathname === workspaceJoin("project", projectId) ||
+    pathname.startsWith(`${workspaceJoin("project", projectId)}/`)
   );
 }
 
 /** Resolve active project id for overview pages (welcome demo vs API project param). */
 export function resolveDashboardProjectId(pathname: string, routeProjectId: string | undefined): string {
-  if (pathname.startsWith("/dashboard-placeholder/project/") && routeProjectId) {
+  if (pathname.startsWith(`${WORKSPACE_BASE}/project/`) && routeProjectId) {
     if (routeProjectId === WELCOME_PROJECT_ID || isApiProjectId(routeProjectId)) return routeProjectId;
   }
   return WELCOME_PROJECT_ID;

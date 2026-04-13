@@ -3,6 +3,7 @@ import { DashboardLeftRail } from "../components/dashboard-placeholder/Dashboard
 import { TaskPanels } from "../components/dashboard-placeholder/TaskPanels";
 import { TaskDetail } from "./TaskDetail";
 import { isApiProjectId } from "../data/dashboardPlaceholderProjects";
+import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from "@/lib/workspacePaths";
 
 export function DashboardPlaceholderTaskView() {
   const navigate = useNavigate();
@@ -14,17 +15,17 @@ export function DashboardPlaceholderTaskView() {
 
   const handleBack = () => {
     if (searchParams.get("from") === "assigned") {
-      navigate("/dashboard-placeholder/assigned");
+      navigate(workspaceJoin("assigned"));
       return;
     }
     if (searchParams.get("from") === "created") {
-      navigate("/dashboard-placeholder/created");
+      navigate(workspaceJoin("created"));
       return;
     }
     const qs = new URLSearchParams(searchParams);
     qs.delete("from");
     const rest = qs.toString();
-    navigate(`/dashboard-placeholder/get-started${rest ? `?${rest}` : ""}`);
+    navigate(`${workspaceJoin(WORKSPACE_SPRINT_SEGMENT)}${rest ? `?${rest}` : ""}`);
   };
 
   return (

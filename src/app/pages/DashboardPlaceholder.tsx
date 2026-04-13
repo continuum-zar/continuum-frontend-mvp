@@ -10,7 +10,9 @@ import {
   projectMainHref,
   projectSprintHref,
   projectTimeLogsHref,
+  WELCOME_PROJECT_ID,
 } from "../data/dashboardPlaceholderProjects";
+import { workspaceJoin } from "@/lib/workspacePaths";
 
 import { useProject, useProjectMembers, useProjectMilestones } from "@/api/hooks";
 import { useAuthStore } from "@/store/authStore";
@@ -414,12 +416,12 @@ export function DashboardPlaceholder() {
   const breadcrumbProjectHref =
     isLiveBoard && projectParam != null && isApiProjectId(projectParam)
       ? projectMainHref(projectParam)
-      : "/dashboard-placeholder/welcome";
+      : projectMainHref(WELCOME_PROJECT_ID);
 
   const sprintBoardHref =
     isLiveBoard && projectParam != null && isApiProjectId(projectParam)
       ? projectSprintHref(projectParam, milestoneParam ?? undefined)
-      : "/dashboard-placeholder/get-started";
+      : projectSprintHref(WELCOME_PROJECT_ID);
 
   /** Second breadcrumb segment + main page title under the rule — milestone name for API projects, mock label for welcome-only. */
   const milestonePageTitle =
@@ -550,7 +552,7 @@ export function DashboardPlaceholder() {
         onDragEnd={handleDragEnd}
         onDragOver={handleCardDragOver}
         onDrop={handleCardDrop(cardColumns[task.id], task.id)}
-        onClick={() => navigate(`/dashboard-placeholder/task/${task.id}`)}
+        onClick={() => navigate(workspaceJoin("task", String(task.id)))}
         style={{ order: cardOrderFor(task.id) }}
       >
         <div className={`bg-white ${isDragging ? "border-2 border-[#24B5F8]" : "border border-[#ebedee]"} border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full`}>
@@ -700,7 +702,7 @@ export function DashboardPlaceholder() {
                               "time-logs",
                               milestoneParam ?? undefined,
                             )
-                          : "/dashboard-placeholder/get-started/time-logs?populated=1&tab=time-logs"
+                          : `${projectTimeLogsHref(WELCOME_PROJECT_ID, "time-logs")}&populated=1`
                       }
                       className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       data-name="Component 3"
@@ -718,7 +720,7 @@ export function DashboardPlaceholder() {
                               "activity",
                               milestoneParam ?? undefined,
                             )
-                          : "/dashboard-placeholder/get-started/time-logs?populated=1&tab=activity"
+                          : `${projectTimeLogsHref(WELCOME_PROJECT_ID, "activity")}&populated=1`
                       }
                       className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       data-name="Component 4"
@@ -997,7 +999,7 @@ export function DashboardPlaceholder() {
                   style={{ display: cardColumns[1] !== "todo" ? "none" : undefined, order: cardOrderFor(1) }}
                   data-name="Component 118"
                   data-node-id="7:2912"
-                  onClick={() => navigate("/dashboard-placeholder/task/1")}
+                  onClick={() => navigate(workspaceJoin("task", "1"))}
                 >
                   <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2912;2437:23801">
                     <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2912;2437:23802">
@@ -1077,7 +1079,7 @@ export function DashboardPlaceholder() {
                   style={{ display: cardColumns[2] !== "todo" ? "none" : undefined, order: cardOrderFor(2) }}
                   data-name="Component 127"
                   data-node-id="7:2913"
-                  onClick={() => navigate("/dashboard-placeholder/task/2")}
+                  onClick={() => navigate(workspaceJoin("task", "2"))}
                 >
                   <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2913;2437:23801">
                     <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2913;2437:23802">
@@ -1158,7 +1160,7 @@ export function DashboardPlaceholder() {
                   style={{ display: cardColumns[3] !== "todo" ? "none" : undefined, order: cardOrderFor(3) }}
                   data-name="Component 126"
                   data-node-id="7:2914"
-                  onClick={() => navigate("/dashboard-placeholder/task/3")}
+                  onClick={() => navigate(workspaceJoin("task", "3"))}
                 >
                   <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2914;2437:23801">
                     <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2914;2437:23802">
@@ -1296,7 +1298,7 @@ export function DashboardPlaceholder() {
                   style={{ display: cardColumns[4] !== "completed" ? "none" : undefined, order: cardOrderFor(4) }}
                   data-name="Component 118"
                   data-node-id="7:2935"
-                  onClick={() => navigate("/dashboard-placeholder/task/4")}
+                  onClick={() => navigate(workspaceJoin("task", "4"))}
                 >
                   <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2935;2437:23801">
                     <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2935;2437:23802">

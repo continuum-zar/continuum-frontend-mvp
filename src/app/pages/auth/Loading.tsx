@@ -7,6 +7,7 @@ import {
   SESSION_POST_ONBOARDING_WELCOME_KEY,
 } from '@/app/components/welcome/welcomeModalAssets';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
+import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from '@/lib/workspacePaths';
 
 const LOADING_DURATION_MS = 2500;
 
@@ -66,7 +67,7 @@ export function Loading() {
           if (inviteToken && fromLogin) {
             navigate(`/invite?token=${encodeURIComponent(inviteToken)}`, { replace: true });
           } else {
-            navigate('/dashboard-placeholder/get-started', { replace: true });
+            navigate(workspaceJoin(WORKSPACE_SPRINT_SEGMENT), { replace: true });
           }
           afterNavigateWelcomeBack();
         }

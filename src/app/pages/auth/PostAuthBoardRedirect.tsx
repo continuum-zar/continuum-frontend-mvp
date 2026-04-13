@@ -5,7 +5,7 @@ import { RouteSkeleton } from "@/app/components/ui/RouteSkeleton";
 import { resolveDefaultBoardPath } from "@/lib/defaultBoardPath";
 
 /**
- * Resolves the default tasks-board URL (Welcome get-started vs first project sprint)
+ * Resolves the default tasks-board URL (Welcome sprint board vs first project sprint)
  * and replaces history. Used when an authenticated user hits `/` or similar entry points.
  */
 export function PostAuthBoardRedirect() {

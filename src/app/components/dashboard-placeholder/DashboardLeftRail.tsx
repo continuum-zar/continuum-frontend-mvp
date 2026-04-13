@@ -25,6 +25,7 @@ import {
   projectMainHref,
   projectSprintHref,
 } from "../../data/dashboardPlaceholderProjects";
+import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
 import { cn } from "../ui/utils";
 
 const imgVector = mcpAsset("2470fa31-25cd-47ac-991d-d1c4219bd28d");
@@ -156,7 +157,7 @@ function Frame1({
   return (
     <div className={className || "content-stretch flex gap-[8px] items-center relative"} data-node-id="7:72">
       <Link
-        to="/dashboard-placeholder"
+        to={WORKSPACE_BASE}
         className="text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Home"
       >
@@ -185,7 +186,7 @@ function Frame1({
         />
       </button>
       <Link
-        to="/dashboard-placeholder/assigned"
+        to={workspaceJoin("assigned")}
         className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Assigned to me"
       >
@@ -200,7 +201,7 @@ function Frame1({
         />
       </Link>
       <Link
-        to="/dashboard-placeholder/created"
+        to={workspaceJoin("created")}
         className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Created by me"
       >
@@ -505,10 +506,10 @@ export function DashboardLeftRail() {
       : "?";
   const profileAvatarBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#f0f3f5";
 
-  const isHomeActive = pathname === "/dashboard-placeholder";
+  const isHomeActive = pathname === WORKSPACE_BASE;
   const isInvoiceActive = invoiceOpen;
-  const isAssignedActive = pathname.startsWith("/dashboard-placeholder/assigned");
-  const isCreatedActive = pathname.startsWith("/dashboard-placeholder/created");
+  const isAssignedActive = pathname.startsWith(`${WORKSPACE_BASE}/assigned`);
+  const isCreatedActive = pathname.startsWith(`${WORKSPACE_BASE}/created`);
 
   return (
     <>
@@ -603,7 +604,7 @@ export function DashboardLeftRail() {
                       className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-[#151515] outline-none transition-colors hover:bg-[#f5f7f8] focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => {
                         setCreateProjectMenuOpen(false);
-                        navigate("/dashboard-placeholder/ai-planner");
+                        navigate(workspaceJoin("ai-planner"));
                       }}
                     >
                       <span

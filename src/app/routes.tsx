@@ -1,5 +1,12 @@
 import { lazy, Suspense } from "react";
-import { createBrowserRouter, Navigate, Outlet } from "react-router";
+import { createBrowserRouter, Navigate, Outlet, useLocation, useParams } from "react-router";
+import {
+  LEGACY_WORKSPACE_BASE,
+  LEGACY_WORKSPACE_GET_STARTED_SEGMENT,
+  WORKSPACE_BASE,
+  WORKSPACE_SPRINT_SEGMENT,
+  workspaceJoin,
+} from "@/lib/workspacePaths";
 import { Login } from "./pages/auth/Login";
 import { WaitlistSignUp } from "./pages/auth/WaitlistSignUp";
 import { SignUp } from "./pages/auth/SignUp";
@@ -59,6 +66,42 @@ const OnboardingFeatureInterestSelection = lazy(() =>
 );
 const OnboardingMindSelection = lazy(() => import("./pages/onboarding/MindSelection"));
 
+/** Preserves query + hash when rewriting legacy `/dashboard-placeholder/*` URLs. */
+function LegacyWorkspacePathRedirect({ targetPathname }: { targetPathname: string }) {
+  const location = useLocation();
+  return <Navigate to={{ pathname: targetPathname, search: location.search, hash: location.hash }} replace />;
+}
+
+function LegacyWorkspaceProjectRedirect() {
+  const { projectId } = useParams();
+  const location = useLocation();
+  return (
+    <Navigate
+      to={{
+        pathname: `${WORKSPACE_BASE}/project/${projectId ?? ""}`,
+        search: location.search,
+        hash: location.hash,
+      }}
+      replace
+    />
+  );
+}
+
+function LegacyWorkspaceTaskRedirect() {
+  const { taskId } = useParams();
+  const location = useLocation();
+  return (
+    <Navigate
+      to={{
+        pathname: `${WORKSPACE_BASE}/task/${taskId ?? ""}`,
+        search: location.search,
+        hash: location.hash,
+      }}
+      replace
+    />
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -89,7 +132,7 @@ export const router = createBrowserRouter([
     element: <InviteHandler />,
   },
   {
-    path: "/dashboard-placeholder/entry",
+    path: `${WORKSPACE_BASE}/entry`,
     element: (
       <AuthGuard>
         <PostAuthBoardRedirect />
@@ -151,7 +194,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard-placeholder",
+    path: WORKSPACE_BASE,
     element: (
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
@@ -161,17 +204,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard-placeholder/get-started",
-    element: (
-      <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
-          <DashboardPlaceholder />
-        </Suspense>
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/dashboard-placeholder/get-started/time-logs",
+    path: `${WORKSPACE_BASE}/${WORKSPACE_SPRINT_SEGMENT}/time-logs`,
     element: (
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
@@ -181,7 +214,17 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard-placeholder/welcome",
+    path: `${WORKSPACE_BASE}/${WORKSPACE_SPRINT_SEGMENT}`,
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <DashboardPlaceholder />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: `${WORKSPACE_BASE}/welcome`,
     element: (
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
@@ -191,7 +234,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard-placeholder/project/:projectId",
+    path: `${WORKSPACE_BASE}/project/:projectId`,
     element: (
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
@@ -201,7 +244,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard-placeholder/task/:taskId",
+    path: `${WORKSPACE_BASE}/task/:taskId`,
     element: (
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
@@ -211,7 +254,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard-placeholder/assigned",
+    path: `${WORKSPACE_BASE}/assigned`,
     element: (
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
@@ -221,7 +264,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard-placeholder/created",
+    path: `${WORKSPACE_BASE}/created`,
     element: (
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
@@ -231,7 +274,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard-placeholder/ai-planner",
+    path: `${WORKSPACE_BASE}/ai-planner`,
     element: (
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
@@ -240,12 +283,74 @@ export const router = createBrowserRouter([
       </AuthGuard>
     ),
   },
-  /** Legacy hub URLs → dashboard-placeholder (bookmarks). */
+  /** Legacy `/dashboard-placeholder/*` → `/workspace/*` (bookmarks). */
+  {
+    path: LEGACY_WORKSPACE_BASE,
+    element: <LegacyWorkspacePathRedirect targetPathname={WORKSPACE_BASE} />,
+  },
+  {
+    path: `${LEGACY_WORKSPACE_BASE}/entry`,
+    element: <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/entry`} />,
+  },
+  {
+    path: `${LEGACY_WORKSPACE_BASE}/${LEGACY_WORKSPACE_GET_STARTED_SEGMENT}`,
+    element: (
+      <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/${WORKSPACE_SPRINT_SEGMENT}`} />
+    ),
+  },
+  {
+    path: `${LEGACY_WORKSPACE_BASE}/${LEGACY_WORKSPACE_GET_STARTED_SEGMENT}/time-logs`,
+    element: (
+      <LegacyWorkspacePathRedirect
+        targetPathname={`${WORKSPACE_BASE}/${WORKSPACE_SPRINT_SEGMENT}/time-logs`}
+      />
+    ),
+  },
+  /** Legacy `/workspace/get-started/*` → `/workspace/sprint/*` */
+  {
+    path: `${WORKSPACE_BASE}/${LEGACY_WORKSPACE_GET_STARTED_SEGMENT}/time-logs`,
+    element: (
+      <LegacyWorkspacePathRedirect
+        targetPathname={`${WORKSPACE_BASE}/${WORKSPACE_SPRINT_SEGMENT}/time-logs`}
+      />
+    ),
+  },
+  {
+    path: `${WORKSPACE_BASE}/${LEGACY_WORKSPACE_GET_STARTED_SEGMENT}`,
+    element: (
+      <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/${WORKSPACE_SPRINT_SEGMENT}`} />
+    ),
+  },
+  {
+    path: `${LEGACY_WORKSPACE_BASE}/welcome`,
+    element: <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/welcome`} />,
+  },
+  {
+    path: `${LEGACY_WORKSPACE_BASE}/project/:projectId`,
+    element: <LegacyWorkspaceProjectRedirect />,
+  },
+  {
+    path: `${LEGACY_WORKSPACE_BASE}/task/:taskId`,
+    element: <LegacyWorkspaceTaskRedirect />,
+  },
+  {
+    path: `${LEGACY_WORKSPACE_BASE}/assigned`,
+    element: <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/assigned`} />,
+  },
+  {
+    path: `${LEGACY_WORKSPACE_BASE}/created`,
+    element: <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/created`} />,
+  },
+  {
+    path: `${LEGACY_WORKSPACE_BASE}/ai-planner`,
+    element: <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/ai-planner`} />,
+  },
+  /** Legacy hub URL → workspace home. */
   {
     path: "/dashboard",
     element: (
       <AuthGuard>
-        <Navigate to="/dashboard-placeholder" replace />
+        <Navigate to={WORKSPACE_BASE} replace />
       </AuthGuard>
     ),
   },
@@ -262,7 +367,7 @@ export const router = createBrowserRouter([
     element: (
       <AuthGuard>
         <Navigate
-          to="/dashboard-placeholder/get-started/time-logs?populated=1&tab=time-logs"
+          to={`${workspaceJoin(WORKSPACE_SPRINT_SEGMENT, "time-logs")}?populated=1&tab=time-logs`}
           replace
         />
       </AuthGuard>
@@ -272,7 +377,7 @@ export const router = createBrowserRouter([
     path: "/invoices",
     element: (
       <AuthGuard>
-        <Navigate to="/dashboard-placeholder" replace />
+        <Navigate to={WORKSPACE_BASE} replace />
       </AuthGuard>
     ),
   },

@@ -9,6 +9,7 @@ import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 import type { Task } from "@/types/task";
+import { workspaceJoin } from "@/lib/workspacePaths";
 import { cn } from "../ui/utils";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
@@ -113,7 +114,9 @@ export function SprintKanbanListView({
           e.stopPropagation();
           onColumnDrop(col)(e);
         }}
-        onClick={() => navigate(`/dashboard-placeholder/task/${task.id}?${searchParams.toString()}`)}
+        onClick={() =>
+          navigate(`${workspaceJoin("task", String(task.id))}?${searchParams.toString()}`)
+        }
         className={cn(
           "w-full select-none transition-opacity duration-100",
           isDragging ? "cursor-grabbing opacity-0" : "cursor-grab",

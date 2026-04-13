@@ -8,6 +8,7 @@ import { SprintKanbanListView } from "./SprintKanbanListView";
 
 import { useProjectTasks, useUpdateTaskStatus } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+import { workspaceJoin } from "@/lib/workspacePaths";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 import type { Task, TaskStatus } from "@/types/task";
@@ -183,7 +184,9 @@ export function GetStartedKanbanLive({
         onDragStart={handleDragStart(task.id)}
         onDragEnd={handleDragEnd}
         onDragOver={handleCardDragOver}
-        onClick={() => navigate(`/dashboard-placeholder/task/${task.id}?${searchParams.toString()}`)}
+        onClick={() =>
+          navigate(`${workspaceJoin("task", String(task.id))}?${searchParams.toString()}`)
+        }
       >
         <div
           className={`bg-white ${isDragging ? "border-2 border-[#24B5F8]" : "border border-[#ebedee]"} border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full`}

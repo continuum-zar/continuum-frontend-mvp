@@ -3,6 +3,7 @@ import { format, isValid, parseISO } from "date-fns";
 import { useNavigate } from "react-router";
 import { Bell, Ellipsis, Flag, GripVertical, Share, Target } from "lucide-react";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
+import { workspaceJoin } from "@/lib/workspacePaths";
 import { useAssignedToMeTasks } from "@/api/hooks";
 import { useAuthStore } from "@/store/authStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
@@ -37,7 +38,7 @@ function placeholderTaskHref(row: TaskAPIResponse): string {
   q.set("project", String(row.project_id));
   if (row.milestone_id != null) q.set("milestone", String(row.milestone_id));
   q.set("from", "assigned");
-  return `/dashboard-placeholder/task/${row.id}?${q.toString()}`;
+  return `${workspaceJoin("task", String(row.id))}?${q.toString()}`;
 }
 
 const tabBtn = (active: boolean) =>

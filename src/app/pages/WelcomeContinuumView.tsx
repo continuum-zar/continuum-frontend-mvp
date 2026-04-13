@@ -21,6 +21,7 @@ import {
   DASHBOARD_WELCOME_PROJECT,
   isApiProjectId,
 } from "../data/dashboardPlaceholderProjects";
+import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
 
 const imgLucideFolderOpenDot = mcpAsset("565be4ed-fc29-4562-a26f-1c943a6d5847");
 const imgLucideBuilding2 = mcpAsset("71a5ce6a-04cd-4e3a-bf8d-8982fbc63fe8");
@@ -37,11 +38,11 @@ const imgVector15 = mcpAsset("41d4c7e7-e987-4d3e-b39f-b0a8c1791b01");
 export function WelcomeContinuumView() {
   const { projectId: routeProjectId } = useParams();
   const { pathname } = useLocation();
-  const isWelcomeDemo =
-    pathname === "/dashboard-placeholder/welcome" || pathname.startsWith("/dashboard-placeholder/welcome/");
+  const welcomePath = workspaceJoin("welcome");
+  const isWelcomeDemo = pathname === welcomePath || pathname.startsWith(`${welcomePath}/`);
   const isApiRoute =
     Boolean(routeProjectId && isApiProjectId(routeProjectId)) &&
-    pathname.startsWith("/dashboard-placeholder/project/");
+    pathname.startsWith(`${WORKSPACE_BASE}/project/`);
   const projectQuery = useProject(isApiRoute ? routeProjectId : undefined);
   const membersQuery = useProjectMembers(isApiRoute ? routeProjectId : undefined);
 
@@ -257,7 +258,7 @@ export function WelcomeContinuumView() {
               {isApiRoute && projectQuery.isError && (
                 <div className="flex min-h-[280px] w-full flex-col items-center justify-center gap-4 px-4 text-center">
                   <p className="font-['Satoshi',sans-serif] text-[16px] text-[#0b191f]">We couldn’t load this project.</p>
-                  <Link to="/dashboard-placeholder" className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline">
+                  <Link to={WORKSPACE_BASE} className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline">
                     Back to dashboard
                   </Link>
                 </div>

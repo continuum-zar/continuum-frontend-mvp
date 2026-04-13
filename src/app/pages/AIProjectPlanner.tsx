@@ -19,6 +19,8 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from '../components/ui/collapsible';
+import { projectMainHref } from '@/app/data/dashboardPlaceholderProjects';
+import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from '@/lib/workspacePaths';
 import {
     usePlannerChat,
     useUploadPlannerFile,
@@ -313,7 +315,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                 () =>
                     navigate(
                         embedded
-                            ? `/dashboard-placeholder/project/${res.project_id}`
+                            ? projectMainHref(String(res.project_id))
                             : `/projects/${res.project_id}`,
                     ),
                 1500,
@@ -334,7 +336,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     // -----------------------------------------------------------------------
     const totalPlannedTasks = plan?.milestones.reduce((s, m) => s + m.tasks.length, 0) ?? 0;
 
-    const backHref = embedded ? '/dashboard-placeholder/get-started' : '/dashboard-placeholder/entry';
+    const backHref = embedded ? workspaceJoin(WORKSPACE_SPRINT_SEGMENT) : workspaceJoin('entry');
 
     const displayMissingAreas =
         missingAreas.length > 0 ? missingAreas : [...DEFAULT_MISSING_HINTS];

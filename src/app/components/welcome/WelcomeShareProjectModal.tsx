@@ -136,7 +136,7 @@ export function WelcomeShareProjectModal({
 
   const copyHref = useMemo(() => {
     if (typeof window === "undefined") return "";
-    const path = isLive && projectId != null ? projectMainHref(String(projectId)) : "/dashboard-placeholder/welcome";
+    const path = isLive && projectId != null ? projectMainHref(String(projectId)) : projectMainHref("welcome");
     return `${window.location.origin}${path}`;
   }, [isLive, projectId]);
 
