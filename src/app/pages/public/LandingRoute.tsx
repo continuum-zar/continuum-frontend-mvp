@@ -1,5 +1,6 @@
 import { Navigate } from "react-router";
 import "@/styles/load-decorative-fonts";
+import { workspaceJoin } from "@/lib/workspacePaths";
 import { useAuthStore } from "@/store/authStore";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import LandingPage from "./LandingPage";
@@ -24,7 +25,7 @@ export function LandingRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard-placeholder/entry" replace />;
+    return <Navigate to={workspaceJoin("entry")} replace />;
   }
 
   return (

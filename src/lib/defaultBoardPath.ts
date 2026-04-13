@@ -1,5 +1,6 @@
 import { fetchMilestones, fetchProjects } from "@/api/projects";
 import { projectSprintHref } from "@/app/data/dashboardPlaceholderProjects";
+import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from "@/lib/workspacePaths";
 import type { Milestone } from "@/types/milestone";
 
 /** Same ordering as the left rail sprint list (timeline / due date). */
@@ -14,7 +15,7 @@ function sortMilestonesForNav(list: Milestone[]): Milestone[] {
   });
 }
 
-const FALLBACK_WELCOME_BOARD = "/dashboard-placeholder/get-started";
+const FALLBACK_WELCOME_BOARD = workspaceJoin(WORKSPACE_SPRINT_SEGMENT);
 
 /**
  * Where to send the user so they land on the tasks (Kanban) board:

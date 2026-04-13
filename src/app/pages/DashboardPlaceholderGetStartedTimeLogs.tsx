@@ -25,7 +25,13 @@ import { format, isValid, parseISO } from "date-fns";
 import { Link, useSearchParams } from "react-router";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
-import { isApiProjectId, projectSprintHref, projectTimeLogsHref } from "../data/dashboardPlaceholderProjects";
+import {
+  isApiProjectId,
+  projectSprintHref,
+  projectTimeLogsHref,
+  WELCOME_PROJECT_ID,
+} from "../data/dashboardPlaceholderProjects";
+import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from "@/lib/workspacePaths";
 import type { LoggedHourEntry } from "@/api/loggedHours";
 import {
   fetchMemberContributions,
@@ -736,11 +742,11 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
   const qsTimeLogs =
     apiProjectId != null
       ? projectTimeLogsHref(apiProjectId, "time-logs", milestoneParam ?? undefined)
-      : `/dashboard-placeholder/get-started/time-logs${buildGetStartedSearchParams(populated, "time-logs")}`;
+      : `${workspaceJoin(WORKSPACE_SPRINT_SEGMENT, "time-logs")}${buildGetStartedSearchParams(populated, "time-logs")}`;
   const qsActivity =
     apiProjectId != null
       ? projectTimeLogsHref(apiProjectId, "activity", milestoneParam ?? undefined)
-      : `/dashboard-placeholder/get-started/time-logs${buildGetStartedSearchParams(populated, "activity")}`;
+      : `${workspaceJoin(WORKSPACE_SPRINT_SEGMENT, "time-logs")}${buildGetStartedSearchParams(populated, "activity")}`;
 
   useEffect(() => {
     if (searchParams.toString() === "") {
@@ -786,7 +792,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
   const sprintBoardLink =
     apiProjectId != null
       ? projectSprintHref(apiProjectId, milestoneParam ?? undefined)
-      : "/dashboard-placeholder/get-started";
+      : projectSprintHref(WELCOME_PROJECT_ID);
 
   return (
     <>

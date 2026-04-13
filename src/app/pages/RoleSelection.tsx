@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router';
+import { workspaceJoin } from '@/lib/workspacePaths';
 import { motion } from 'motion/react';
 import { useRole } from '../context/RoleContext';
 import { Button } from '../components/ui/button';
@@ -25,7 +26,7 @@ export function RoleSelection() {
                     <CardContent className="flex justify-center pt-4">
                         <Button
                             className="w-full"
-                            onClick={() => navigate('/dashboard-placeholder/entry')}
+                            onClick={() => navigate(workspaceJoin("entry"))}
                         >
                             Continue to Dashboard
                         </Button>

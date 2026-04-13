@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { useQueries } from "@tanstack/react-query";
 import { Bell, Ellipsis, Flag, GripVertical, ListTodo, Share } from "lucide-react";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
+import { workspaceJoin } from "@/lib/workspacePaths";
 import { useCreatedByMeTasks } from "@/api/hooks";
 import { fetchMembers, projectKeys } from "@/api/projects";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
@@ -30,7 +31,7 @@ function placeholderTaskHrefCreated(row: TaskAPIResponse): string {
   q.set("project", String(row.project_id));
   if (row.milestone_id != null) q.set("milestone", String(row.milestone_id));
   q.set("from", "created");
-  return `/dashboard-placeholder/task/${row.id}?${q.toString()}`;
+  return `${workspaceJoin("task", String(row.id))}?${q.toString()}`;
 }
 
 const tabBtn = (active: boolean) =>

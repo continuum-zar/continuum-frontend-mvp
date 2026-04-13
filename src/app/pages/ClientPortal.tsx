@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { Link } from 'react-router';
+import { WORKSPACE_BASE } from '@/lib/workspacePaths';
 import {
     CheckCircle2,
     Clock,
@@ -112,7 +113,7 @@ export function ClientPortal() {
                     </div>
 
                     <div className="mt-8 text-center pt-8 border-t border-border">
-                        <Link to="/dashboard-placeholder">
+                        <Link to={WORKSPACE_BASE}>
                             <Button variant="outline">Back to overview</Button>
                         </Link>
                     </div>

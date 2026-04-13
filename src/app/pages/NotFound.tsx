@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { WORKSPACE_BASE } from '@/lib/workspacePaths';
 import { Button } from '../components/ui/button';
 import { Home, ArrowLeft } from 'lucide-react';
 
@@ -15,7 +16,7 @@ export function NotFound() {
         </div>
 
         <div className="flex items-center justify-center space-x-3">
-          <Link to="/dashboard-placeholder">
+          <Link to={WORKSPACE_BASE}>
             <Button>
               <Home className="mr-2 h-4 w-4" />
               Go Home

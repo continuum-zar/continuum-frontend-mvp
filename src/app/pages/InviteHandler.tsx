@@ -5,6 +5,7 @@ import { SESSION_INVITE_TOKEN_KEY } from '@/app/components/welcome/welcomeModalA
 import { ProjectInvitationModal } from '@/app/components/ProjectInvitationModal';
 import { useInvitationByToken, getApiErrorMessage } from '@/api/hooks';
 import { RouteSkeleton } from '@/app/components/ui/RouteSkeleton';
+import { WORKSPACE_BASE } from '@/lib/workspacePaths';
 
 export function InviteHandler() {
   const [searchParams] = useSearchParams();
@@ -15,7 +16,7 @@ export function InviteHandler() {
 
   useEffect(() => {
     if (!token) {
-      navigate('/dashboard-placeholder', { replace: true });
+      navigate(WORKSPACE_BASE, { replace: true });
       return;
     }
     if (!isInitialized) return;
@@ -52,7 +53,7 @@ export function InviteHandler() {
         <button
           type="button"
           className="text-sm text-primary underline"
-          onClick={() => navigate('/dashboard-placeholder', { replace: true })}
+          onClick={() => navigate(WORKSPACE_BASE, { replace: true })}
         >
           Continue to Continuum
         </button>
@@ -71,7 +72,7 @@ export function InviteHandler() {
             } catch {
               /* ignore */
             }
-            navigate('/dashboard-placeholder', { replace: true });
+            navigate(WORKSPACE_BASE, { replace: true });
           }
         }}
         invitation={invitation}
