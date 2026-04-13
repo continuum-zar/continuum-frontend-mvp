@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { SESSION_INVITE_TOKEN_KEY } from '@/app/components/welcome/welcomeModalAssets';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 
 export function SignUp() {
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams] = useSearchParams();
     const { register, isLoading, error, clearError } = useAuthStore();
     const emailFromSignUp = (location.state as { email?: string } | null)?.email ?? '';
     const [localLoading, setLocalLoading] = useState(false);
@@ -24,6 +26,17 @@ export function SignUp() {
         // Clear errors when navigating away or unmounting
         return () => clearError();
     }, [clearError]);
+
+    useEffect(() => {
+        const t = searchParams.get('invite_token')?.trim();
+        if (t) {
+            try {
+                sessionStorage.setItem(SESSION_INVITE_TOKEN_KEY, t);
+            } catch {
+                /* ignore */
+            }
+        }
+    }, [searchParams]);
 
     const validateForm = () => {
         const newErrors: typeof errors = {};
@@ -73,7 +86,7 @@ export function SignUp() {
                 email,
                 password
             });
-            navigate('/loading', { state: { from: 'register' } });
+            navigate('/onboarding/usage', { replace: true });
         } catch (error) {
             console.error('Registration failed:', error);
         } finally {

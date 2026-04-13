@@ -2,6 +2,7 @@ import api from '@/lib/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchInvoices } from './invoices';
 import { fetchProjects, projectKeys } from './projects';
+import { useAuthStore } from '@/store/authStore';
 
 export interface ClientAPIResponse {
     id: number;
@@ -53,17 +54,18 @@ export const clientKeys = {
 
 export function useClients() {
     const queryClient = useQueryClient();
+    const userId = useAuthStore((s) => s.user?.id);
     return useQuery({
         queryKey: clientKeys.all,
         queryFn: async () => {
-            const [clients, invoices, projects] = await Promise.all([
-                fetchClients(),
-                fetchInvoices(),
-                queryClient.ensureQueryData({
-                    queryKey: projectKeys.list(),
-                    queryFn: fetchProjects,
-                }),
-            ]);
+            const [clients, invoices] = await Promise.all([fetchClients(), fetchInvoices()]);
+            const projects =
+                userId != null && userId !== ''
+                    ? await queryClient.ensureQueryData({
+                          queryKey: projectKeys.listForUser(userId),
+                          queryFn: fetchProjects,
+                      })
+                    : [];
 
             return clients.map((c) => {
                 // If backend already provides stats (Ticket 13), use them.

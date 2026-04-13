@@ -13,6 +13,7 @@ import {
     DialogFooter,
 } from './dialog';
 import { useTimeTracking } from '../../context/TimeTrackingContext';
+import { isTimeTrackingRoutePath } from '@/lib/timeTrackingPaths';
 
 const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -41,8 +42,11 @@ export function GlobalActiveSession() {
         isSessionActionLoading,
     } = useTimeTracking();
 
-    // Hide on /time page or if idle and modal is not open
-    if (location.pathname === '/time' || (sessionState === 'idle' && !isLoggingModalOpen)) {
+    // Hide on full time views or if idle and modal is not open
+    if (
+        isTimeTrackingRoutePath(location.pathname) ||
+        (sessionState === 'idle' && !isLoggingModalOpen)
+    ) {
         return null;
     }
 

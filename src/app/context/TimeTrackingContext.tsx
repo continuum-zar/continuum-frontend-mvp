@@ -10,6 +10,7 @@ import {
     stopWorkSession,
     suggestSessionDescription,
 } from '@/api/workSessions';
+import { isTimeTrackingRoutePath } from '@/lib/timeTrackingPaths';
 export interface TimeEntry {
     id: string;
     project: string;
@@ -78,11 +79,12 @@ interface TimeTrackingContextProps {
 const TimeTrackingContext = createContext<TimeTrackingContextProps | undefined>(undefined);
 
 export function TimeTrackingProvider({ children }: { children: ReactNode }) {
-    // Lazy-activation gate: only fetch data when on /time or when a localStorage hint says there's an active session.
+    // Lazy-activation gate: time logs URL, legacy /time target, or active-session hint. SPA navigations
+    // to time logs should call `activate()` from that view (provider sits above RouterProvider).
     const [isActivated, setIsActivated] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
             if (window.localStorage.getItem(SESSION_HINT_KEY) === 'true') return true;
-            if (window.location.pathname === '/time') return true;
+            if (isTimeTrackingRoutePath(window.location.pathname)) return true;
         }
         return false;
     });

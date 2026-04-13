@@ -4,19 +4,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import {
     ArrowLeft,
-    Send,
-    Upload,
+    ArrowUp,
     FileText,
     X,
     Loader2,
     ChevronDown,
     ChevronRight,
     Check,
-    AlertCircle,
+    Info,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Textarea } from '../components/ui/textarea';
-import { Badge } from '../components/ui/badge';
 import {
     Collapsible,
     CollapsibleContent,
@@ -34,54 +31,39 @@ import type {
     ProjectPlan,
     PlannedMilestone,
 } from '@/api/planner';
+import { PlannerConfidenceGauge } from '@/app/components/welcome/LiveProjectGauges';
+import {
+    aiPlannerBotIconSrc,
+    aiPlannerComposerPlusSrc,
+    aiPlannerComposerSendSquareSrc,
+    aiPlannerComposerSettingsSrc,
+} from '../assets/dashboardPlaceholderAssets';
+import { cn } from '../components/ui/utils';
+import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
+import { PlannerAssistantMarkdown } from '@/app/components/planner/PlannerAssistantMarkdown';
 
 type Phase = 'chat' | 'plan_review' | 'creating' | 'complete';
 
-// ---------------------------------------------------------------------------
-// Confidence ring SVG
-// ---------------------------------------------------------------------------
-function ConfidenceRing({ value }: { value: number }) {
-    const radius = 40;
-    const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (value / 100) * circumference;
+/** Shown when the API returns no missing_areas yet (Figma empty-state education list). */
+const DEFAULT_MISSING_HINTS = [
+    'Core objectives / goals',
+    'Key features / requirements',
+    'Tech stack / architecture preferences',
+    'Scope / timeline constraints',
+    'Target users / audience',
+    'Success criteria',
+] as const;
 
-    const color =
-        value >= 70
-            ? 'stroke-emerald-500'
-            : value >= 40
-              ? 'stroke-amber-500'
-              : 'stroke-red-500';
+export type AIProjectPlannerProps = {
+    /** When true, fills the dashboard-placeholder shell and uses placeholder routes for back / project links. */
+    embedded?: boolean;
+};
 
-    return (
-        <div className="relative flex items-center justify-center">
-            <svg width="100" height="100" className="-rotate-90">
-                <circle
-                    cx="50"
-                    cy="50"
-                    r={radius}
-                    fill="none"
-                    className="stroke-muted"
-                    strokeWidth="6"
-                />
-                <circle
-                    cx="50"
-                    cy="50"
-                    r={radius}
-                    fill="none"
-                    className={`${color} transition-all duration-700 ease-out`}
-                    strokeWidth="6"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={offset}
-                    strokeLinecap="round"
-                />
-            </svg>
-            <span className="absolute text-lg font-bold">{Math.round(value)}%</span>
-        </div>
-    );
-}
+const PLAN_CARD_SHADOW =
+    'shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]';
 
 // ---------------------------------------------------------------------------
-// Milestone card (plan review)
+// Milestone card (plan review) — AI planner visual language
 // ---------------------------------------------------------------------------
 function MilestoneCard({
     milestone,
@@ -92,77 +74,76 @@ function MilestoneCard({
 }) {
     const [open, setOpen] = useState(index === 0);
 
-    const scopeColor: Record<string, string> = {
-        XS: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
-        S: 'bg-blue-500/15 text-blue-700 dark:text-blue-400',
-        M: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
-        L: 'bg-orange-500/15 text-orange-700 dark:text-orange-400',
-        XL: 'bg-red-500/15 text-red-700 dark:text-red-400',
-    };
-
     return (
         <Collapsible open={open} onOpenChange={setOpen}>
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="border border-border rounded-lg bg-card overflow-hidden"
+                className={cn(
+                    'overflow-hidden rounded-xl border border-[#edecea] bg-white',
+                    PLAN_CARD_SHADOW,
+                )}
             >
                 <CollapsibleTrigger asChild>
-                    <button className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/40 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold">
+                    <button
+                        type="button"
+                        className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-[#f9fafb]"
+                    >
+                        <div className="flex min-w-0 items-center gap-3">
+                            <span className="shrink-0 tabular-nums font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f]">
                                 {index + 1}
                             </span>
-                            <div>
-                                <h4 className="font-semibold text-sm">{milestone.name}</h4>
+                            <div className="min-w-0">
+                                <h4 className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                                    {milestone.name}
+                                </h4>
                                 {milestone.description && (
-                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                    <p className="mt-0.5 line-clamp-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#727d83]">
                                         {milestone.description}
                                     </p>
                                 )}
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-[10px]">
+                        <div className="flex shrink-0 items-center gap-2">
+                            <span className="rounded-full bg-[#edf0f3] px-2.5 py-1 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]">
                                 {milestone.tasks.length} tasks
-                            </Badge>
+                            </span>
                             {open ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                <ChevronDown className="size-4 text-[#727d83]" />
                             ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                <ChevronRight className="size-4 text-[#727d83]" />
                             )}
                         </div>
                     </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                    <div className="border-t border-border px-4 py-3 space-y-2">
+                    <div className="space-y-2 border-t border-[#edecea] px-4 py-3">
                         {milestone.tasks.map((task, ti) => (
                             <div
                                 key={ti}
-                                className="flex items-start gap-3 p-2.5 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors"
+                                className="flex items-start gap-3 rounded-lg bg-[#f9fafb] p-3 transition-colors hover:bg-[#f3f4f6]"
                             >
-                                <div className="mt-0.5 h-4 w-4 rounded border border-border flex-shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-sm font-medium">{task.title}</span>
-                                        <span
-                                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${scopeColor[task.scope_weight] ?? 'bg-muted text-muted-foreground'}`}
-                                        >
-                                            {task.scope_weight}
+                                <span className="mt-0.5 shrink-0 tabular-nums font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f]">
+                                    {ti + 1}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f]">
+                                            {task.title}
                                         </span>
                                     </div>
                                     {task.description && (
-                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                        <p className="mt-1 line-clamp-2 font-['Inter',sans-serif] text-[12px] leading-[18px] text-[#727d83]">
                                             {task.description}
                                         </p>
                                     )}
                                     {task.labels.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                        <div className="mt-2 flex flex-wrap gap-1">
                                             {task.labels.map((l, li) => (
                                                 <span
                                                     key={li}
-                                                    className="text-[10px] px-1.5 py-0.5 rounded-sm bg-secondary text-secondary-foreground"
+                                                    className="rounded bg-[#edf0f3] px-1.5 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]"
                                                 >
                                                     {l}
                                                 </span>
@@ -182,7 +163,7 @@ function MilestoneCard({
 // ---------------------------------------------------------------------------
 // Main page component
 // ---------------------------------------------------------------------------
-export function AIProjectPlanner() {
+export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     const navigate = useNavigate();
 
     // Chat state
@@ -190,8 +171,12 @@ export function AIProjectPlanner() {
     const [input, setInput] = useState('');
     const [fileContents, setFileContents] = useState<FileContent[]>([]);
     const [confidence, setConfidence] = useState(0);
+    /** Set when /generate-plan succeeds; shown on plan review stat cards (distinct from chat gauge). */
+    const [planConfidence, setPlanConfidence] = useState<number | null>(null);
     const [missingAreas, setMissingAreas] = useState<string[]>([]);
     const [readyToPlan, setReadyToPlan] = useState(false);
+    /** UI-only: matches Figma “Auto” affordance next to the composer submit control. */
+    const [autoMode, setAutoMode] = useState(true);
 
     // Plan state
     const [phase, setPhase] = useState<Phase>('chat');
@@ -200,6 +185,11 @@ export function AIProjectPlanner() {
     // Refs
     const chatEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const chatAbortRef = useRef<AbortController | null>(null);
+    const composerTextareaRef = useAutosizeTextarea(input, {
+        minPx: 40,
+        maxPx: 200,
+    });
 
     // Mutations
     const chatMutation = usePlannerChat();
@@ -213,14 +203,28 @@ export function AIProjectPlanner() {
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages, scrollToBottom]);
+    }, [
+        messages,
+        scrollToBottom,
+        confidence,
+        missingAreas,
+        readyToPlan,
+        chatMutation.isPending,
+    ]);
 
     // -----------------------------------------------------------------------
     // Handlers
     // -----------------------------------------------------------------------
+    const handleStopChat = useCallback(() => {
+        chatAbortRef.current?.abort();
+    }, []);
+
     const handleSend = async () => {
         const text = input.trim();
         if (!text || chatMutation.isPending) return;
+
+        const controller = new AbortController();
+        chatAbortRef.current = controller;
 
         const userMsg: PlannerMessage = { role: 'user', content: text };
         const updatedMessages = [...messages, userMsg];
@@ -231,6 +235,7 @@ export function AIProjectPlanner() {
             const res = await chatMutation.mutateAsync({
                 messages: updatedMessages,
                 file_contents: fileContents,
+                signal: controller.signal,
             });
 
             const assistantMsg: PlannerMessage = {
@@ -241,8 +246,20 @@ export function AIProjectPlanner() {
             setConfidence(res.confidence);
             setMissingAreas(res.missing_areas);
             setReadyToPlan(res.ready_to_plan);
-        } catch {
-            // Error toast handled by hook
+        } catch (err: unknown) {
+            const e = err as { code?: string; name?: string };
+            const aborted =
+                e?.code === 'ERR_CANCELED' ||
+                e?.name === 'CanceledError' ||
+                e?.name === 'AbortError';
+            if (aborted) {
+                setMessages((prev) => prev.slice(0, -1));
+                setInput(text);
+            }
+        } finally {
+            if (chatAbortRef.current === controller) {
+                chatAbortRef.current = null;
+            }
         }
     };
 
@@ -274,7 +291,7 @@ export function AIProjectPlanner() {
                 file_contents: fileContents,
             });
             setPlan(res.plan);
-            setConfidence(res.confidence);
+            setPlanConfidence(res.confidence);
             setPhase('plan_review');
         } catch {
             // Error toast handled by hook
@@ -292,7 +309,15 @@ export function AIProjectPlanner() {
                 `Project created with ${res.milestone_count} milestones and ${res.task_count} tasks`,
             );
             setPhase('complete');
-            setTimeout(() => navigate(`/projects/${res.project_id}`), 1500);
+            setTimeout(
+                () =>
+                    navigate(
+                        embedded
+                            ? `/dashboard-placeholder/project/${res.project_id}`
+                            : `/projects/${res.project_id}`,
+                    ),
+                1500,
+            );
         } catch {
             setPhase('plan_review');
         }
@@ -301,6 +326,7 @@ export function AIProjectPlanner() {
     const handleBackToChat = () => {
         setPhase('chat');
         setPlan(null);
+        setPlanConfidence(null);
     };
 
     // -----------------------------------------------------------------------
@@ -308,41 +334,54 @@ export function AIProjectPlanner() {
     // -----------------------------------------------------------------------
     const totalPlannedTasks = plan?.milestones.reduce((s, m) => s + m.tasks.length, 0) ?? 0;
 
+    const backHref = embedded ? '/dashboard-placeholder/get-started' : '/dashboard-placeholder/entry';
+
+    const displayMissingAreas =
+        missingAreas.length > 0 ? missingAreas : [...DEFAULT_MISSING_HINTS];
+
+    /** Hide when ready unless the API still lists unhandled gaps. */
+    const showMissingContextSection =
+        !readyToPlan || missingAreas.length > 0;
+
+    const missingContextRows =
+        readyToPlan && missingAreas.length > 0
+            ? missingAreas
+            : displayMissingAreas;
+
+    /** After at least one exchange, highlight gaps in red (matches “More details needed”). */
+    const emphasizeMissingContextRows =
+        messages.length > 0 &&
+        (!readyToPlan || missingAreas.length > 0);
+
     return (
-        <div className="h-[calc(100vh-4rem)] flex flex-col">
-            {/* Header */}
-            <div className="border-b border-border px-6 py-4 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/projects')}>
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <div>
-                        <h1 className="text-lg font-semibold">AI Project Planner</h1>
-                        <p className="text-xs text-muted-foreground">
-                            {phase === 'chat' && 'Describe your project and let AI build the plan'}
-                            {phase === 'plan_review' && 'Review the generated plan'}
-                            {phase === 'creating' && 'Creating your project...'}
-                            {phase === 'complete' && 'Project created successfully!'}
-                        </p>
+        <div
+            className={
+                embedded ? 'flex h-full min-h-0 flex-col' : 'flex h-[calc(100vh-4rem)] flex-col'
+            }
+        >
+            {/* Header — chat phase uses the in-canvas header (Figma 77:13461); other phases keep this bar */}
+            {phase !== 'chat' && (
+                <div className="flex shrink-0 items-center justify-between border-b border-[#ebedee] bg-white px-6 py-4">
+                    <div className="flex items-center gap-3">
+                        <Button variant="ghost" size="icon" onClick={() => navigate(backHref)}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <div>
+                            <h1 className="font-['Satoshi',sans-serif] text-lg font-semibold text-[#0b191f]">
+                                AI Project Planner
+                            </h1>
+                            <p className="font-['Satoshi',sans-serif] text-xs font-medium text-[#727d83]">
+                                {phase === 'plan_review' && 'Review the generated plan'}
+                                {phase === 'creating' && 'Creating your project...'}
+                                {phase === 'complete' && 'Project created successfully!'}
+                            </p>
+                        </div>
                     </div>
                 </div>
-
-                {phase === 'chat' && (
-                    <Button
-                        onClick={handleGeneratePlan}
-                        disabled={!readyToPlan || generateMutation.isPending}
-                        className="gap-2"
-                    >
-                        {generateMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : null}
-                        Generate Plan
-                    </Button>
-                )}
-            </div>
+            )}
 
             {/* Body */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex min-h-0 flex-1 overflow-hidden">
                 {/* ---- CHAT PHASE ---- */}
                 <AnimatePresence mode="wait">
                     {phase === 'chat' && (
@@ -351,204 +390,444 @@ export function AIProjectPlanner() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="flex-1 flex overflow-hidden"
+                            className="flex min-h-0 flex-1 overflow-hidden"
                         >
-                            {/* Chat panel */}
-                            <div className="flex-1 flex flex-col min-w-0">
-                                <div className="flex-1 overflow-y-auto px-6 py-4">
-                                    <div className="max-w-2xl mx-auto space-y-4 min-h-full">
-                                        {messages.length === 0 && (
-                                            <div className="flex flex-col items-center justify-center py-20 text-center">
-                                                <h3 className="text-lg font-medium mb-2">
-                                                    Start by describing your project
-                                                </h3>
-                                                <p className="text-sm text-muted-foreground max-w-md">
-                                                    Tell me about the software project you want to
-                                                    plan. You can also upload a project spec or
-                                                    requirements document.
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {messages.map((msg, i) => (
-                                            <motion.div
-                                                key={i}
-                                                initial={{ opacity: 0, y: 8 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                            >
-                                                <div
-                                                    className={`max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
-                                                        msg.role === 'user'
-                                                            ? 'bg-primary text-primary-foreground'
-                                                            : 'bg-muted'
-                                                    }`}
-                                                >
-                                                    {msg.content}
-                                                </div>
-                                            </motion.div>
-                                        ))}
-
-                                        {chatMutation.isPending && (
-                                            <div className="flex justify-start">
-                                                <div className="bg-muted rounded-lg px-4 py-3 flex items-center gap-2">
-                                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                                    <span className="text-sm text-muted-foreground">
-                                                        Thinking...
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <div ref={chatEndRef} />
-                                    </div>
+                            {/* Main column — Figma 77:13458–77:13509 */}
+                            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                                {/* Header — Figma 77:13461 */}
+                                <div className="relative flex shrink-0 items-center justify-between rounded-t-2xl px-9 py-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate(backHref)}
+                                        className="inline-flex size-5 shrink-0 items-center justify-center rounded-md text-[#0b191f] transition-colors hover:bg-black/[0.04]"
+                                        aria-label="Back"
+                                    >
+                                        <ArrowLeft className="size-5" strokeWidth={2} />
+                                    </button>
+                                    <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                                        AI Project Planner
+                                    </p>
+                                    <div className="size-5 shrink-0" aria-hidden />
                                 </div>
 
-                                {/* Input area */}
-                                <div className="border-t border-border p-4 shrink-0">
-                                    <div className="max-w-2xl mx-auto">
-                                        {/* Uploaded files */}
-                                        {fileContents.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                                {fileContents.map((fc, i) => (
-                                                    <span
-                                                        key={i}
-                                                        className="inline-flex items-center gap-1.5 bg-secondary text-secondary-foreground rounded-md px-2.5 py-1 text-xs"
-                                                    >
-                                                        <FileText className="h-3 w-3" />
-                                                        {fc.filename}
-                                                        <button
-                                                            onClick={() => handleRemoveFile(i)}
-                                                            className="hover:bg-muted-foreground/20 rounded p-0.5"
-                                                        >
-                                                            <X className="h-3 w-3" />
-                                                        </button>
-                                                    </span>
-                                                ))}
+                                <div
+                                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                                    style={{
+                                        backgroundImage:
+                                            'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
+                                    }}
+                                >
+                                    <div className="mx-auto flex h-full min-h-0 w-full max-w-[600px] min-w-[min(100%,403px)] flex-col">
+                                        {generateMutation.isPending ? (
+                                            <div className="flex min-h-[min(70vh,520px)] flex-1 flex-col items-center justify-center gap-5 px-9 py-16">
+                                                <p
+                                                    className="animate-pulse-soft bg-clip-text font-['Sarina',cursive] text-[42px] font-normal leading-none tracking-[-0.85px] text-transparent"
+                                                    style={{
+                                                        backgroundImage:
+                                                            'linear-gradient(135.275deg, rgb(36, 181, 248) 4.6217%, rgb(85, 33, 254) 148.53%)',
+                                                    }}
+                                                >
+                                                    Continuum
+                                                </p>
+                                                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#595959]">
+                                                    Generating your plan...
+                                                </p>
+                                                <p className="max-w-sm text-center font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#727d83]">
+                                                    This can take a few minutes. Hang tight.
+                                                </p>
                                             </div>
-                                        )}
-
-                                        <div className="flex gap-2">
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                className="hidden"
-                                                accept=".txt,.md,.pdf,.docx"
-                                                onChange={handleFileUpload}
-                                            />
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="shrink-0"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={uploadMutation.isPending}
-                                            >
-                                                {uploadMutation.isPending ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Upload className="h-4 w-4" />
+                                        ) : (
+                                            <>
+                                        <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-9 py-6">
+                                            <div className="mx-auto flex min-h-full max-w-[600px] flex-col gap-4">
+                                                {messages.length === 0 && (
+                                                    <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                                                        <div className="flex size-12 shrink-0 items-center justify-center">
+                                                            <img
+                                                                src={aiPlannerBotIconSrc}
+                                                                alt=""
+                                                                className="size-12 max-h-full max-w-full object-contain"
+                                                                aria-hidden
+                                                            />
+                                                        </div>
+                                                        <div className="flex max-w-md flex-col gap-1 text-center leading-normal">
+                                                            <p className="font-['Satoshi',sans-serif] text-[20px] font-bold leading-normal text-[#727D83]">
+                                                                Start by describing your project
+                                                            </p>
+                                                            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal text-[#727D83]">
+                                                                Tell me about the software project you
+                                                                want to plan. You can also upload a
+                                                                project spec or requirements document.
+                                                            </p>
+                                                        </div>
+                                                    </div>
                                                 )}
-                                            </Button>
-                                            <Textarea
-                                                placeholder="Describe your project, paste requirements, or ask a question..."
-                                                value={input}
-                                                onChange={(e) => setInput(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                                        e.preventDefault();
-                                                        handleSend();
-                                                    }
-                                                }}
-                                                className="min-h-[44px] max-h-[120px] resize-none"
-                                                rows={1}
-                                            />
-                                            <Button
-                                                size="icon"
-                                                className="shrink-0"
-                                                onClick={handleSend}
-                                                disabled={!input.trim() || chatMutation.isPending}
-                                            >
-                                                <Send className="h-4 w-4" />
-                                            </Button>
+
+                                                {/* Chat turns — Figma 77:13823: user = pill #edf0f3 / assistant = Inter 13px plain left */}
+                                                {messages.map((msg, i) => (
+                                                    <motion.div
+                                                        key={`${msg.role}-${i}`}
+                                                        initial={{ opacity: 0, y: 8 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className={
+                                                            msg.role === 'user'
+                                                                ? 'flex w-full justify-end'
+                                                                : 'flex w-full justify-start'
+                                                        }
+                                                    >
+                                                        {msg.role === 'user' ? (
+                                                            <div className="max-w-[85%] rounded-[32px] bg-[#edf0f3] px-4 py-2 text-left font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] whitespace-pre-wrap">
+                                                                {msg.content}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-full min-w-0">
+                                                                <PlannerAssistantMarkdown
+                                                                    content={msg.content}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </motion.div>
+                                                ))}
+
+                                                {chatMutation.isPending && (
+                                                    <div className="flex w-full justify-start">
+                                                        <div className="flex items-center gap-2 font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#727d83]">
+                                                            <Loader2
+                                                                className="size-4 shrink-0 animate-spin"
+                                                                aria-hidden
+                                                            />
+                                                            <span>Thinking...</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div ref={chatEndRef} />
+                                            </div>
                                         </div>
+
+                                        {/* Composer — Figma input area (target node 77:13681; structure from 77:13509 — MCP could not resolve 77:13681) */}
+                                        <div className="shrink-0 bg-gradient-to-b from-transparent to-white px-4 pb-4">
+                                            <div className="mx-auto w-full max-w-[600px]">
+                                                {fileContents.length > 0 && (
+                                                    <div className="mb-2 flex flex-wrap gap-2">
+                                                        {fileContents.map((fc, i) => (
+                                                            <span
+                                                                key={i}
+                                                                className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm"
+                                                            >
+                                                                <span
+                                                                    className="flex w-9 shrink-0 items-center justify-center self-stretch bg-[#edf0f3]"
+                                                                    aria-hidden
+                                                                >
+                                                                    <FileText
+                                                                        className="size-4 shrink-0 text-[#606d76]"
+                                                                        strokeWidth={1.75}
+                                                                    />
+                                                                </span>
+                                                                <span className="min-w-0 max-w-[220px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[320px]">
+                                                                    {fc.filename}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        handleRemoveFile(i)
+                                                                    }
+                                                                    className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-[#606d76] hover:text-[#0b191f]"
+                                                                    aria-label={`Remove ${fc.filename}`}
+                                                                >
+                                                                    <X className="size-3.5" strokeWidth={2} />
+                                                                </button>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept=".txt,.md,.pdf,.docx"
+                                                    onChange={handleFileUpload}
+                                                />
+
+                                                <div
+                                                    className={cn(
+                                                        'overflow-hidden rounded-[14px] border border-solid border-[#edecea] bg-white shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]',
+                                                    )}
+                                                >
+                                                    <div className="relative flex min-h-[88px] shrink-0 flex-col gap-1 bg-white pb-[7px] pt-[11px]">
+                                                        <div className="relative flex w-full min-h-0 items-start justify-center px-[13px]">
+                                                            <label
+                                                                className="sr-only"
+                                                                htmlFor="ai-planner-chat-input"
+                                                            >
+                                                                Message
+                                                            </label>
+                                                            <textarea
+                                                                ref={
+                                                                    composerTextareaRef
+                                                                }
+                                                                id="ai-planner-chat-input"
+                                                                placeholder="Do anything with AI..."
+                                                                value={input}
+                                                                onChange={(e) =>
+                                                                    setInput(
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                onKeyDown={(e) => {
+                                                                    if (
+                                                                        e.key !==
+                                                                            'Enter' ||
+                                                                        e.shiftKey
+                                                                    ) {
+                                                                        return;
+                                                                    }
+                                                                    if (
+                                                                        !input.trim() ||
+                                                                        chatMutation.isPending
+                                                                    ) {
+                                                                        return;
+                                                                    }
+                                                                    e.preventDefault();
+                                                                    handleSend();
+                                                                }}
+                                                                rows={1}
+                                                                className="max-h-[200px] min-h-[40px] w-full resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
+                                                            />
+                                                        </div>
+                                                        <div className="flex shrink-0 items-center justify-between px-[11px]">
+                                                            <div className="flex items-center gap-[7px]">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        fileInputRef.current?.click()
+                                                                    }
+                                                                    disabled={
+                                                                        uploadMutation.isPending
+                                                                    }
+                                                                    className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center p-0 disabled:opacity-50"
+                                                                    aria-label="Upload file"
+                                                                >
+                                                                    {uploadMutation.isPending ? (
+                                                                        <Loader2 className="h-[18px] w-[18px] animate-spin text-[#727d83]" />
+                                                                    ) : (
+                                                                        <img
+                                                                            src={
+                                                                                aiPlannerComposerPlusSrc
+                                                                            }
+                                                                            alt=""
+                                                                            width={18}
+                                                                            height={18}
+                                                                            className="h-[18px] w-[18px] object-contain"
+                                                                            aria-hidden
+                                                                        />
+                                                                    )}
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center p-0 opacity-50"
+                                                                    aria-label="Composer options"
+                                                                    title="Coming soon"
+                                                                >
+                                                                    <img
+                                                                        src={
+                                                                            aiPlannerComposerSettingsSrc
+                                                                        }
+                                                                        alt=""
+                                                                        width={18}
+                                                                        height={18}
+                                                                        className="h-[18px] w-[18px] object-contain"
+                                                                        aria-hidden
+                                                                    />
+                                                                </button>
+                                                            </div>
+                                                            <div className="flex items-center gap-[10px]">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setAutoMode((v) => !v)
+                                                                    }
+                                                                    className={cn(
+                                                                        "font-['Satoshi',sans-serif] text-[13px] font-medium tracking-[-0.13px] text-[#727d83] transition-opacity",
+                                                                        autoMode && 'opacity-100',
+                                                                        !autoMode &&
+                                                                            'line-through opacity-40',
+                                                                    )}
+                                                                >
+                                                                    Auto
+                                                                </button>
+                                                                {chatMutation.isPending ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={handleStopChat}
+                                                                        className="flex size-[26px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-[999px] bg-[#e7f2fc]"
+                                                                        aria-label="Stop generating"
+                                                                    >
+                                                                        <span className="relative inline-flex size-3 shrink-0 items-center justify-center">
+                                                                            <img
+                                                                                src={
+                                                                                    aiPlannerComposerSendSquareSrc
+                                                                                }
+                                                                                alt=""
+                                                                                width={12}
+                                                                                height={12}
+                                                                                className="h-3 w-3 object-contain"
+                                                                                aria-hidden
+                                                                            />
+                                                                        </span>
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={handleSend}
+                                                                        disabled={!input.trim()}
+                                                                        aria-label="Send message"
+                                                                        className={cn(
+                                                                            'relative flex size-[26px] shrink-0 items-center justify-center rounded-[999px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#2E96F9] focus-visible:ring-offset-2 disabled:pointer-events-none',
+                                                                            input.trim()
+                                                                                ? 'cursor-pointer bg-[#2E96F9] text-white'
+                                                                                : 'cursor-default bg-[#f9f9f8] text-[#727d83] opacity-40',
+                                                                        )}
+                                                                    >
+                                                                        <ArrowUp
+                                                                            className="size-[18px] shrink-0"
+                                                                            strokeWidth={2}
+                                                                            aria-hidden
+                                                                        />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Context sidebar */}
-                            <div className="w-72 border-l border-border p-5 shrink-0 hidden lg:flex flex-col gap-5">
-                                <div className="flex flex-col items-center gap-2">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Context Confidence
+                            {/* Confidence & context — Figma 77:13510, 77:13667 */}
+                            <aside className="relative hidden h-full min-h-0 w-[362px] shrink-0 flex-col border-l border-[#ebedee] bg-gradient-to-b from-white to-[#f9f9f9] lg:flex">
+                                <div className="scrollbar-none min-h-0 flex-1 space-y-6 overflow-y-auto pl-9 pr-[52px] pt-4 pb-28">
+                                    <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                                        Confidence Index
                                     </p>
-                                    <ConfidenceRing value={confidence} />
-                                    {confidence >= 70 ? (
-                                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                                            <Check className="h-3 w-3" /> Ready to generate plan
+
+                                    <div className="flex items-center gap-6">
+                                        <PlannerConfidenceGauge value={confidence} />
+                                        <p
+                                            className={cn(
+                                                "font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal",
+                                                readyToPlan
+                                                    ? 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-emerald-600'
+                                                    : 'max-w-[147px] text-[#eb4335]',
+                                            )}
+                                        >
+                                            {readyToPlan ? (
+                                                <>
+                                                    <Check className="size-4 shrink-0" />
+                                                    Ready to generate plan
+                                                </>
+                                            ) : (
+                                                'More details needed'
+                                            )}
                                         </p>
-                                    ) : confidence > 0 ? (
-                                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                                            More detail needed
-                                        </p>
+                                    </div>
+
+                                    {showMissingContextSection ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                                                Missing context
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            {missingContextRows.map((area, i) => (
+                                                <div
+                                                    key={`${area}-${i}`}
+                                                    className="flex items-start gap-0"
+                                                >
+                                                    <Info
+                                                        className={cn(
+                                                            'mt-0.5 size-4 shrink-0',
+                                                            emphasizeMissingContextRows
+                                                                ? 'text-[#eb4335]'
+                                                                : 'text-[#0b191f]',
+                                                        )}
+                                                    />
+                                                    <p
+                                                        className={cn(
+                                                            'flex-1 px-4 py-1 font-sans text-[13px] leading-[19px]',
+                                                            emphasizeMissingContextRows
+                                                                ? 'text-[#eb4335]'
+                                                                : 'text-[#0b191f]',
+                                                        )}
+                                                    >
+                                                        {area}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                     ) : null}
+
+                                    {fileContents.length > 0 && (
+                                        <div>
+                                            <p className="mb-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#727d83]">
+                                                Uploaded files
+                                            </p>
+                                            <div className="space-y-2">
+                                                {fileContents.map((fc, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="flex min-w-0 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white"
+                                                    >
+                                                        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
+                                                            <FileText
+                                                                className="size-4 shrink-0 text-[#606d76]"
+                                                                strokeWidth={1.75}
+                                                                aria-hidden
+                                                            />
+                                                        </div>
+                                                        <div className="flex min-h-[44px] min-w-0 flex-1 items-center border-l border-solid border-[#ededed] px-3 py-1.5">
+                                                            <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal text-[#0b191f]">
+                                                                {fc.filename}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {missingAreas.length > 0 && (
-                                    <div>
-                                        <p className="text-xs font-medium text-muted-foreground mb-2">
-                                            Missing context
-                                        </p>
-                                        <div className="space-y-1.5">
-                                            {missingAreas.map((area, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="flex items-start gap-2 text-xs text-muted-foreground"
-                                                >
-                                                    <AlertCircle className="h-3 w-3 mt-0.5 shrink-0 text-amber-500" />
-                                                    <span>{area}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {fileContents.length > 0 && (
-                                    <div>
-                                        <p className="text-xs font-medium text-muted-foreground mb-2">
-                                            Uploaded files
-                                        </p>
-                                        <div className="space-y-1">
-                                            {fileContents.map((fc, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="flex items-center gap-2 text-xs"
-                                                >
-                                                    <FileText className="h-3 w-3 text-muted-foreground" />
-                                                    <span className="truncate">{fc.filename}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="mt-auto">
-                                    <Button
-                                        className="w-full gap-2"
+                                <div className="absolute bottom-0 left-0 right-0 border-t border-[#ebedee] bg-white px-9 py-4">
+                                    <button
+                                        type="button"
                                         onClick={handleGeneratePlan}
                                         disabled={!readyToPlan || generateMutation.isPending}
+                                        className={cn(
+                                            'flex h-10 w-full items-center justify-center rounded-lg font-semibold transition-colors',
+                                            !readyToPlan || generateMutation.isPending
+                                                ? 'bg-[rgba(96,109,118,0.1)] text-[14px] text-[#606d76] opacity-50'
+                                                : 'bg-gradient-to-br from-[#24b5f8] to-[#5521fe] text-[14px] text-white shadow-sm hover:opacity-95',
+                                        )}
                                     >
-                                        {generateMutation.isPending ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : null}
-                                        Generate Plan
-                                    </Button>
+                                        {generateMutation.isPending
+                                            ? 'Generating plan…'
+                                            : 'Generate plan'}
+                                    </button>
                                     {!readyToPlan && confidence > 0 && (
-                                        <p className="text-[10px] text-muted-foreground text-center mt-2">
+                                        <p className="mt-2 text-center text-[10px] text-muted-foreground">
                                             Provide more context to unlock plan generation
                                         </p>
                                     )}
                                 </div>
-                            </div>
+                            </aside>
                         </motion.div>
                     )}
 
@@ -559,61 +838,75 @@ export function AIProjectPlanner() {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="flex-1 overflow-auto"
+                            className="scrollbar-none min-h-0 flex-1 overflow-auto"
+                            style={{
+                                backgroundImage:
+                                    'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
+                            }}
                         >
-                            <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
-                                {/* Plan header */}
+                            <div className="mx-auto max-w-3xl space-y-8 px-9 py-10">
                                 <div>
-                                    <Badge variant="secondary" className="mb-3 text-xs">
+                                    <span className="mb-3 inline-flex rounded-full bg-[#edf0f3] px-3 py-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
                                         Generated Plan
-                                    </Badge>
-                                    <h2 className="text-2xl font-bold mb-2">
+                                    </span>
+                                    <h2 className="mb-2 font-['Satoshi',sans-serif] text-[24px] font-bold leading-tight tracking-tight text-[#0b191f]">
                                         {plan.project_name}
                                     </h2>
-                                    <p className="text-muted-foreground text-sm leading-relaxed">
+                                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-[#727d83]">
                                         {plan.project_description}
                                     </p>
                                 </div>
 
-                                {/* Summary */}
                                 {plan.summary && (
-                                    <div className="bg-muted/40 border border-border rounded-lg p-5">
-                                        <h3 className="text-sm font-semibold mb-2">Plan Summary</h3>
-                                        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                    <div
+                                        className={cn(
+                                            'rounded-2xl border border-[#edecea] bg-white p-5',
+                                            PLAN_CARD_SHADOW,
+                                        )}
+                                    >
+                                        <h3 className="mb-2 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f]">
+                                            Plan Summary
+                                        </h3>
+                                        <p className="whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] leading-[21px] text-[#606d76]">
                                             {plan.summary}
                                         </p>
                                     </div>
                                 )}
 
-                                {/* Stats row */}
                                 <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                        <div className="text-2xl font-bold">
-                                            {plan.milestones.length}
+                                    {(
+                                        [
+                                            [String(plan.milestones.length), 'Milestones'],
+                                            [String(totalPlannedTasks), 'Tasks'],
+                                            [
+                                                planConfidence != null
+                                                    ? `${Math.round(planConfidence)}%`
+                                                    : '—',
+                                                'Confidence',
+                                            ],
+                                        ] as const
+                                    ).map(([value, label]) => (
+                                        <div
+                                            key={label}
+                                            className={cn(
+                                                'rounded-xl border border-[#edecea] bg-white p-5 text-center',
+                                                PLAN_CARD_SHADOW,
+                                            )}
+                                        >
+                                            <div className="font-['Satoshi',sans-serif] text-[28px] font-bold leading-none text-[#0b191f]">
+                                                {value}
+                                            </div>
+                                            <div className="mt-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                                                {label}
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            Milestones
-                                        </div>
-                                    </div>
-                                    <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                        <div className="text-2xl font-bold">
-                                            {totalPlannedTasks}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">Tasks</div>
-                                    </div>
-                                    <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                        <div className="text-2xl font-bold">
-                                            {Math.round(confidence)}%
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            Confidence
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
 
-                                {/* Milestones */}
                                 <div>
-                                    <h3 className="text-sm font-semibold mb-3">Milestones</h3>
+                                    <h3 className="mb-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                                        Milestones
+                                    </h3>
                                     <div className="space-y-3">
                                         {plan.milestones.map((ms, i) => (
                                             <MilestoneCard
@@ -625,24 +918,31 @@ export function AIProjectPlanner() {
                                     </div>
                                 </div>
 
-                                {/* Actions */}
-                                <div className="flex items-center justify-between pt-6 border-t border-border">
-                                    <Button variant="outline" onClick={handleBackToChat}>
-                                        <ArrowLeft className="mr-2 h-4 w-4" />
+                                <div className="flex items-center justify-between border-t border-[#ebedee] pt-8">
+                                    <button
+                                        type="button"
+                                        onClick={handleBackToChat}
+                                        className="inline-flex h-11 items-center gap-2 rounded-lg border border-[#edecea] bg-white px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-sm transition-colors hover:bg-[#f9fafb]"
+                                    >
+                                        <ArrowLeft className="size-4 shrink-0" />
                                         Back to Chat
-                                    </Button>
-                                    <Button
+                                    </button>
+                                    <button
+                                        type="button"
                                         onClick={handleApprovePlan}
                                         disabled={approveMutation.isPending}
-                                        className="gap-2"
+                                        className={cn(
+                                            "inline-flex h-11 items-center gap-2 rounded-lg px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white shadow-sm transition-opacity disabled:opacity-60",
+                                            'bg-gradient-to-br from-[#24b5f8] to-[#5521fe] hover:opacity-95',
+                                        )}
                                     >
                                         {approveMutation.isPending ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <Loader2 className="size-4 shrink-0 animate-spin" />
                                         ) : (
-                                            <Check className="h-4 w-4" />
+                                            <Check className="size-4 shrink-0" />
                                         )}
                                         Approve & Create Project
-                                    </Button>
+                                    </button>
                                 </div>
                             </div>
                         </motion.div>
@@ -654,16 +954,20 @@ export function AIProjectPlanner() {
                             key="creating"
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="flex-1 flex items-center justify-center"
+                            className="flex flex-1 items-center justify-center"
+                            style={{
+                                backgroundImage:
+                                    'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
+                            }}
                         >
-                            <div className="text-center space-y-4">
+                            <div className="space-y-4 px-6 text-center">
                                 {phase === 'creating' ? (
                                     <>
-                                        <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-                                        <h3 className="text-lg font-semibold">
+                                        <Loader2 className="mx-auto size-12 animate-spin text-[#2E96F9]" />
+                                        <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]">
                                             Creating your project...
                                         </h3>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
                                             Setting up milestones and tasks
                                         </p>
                                     </>
@@ -678,12 +982,12 @@ export function AIProjectPlanner() {
                                                 damping: 15,
                                             }}
                                         >
-                                            <Check className="h-16 w-16 text-emerald-500 mx-auto" />
+                                            <Check className="mx-auto size-16 text-emerald-500" />
                                         </motion.div>
-                                        <h3 className="text-lg font-semibold">
+                                        <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]">
                                             Project created!
                                         </h3>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
                                             Redirecting to your project board...
                                         </p>
                                     </>

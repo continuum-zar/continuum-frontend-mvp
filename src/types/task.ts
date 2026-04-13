@@ -16,6 +16,8 @@ export interface TaskAPIResponse {
     milestone_id?: number | null;
     assigned_to?: number | null;
     due_date?: string | null;
+    /** Estimated effort in hours (time tracking). */
+    estimated_hours?: number | null;
     scope_weight?: ScopeWeight | null;
     checklists?: Array<{ id?: string; text: string; done: boolean }> | null;
     created_at?: string;
@@ -26,6 +28,7 @@ export interface TaskAPIResponse {
     closure_summary?: string | null;
     linked_repo?: string | null;
     linked_branch?: string | null;
+    linked_branch_full_ref?: string | null;
     labels?: string[];
 }
 
@@ -50,6 +53,8 @@ export interface Task {
     estimatedHours?: number;
     checklists: { total: number; completed: number };
     milestoneId: string;
+    /** ISO date from API (`due_date`), for list view */
+    dueDate?: string | null;
 }
 
 export type ActivityType =

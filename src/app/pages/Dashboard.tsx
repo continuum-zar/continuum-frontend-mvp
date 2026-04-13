@@ -1,7 +1,9 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'motion/react';
+import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
+import { DashboardClientChatPanel } from './DashboardClientChatPanel';
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -18,14 +20,10 @@ import {
   CheckCircle2,
   Circle,
   MoreVertical,
-  Send,
-  Bot
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
-import { Input } from '../components/ui/input';
-import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Skeleton } from '../components/ui/skeleton';
 import {
   Select,
@@ -36,7 +34,21 @@ import {
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
 import { effectiveDashboardRole } from '@/lib/utils/roleMapping';
-import { fetchProjects, fetchProjectDashboard, fetchProjectVelocityReport, useProjectMilestones, fetchMilestoneBurndown, useProjectMembers, fetchUserRhythm, fetchClassificationBreakdown, fetchProjectStaleWork, fetchClientProjects, fetchClientProjectProgress, postProjectQuery, fetchProjectStats } from '@/api';
+import {
+  useProjects,
+  fetchProjectDashboard,
+  fetchProjectVelocityReport,
+  useProjectMilestones,
+  fetchMilestoneBurndown,
+  useProjectMembers,
+  fetchUserRhythm,
+  fetchClassificationBreakdown,
+  fetchProjectStaleWork,
+  fetchClientProjects,
+  fetchClientProjectProgress,
+  postProjectQuery,
+  fetchProjectStats,
+} from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import {
   Bar,
@@ -54,18 +66,6 @@ import {
   Legend
 } from 'recharts';
 
-// --- COMPONENTS ---
-
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.05 } },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.2 } },
-};
-
 // Heatmap Helper
 const getHeatmapColor = (value: number) => {
   if (value > 45) return 'bg-primary';
@@ -75,7 +75,11 @@ const getHeatmapColor = (value: number) => {
   return 'bg-muted/30';
 };
 
-export function Dashboard() {
+type DashboardProps = {
+  hideKpiCards?: boolean;
+};
+
+export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const { role: userRole } = useRole();
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
@@ -86,6 +90,30 @@ export function Dashboard() {
     { role: 'assistant', content: "Hello! I'm your Continuum assistant. Ask me anything about the project's progress, invoices, or recent activities." },
   ]);
   const [chatSending, setChatSending] = useState(false);
+  const reduceMotion = usePrefersReducedMotion();
+
+  const container = useMemo(
+    () => ({
+      hidden: { opacity: reduceMotion ? 1 : 0 },
+      show: {
+        opacity: 1,
+        transition: reduceMotion ? { duration: 0 } : { staggerChildren: 0.05 },
+      },
+    }),
+    [reduceMotion]
+  );
+
+  const item = useMemo(
+    () => ({
+      hidden: { opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 20 },
+      show: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: reduceMotion ? 0 : 0.2 },
+      },
+    }),
+    [reduceMotion]
+  );
 
   /*
    * ── Query dependency tree ──────────────────────────────────────────────
@@ -105,14 +133,13 @@ export function Dashboard() {
    * On-demand (any role): postProjectQuery (chat)
    * ─────────────────────────────────────────────────────────────────────── */
 
+  const user = useAuthStore((s) => s.user);
+
   // Projects list – only PM/Developer need the full project list;
-  // Client role uses client-projects instead.
-  const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useQuery({
-    queryKey: ['projects', 'list'],
-    queryFn: fetchProjects,
+  // Client role uses client-projects instead. Key matches useProjects / layout prefetch.
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects({
     enabled: userRole !== 'Client',
   });
-  const user = useAuthStore((s) => s.user);
   const hasProjectSelected = selectedProject !== "";
 
   const selectedProjectObj = useMemo(
@@ -187,6 +214,7 @@ export function Dashboard() {
     queryFn: () => fetchUserRhythm(rhythmUserId!),
     enabled: rhythmUserId != null && effectiveRole !== 'Client',
     staleTime: 5 * 60_000, // 5 min – rhythm data is slow-changing
+    placeholderData: (previousData) => previousData,
   });
 
   const rhythmChartData = useMemo(() => {
@@ -209,6 +237,7 @@ export function Dashboard() {
     queryFn: () => fetchProjectDashboard(selectedProject),
     enabled: hasProjectSelected && effectiveRole !== 'Client',
     staleTime: 2 * 60_000, // 2 min – avoid refetch on tab switch
+    placeholderData: (previousData) => previousData,
   });
 
   const needMemberStats = hasProjectSelected && isProjectPM && snapshotMember !== 'all';
@@ -217,6 +246,7 @@ export function Dashboard() {
     queryFn: () => fetchProjectStats(selectedProject, Number(snapshotMember)),
     enabled: needMemberStats,
     staleTime: 30 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 
   const health = dashboardMetrics?.health;
@@ -250,6 +280,7 @@ export function Dashboard() {
     queryFn: () => fetchClassificationBreakdown(selectedProject),
     enabled: hasProjectSelected && isProjectPM,
     staleTime: 2 * 60_000,
+    placeholderData: (previousData) => previousData,
   });
 
   const gitCommitsChartData = useMemo(() => {
@@ -267,6 +298,7 @@ export function Dashboard() {
     queryKey: ['client-projects'],
     queryFn: fetchClientProjects,
     enabled: userRole === 'Client',
+    staleTime: 3 * 60_000,
   });
 
   const clientProjectId = userRole === 'Client' && clientProjectsList.length > 0
@@ -282,6 +314,7 @@ export function Dashboard() {
     queryKey: ['client-progress', clientProjectId],
     queryFn: () => fetchClientProjectProgress(clientProjectId),
     enabled: effectiveRole === 'Client' && !!clientProjectId && clientProjectId !== 'all',
+    placeholderData: (previousData) => previousData,
   });
 
   const clientHealthChartData = useMemo(() => {
@@ -325,6 +358,7 @@ export function Dashboard() {
     queryFn: () => fetchProjectStaleWork(selectedProject),
     enabled: hasProjectSelected && isProjectPM,
     staleTime: 5 * 60_000, // 5 min – stale branch data changes infrequently
+    placeholderData: (previousData) => previousData,
   });
 
   const staleBranchesList = useMemo(() => {
@@ -339,7 +373,7 @@ export function Dashboard() {
 
   const hasProjects = userRole === 'Client' ? clientProjectsList.length > 0 : projects.length > 0;
 
-  const handleSendChat = async () => {
+  const handleSendChat = useCallback(async () => {
     const msg = chatMessage.trim();
     if (!msg) return;
     if (!hasProjectSelected) {
@@ -357,7 +391,7 @@ export function Dashboard() {
     } finally {
       setChatSending(false);
     }
-  };
+  }, [chatMessage, hasProjectSelected, selectedProject]);
 
   // Milestones – only PM renders the burndown chart & milestone selector on the dashboard
   const { data: milestones = [] } = useProjectMilestones(
@@ -379,6 +413,7 @@ export function Dashboard() {
     queryFn: () => fetchMilestoneBurndown(milestoneId!),
     enabled: !!milestoneId && isProjectPM,
     staleTime: 2 * 60_000,
+    placeholderData: (previousData) => previousData,
   });
 
   const burndownChartData = useMemo(() => {
@@ -406,6 +441,7 @@ export function Dashboard() {
     queryFn: () => fetchProjectVelocityReport(selectedProject),
     enabled: hasProjectSelected && effectiveRole !== 'Client',
     staleTime: 2 * 60_000,
+    placeholderData: (previousData) => previousData,
   });
 
   const velocityChartData =
@@ -460,7 +496,7 @@ export function Dashboard() {
       </div>
 
       {/* Row 1: KPI Velocity Cards (requires single project) */}
-      {isProjectPM && hasProjectSelected && (
+      {!hideKpiCards && isProjectPM && hasProjectSelected && (
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
           variants={container}
@@ -566,8 +602,9 @@ export function Dashboard() {
       {effectiveRole !== 'Client' && hasProjectSelected && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: reduceMotion ? 0 : 0.25 }}
             className={`bg-card border border-border rounded-lg p-6 ${effectiveRole === 'Developer' ? 'lg:col-span-2' : ''}`}
           >
             <div className="mb-4">
@@ -613,9 +650,9 @@ export function Dashboard() {
 
           {isProjectPM && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
+              transition={{ duration: reduceMotion ? 0 : 0.25, delay: reduceMotion ? 0 : 0.1 }}
               className="bg-card border border-border rounded-lg p-6"
             >
               <div className="mb-4 flex justify-between items-start">
@@ -644,15 +681,25 @@ export function Dashboard() {
                   <Skeleton className="absolute inset-y-0 left-0 w-[2px]" />
                   <div className="h-full w-full flex items-center justify-center">
                     <div className="w-[80%] h-[60%] border-l-2 border-b-2 border-dashed border-muted relative">
-                      <motion.div
-                        className="absolute top-0 left-0 w-full h-full"
-                        style={{
-                          background: 'linear-gradient(to bottom right, transparent 49.5%, var(--color-muted) 50%, transparent 50.5%)',
-                          backgroundSize: '100% 100%'
-                        }}
-                        animate={{ opacity: [0.2, 0.5, 0.2] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      />
+                      {reduceMotion ? (
+                        <div
+                          className="absolute top-0 left-0 w-full h-full opacity-35"
+                          style={{
+                            background: 'linear-gradient(to bottom right, transparent 49.5%, var(--color-muted) 50%, transparent 50.5%)',
+                            backgroundSize: '100% 100%',
+                          }}
+                        />
+                      ) : (
+                        <motion.div
+                          className="absolute top-0 left-0 w-full h-full"
+                          style={{
+                            background: 'linear-gradient(to bottom right, transparent 49.5%, var(--color-muted) 50%, transparent 50.5%)',
+                            backgroundSize: '100% 100%',
+                          }}
+                          animate={{ opacity: [0.2, 0.5, 0.2] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -688,9 +735,9 @@ export function Dashboard() {
 
           {/* Heatmap */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ duration: reduceMotion ? 0 : 0.25, delay: reduceMotion ? 0 : 0.2 }}
             className="lg:col-span-2 bg-card border border-border rounded-lg p-6"
           >
             <div className="mb-6 flex justify-between items-center">
@@ -782,9 +829,9 @@ export function Dashboard() {
 
           {/* Snapshots Radar/Cards */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
+            transition={{ duration: reduceMotion ? 0 : 0.25, delay: reduceMotion ? 0 : 0.25 }}
             className="bg-card border border-border rounded-lg p-6 flex flex-col"
           >
             <div className="mb-6 flex justify-between items-start">
@@ -875,9 +922,9 @@ export function Dashboard() {
 
           {/* Git Donut */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ duration: reduceMotion ? 0 : 0.25, delay: reduceMotion ? 0 : 0.3 }}
             className="bg-card border border-border rounded-lg p-6"
           >
             <div className="mb-2 flex justify-between items-start">
@@ -939,9 +986,9 @@ export function Dashboard() {
 
           {/* Stale Work Table */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
+            transition={{ duration: reduceMotion ? 0 : 0.25, delay: reduceMotion ? 0 : 0.35 }}
             className="lg:col-span-2 bg-card border border-border rounded-lg p-6 flex flex-col"
           >
             <div className="mb-6 flex justify-between items-center">
@@ -1101,40 +1148,14 @@ export function Dashboard() {
             </motion.div>
           </div>
 
-          {/* AI Chat Panel */}
-          <motion.div variants={item} initial="hidden" animate="show" className="bg-card border border-border rounded-lg flex flex-col h-[500px]">
-            <div className="p-4 border-b border-border flex items-center gap-2">
-              <Bot className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">Project AI Assistant</h3>
-            </div>
-            <div className="flex-1 p-4 overflow-y-auto space-y-4">
-              {chatMessages.map((m, idx) => (
-                <div key={idx} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  {m.role === 'assistant' && (
-                    <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="bg-primary/20 text-primary"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
-                  )}
-                  <div className={`p-3 rounded-xl text-sm max-w-[85%] ${m.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-muted rounded-tl-none'}`}>
-                    {m.content}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="p-4 border-t border-border">
-              <div className="relative">
-                <Input
-                  placeholder="Ask about the project..."
-                  value={chatMessage}
-                  onChange={(e) => setChatMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendChat()}
-                  className="pr-10 bg-input-background"
-                  disabled={chatSending}
-                />
-                <Button size="icon" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-primary" onClick={handleSendChat} disabled={chatSending || !chatMessage.trim()}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </motion.div>
+          <DashboardClientChatPanel
+            itemVariants={item}
+            chatMessages={chatMessages}
+            chatMessage={chatMessage}
+            onChatMessageChange={setChatMessage}
+            onSend={handleSendChat}
+            chatSending={chatSending}
+          />
         </div>
       )}
 

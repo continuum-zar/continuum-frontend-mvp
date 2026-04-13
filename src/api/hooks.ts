@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
     fetchProjectIntegrations,
@@ -23,16 +23,32 @@ import {
     updateProject,
     deleteProject,
     projectKeys,
+    fetchProjectAttachments,
+    uploadProjectAttachment,
+    addProjectAttachmentLink,
+    deleteProjectAttachment,
 } from './projects';
 export { projectKeys };
+import {
+    acceptInvitation,
+    declineInvitation,
+    fetchInvitationByToken,
+    fetchPendingInvitations,
+    invitationKeys,
+} from './invitations';
+export { invitationKeys };
 import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
 import {
     fetchTask,
     fetchProjectTasks,
     fetchAllTasks,
+    fetchTasksAssignedToUser,
+    fetchTasksCreatedByUser,
+    createTask,
     updateTaskStatus,
     updateTask,
+    setTaskLinkedBranch,
     deleteTask,
     fetchTaskComments,
     createTaskComment,
@@ -47,27 +63,73 @@ import {
 } from './tasks';
 import { fetchLoggedHours, createLoggedHour } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
-import type { Task, TaskStatus, ScopeWeight } from '@/types/task';
+import type { Task, TaskAPIResponse, TaskStatus, ScopeWeight } from '@/types/task';
+import type { CreateTaskBody } from './tasks';
+import { useAuthStore } from '@/store/authStore';
+import axios from 'axios';
+
+const taskDetailKey = (taskId: number | string) => ['tasks', 'detail', taskId] as const;
+const taskTimelineKey = (taskId: number | string) => ['taskTimeline', taskId] as const;
+
+function invalidateDerivedTaskLists(queryClient: QueryClient) {
+    void queryClient.invalidateQueries({ queryKey: projectKeys.allTasks() });
+    void queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
+    void queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
+}
+
+function invalidateTasksForCachedTaskProject(
+    queryClient: QueryClient,
+    taskId: number | string | undefined | null,
+) {
+    if (taskId == null || taskId === '') return;
+    const task = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
+    const pid = task?.project_id;
+    if (pid != null) {
+        void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(pid) });
+    }
+}
 
 /** Normalize FastAPI error detail into a single message. */
 export function getApiErrorMessage(err: unknown, fallback: string): string {
-    const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
-    const detail = data?.detail;
-    if (typeof detail === 'string') return detail;
-    if (Array.isArray(detail) && detail.length > 0) {
-        const messages = detail
-            .map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d)))
-            .filter(Boolean);
-        return messages.length > 0 ? messages.join('. ') : fallback;
+    if (axios.isAxiosError(err)) {
+        const data = err.response?.data as { detail?: string | Array<{ msg?: string }> } | undefined;
+        const detail = data?.detail;
+        if (typeof detail === 'string') return detail;
+        if (Array.isArray(detail) && detail.length > 0) {
+            const messages = detail
+                .map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d)))
+                .filter(Boolean);
+            if (messages.length > 0) return messages.join('. ');
+        }
+        // No HTTP response: dropped connection, proxy/gateway timeout, DNS, CORS, client timeout, etc.
+        // The server may still have completed the request — err.message explains the client-side failure.
+        if (!err.response && err.message) return err.message;
+    } else {
+        const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
+        const detail = data?.detail;
+        if (typeof detail === 'string') return detail;
+        if (Array.isArray(detail) && detail.length > 0) {
+            const messages = detail
+                .map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d)))
+                .filter(Boolean);
+            return messages.length > 0 ? messages.join('. ') : fallback;
+        }
     }
+    if (err instanceof Error && err.message) return err.message;
     return fallback;
 }
 
 
-export function useProjects() {
+export function useProjects(options?: { enabled?: boolean }) {
+    const userId = useAuthStore((s) => s.user?.id);
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const authReady = isAuthenticated && userId != null && userId !== '';
+    const enabled =
+        authReady && (options?.enabled !== undefined ? options.enabled : true);
     return useQuery({
-        queryKey: projectKeys.list(),
+        queryKey: projectKeys.listForUser(userId),
         queryFn: fetchProjects,
+        enabled,
         // Reference data: keep longer in cache and avoid refetch on window focus
         staleTime: 3 * 60 * 1000,
         refetchOnWindowFocus: false,
@@ -96,6 +158,59 @@ export function useAllTasks(options?: { enabled?: boolean }) {
         queryKey: projectKeys.allTasks(),
         queryFn: fetchAllTasks,
         enabled: options?.enabled,
+    });
+}
+
+/** Tasks assigned to the current user (Sprint list on Assigned to Me). */
+export function useAssignedToMeTasks(options?: { enabled?: boolean }) {
+    const userId = useAuthStore((s) => s.user?.id);
+    const numericUserId =
+        userId != null && /^\d+$/.test(String(userId).trim()) ? Number(String(userId).trim()) : null;
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    return useQuery({
+        queryKey: projectKeys.assignedToMeTasks(userId),
+        queryFn: () => fetchTasksAssignedToUser(numericUserId!),
+        enabled:
+            (options?.enabled !== false) &&
+            isAuthenticated &&
+            numericUserId != null &&
+            Number.isFinite(numericUserId),
+        staleTime: 60 * 1000,
+    });
+}
+
+/** Tasks created by the current user (Deliverables on Created by Me). */
+export function useCreatedByMeTasks(options?: { enabled?: boolean }) {
+    const userId = useAuthStore((s) => s.user?.id);
+    const numericUserId =
+        userId != null && /^\d+$/.test(String(userId).trim()) ? Number(String(userId).trim()) : null;
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    return useQuery({
+        queryKey: projectKeys.createdByMeTasks(userId),
+        queryFn: () => fetchTasksCreatedByUser(numericUserId!),
+        enabled:
+            (options?.enabled !== false) &&
+            isAuthenticated &&
+            numericUserId != null &&
+            Number.isFinite(numericUserId),
+        staleTime: 60 * 1000,
+    });
+}
+
+export function useCreateTask() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateTaskBody) => createTask(body),
+        onSuccess: (_data, body) => {
+            queryClient.invalidateQueries({ queryKey: projectKeys.tasks(body.project_id) });
+            queryClient.invalidateQueries({ queryKey: projectKeys.allTasks() });
+            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
+            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
+            toast.success('Task created');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to create task'));
+        },
     });
 }
 
@@ -185,9 +300,15 @@ export function useDeleteProject() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (projectId: number | string) => deleteProject(projectId),
-        onSuccess: () => {
+        onSuccess: (_data, projectId) => {
             queryClient.invalidateQueries({ queryKey: projectKeys.list() });
-            queryClient.invalidateQueries({ queryKey: projectKeys.all });
+            invalidateDerivedTaskLists(queryClient);
+            queryClient.removeQueries({ queryKey: projectKeys.detail(projectId) });
+            queryClient.removeQueries({ queryKey: projectKeys.tasks(projectId) });
+            queryClient.removeQueries({ queryKey: projectKeys.milestones(projectId) });
+            queryClient.removeQueries({ queryKey: projectKeys.members(projectId) });
+            queryClient.removeQueries({ queryKey: projectKeys.repositories(projectId) });
+            queryClient.removeQueries({ queryKey: projectKeys.projectAttachments(projectId) });
             toast.success('Project deleted');
         },
         onError: (err) => {
@@ -221,6 +342,8 @@ export function useUpdateTaskStatus(projectId: number | string | undefined | nul
         },
         onSettled: () => {
             if (key) queryClient.invalidateQueries({ queryKey: key });
+            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
+            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
         },
     });
 }
@@ -283,16 +406,58 @@ export function useAddMember(projectId: number | string | undefined | null) {
     return useMutation({
         mutationFn: (body: { email: string; role?: string }) => addMember(projectId!, body),
         onSuccess: () => {
-            if (projectId != null && projectId !== '')
-                queryClient.invalidateQueries({ queryKey: projectKeys.members(projectId) });
-            toast.success('Member added to project');
+            void queryClient.invalidateQueries({ queryKey: invitationKeys.pending() });
+            toast.success('Invitation sent');
         },
         onError: (err: unknown) => {
             const status = (err as { response?: { status?: number } })?.response?.status;
-            let fallback = 'Failed to add member';
-            if (status === 404) fallback = 'User not found. They must have an account with this email.';
-            else if (status === 409) fallback = 'User is already a member of this project.';
+            let fallback = 'Failed to send invitation';
+            if (status === 409) fallback = 'User is already a member or an invitation is already pending.';
             toast.error(getApiErrorMessage(err, fallback));
+        },
+    });
+}
+
+export function usePendingInvitations(options?: { enabled?: boolean }) {
+    const userId = useAuthStore((s) => s.user?.id);
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const enabled =
+        Boolean(isAuthenticated && userId != null && userId !== '') &&
+        (options?.enabled !== undefined ? options.enabled : true);
+    return useQuery({
+        queryKey: [...invitationKeys.pending(), userId ?? 'signed-out'],
+        queryFn: fetchPendingInvitations,
+        enabled,
+    });
+}
+
+export function useInvitationByToken(token: string | null | undefined, options?: { enabled?: boolean }) {
+    const t = token?.trim() ?? '';
+    const enabled = Boolean(t) && (options?.enabled !== undefined ? options.enabled : true);
+    return useQuery({
+        queryKey: invitationKeys.byToken(t),
+        queryFn: () => fetchInvitationByToken(t),
+        enabled,
+    });
+}
+
+export function useAcceptInvitation() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (invitationId: number) => acceptInvitation(invitationId),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: invitationKeys.pending() });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+        },
+    });
+}
+
+export function useDeclineInvitation() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (invitationId: number) => declineInvitation(invitationId),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: invitationKeys.pending() });
         },
     });
 }
@@ -303,21 +468,38 @@ export function useUpdateTask() {
     return useMutation({
         mutationFn: ({
             taskId,
+            title,
+            description,
             status,
             scope_weight,
             due_date,
+            estimated_hours,
             linked_repo,
             linked_branch,
             checklists,
         }: {
             taskId: string | number;
+            title?: string;
+            description?: string | null;
             status?: TaskStatus;
             scope_weight?: ScopeWeight;
             due_date?: string | null;
+            estimated_hours?: number | null;
             linked_repo?: string | null;
             linked_branch?: string | null;
             checklists?: Array<{ id?: string; text: string; done: boolean }>;
-        }) => updateTask(taskId, { status, scope_weight, due_date, linked_repo, linked_branch, checklists }),
+        }) =>
+            updateTask(taskId, {
+                title,
+                description,
+                status,
+                scope_weight,
+                due_date,
+                estimated_hours,
+                linked_repo,
+                linked_branch,
+                checklists,
+            }),
         onSuccess: (_data, { taskId }) => {
             // Show success toast
             toast.success('Task updated successfully');
@@ -329,14 +511,43 @@ export function useUpdateTask() {
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to update task'));
         },
-        onSettled: () => {
-            // Refetch all project task lists to ensure consistency
-            queryClient.invalidateQueries({ queryKey: projectKeys.all });
+        onSettled: (_data, _err, variables) => {
+            invalidateTasksForCachedTaskProject(queryClient, variables.taskId);
+            invalidateDerivedTaskLists(queryClient);
         },
     });
 }
-// Task detail key and hook
-const taskDetailKey = (taskId: number | string) => ['tasks', 'detail', taskId] as const;
+
+export function useSetTaskLinkedBranch() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            taskId,
+            linked_repo,
+            linked_branch,
+            linked_branch_full_ref,
+        }: {
+            taskId: string | number;
+            linked_repo: string;
+            linked_branch: string;
+            linked_branch_full_ref?: string | null;
+        }) => setTaskLinkedBranch(taskId, { linked_repo, linked_branch, linked_branch_full_ref }),
+        onSuccess: (_data, { taskId }) => {
+            toast.success('Branch linked to task');
+            if (taskId) {
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
+            }
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to link branch'));
+        },
+        onSettled: (_data, _err, variables) => {
+            invalidateTasksForCachedTaskProject(queryClient, variables.taskId);
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
 
 export function useTask(taskId: number | string | undefined | null) {
     return useQuery({
@@ -359,8 +570,9 @@ export function useAssignTask() {
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to update assignee'));
         },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: projectKeys.all });
+        onSettled: (_data, _err, { taskId }) => {
+            invalidateTasksForCachedTaskProject(queryClient, taskId);
+            invalidateDerivedTaskLists(queryClient);
         },
     });
 }
@@ -370,11 +582,13 @@ export function useDeleteTask(projectId: number | string | undefined | null) {
     return useMutation({
         mutationFn: (taskId: number | string) => deleteTask(taskId),
         onSuccess: (_data, taskId) => {
-            queryClient.invalidateQueries({ queryKey: projectKeys.all });
             if (projectId != null && projectId !== '') {
-                queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+                void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+            } else {
+                invalidateTasksForCachedTaskProject(queryClient, taskId);
             }
-            queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            invalidateDerivedTaskLists(queryClient);
+            void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             toast.success('Task deleted');
         },
         onError: (err) => {
@@ -389,9 +603,10 @@ export function useAddTaskLabel(taskId: number | string | undefined | null) {
         mutationFn: (label: string) => addTaskLabel(taskId!, label),
         onSuccess: () => {
             if (taskId != null && taskId !== '') {
-                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             }
-            queryClient.invalidateQueries({ queryKey: projectKeys.all });
+            invalidateTasksForCachedTaskProject(queryClient, taskId);
+            invalidateDerivedTaskLists(queryClient);
             toast.success('Label added');
         },
         onError: (err) => {
@@ -406,9 +621,10 @@ export function useRemoveTaskLabel(taskId: number | string | undefined | null) {
         mutationFn: (label: string) => removeTaskLabel(taskId!, label),
         onSuccess: () => {
             if (taskId != null && taskId !== '') {
-                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             }
-            queryClient.invalidateQueries({ queryKey: projectKeys.all });
+            invalidateTasksForCachedTaskProject(queryClient, taskId);
+            invalidateDerivedTaskLists(queryClient);
             toast.success('Label removed');
         },
         onError: (err) => {
@@ -507,8 +723,65 @@ export function useDeleteAttachment(taskId: number | string | undefined | null) 
     });
 }
 
-// Timeline keys
-const taskTimelineKey = (taskId: number | string) => ['taskTimeline', taskId] as const;
+// ---------------------------------------------------------------------------
+// Project attachment hooks
+// ---------------------------------------------------------------------------
+const projectAttachmentsKey = (projectId: number | string) =>
+    ['projectAttachments', projectId] as const;
+
+export function useProjectAttachments(projectId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: projectAttachmentsKey(projectId!),
+        queryFn: () => fetchProjectAttachments(projectId!),
+        enabled: projectId != null && projectId !== '',
+    });
+}
+
+export function useUploadProjectAttachment(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (file: File) => uploadProjectAttachment(projectId!, file),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '')
+                queryClient.invalidateQueries({ queryKey: projectAttachmentsKey(projectId!) });
+            toast.success('Attachment uploaded successfully');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to upload attachment'));
+        },
+    });
+}
+
+export function useAddProjectAttachmentLink(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: { url: string; name?: string | null }) =>
+            addProjectAttachmentLink(projectId!, payload),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '')
+                queryClient.invalidateQueries({ queryKey: projectAttachmentsKey(projectId!) });
+            toast.success('Link added');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to add link'));
+        },
+    });
+}
+
+export function useDeleteProjectAttachment(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (attachmentId: number | string) => deleteProjectAttachment(attachmentId),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '')
+                queryClient.invalidateQueries({ queryKey: projectAttachmentsKey(projectId!) });
+            toast.success('Attachment deleted');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to delete attachment'));
+        },
+    });
+}
 
 export function useTaskTimeline(taskId: number | string | undefined | null) {
     return useQuery({

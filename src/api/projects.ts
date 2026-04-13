@@ -3,6 +3,8 @@ import type { PaginatedResponse } from '@/types/api';
 import type { ProjectAPIResponse, ProjectDetailAPIResponse } from '@/types/project';
 import type { MilestoneAPIResponse } from '@/types/milestone';
 import type { MemberAPIResponse } from '@/types/member';
+import type { ProjectInvitation } from '@/types/invitation';
+import type { AttachmentAPIResponse } from '@/types/attachment';
 import {
     mapProjectListItem,
     mapProjectDetail,
@@ -110,26 +112,126 @@ export async function fetchMembers(projectId: number | string): Promise<Member[]
     return (data ?? []).map(mapMember);
 }
 
-/** Add a member to a project. Returns raw API response; call fetchMembers(projectId) to refresh. */
+/** Invite a user to a project (creates pending invitation + sends email). */
 export async function addMember(
     projectId: number | string,
     body: { email: string; role?: string }
-): Promise<MemberAPIResponse> {
-    const { data } = await api.post<MemberAPIResponse>(`/projects/${projectId}/members`, {
+): Promise<ProjectInvitation> {
+    const { data } = await api.post<ProjectInvitation>(`/projects/${projectId}/members`, {
         email: body.email,
         role: body.role ?? 'developer',
     });
     return data;
 }
 
+/**
+ * Unify `useParams()` string ids and `Number(id)` so React Query keys match; otherwise
+ * invalidateQueries from mutations (number) does not refresh queries subscribed with a string id.
+ */
+export function normalizeProjectKeyId(projectId: number | string): number | string {
+    if (typeof projectId === 'number' && Number.isFinite(projectId)) return projectId;
+    if (typeof projectId === 'string' && /^\d+$/.test(projectId)) return Number(projectId);
+    return projectId;
+}
+
 export const projectKeys = {
     all: ['projects'] as const,
     list: () => [...projectKeys.all, 'list'] as const,
-    detail: (id: number | string) => [...projectKeys.all, 'detail', id] as const,
-    tasks: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'tasks'] as const,
+    /** List key scoped to the signed-in user so cache is never reused across accounts. */
+    listForUser: (userId: string | number | undefined | null) =>
+        [...projectKeys.list(), userId ?? 'signed-out'] as const,
+    detail: (id: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(id)] as const,
+    tasks: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'tasks'] as const,
     allTasks: () => ['tasks', 'all'] as const,
-    milestones: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'milestones'] as const,
-    members: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'members'] as const,
-    repositories: (projectId: number | string) => [...projectKeys.all, 'detail', projectId, 'repositories'] as const,
+    /** Tasks assigned to a user (GET /tasks/?assigned_to=) — scoped under projects for cache invalidation. */
+    assignedToMeTasks: (userId: string | number | undefined | null) =>
+        [...projectKeys.all, 'assigned-tasks', userId ?? 'signed-out'] as const,
+    /** Tasks created by a user (GET /tasks/?created_by=). */
+    createdByMeTasks: (userId: string | number | undefined | null) =>
+        [...projectKeys.all, 'created-tasks', userId ?? 'signed-out'] as const,
+    milestones: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'milestones'] as const,
+    members: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'members'] as const,
+    repositories: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'repositories'] as const,
     loggedHours: (projectId?: string | null) => ['logged-hours', projectId ?? 'all'] as const,
+    projectAttachments: (projectId: number | string) =>
+        [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'attachments'] as const,
 };
+
+// ---------------------------------------------------------------------------
+// Project-level attachments
+// ---------------------------------------------------------------------------
+
+interface ProjectAttachmentsListResponse {
+    attachments: AttachmentAPIResponse[];
+    total: number;
+}
+
+/** Fetch all attachments for a project. */
+export async function fetchProjectAttachments(projectId: number | string): Promise<AttachmentAPIResponse[]> {
+    const { data } = await api.get<ProjectAttachmentsListResponse>(`/projects/${projectId}/attachments`);
+    return data?.attachments ?? [];
+}
+
+/** Upload a file attachment to a project. */
+export async function uploadProjectAttachment(projectId: number | string, file: File): Promise<AttachmentAPIResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await api.post<AttachmentAPIResponse>(`/projects/${projectId}/attachments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+}
+
+/** Add a URL link attachment to a project. */
+export async function addProjectAttachmentLink(
+    projectId: number | string,
+    payload: { url: string; name?: string | null }
+): Promise<AttachmentAPIResponse> {
+    const { data } = await api.post<AttachmentAPIResponse>(`/projects/${projectId}/attachments/link`, {
+        url: payload.url,
+        name: payload.name ?? payload.url,
+    });
+    return data;
+}
+
+/** Delete a project attachment. */
+export async function deleteProjectAttachment(attachmentId: number | string): Promise<void> {
+    await api.delete(`/projects/attachments/${attachmentId}`);
+}
+
+/** Get the download URL for a project attachment. */
+export function getProjectAttachmentDownloadUrl(attachmentId: number | string): string {
+    return `/api/v1/projects/attachments/${attachmentId}/download`;
+}
+
+function parseContentDispositionFilename(headers: Record<string, unknown>): string {
+    const contentDisposition = headers?.['content-disposition'];
+    let filename = 'attachment';
+    if (typeof contentDisposition === 'string') {
+        const match =
+            contentDisposition.match(/filename\*?=(?:UTF-8'')?["']?([^"'\s;]+)["']?/i) ??
+            contentDisposition.match(/filename=["']?([^"'\s;]+)["']?/i);
+        if (match?.[1]) filename = decodeURIComponent(match[1].trim());
+    }
+    return filename;
+}
+
+/** Result of downloading a project attachment (blob + suggested filename). */
+export interface DownloadProjectAttachmentResult {
+    blob: Blob;
+    filename: string;
+}
+
+/**
+ * Download a project attachment via axios (sends `Authorization`).
+ * Plain `<a href={getProjectAttachmentDownloadUrl(...)}>` does not send the bearer token — use this instead.
+ */
+export async function downloadProjectAttachment(
+    attachmentId: number | string
+): Promise<DownloadProjectAttachmentResult> {
+    const res = await api.get<Blob>(`/projects/attachments/${attachmentId}/download`, {
+        responseType: 'blob',
+    });
+    const filename = parseContentDispositionFilename(res.headers as Record<string, unknown>);
+    return { blob: res.data, filename };
+}

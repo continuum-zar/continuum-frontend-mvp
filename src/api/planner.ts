@@ -72,18 +72,33 @@ export async function uploadPlannerFile(file: File): Promise<FileContent> {
     formData.append('file', file);
     const { data } = await api.post<FileContent>('/planner/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 600_000,
     });
     return data;
+}
+
+function isAbortLike(err: unknown): boolean {
+    const e = err as { code?: string; name?: string };
+    return (
+        e?.code === 'ERR_CANCELED' ||
+        e?.name === 'CanceledError' ||
+        e?.name === 'AbortError'
+    );
 }
 
 export async function sendPlannerChat(
     messages: PlannerMessage[],
     file_contents: FileContent[],
+    options?: { signal?: AbortSignal },
 ): Promise<PlannerChatResponse> {
-    const { data } = await api.post<PlannerChatResponse>('/planner/chat', {
-        messages,
-        file_contents,
-    });
+    const { data } = await api.post<PlannerChatResponse>(
+        '/planner/chat',
+        {
+            messages,
+            file_contents,
+        },
+        { signal: options?.signal, timeout: 600_000 },
+    );
     return data;
 }
 
@@ -91,12 +106,23 @@ export async function generatePlan(
     messages: PlannerMessage[],
     file_contents: FileContent[],
 ): Promise<GeneratePlanResponse> {
-    const { data } = await api.post<GeneratePlanResponse>('/planner/generate-plan', {
+    const { data: raw } = await api.post<unknown>('/planner/generate-plan', {
         messages,
         file_contents,
     }, {
-        timeout: 300_000,
+        timeout: 600_000,
     });
+
+    const data = (typeof raw === 'string' ? JSON.parse(raw) : raw) as GeneratePlanResponse;
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !('plan' in data) ||
+        data.plan == null ||
+        typeof (data as GeneratePlanResponse).confidence !== 'number'
+    ) {
+        throw new Error('Unexpected generate-plan response shape');
+    }
     return data;
 }
 
@@ -104,7 +130,7 @@ export async function approvePlan(plan: ProjectPlan): Promise<ApprovePlanRespons
     const { data } = await api.post<ApprovePlanResponse>('/planner/approve-plan', {
         plan,
     }, {
-        timeout: 300_000,
+        timeout: 600_000,
     });
     return data;
 }
@@ -127,11 +153,14 @@ export function usePlannerChat() {
         mutationFn: ({
             messages,
             file_contents,
+            signal,
         }: {
             messages: PlannerMessage[];
             file_contents: FileContent[];
-        }) => sendPlannerChat(messages, file_contents),
+            signal?: AbortSignal;
+        }) => sendPlannerChat(messages, file_contents, { signal }),
         onError: (err: unknown) => {
+            if (isAbortLike(err)) return;
             toast.error(getApiErrorMessage(err, 'Chat request failed'));
         },
     });

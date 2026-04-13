@@ -1,21 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router';
 import { PrefetchLink } from '../components/PrefetchLink';
-import {
-  projectKeys, fetchProjects,
-  invoiceKeys, fetchInvoices,
-  userHoursKeys, fetchUserHours,
-  getCurrentWeekRange
-} from '../../api';
-import {
-  LayoutDashboard,
-  FolderKanban,
-  Clock,
-  FileText,
-  Settings,
-  Bell,
-  Search,
-  LogOut
-} from 'lucide-react';
+import { projectKeys, fetchProjects, fetchAllTasks } from '../../api';
+import { LayoutDashboard, Settings, Bell, Search, LogOut } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import {
@@ -27,14 +13,9 @@ import {
 } from '../components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { GlobalActiveSession } from '../components/ui/GlobalActiveSession';
+import { PendingInvitationsHost } from '../components/PendingInvitationsHost';
 import { useAuthStore } from '../../store/authStore';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Projects', href: '/projects', icon: FolderKanban },
-  { name: 'Time Tracking', href: '/time', icon: Clock },
-  { name: 'Invoices', href: '/invoices', icon: FileText },
-];
 import { useRole } from '../context/RoleContext';
 import { ErrorBoundary } from '../ErrorBoundary';
 
@@ -42,27 +23,23 @@ export function DashboardLayout() {
   const navigate = useNavigate();
   const { role: userRole } = useRole();
 
-  // Filter navigation based on role
-  const filteredNavigation = navigation.filter((item) => {
-    if (userRole === 'Client') {
-      return item.name === 'Dashboard';
-    }
-    return true; // PM and Developer see all
-  });
-
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const isLoading = useAuthStore((state) => state.isLoading);
+
+  const boardHref =
+    userRole === 'Client' ? '/dashboard-placeholder' : '/dashboard-placeholder/entry';
+  const boardLabel = userRole === 'Client' ? 'Dashboard' : 'Board';
 
   const displayName = user
     ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email
     : '—';
   const initials = user
-    ? (user.first_name && user.last_name
-        ? `${user.first_name[0]}${user.last_name[0]}`
-        : user.email
-          ? user.email.slice(0, 2)
-          : '?')
+    ? user.first_name && user.last_name
+      ? `${user.first_name[0]}${user.last_name[0]}`
+      : user.email
+        ? user.email.slice(0, 2)
+        : '?'
     : '?';
 
   const handleLogout = async () => {
@@ -86,34 +63,36 @@ export function DashboardLayout() {
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation — single entry back into dashboard-placeholder workflow */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {filteredNavigation.map((item) => (
-            <PrefetchLink
-              key={item.name}
-              to={item.href}
-              end={item.href === '/dashboard'}
-              onPrefetch={(queryClient) => {
-                if (item.href === '/projects') {
-                  queryClient.prefetchQuery({ queryKey: projectKeys.all, queryFn: () => fetchProjects() });
-                } else if (item.href === '/invoices') {
-                  queryClient.prefetchQuery({ queryKey: invoiceKeys.all, queryFn: () => fetchInvoices() });
-                } else if (item.href === '/time') {
-                  const { start, end } = getCurrentWeekRange();
-                  queryClient.prefetchQuery({ queryKey: userHoursKeys.range(start, end), queryFn: () => fetchUserHours(start, end) });
-                }
-              }}
-              className={({ isActive }) =>
-                `flex items-center px-3 py-2 rounded-md transition-colors ${isActive
+          <PrefetchLink
+            to={boardHref}
+            end={boardHref === '/dashboard-placeholder'}
+            onPrefetch={(queryClient) => {
+              const uid = user?.id;
+              if (uid == null || uid === '') return;
+              void queryClient.prefetchQuery({
+                queryKey: projectKeys.listForUser(uid),
+                queryFn: fetchProjects,
+                staleTime: 3 * 60 * 1000,
+              });
+              void queryClient.prefetchQuery({
+                queryKey: projectKeys.allTasks(),
+                queryFn: fetchAllTasks,
+                staleTime: 60 * 1000,
+              });
+            }}
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 rounded-md transition-colors ${
+                isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                }`
-              }
-            >
-              <item.icon className="h-5 w-5 mr-3" />
-              <span>{item.name}</span>
-            </PrefetchLink>
-          ))}
+              }`
+            }
+          >
+            <LayoutDashboard className="h-5 w-5 mr-3" />
+            <span>{boardLabel}</span>
+          </PrefetchLink>
         </nav>
 
         {/* Admin Section */}
@@ -121,9 +100,10 @@ export function DashboardLayout() {
           <NavLink
             to="/settings"
             className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md transition-colors ${isActive
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              `flex items-center px-3 py-2 rounded-md transition-colors ${
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               }`
             }
           >
@@ -198,6 +178,7 @@ export function DashboardLayout() {
           </ErrorBoundary>
         </main>
       </div>
+      <PendingInvitationsHost />
     </div>
   );
 }

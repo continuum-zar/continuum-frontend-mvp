@@ -20,11 +20,17 @@ import {
   Trash2,
   Loader2,
   Search,
+  Link,
+  Upload,
+  FileText,
+  X,
 } from 'lucide-react';
 import type { Task, TaskStatus } from '@/types/task';
 import type { Milestone } from '@/types/milestone';
 import type { Repository } from '@/types/repository';
 import type { RepositoryProvider } from '@/types/repository';
+import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
+import { parseApiUtcDateTime } from '@/lib/parseApiUtcDateTime';
 import {
   useProject,
   useProjectTasks,
@@ -46,8 +52,16 @@ import {
   useUpdateIntegration,
   useDeleteIntegration,
   useTestIntegration,
+  useProjectAttachments,
+  useUploadProjectAttachment,
+  useAddProjectAttachmentLink,
+  useDeleteProjectAttachment,
+  downloadProjectAttachment,
   projectKeys,
   mapMilestone,
+  mapAttachment,
+  getAttachmentLinkHref,
+  getAttachmentLinkLabel,
   fetchTask,
   getApiErrorMessage,
 } from '@/api';
@@ -377,12 +391,16 @@ export function ProjectBoard() {
   }, [milestonesQuery.data]);
   const milestonesLoading = milestonesQuery.isLoading;
 
+  const navigateToPlaceholderBoard = useCallback(() => {
+    void resolveDefaultBoardPath().then((path) => navigate(path));
+  }, [navigate]);
+
   useEffect(() => {
     if (!projectId || isNaN(Number(projectId))) {
-      navigate('/projects');
+      navigateToPlaceholderBoard();
       return;
     }
-  }, [projectId, navigate]);
+  }, [projectId, navigateToPlaceholderBoard]);
 
   useEffect(() => {
     const state = location.state as { newTaskCreated?: boolean } | null;
@@ -426,6 +444,17 @@ export function ProjectBoard() {
   });
   const [unlinkRepoId, setUnlinkRepoId] = useState<number | null>(null);
   const [newIntegrationUrl, setNewIntegrationUrl] = useState('');
+
+  // Project attachment state
+  const [attachmentLinkUrl, setAttachmentLinkUrl] = useState('');
+  const [attachmentLinkName, setAttachmentLinkName] = useState('');
+  const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
+  const [attachmentToDeleteId, setAttachmentToDeleteId] = useState<number | string | null>(null);
+  const projectAttachmentsQuery = useProjectAttachments(projectId);
+  const uploadProjectAttachmentMutation = useUploadProjectAttachment(projectId);
+  const addProjectLinkMutation = useAddProjectAttachmentLink(projectId);
+  const deleteProjectAttachmentMutation = useDeleteProjectAttachment(projectId);
+  const projectAttachmentFileRef = useRef<HTMLInputElement>(null);
 
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -614,9 +643,11 @@ export function ProjectBoard() {
     );
   };
 
+  // When a milestone is selected, only show its tasks.
+  // When no milestone is selected (no milestones exist yet), show all project tasks.
   const filteredTasks = selectedMilestoneId
     ? tasks.filter((t) => t.milestoneId === selectedMilestoneId)
-    : [];
+    : tasks;
   const todoTasks = filteredTasks.filter((t) => t.status === 'todo');
   const inProgressTasks = filteredTasks.filter((t) => t.status === 'in-progress');
   const doneTasks = filteredTasks.filter((t) => t.status === 'done');
@@ -625,7 +656,7 @@ export function ProjectBoard() {
     <div className="p-8">
       {/* Header */}
       <div className="mb-8 flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/projects')}>
+        <Button variant="ghost" size="icon" onClick={navigateToPlaceholderBoard}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 flex items-center justify-between">
@@ -679,7 +710,7 @@ export function ProjectBoard() {
                         </SelectContent>
                       </Select>
                       <Button onClick={handleInvite} disabled={!inviteEmail?.trim() || addMemberMutation.isPending}>
-                        {addMemberMutation.isPending ? 'Adding…' : 'Invite'}
+                        {addMemberMutation.isPending ? 'Sending…' : 'Invite'}
                       </Button>
                     </div>
                     {inviteError && (
@@ -758,7 +789,7 @@ export function ProjectBoard() {
               ? Math.round((doneTasks.length / filteredTasks.length) * 100)
               : 0}%
           </div>
-          <div className="text-sm text-muted-foreground mb-3">Milestone Progress</div>
+          <div className="text-sm text-muted-foreground mb-3">{selectedMilestoneId ? 'Milestone Progress' : 'Overall Progress'}</div>
           <Progress
             value={filteredTasks.length > 0 ? (doneTasks.length / filteredTasks.length) * 100 : 0}
             className="h-1.5"
@@ -995,6 +1026,215 @@ export function ProjectBoard() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Project Attachments */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-muted-foreground text-sm font-bold tracking-widest uppercase">Project Attachments</h3>
+          <div className="flex gap-2">
+            {/* Upload file */}
+            <input
+              ref={projectAttachmentFileRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                uploadProjectAttachmentMutation.mutate(file, {
+                  onSettled: () => {
+                    if (projectAttachmentFileRef.current) projectAttachmentFileRef.current.value = '';
+                  },
+                });
+              }}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => projectAttachmentFileRef.current?.click()}
+              disabled={uploadProjectAttachmentMutation.isPending}
+            >
+              {uploadProjectAttachmentMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4 mr-2" />
+              )}
+              {uploadProjectAttachmentMutation.isPending ? 'Uploading…' : 'Upload File'}
+            </Button>
+            {/* Add link */}
+            <Dialog open={isAddLinkOpen} onOpenChange={setIsAddLinkOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Link className="w-4 h-4 mr-2" />
+                  Add Link
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add link attachment</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="proj-link-url">URL</Label>
+                    <Input
+                      id="proj-link-url"
+                      placeholder="https://example.com/document"
+                      value={attachmentLinkUrl}
+                      onChange={(e) => setAttachmentLinkUrl(e.target.value)}
+                      className="bg-input-background"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="proj-link-name">Display name (optional)</Label>
+                    <Input
+                      id="proj-link-name"
+                      placeholder="My document"
+                      value={attachmentLinkName}
+                      onChange={(e) => setAttachmentLinkName(e.target.value)}
+                      className="bg-input-background"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsAddLinkOpen(false)}>Cancel</Button>
+                  <Button
+                    onClick={() => {
+                      if (!attachmentLinkUrl.trim()) return;
+                      addProjectLinkMutation.mutate(
+                        { url: attachmentLinkUrl.trim(), name: attachmentLinkName.trim() || null },
+                        {
+                          onSuccess: () => {
+                            setAttachmentLinkUrl('');
+                            setAttachmentLinkName('');
+                            setIsAddLinkOpen(false);
+                          },
+                        }
+                      );
+                    }}
+                    disabled={!attachmentLinkUrl.trim() || addProjectLinkMutation.isPending}
+                  >
+                    {addProjectLinkMutation.isPending ? 'Adding…' : 'Add Link'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+        <div className="bg-card border border-border rounded-lg p-6">
+          {projectAttachmentsQuery.isLoading && (
+            <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />Loading attachments…
+            </div>
+          )}
+          {!projectAttachmentsQuery.isLoading && (projectAttachmentsQuery.data?.length ?? 0) === 0 && (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground text-sm">
+              <Paperclip className="w-8 h-8 mb-2 opacity-40" />
+              <p>No attachments yet. Upload a file or add a link.</p>
+            </div>
+          )}
+          {!projectAttachmentsQuery.isLoading && (projectAttachmentsQuery.data?.length ?? 0) > 0 && (
+            <ul className="space-y-2">
+              {(projectAttachmentsQuery.data ?? []).map(mapAttachment).map((att) => {
+                const linkHref = getAttachmentLinkHref(att);
+                const linkLabel = getAttachmentLinkLabel(att);
+                return (
+                <li
+                  key={att.id}
+                  className="flex items-center justify-between gap-3 py-2 px-3 rounded-md bg-muted/30 border border-border"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {att.kind === 'link' ? (
+                      <Link className="w-4 h-4 shrink-0 text-primary" />
+                    ) : (
+                      <FileText className="w-4 h-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <div className="min-w-0">
+                      {att.kind === 'link' && linkHref ? (
+                        <a
+                          href={linkHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={linkHref}
+                          className="text-sm font-medium text-primary truncate block hover:underline"
+                        >
+                          {linkLabel}
+                        </a>
+                      ) : (
+                        <p className="text-sm font-medium truncate">{att.filename}</p>
+                      )}
+                      {att.kind === 'file' ? (
+                        <p className="text-xs text-muted-foreground">{att.size}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {att.kind === 'file' ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Download"
+                        onClick={async () => {
+                          try {
+                            const { blob, filename } = await downloadProjectAttachment(att.id);
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = filename || att.filename;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          } catch (err) {
+                            toast.error(getApiErrorMessage(err, 'Failed to download file'));
+                          }
+                        }}
+                      >
+                        <Upload className="w-4 h-4 rotate-180" />
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      title="Delete"
+                      onClick={() => setAttachmentToDeleteId(Number(att.id))}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </li>
+              );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Delete Project Attachment Confirmation */}
+      <AlertDialog
+        open={attachmentToDeleteId !== null}
+        onOpenChange={(open) => !open && setAttachmentToDeleteId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete attachment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This attachment will be permanently removed from the project. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (attachmentToDeleteId == null) return;
+                deleteProjectAttachmentMutation.mutate(attachmentToDeleteId, {
+                  onSuccess: () => setAttachmentToDeleteId(null),
+                });
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Repositories */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
@@ -1109,9 +1349,8 @@ export function ProjectBoard() {
                   (scanRepositoryMutation.isPending &&
                     scanRepositoryMutation.variables?.repository_id === repo.id);
                 const filesIndexed = scanStatus?.files_indexed ?? 0;
-                const lastScanned = scanStatus?.last_scanned_at
-                  ? new Date(scanStatus.last_scanned_at).toLocaleString()
-                  : null;
+                const lastScannedAt = parseApiUtcDateTime(scanStatus?.last_scanned_at);
+                const lastScanned = lastScannedAt ? lastScannedAt.toLocaleString() : null;
                 return (
                   <li
                     key={repo.id}
@@ -1196,7 +1435,7 @@ export function ProjectBoard() {
             <h3 className="text-muted-foreground text-sm font-bold tracking-widest uppercase">Discord Integration</h3>
           </div>
           <p className="text-xs text-muted-foreground mb-3">
-            Discord Server Settings → Integrations → Webhooks. You’ll get notified on task creation and card movements (who moved it, task title, previous and new list).
+            Discord Server Settings → Integrations → Webhooks. Open the Discord integration modal from the dashboard bell to choose which project and task events notify this channel.
           </p>
           <div className="bg-card border border-border rounded-lg p-6">
             {integrationsQuery.isLoading ? (

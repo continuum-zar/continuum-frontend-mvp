@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { PaginatedResponse } from '@/types/api';
 import { fetchAllTasks } from './tasks';
 
 /** Table row shape for Recent Entries (matches TimeEntry in TimeTrackingContext). */
@@ -14,6 +15,7 @@ export interface LoggedHourEntry {
 /** Backend response for a single logged hour entry (GET /api/v1/logged-hours). */
 export interface LoggedHourResponse {
     id: number | string;
+    task_id?: number | string | null;
     project_name: string;
     task_title: string;
     hours: number;
@@ -27,6 +29,8 @@ export interface LoggedHourResponse {
 
 export interface FetchLoggedHoursParams {
     project_id?: number | string;
+    /** Filter to a single task (GET /logged-hours/ supports task_id). */
+    task_id?: number | string;
     start_date?: string;
     end_date?: string;
     limit?: number;
@@ -49,17 +53,70 @@ function mapLoggedHourToTimeEntry(row: LoggedHourResponse): LoggedHourEntry {
     };
 }
 
-/** GET /api/v1/logged-hours. Defaults to current user; optional project_id, start_date, end_date, limit (e.g. 50). */
+/** GET /api/v1/logged-hours. Returns `PaginatedResponse` — `{ data, total, skip, limit }`, not a bare array. */
 export async function fetchLoggedHours(params?: FetchLoggedHoursParams): Promise<LoggedHourEntry[]> {
-    const { data } = await api.get<LoggedHourResponse[]>('/logged-hours/', {
+    const { data: body } = await api.get<PaginatedResponse<LoggedHourResponse>>('/logged-hours/', {
         params: {
             ...(params?.project_id != null && params.project_id !== '' && { project_id: params.project_id }),
+            ...(params?.task_id != null && params.task_id !== '' && { task_id: params.task_id }),
             ...(params?.start_date && { start_date: params.start_date }),
             ...(params?.end_date && { end_date: params.end_date }),
             ...(params?.limit != null && { limit: params.limit }),
         },
     });
-    return (data ?? []).map(mapLoggedHourToTimeEntry);
+    const rows = body?.data ?? [];
+    return rows.map(mapLoggedHourToTimeEntry);
+}
+
+/** Sum decimal hours for the current user's entries on a task (high limit). */
+export async function sumLoggedHoursForTask(params: {
+    project_id: number | string;
+    task_id: number | string;
+}): Promise<number> {
+    const { data: body } = await api.get<PaginatedResponse<LoggedHourResponse>>('/logged-hours/', {
+        params: {
+            project_id: params.project_id,
+            task_id: params.task_id,
+            limit: 1000,
+        },
+    });
+    return (body?.data ?? []).reduce((sum, row) => sum + (Number(row.hours) || 0), 0);
+}
+
+/** One task line after aggregating GET /logged-hours/?project_id= for invoice prefill. */
+export interface TaskHoursAggregate {
+    title: string;
+    hours: number;
+}
+
+/**
+ * Sum hours per task for the current user on a project (no task filter).
+ * Groups by task_id when present; otherwise by normalized task title.
+ */
+export async function aggregateLoggedHoursByTaskForProject(
+    projectId: number | string,
+): Promise<TaskHoursAggregate[]> {
+    const { data: body } = await api.get<PaginatedResponse<LoggedHourResponse>>('/logged-hours/', {
+        params: {
+            project_id: projectId,
+            limit: 1000,
+        },
+    });
+    const rows = body?.data ?? [];
+    const map = new Map<string, { title: string; hours: number }>();
+    for (const row of rows) {
+        const title = (row.task_title ?? '').trim() || 'General';
+        const tid = row.task_id != null && row.task_id !== '' ? String(row.task_id) : null;
+        const key = tid ?? `__t:${title}`;
+        const h = Number(row.hours) || 0;
+        const prev = map.get(key);
+        if (prev) {
+            prev.hours += h;
+        } else {
+            map.set(key, { title, hours: h });
+        }
+    }
+    return Array.from(map.values()).sort((a, b) => b.hours - a.hours);
 }
 
 /** Body for creating a logged hour (POST /api/v1/logged-hours). Manual entry: project_id + optional task_id; timer flow may use task_id only. Provide either hours or duration_minutes. */
@@ -80,14 +137,51 @@ export interface CreateLoggedHourBody {
 export async function createLoggedHour(body: CreateLoggedHourBody): Promise<LoggedHourResponse> {
     const hours = body.duration_minutes != null ? body.duration_minutes / 60 : (body.hours ?? 0);
     if (!Number.isFinite(hours) || hours <= 0) throw new Error('Provide either hours or duration_minutes (positive).');
+    if (body.project_id == null || body.project_id === '') {
+        throw new Error('project_id is required.');
+    }
+    const dateRaw = body.date ?? new Date().toISOString().slice(0, 10);
+    /** Backend expects `description` (required) and `date` (datetime), not `note`. */
     const payload: Record<string, unknown> = {
+        project_id: typeof body.project_id === 'string' ? Number(body.project_id) : body.project_id,
         hours,
-        ...(body.project_id != null && body.project_id !== '' && { project_id: body.project_id }),
-        ...(body.task_id != null && body.task_id !== '' && { task_id: body.task_id }),
-        ...(body.description != null && body.description !== '' && { note: body.description }),
-        ...(body.date && { date: body.date }),
+        description: (body.description ?? '').trim(),
+        date: dateRaw.includes('T') ? dateRaw : `${dateRaw}T12:00:00`,
     };
+    if (body.task_id != null && body.task_id !== '') {
+        payload.task_id = typeof body.task_id === 'string' ? Number(body.task_id) : body.task_id;
+    }
     const { data } = await api.post<LoggedHourResponse>('/logged-hours/', payload);
+    return data;
+}
+
+export type SuggestLogTimeDescriptionBody = {
+    project_id: number;
+    task_id?: number | string | null;
+};
+
+export type SuggestLogTimeDescriptionResponse = {
+    suggested_description: string;
+};
+
+/**
+ * POST /api/v1/logged-hours/ai/suggest-description
+ * (Legacy POST .../suggest-description still works.)
+ * AI time-log text: recent commits when available; otherwise task description + completed checklist (needs task).
+ */
+export async function suggestLogTimeDescription(
+    body: SuggestLogTimeDescriptionBody,
+): Promise<SuggestLogTimeDescriptionResponse> {
+    const payload: Record<string, unknown> = {
+        project_id: typeof body.project_id === 'string' ? Number(body.project_id) : body.project_id,
+    };
+    if (body.task_id != null && body.task_id !== '') {
+        payload.task_id = typeof body.task_id === 'string' ? Number(body.task_id) : body.task_id;
+    }
+    const { data } = await api.post<SuggestLogTimeDescriptionResponse>(
+        '/logged-hours/ai/suggest-description',
+        payload,
+    );
     return data;
 }
 

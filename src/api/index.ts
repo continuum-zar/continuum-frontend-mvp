@@ -10,10 +10,19 @@ export {
     deleteMilestone,
     fetchMembers,
     addMember,
+    fetchProjectAttachments,
+    uploadProjectAttachment,
+    addProjectAttachmentLink,
+    deleteProjectAttachment,
+    getProjectAttachmentDownloadUrl,
+    downloadProjectAttachment,
 } from './projects';
+export type { DownloadProjectAttachmentResult } from './projects';
 export {
     fetchTask,
+    createTask,
     updateTask,
+    setTaskLinkedBranch,
     deleteTask,
     fetchProjectTasks,
     fetchAllTasks,
@@ -44,6 +53,7 @@ export type {
     TaskContextResponse,
     RelatedTasksResponse,
     RelatedTaskItem,
+    CreateTaskBody,
 } from './tasks';
 export {
     fetchRepositories,
@@ -57,12 +67,26 @@ export {
 } from './repositories';
 export type { Repository, RepositoryCreateBody, RepositoryProvider, BranchItem } from '@/types/repository';
 export type { CommentAPIResponse } from '@/types/comment';
-export { mapProjectListItem, mapProjectDetail, mapTask, mapMilestone, mapMember, mapMilestoneStatus, formatDueDate, mapAttachment, normalizeProjectStatus } from './mappers';
+export {
+    mapProjectListItem,
+    mapProjectDetail,
+    mapTask,
+    mapMilestone,
+    mapMember,
+    mapMilestoneStatus,
+    formatDueDate,
+    formatEstimatedEffortLabel,
+    mapAttachment,
+    getAttachmentLinkHref,
+    getAttachmentLinkLabel,
+    normalizeProjectStatus,
+} from './mappers';
 export {
     useProjects,
     useProject,
     useProjectTasks,
     useAllTasks,
+    useCreateTask,
     useTask,
     useProjectMilestones,
     useProjectMembers,
@@ -71,16 +95,26 @@ export {
     useDeleteProject,
     useUpdateTaskStatus,
     useUpdateTask,
+    useSetTaskLinkedBranch,
     useCreateMilestone,
     useUpdateMilestone,
     useDeleteMilestone,
     useAddMember,
+    usePendingInvitations,
+    useInvitationByToken,
+    useAcceptInvitation,
+    useDeclineInvitation,
+    invitationKeys,
     useTaskComments,
     useCreateTaskComment,
     useTaskAttachments,
     useUploadAttachment,
     useAddAttachmentLink,
     useDeleteAttachment,
+    useProjectAttachments,
+    useUploadProjectAttachment,
+    useAddProjectAttachmentLink,
+    useDeleteProjectAttachment,
     useTaskTimeline,
     useAssignTask,
     useDeleteTask,
@@ -97,11 +131,15 @@ export {
     fetchUserRhythm,
     fetchProjectStaleWork,
     fetchClassificationBreakdown,
+    fetchProjectHealth,
     fetchClientProjects,
     fetchClientProjectProgress,
     postProjectQuery,
     fetchProjectStats,
+    fetchMemberContributions,
 } from './dashboard';
+export { fetchProjectGitContributions } from './gitContributions';
+export type { GitContributionRead, GitContributionClassification } from './gitContributions';
 export {
     fetchUserHours,
     fetchUserHoursByDay,
@@ -118,8 +156,16 @@ export {
     createLoggedHour,
     downloadLoggedHoursCsv,
     fetchTasksForTimeLog,
+    suggestLogTimeDescription,
 } from './loggedHours';
-export type { LoggedHourResponse, LoggedHourEntry, FetchLoggedHoursParams, CreateLoggedHourBody } from './loggedHours';
+export type {
+    LoggedHourResponse,
+    LoggedHourEntry,
+    FetchLoggedHoursParams,
+    CreateLoggedHourBody,
+    SuggestLogTimeDescriptionBody,
+    SuggestLogTimeDescriptionResponse,
+} from './loggedHours';
 export {
     fetchActiveWorkSession,
     startWorkSession,
@@ -167,6 +213,8 @@ export type {
     ClientRecentActivityItem,
     ProjectQueryRequest,
     ProjectQueryResponse,
+    ProjectQuerySource,
+    MemberContributionStats,
 } from './dashboard';
 export {
     fetchInvoices,
@@ -188,6 +236,8 @@ export {
 } from './clients';
 export { checkEmailExists, postWaitlistSignup } from './auth';
 export type { EmailExistsResponse, WaitlistSignupResponse } from './auth';
+export { updateCurrentUserProfile } from './users';
+export type { UpdateCurrentUserBody, CurrentUserResponse } from './users';
 export type { Client, ClientAPIResponse, ClientCreate } from './clients';
 export type { Invoice, InvoiceAPIResponse, InvoiceItem, InvoiceWithItems } from '@/types/invoice';
 export { mapInvoice } from './mappers';

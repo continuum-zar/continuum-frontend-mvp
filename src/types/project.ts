@@ -46,6 +46,8 @@ export interface ProjectDetailAPIResponse {
     total_logged_hours?: number;
     members?: unknown[];
     tasks?: unknown[];
+    /** Present on full project payload; used when list omits client_id. */
+    client_id?: number | null;
 }
 
 /** Project detail shape used by UI (e.g. ProjectBoard header) */
@@ -53,4 +55,6 @@ export interface ProjectDetail {
     id: number;
     name: string;
     description: string;
+    /** Billing / invoice: linked client when set. */
+    clientId?: number;
 }

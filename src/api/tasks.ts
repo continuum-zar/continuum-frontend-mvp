@@ -15,9 +15,27 @@ export interface TaskOption {
     project_id: number;
 }
 
+/** Tasks assigned to a given user across all projects the current user can access. */
+export async function fetchTasksAssignedToUser(assignedUserId: number): Promise<TaskAPIResponse[]> {
+    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/', {
+        params: { assigned_to: assignedUserId, limit: 500, skip: 0 },
+    });
+    return data.data ?? [];
+}
+
+/** Tasks created by a given user across all projects the current user can access. */
+export async function fetchTasksCreatedByUser(creatorUserId: number): Promise<TaskAPIResponse[]> {
+    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/', {
+        params: { created_by: creatorUserId, limit: 500, skip: 0 },
+    });
+    return data.data ?? [];
+}
+
 /** Fetch all tasks for the current user's projects (no project_id). For time log task dropdown. */
 export async function fetchAllTasks(): Promise<TaskOption[]> {
-    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/');
+    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/', {
+        params: { limit: 500, skip: 0 },
+    });
     return (data.data ?? []).map((t) => ({
         id: String(t.id),
         title: t.title ?? '',
@@ -35,20 +53,32 @@ export async function fetchTask(taskId: number | string): Promise<TaskAPIRespons
 /** Checklist item shape for task update (matches API TaskChecklistItem). */
 export type TaskChecklistItemUpdate = { id?: string; text: string; done: boolean };
 
-/** Update task with multiple fields (status, scope_weight, due_date, linked_repo, linked_branch, checklists). Returns updated task from API. */
+/** Update task with multiple fields. Returns updated task from API. */
 export async function updateTask(
     taskId: number | string,
     body: {
+        title?: string;
+        description?: string | null;
         status?: TaskStatus;
         scope_weight?: ScopeWeight;
         due_date?: string | null;
+        estimated_hours?: number | null;
         linked_repo?: string | null;
         linked_branch?: string | null;
         checklists?: TaskChecklistItemUpdate[];
     }
 ): Promise<TaskAPIResponse> {
-    const payload: Record<string, TaskStatus | ScopeWeight | string | null | TaskChecklistItemUpdate[] | undefined> = {};
+    const payload: Record<
+        string,
+        TaskStatus | ScopeWeight | string | number | null | TaskChecklistItemUpdate[] | undefined
+    > = {};
 
+    if (body.title !== undefined) {
+        payload.title = body.title;
+    }
+    if (body.description !== undefined) {
+        payload.description = body.description;
+    }
     if (body.status !== undefined) {
         payload.status = body.status === 'in-progress' ? 'in_progress' : body.status;
     }
@@ -57,6 +87,9 @@ export async function updateTask(
     }
     if (body.due_date !== undefined) {
         payload.due_date = body.due_date;
+    }
+    if (body.estimated_hours !== undefined) {
+        payload.estimated_hours = body.estimated_hours;
     }
     if (body.linked_repo !== undefined) {
         payload.linked_repo = body.linked_repo;
@@ -69,6 +102,48 @@ export async function updateTask(
     }
 
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
+    return data;
+}
+
+/** Attach or update the Git branch linked to a task. POST /tasks/{id}/linked-branch */
+export async function setTaskLinkedBranch(
+    taskId: number | string,
+    body: {
+        linked_repo: string;
+        linked_branch: string;
+        linked_branch_full_ref?: string | null;
+    }
+): Promise<TaskAPIResponse> {
+    const payload: {
+        linked_repo: string;
+        linked_branch: string;
+        linked_branch_full_ref?: string | null;
+    } = { linked_repo: body.linked_repo, linked_branch: body.linked_branch };
+    if (body.linked_branch_full_ref != null && body.linked_branch_full_ref !== '') {
+        payload.linked_branch_full_ref = body.linked_branch_full_ref;
+    }
+    const { data } = await api.post<TaskAPIResponse>(`/tasks/${taskId}/linked-branch`, payload);
+    return data;
+}
+
+/** Payload for creating a new task. */
+export interface CreateTaskBody {
+    title: string;
+    project_id: number;
+    description?: string | null;
+    status?: 'todo' | 'in_progress' | 'done';
+    scope_weight?: ScopeWeight;
+    due_date?: string | null;
+    estimated_hours?: number | null;
+    assigned_to?: number | null;
+    milestone_id?: number | null;
+    checklists?: Array<{ text: string; done?: boolean }> | null;
+    labels?: string[] | null;
+}
+
+/** Create a task. POST /tasks/ */
+export async function createTask(body: CreateTaskBody): Promise<TaskAPIResponse> {
+    const { data } = await api.post<TaskAPIResponse>('/tasks/', body);
     return data;
 }
 
