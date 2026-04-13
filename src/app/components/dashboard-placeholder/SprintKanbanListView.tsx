@@ -1,6 +1,7 @@
 "use client";
 
-import type { DragEvent, ReactNode } from "react";
+import type React from "react";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { ChevronDown, GripVertical } from "lucide-react";
@@ -40,12 +41,7 @@ export type SprintKanbanListViewProps = {
   /** Drag-and-drop between sections — same behavior as board view. */
   draggingId: string | null;
   dragOverCol: ColumnKey | null;
-  onTaskDragStart: (taskId: string) => (e: DragEvent<HTMLDivElement>) => void;
-  onTaskDragEnd: () => void;
-  onTaskDragOver: (e: DragEvent<HTMLDivElement>) => void;
-  onColumnDragOver: (col: ColumnKey) => (e: DragEvent<HTMLDivElement>) => void;
-  onColumnDragLeave: (col: ColumnKey) => (e: DragEvent<HTMLDivElement>) => void;
-  onColumnDrop: (col: ColumnKey) => (e: DragEvent<HTMLDivElement>) => void;
+  cardPointerDown: (taskId: string) => (e: React.PointerEvent<HTMLDivElement>) => void;
 };
 
 export function SprintKanbanListView({
@@ -56,12 +52,7 @@ export function SprintKanbanListView({
   onCreateTask,
   draggingId,
   dragOverCol,
-  onTaskDragStart,
-  onTaskDragEnd,
-  onTaskDragOver,
-  onColumnDragOver,
-  onColumnDragLeave,
-  onColumnDrop,
+  cardPointerDown,
 }: SprintKanbanListViewProps) {
   void projectId;
   const navigate = useNavigate();
@@ -86,7 +77,7 @@ export function SprintKanbanListView({
     setExpanded((e) => ({ ...e, [col]: !e[col] }));
   };
 
-  const renderRow = (task: Task, col: ColumnKey) => {
+  const renderRow = (task: Task, _col: ColumnKey) => {
     const isDragging = draggingId === task.id;
     const desc = task.description?.trim() ?? "";
     const descPreview =
@@ -106,20 +97,13 @@ export function SprintKanbanListView({
     return (
       <div
         key={task.id}
-        draggable
-        onDragStart={onTaskDragStart(task.id)}
-        onDragEnd={onTaskDragEnd}
-        onDragOver={onTaskDragOver}
-        onDrop={(e) => {
-          e.stopPropagation();
-          onColumnDrop(col)(e);
-        }}
+        onPointerDown={cardPointerDown(task.id)}
         onClick={() =>
           navigate(`${workspaceJoin("task", String(task.id))}?${searchParams.toString()}`)
         }
         className={cn(
           "w-full select-none transition-opacity duration-100",
-          isDragging ? "cursor-grabbing opacity-0" : "cursor-grab",
+          isDragging ? "opacity-0" : "cursor-open-hand",
         )}
       >
         <div
@@ -274,14 +258,12 @@ export function SprintKanbanListView({
               <div className="w-[24px] shrink-0" aria-hidden />
             </div>
             <div
+              data-kanban-col={col}
               className={cn(
                 "relative flex w-full flex-col items-stretch overflow-clip rounded-b-[8px] transition-colors duration-200",
                 list.length === 0 ? "min-h-[52px]" : "min-h-0",
                 dragOverCol === col && draggingId !== null && "bg-[rgba(249,250,251,0.75)]",
               )}
-              onDragOver={onColumnDragOver(col)}
-              onDragLeave={onColumnDragLeave(col)}
-              onDrop={onColumnDrop(col)}
             >
               {dragOverCol === col && draggingId !== null ? (
                 <div

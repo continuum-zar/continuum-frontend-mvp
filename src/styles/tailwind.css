@@ -24,3 +24,20 @@
 @utility animate-pulse-soft {
   animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Use public SVG cursors (see --cursor-app-* in theme.css); fallbacks stay in those vars. */
+@utility cursor-pointer {
+  cursor: var(--cursor-app-pointer);
+}
+
+@utility cursor-default {
+  cursor: var(--cursor-app-default);
+}
+
+@utility cursor-grab {
+  cursor: var(--cursor-app-grab);
+}
+
+@utility cursor-grabbing {
+  cursor: var(--cursor-app-grabbing);
+}

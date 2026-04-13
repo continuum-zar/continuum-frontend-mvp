@@ -64,6 +64,18 @@
   --sidebar-accent-foreground: #1a202c;
   --sidebar-border: #e2e8f0;
   --sidebar-ring: #2563eb;
+
+  /**
+   * Custom cursor SVGs — public/assets/cursors/*.svg (64×64 raster, 32×32 viewBox).
+   * Hotspots are in image pixel space (2× vs original 32px assets).
+   */
+  --cursor-svg-default: url('/assets/cursors/default.svg');
+  --cursor-svg-pointing: url('/assets/cursors/handpointing.svg');
+  --cursor-svg-open-hand: url('/assets/cursors/handopen.svg');
+  --cursor-app-default: var(--cursor-svg-default) 10 10, default;
+  --cursor-app-pointer: var(--cursor-svg-pointing) 22 16, pointer;
+  --cursor-app-grab: var(--cursor-svg-open-hand) 24 26, grab;
+  --cursor-app-grabbing: url('/assets/cursors/handgrabbing.svg') 24 28, grabbing;
 }
 
 .dark {
@@ -182,6 +194,15 @@
 
   html {
     font-size: var(--font-size);
+    cursor: var(--cursor-app-default);
+  }
+
+  a[href],
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label[for],
+  summary {
+    cursor: var(--cursor-app-pointer);
   }
 
   h1 {
@@ -229,6 +250,15 @@
 
 /** Hide native scrollbar while keeping scroll (wheel / touch / keyboard). */
 @layer utilities {
+  /** Kanban / draggable cards — handopen.svg hover, handgrabbing.svg while pressed / during drag. */
+  .cursor-open-hand {
+    cursor: var(--cursor-app-grab);
+  }
+
+  .cursor-open-hand:active {
+    cursor: url('/assets/cursors/handgrabbing.svg') 24 28, grabbing;
+  }
+
   .scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -239,6 +269,25 @@
     width: 0;
     height: 0;
   }
+}
+
+/*
+ * CustomCursorOverlay sets data-custom-cursor-active and draws SVGs in a fixed layer.
+ * Hide the system cursor only when that overlay is on (not for prefers-reduced-motion).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-custom-cursor-active] *,
+  html[data-custom-cursor-active] *::before,
+  html[data-custom-cursor-active] *::after {
+    cursor: none !important;
+  }
+}
+
+/* Kanban drag grabbing SVG — only when overlay is off (reduced motion / no JS layer) */
+html[data-kanban-dragging]:not([data-custom-cursor-active]) *,
+html[data-kanban-dragging]:not([data-custom-cursor-active]) *::before,
+html[data-kanban-dragging]:not([data-custom-cursor-active]) *::after {
+  cursor: url('/assets/cursors/handgrabbing.svg') 24 28, grabbing !important;
 }
 
 /* Respect user preference for reduced motion (WCAG 2.2.2, vestibular safety) */

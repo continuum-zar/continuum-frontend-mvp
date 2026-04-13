@@ -1,6 +1,6 @@
 "use client";
 
-import type { DragEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
@@ -8,6 +8,7 @@ import { SprintKanbanListView } from "./SprintKanbanListView";
 
 import { useProjectTasks, useUpdateTaskStatus } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+import { useKanbanPointerDrag } from "@/lib/useKanbanPointerDrag";
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
@@ -78,8 +79,6 @@ export function GetStartedKanbanLive({
     };
   }, [filtered]);
 
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragOverCol, setDragOverCol] = useState<ColumnId | null>(null);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
 
   const handleMove = (taskId: string, newStatus: TaskStatus) => {
@@ -97,67 +96,13 @@ export function GetStartedKanbanLive({
     );
   };
 
-  const handleDragStart = (taskId: string) => (e: DragEvent<HTMLDivElement>) => {
-    setDraggingId(taskId);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", taskId);
-    const el = e.currentTarget;
-    const ghost = el.cloneNode(true) as HTMLElement;
-    ghost.style.transform = "rotate(3deg)";
-    const ghostCard = ghost.querySelector(".bg-white") as HTMLElement | null;
-    if (ghostCard) {
-      ghostCard.style.border = "2px solid #24B5F8";
-      // List view row — match Figma drag card (rounded-[8px], lifted shadow) vs board rounded-[16px].
-      if (ghostCard.classList.contains("list-kanban-drag-surface")) {
-        ghostCard.style.borderRadius = "8px";
-        ghostCard.style.boxShadow =
-          "0px 20px 6px 0px rgba(26,59,84,0), 0px 13px 5px 0px rgba(26,59,84,0), 0px 7px 4px 0px rgba(26,59,84,0.01), 0px 3px 3px 0px rgba(26,59,84,0.03), 0px 1px 2px 0px rgba(26,59,84,0.03)";
-      }
-    }
-    ghost.style.width = `${el.offsetWidth}px`;
-    ghost.style.position = "fixed";
-    ghost.style.top = "-9999px";
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-    requestAnimationFrame(() => document.body.removeChild(ghost));
-  };
-
-  const handleDragEnd = () => {
-    setDraggingId(null);
-    setDragOverCol(null);
-  };
-
-  const handleColumnDragOver = (col: ColumnId) => (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (draggingId === null) return;
-    const task = filtered.find((t) => t.id === draggingId);
-    if (!task) return;
-    if (columnForTaskStatus(task.status) !== col) {
-      setDragOverCol(col);
-    }
-  };
-
-  const handleColumnDragLeave = (col: ColumnId) => (e: DragEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    if (!target.contains(e.relatedTarget as Node)) {
-      if (dragOverCol === col) setDragOverCol(null);
-    }
-  };
-
-  const handleDrop = (col: ColumnId) => (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const taskId = e.dataTransfer.getData("text/plain");
-    if (!taskId) return;
-    handleMove(taskId, statusForColumn(col));
-    setDraggingId(null);
-    setDragOverCol(null);
-  };
-
-  const handleCardDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
+  const { draggingId, dragOverCol, cardPointerDown } = useKanbanPointerDrag({
+    onDrop: (taskId, col) => handleMove(taskId, statusForColumn(col)),
+    getTaskColumn: (taskId) => {
+      const task = filtered.find((t) => t.id === taskId);
+      return task ? columnForTaskStatus(task.status) : null;
+    },
+  });
 
   const renderLiveCard = (task: Task) => {
     const isDragging = draggingId === task.id;
@@ -179,11 +124,8 @@ export function GetStartedKanbanLive({
     return (
       <div
         key={task.id}
-        className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${isDragging ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
-        draggable
-        onDragStart={handleDragStart(task.id)}
-        onDragEnd={handleDragEnd}
-        onDragOver={handleCardDragOver}
+        className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${isDragging ? "opacity-0" : "cursor-open-hand"}`}
+        onPointerDown={cardPointerDown(task.id)}
         onClick={() =>
           navigate(`${workspaceJoin("task", String(task.id))}?${searchParams.toString()}`)
         }
@@ -339,12 +281,7 @@ export function GetStartedKanbanLive({
           onCreateTask={() => setCreateTaskOpen(true)}
           draggingId={draggingId}
           dragOverCol={dragOverCol}
-          onTaskDragStart={handleDragStart}
-          onTaskDragEnd={handleDragEnd}
-          onTaskDragOver={handleCardDragOver}
-          onColumnDragOver={handleColumnDragOver}
-          onColumnDragLeave={handleColumnDragLeave}
-          onColumnDrop={handleDrop}
+          cardPointerDown={cardPointerDown}
         />
         <CreateTaskLiveModal
           open={createTaskOpen}
@@ -366,14 +303,12 @@ export function GetStartedKanbanLive({
 
   const colWrap = (col: ColumnId, children: ReactNode, header: ReactNode) => (
     <div
+      data-kanban-col={col}
       className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === col ? "border-2 border-dashed border-[#cdd2d5]" : ""}`}
       style={{
         backgroundImage:
           "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
       }}
-      onDragOver={handleColumnDragOver(col)}
-      onDragLeave={handleColumnDragLeave(col)}
-      onDrop={handleDrop(col)}
     >
       <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
         {header}
