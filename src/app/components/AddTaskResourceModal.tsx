@@ -1,8 +1,9 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Upload, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { useUploadAttachment, useAddAttachmentLink } from "@/api/hooks";
 
@@ -17,6 +18,9 @@ import { cn } from "./ui/utils";
 const uploadGradient =
   "linear-gradient(165.52913614919697deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)";
 
+/** Matches copy shown in the modal (50mb). */
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+
 type AddTaskResourceModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,9 +29,11 @@ type AddTaskResourceModalProps = {
 
 export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskResourceModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragDepthRef = useRef(0);
   const [linkUrl, setLinkUrl] = useState("");
   const [displayText, setDisplayText] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isFileDragActive, setIsFileDragActive] = useState(false);
 
   const uploadMutation = useUploadAttachment(taskId ?? null);
   const addLinkMutation = useAddAttachmentLink(taskId ?? null);
@@ -44,13 +50,60 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
     setLinkUrl("");
     setDisplayText("");
     setPendingFile(null);
+    dragDepthRef.current = 0;
+    setIsFileDragActive(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [open]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setPendingFile(file ?? null);
+  const applySelectedFile = useCallback((file: File | null) => {
+    if (file && file.size > MAX_FILE_SIZE_BYTES) {
+      toast.error("File is too large. Maximum size is 50 MB.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setPendingFile(file);
     if (file) setLinkUrl("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    applySelectedFile(file);
+  };
+
+  const dataTransferHasFiles = (dt: DataTransfer) =>
+    [...dt.types].includes("Files");
+
+  const handleDropZoneDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!dataTransferHasFiles(e.dataTransfer)) return;
+    dragDepthRef.current += 1;
+    setIsFileDragActive(true);
+  };
+
+  const handleDropZoneDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsFileDragActive(false);
+  };
+
+  const handleDropZoneDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dataTransferHasFiles(e.dataTransfer)) {
+      e.dataTransfer.dropEffect = "copy";
+    }
+  };
+
+  const handleDropZoneDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = 0;
+    setIsFileDragActive(false);
+    const file = e.dataTransfer.files?.[0] ?? null;
+    applySelectedFile(file);
   };
 
   const handleSubmit = async () => {
@@ -120,17 +173,41 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
           >
             <div className="flex w-full flex-col gap-6 pb-6">
               <div className="flex w-full flex-col gap-2">
-                <div className="flex min-h-[235px] w-full flex-col items-center justify-center gap-3 rounded-[12px] border-2 border-dashed border-[#ebedee] px-4 py-6">
+                <div
+                  role="region"
+                  aria-label="File upload"
+                  aria-describedby="add-task-resource-file-constraints"
+                  data-drag-active={isFileDragActive ? "true" : "false"}
+                  onDragEnter={handleDropZoneDragEnter}
+                  onDragLeave={handleDropZoneDragLeave}
+                  onDragOver={handleDropZoneDragOver}
+                  onDrop={handleDropZoneDrop}
+                  className={cn(
+                    "relative flex min-h-[235px] w-full flex-col items-center justify-center gap-3 rounded-[12px] border-2 border-dashed px-4 py-6 transition-[border-color,background-color] duration-200 motion-reduce:transition-none",
+                    isFileDragActive
+                      ? "border-[var(--primary)] bg-[var(--muted)]"
+                      : "border-[var(--border)] bg-transparent"
+                  )}
+                >
+                  {isFileDragActive ? (
+                    <div
+                      className="pointer-events-none absolute inset-0 rounded-[10px] ring-2 ring-[var(--ring)] ring-inset motion-reduce:transition-none"
+                      aria-hidden
+                    />
+                  ) : null}
                   <input
+                    id="add-task-resource-file-input"
                     ref={fileInputRef}
                     type="file"
                     accept="*/*"
                     className="sr-only"
                     tabIndex={-1}
+                    aria-label="Choose file to upload"
                     onChange={handleFileChange}
                   />
                   <button
                     type="button"
+                    aria-controls="add-task-resource-file-input"
                     onClick={() => fileInputRef.current?.click()}
                     className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-bold text-white"
                     style={{ backgroundImage: uploadGradient }}
@@ -138,13 +215,18 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
                     Upload
                     <Upload className="size-4" strokeWidth={2} />
                   </button>
-                  {pendingFile ? (
-                    <p className="max-w-full truncate text-center font-['Satoshi',sans-serif] text-[13px] font-medium text-[#606d76]">
-                      {pendingFile.name}
-                    </p>
-                  ) : null}
+                  <p className="max-w-full text-center font-['Satoshi',sans-serif] text-[13px] font-medium text-[#606d76]">
+                    {pendingFile ? (
+                      <span className="block truncate">{pendingFile.name}</span>
+                    ) : (
+                      <span>Drop a file here, or use Upload</span>
+                    )}
+                  </p>
                 </div>
-                <div className="flex w-full items-start justify-between font-['Satoshi',sans-serif] text-[14px] font-normal whitespace-nowrap text-[#606d76]">
+                <div
+                  className="flex w-full items-start justify-between font-['Satoshi',sans-serif] text-[14px] font-normal whitespace-nowrap text-[#606d76]"
+                  id="add-task-resource-file-constraints"
+                >
                   <p>Accepted formats: any</p>
                   <p>Maximum file size: 50mb</p>
                 </div>
