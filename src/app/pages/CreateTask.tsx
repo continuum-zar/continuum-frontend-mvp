@@ -9,9 +9,11 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
+import TextareaAutosize from 'react-textarea-autosize';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
+import { cn } from '../components/ui/utils';
 import {
   Select,
   SelectContent,
@@ -429,11 +431,17 @@ export function CreateTask() {
         </div>
 
         <div className="flex flex-col space-y-2">
-          <Textarea
+          <TextareaAutosize
+            data-slot="textarea"
             placeholder='e.g., "Add playwright tests..."'
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="bg-background text-sm min-h-[60px] resize-none border-border focus-visible:ring-foreground"
+            minRows={2}
+            maxRows={9}
+            aria-label="Describe the task for AI generation"
+            className={cn(
+              'resize-none border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full rounded-md border bg-background px-3 py-2 text-sm transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 border-border focus-visible:ring-foreground overflow-y-auto',
+            )}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();

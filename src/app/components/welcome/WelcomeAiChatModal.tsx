@@ -21,7 +21,7 @@ import {
   postProjectQuery,
   projectKeys,
 } from "@/api";
-import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
+import TextareaAutosize from "react-textarea-autosize";
 import type { GeneratedTask, WikiConfirmTaskItem } from "@/api";
 import {
   Dialog,
@@ -575,10 +575,12 @@ export function WelcomeAiChatModal({
                     <p>Today</p>
                     <p>Continuum AI</p>
                   </div>
-                  <div className="flex h-8 shrink-0 items-center justify-center rounded-[32px] bg-[#edf0f3] px-4 py-2">
-                    <p className="whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#0b191f]">
-                      {selectedPrompt}
-                    </p>
+                  <div className="flex w-full justify-end">
+                    <div className="max-w-[min(100%,340px)] rounded-[32px] bg-[#edf0f3] px-4 py-2">
+                      <p className="whitespace-pre-wrap break-words text-left font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#0b191f]">
+                        {selectedPrompt}
+                      </p>
+                    </div>
                   </div>
                   <div className="w-full">
                     {/* Thinking state (mock for showQuickActions, real for getStarted) */}
@@ -758,7 +760,6 @@ function ComposerWelcome({
   placeholder?: string;
   inputId?: string;
 }) {
-  const textareaRef = useAutosizeTextarea(draft, { minPx: 40, maxPx: 200 });
   const canSend = Boolean(onSubmit && draft.trim() && !disabled);
   const placeholderText =
     placeholder ??
@@ -770,8 +771,7 @@ function ComposerWelcome({
         <label className="sr-only" htmlFor={inputId}>
           Message
         </label>
-        <textarea
-          ref={textareaRef}
+        <TextareaAutosize
           id={inputId}
           value={draft}
           onChange={(e) => onDraftChange(e.target.value)}
@@ -783,8 +783,9 @@ function ComposerWelcome({
             }
           }}
           placeholder={placeholderText}
-          rows={1}
-          className="max-h-[200px] min-h-[40px] w-full resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
+          minRows={1}
+          maxRows={9}
+          className="w-full min-h-[40px] resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
         />
       </div>
       <div className="relative flex w-full shrink-0 items-center justify-between px-[11px]">
