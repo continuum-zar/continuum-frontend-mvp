@@ -7,6 +7,7 @@ import { RoleProvider } from './context/RoleContext';
 import { useAuthStore } from '@/store/authStore';
 
 import { ErrorBoundary } from './ErrorBoundary';
+import { CustomCursorOverlay } from './components/CustomCursorOverlay';
 import { MobileDesktopOnlyGate } from './components/MobileDesktopOnlyGate';
 import { AuthQueryCacheSync } from './components/AuthQueryCacheSync';
 
@@ -26,6 +27,7 @@ function App() {
           <MobileDesktopOnlyGate>
             <RouterProvider router={router} />
           </MobileDesktopOnlyGate>
+          <CustomCursorOverlay />
           <Toaster />
         </TimeTrackingProvider>
       </RoleProvider>

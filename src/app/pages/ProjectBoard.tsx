@@ -462,7 +462,10 @@ export function ProjectBoard() {
   const [inviteError, setInviteError] = useState<string | null>(null);
 
   const membersQuery = useProjectMembers(projectId);
-  const teamMembers = membersQuery.data ?? [];
+  const teamMembers = useMemo(
+    () => membersQuery.data ?? [],
+    [membersQuery.data],
+  );
   const teamMembersLoading = membersQuery.isLoading;
   const teamMembersError = membersQuery.error
     ? String((membersQuery.error as { message?: string })?.message ?? 'Failed to load team members')

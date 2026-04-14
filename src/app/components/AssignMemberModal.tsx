@@ -58,7 +58,10 @@ export function AssignMemberModal({
   });
   const assignTaskMutation = useAssignTask();
 
-  const members = membersQuery.data ?? [];
+  const members = useMemo(
+    () => membersQuery.data ?? [],
+    [membersQuery.data],
+  );
 
   const filtered = useMemo(() => {
     if (!search.trim()) return members;

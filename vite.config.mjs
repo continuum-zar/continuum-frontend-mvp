@@ -4,7 +4,7 @@ import { request as httpRequest } from 'node:http'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const analyzeBundle = process.env.ANALYZE === '1'
@@ -212,12 +212,5 @@ export default defineConfig({
         },
       },
     },
-  },
-
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    globals: false,
-    css: true,
   },
 })
