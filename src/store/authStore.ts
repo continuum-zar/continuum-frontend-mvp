@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { isAxiosError } from 'axios';
 import api from '../lib/api';
+import { TIME_RECORDING_STORAGE_KEY } from '../lib/timeRecordingTimerStorage';
 import { AuthState, AuthResponse } from '../types/auth';
 import { RegisterPayload, User } from '../types/user';
 
@@ -114,6 +115,11 @@ export const useAuthStore = create<AuthStore>()(
                         error: null
                     });
                     localStorage.removeItem('auth-storage');
+                    try {
+                        localStorage.removeItem(TIME_RECORDING_STORAGE_KEY);
+                    } catch {
+                        /* noop */
+                    }
                 }
             },
 
