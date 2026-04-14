@@ -12,6 +12,7 @@ import {
   FileText,
   Flag,
   Link2,
+  Loader2,
   Plus,
   Tag,
   UserRoundPlus,
@@ -39,7 +40,7 @@ import {
   useTaskComments,
   useCreateTaskComment,
 } from '@/api';
-import { getApiErrorMessage } from '@/api/hooks';
+import { getApiErrorMessage, useTaskLoggedHoursTotal } from '@/api/hooks';
 import type { Attachment } from '@/types/attachment';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, ScopeWeight, TaskTimelineEntry } from '@/types/task';
@@ -48,6 +49,7 @@ import type { Member } from '@/types/member';
 import type { Repository } from '@/types/repository';
 import { AddTaskResourceModal } from '../components/AddTaskResourceModal';
 import { AssignMemberModal } from '../components/AssignMemberModal';
+import { LogTimeModal } from '../components/dashboard-placeholder/LogTimeModal';
 
 /* ─── helpers ─── */
 
@@ -65,6 +67,11 @@ function statusLabel(s: string): string {
 function scopeLabel(s: string): string {
   const map: Record<string, string> = { XS: 'Extra Small (XS)', S: 'Small (S)', M: 'Medium (M)', L: 'Large (L)', XL: 'Extra Large (XL)' };
   return map[s] ?? 'Medium (M)';
+}
+
+function formatLoggedHoursSum(hours: number): string {
+  if (!Number.isFinite(hours) || hours < 0) return '0';
+  return new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(hours);
 }
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -360,6 +367,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
 
   /* ─ data hooks ─ */
   const { data: task, isLoading: loading, error: taskError } = useTask(taskId);
+  const { data: loggedHoursTotal, isLoading: hoursLoading, isError: hoursError } = useTaskLoggedHoursTotal(
+    task?.project_id ?? null,
+    taskId ?? null,
+    { enabled: Boolean(taskId && task?.project_id != null) },
+  );
   const updateTaskMutation = useUpdateTask();
   const { data: attachments } = useTaskAttachments(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
@@ -397,6 +409,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [effortDraft, setEffortDraft] = useState('');
   const [resourceModalOpen, setResourceModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [logTimeOpen, setLogTimeOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [scopeDropdownOpen, setScopeDropdownOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
@@ -1149,6 +1162,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <p className="text-[16px] font-medium text-[#0b191f]">Time tracked</p>
               <button
                 type="button"
+                onClick={() => setLogTimeOpen(true)}
                 className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white"
               >
                 <Plus size={16} />
@@ -1157,7 +1171,20 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             </div>
             <div className="flex justify-between text-[16px]">
               <span className="text-[#727d83]">Logged</span>
-              <span className="text-[#0b191f]">—</span>
+              <span className="flex min-h-[24px] items-center justify-end gap-2 text-[#0b191f]">
+                {task.project_id == null ? (
+                  <span className="text-[#727d83]">—</span>
+                ) : hoursLoading ? (
+                  <>
+                    <Loader2 className="size-4 shrink-0 animate-spin text-[#727d83]" aria-hidden />
+                    <span className="sr-only">Loading logged hours</span>
+                  </>
+                ) : hoursError ? (
+                  <span className="text-[14px] text-[#727d83]">Unable to load</span>
+                ) : (
+                  formatLoggedHoursSum(loggedHoursTotal ?? 0)
+                )}
+              </span>
             </div>
           </div>
 
@@ -1280,6 +1307,12 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         projectId={task.project_id}
         taskId={taskId}
         currentAssigneeId={task.assigned_to ?? null}
+      />
+      <LogTimeModal
+        open={logTimeOpen}
+        onOpenChange={setLogTimeOpen}
+        projectId={task.project_id != null ? Number(task.project_id) : undefined}
+        prefillTaskId={taskId}
       />
     </div>
   );
