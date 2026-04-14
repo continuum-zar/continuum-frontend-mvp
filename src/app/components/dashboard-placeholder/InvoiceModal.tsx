@@ -186,6 +186,7 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
   }, [
     open,
     selectedProjectId,
+    selectedProject,
     selectedProject?.apiId,
     projectHoursQuery.data,
     projectHoursQuery.isError,

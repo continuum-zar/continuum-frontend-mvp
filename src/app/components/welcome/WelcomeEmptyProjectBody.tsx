@@ -249,7 +249,7 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
     refetchInterval: 45_000,
   });
 
-  const rows = data?.data ?? [];
+  const rows = useMemo(() => data?.data ?? [], [data?.data]);
   const displayRows = useMemo(() => {
     if (rows.length <= RECENT_ACTIVITY_PAGE_SIZE || activityExpanded) return rows;
     return rows.slice(0, RECENT_ACTIVITY_PAGE_SIZE);

@@ -715,7 +715,10 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
     enabled: liveProjectNumericId != null,
   });
 
-  const velocityWeeks = velocityReport?.weeks ?? [];
+  const velocityWeeks = useMemo(
+    () => velocityReport?.weeks ?? [],
+    [velocityReport?.weeks],
+  );
 
   /** Always enough slots for axes/grid; empty weeks use placeholder labels when API returns no rows. */
   const trendChartWeeksDisplay = useMemo(() => {
