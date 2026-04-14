@@ -37,8 +37,8 @@ const inputShellClass =
   "w-full rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40";
 
 /** Backend + UI — matches ProjectBoard invite */
-export const PROJECT_MEMBER_ROLE_VALUES = ["developer", "client", "project_manager"] as const;
-export type ProjectMemberRoleValue = (typeof PROJECT_MEMBER_ROLE_VALUES)[number];
+const PROJECT_MEMBER_ROLE_VALUES = ["developer", "client", "project_manager"] as const;
+type ProjectMemberRoleValue = (typeof PROJECT_MEMBER_ROLE_VALUES)[number];
 
 const ROLE_LABEL: Record<ProjectMemberRoleValue, string> = {
   developer: "Developer",

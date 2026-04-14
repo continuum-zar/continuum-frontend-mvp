@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- route table: lazy page imports + `router` export */
 import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet, useLocation, useParams } from "react-router";
 import {

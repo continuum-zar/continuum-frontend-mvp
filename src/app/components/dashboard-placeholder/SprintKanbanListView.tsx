@@ -77,7 +77,7 @@ export function SprintKanbanListView({
     setExpanded((e) => ({ ...e, [col]: !e[col] }));
   };
 
-  const renderRow = (task: Task, _col: ColumnKey) => {
+  const renderRow = (task: Task) => {
     const isDragging = draggingId === task.id;
     const desc = task.description?.trim() ?? "";
     const descPreview =
@@ -274,7 +274,7 @@ export function SprintKanbanListView({
               {list.length === 0 ? (
                 <p className="px-4 py-6 font-['Satoshi',sans-serif] text-[13px] text-[#727d83]">{emptyMsg}</p>
               ) : (
-                list.map((t) => renderRow(t, col))
+                list.map((t) => renderRow(t))
               )}
             </div>
           </div>
