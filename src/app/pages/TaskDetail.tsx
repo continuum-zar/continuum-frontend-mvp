@@ -36,11 +36,14 @@ import {
   useProjectRepositories,
   useRepositoryBranches,
   useSetTaskLinkedBranch,
+  useTaskComments,
+  useCreateTaskComment,
 } from '@/api';
 import { getApiErrorMessage } from '@/api/hooks';
 import type { Attachment } from '@/types/attachment';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, ScopeWeight, TaskTimelineEntry } from '@/types/task';
+import type { CommentAuthorAPI } from '@/types/comment';
 import type { Member } from '@/types/member';
 import type { Repository } from '@/types/repository';
 import { AddTaskResourceModal } from '../components/AddTaskResourceModal';
@@ -149,6 +152,39 @@ function getActivityLabel(entry: TaskTimelineEntry, members?: Member[]) {
     default:
       return 'performed an action';
   }
+}
+
+function commentAuthorDisplayName(author: CommentAuthorAPI): string {
+  const d = author.display_name?.trim();
+  if (d) return d;
+  const u = author.username?.trim();
+  if (u) return u;
+  return `User #${author.id}`;
+}
+
+function commentAuthorInitials(author: CommentAuthorAPI): string {
+  const name = author.display_name?.trim();
+  if (name) {
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0] ?? ''}${parts[parts.length - 1][0] ?? ''}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+  const u = author.username?.trim();
+  if (u) return u.slice(0, 2).toUpperCase();
+  return `U${author.id}`;
+}
+
+function TaskCommentAvatar({ author }: { author: CommentAuthorAPI }) {
+  return (
+    <div
+      className="flex size-[40px] shrink-0 items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
+      style={{ backgroundColor: AVATAR_COLORS[author.id % AVATAR_COLORS.length] }}
+    >
+      {commentAuthorInitials(author)}
+    </div>
+  );
 }
 
 /* ─── skeleton ─── */
@@ -328,6 +364,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const { data: attachments } = useTaskAttachments(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
   const { data: timeline, isLoading: timelineLoading } = useTaskTimeline(taskId);
+  const { data: comments, isLoading: commentsLoading } = useTaskComments(taskId);
+  const createCommentMutation = useCreateTaskComment(taskId);
   const { data: members } = useProjectMembers(task?.project_id, { enabled: !!task?.project_id });
   const addTaskLabelMutation = useAddTaskLabel(taskId);
   const removeTaskLabelMutation = useRemoveTaskLabel(taskId);
@@ -361,9 +399,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [scopeDropdownOpen, setScopeDropdownOpen] = useState(false);
+  const [commentDraft, setCommentDraft] = useState('');
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descTextareaRef = useAutosizeTextarea(descDraft, { minPx: 106, maxPx: 560 });
+  const commentTextareaRef = useAutosizeTextarea(commentDraft, { minPx: 80, maxPx: 220 });
   const tagInputRef = useRef<HTMLInputElement>(null);
   const effortInputRef = useRef<HTMLInputElement>(null);
   const checklistInputRef = useRef<HTMLInputElement>(null);
@@ -572,6 +612,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     });
   };
 
+  const handlePostComment = () => {
+    const trimmed = commentDraft.trim();
+    if (!trimmed || !taskId) return;
+    createCommentMutation.mutate(trimmed, {
+      onSuccess: () => setCommentDraft(''),
+    });
+  };
+
   const handleUpdateTask = async () => {
     if (!taskId) return;
     setEditingTitle(false);
@@ -608,6 +656,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
 
   const assignedMember = members?.find(m => m.userId === task.assigned_to);
   const mappedAttachments = (attachments ?? []).map(mapAttachment);
+  const sortedComments = [...(comments ?? [])].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  );
 
   return (
     <div className="flex h-full w-full min-h-0 items-stretch font-['Satoshi',sans-serif]">
@@ -1108,6 +1159,76 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <span className="text-[#727d83]">Logged</span>
               <span className="text-[#0b191f]">—</span>
             </div>
+          </div>
+
+          {/* Comments */}
+          <div className="space-y-4">
+            <p className="text-[16px] font-medium text-[#0b191f]">Comments</p>
+            <div className="space-y-3">
+              <textarea
+                ref={commentTextareaRef}
+                value={commentDraft}
+                onChange={(e) => setCommentDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    handlePostComment();
+                  }
+                }}
+                placeholder="Write a comment…"
+                disabled={createCommentMutation.isPending}
+                className="w-full resize-none overflow-y-auto rounded-[8px] border border-[#e9e9e9] bg-white px-3 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] outline-none placeholder:text-[#727d83] focus:ring-2 focus:ring-[#24b5f8]/40 disabled:opacity-60"
+              />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handlePostComment}
+                  disabled={!commentDraft.trim() || createCommentMutation.isPending}
+                  className={`inline-flex h-8 items-center rounded-[8px] px-4 text-[14px] font-medium ${
+                    !commentDraft.trim() || createCommentMutation.isPending
+                      ? 'cursor-not-allowed bg-[#ebedee] text-[#9ea7ad]'
+                      : 'bg-[#24B5F8] text-white hover:bg-[#1da8ea]'
+                  }`}
+                >
+                  {createCommentMutation.isPending ? 'Posting…' : 'Post'}
+                </button>
+              </div>
+            </div>
+            {commentsLoading ? (
+              <div className="space-y-4">
+                {[0, 1].map((i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className="mt-1 size-[40px] shrink-0 animate-pulse rounded-full bg-[#e4eaec]" />
+                    <div className="flex-1 space-y-2 py-1">
+                      <div className="h-3 w-20 animate-pulse rounded bg-[#e4eaec]" />
+                      <div className="h-4 w-32 animate-pulse rounded bg-[#e4eaec]" />
+                      <div className="h-10 w-full animate-pulse rounded bg-[#e4eaec]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : sortedComments.length > 0 ? (
+              <div className="space-y-4">
+                {sortedComments.map((c) => (
+                  <div key={c.id} className="flex gap-4">
+                    <div className="mt-1 shrink-0">
+                      <TaskCommentAvatar author={c.author} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] text-[#727d83]">
+                        {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                      </p>
+                      <p className="text-[16px] leading-none text-[#0b191f]">{commentAuthorDisplayName(c.author)}</p>
+                      <p className="mt-1 whitespace-pre-wrap text-[14px] font-medium leading-snug text-[#606d76]">
+                        {c.content}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[13px] text-[#727d83]">No comments yet.</p>
+            )}
           </div>
 
           {/* Activity */}
