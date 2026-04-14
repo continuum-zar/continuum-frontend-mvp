@@ -1,11 +1,26 @@
 "use client";
 
-import { Activity, ArrowLeft, CalendarPlus, Check, ChevronDown, FileText, Flag, Link2, Plus, Tag, UserRoundPlus, X } from "lucide-react";
+import { Activity, ArrowLeft, CalendarPlus, Check, ChevronDown, FileText, Flag, Link2, Loader2, Plus, Tag, UserRoundPlus, X } from "lucide-react";
+import { useMemo, useState } from "react";
+
+import { useTaskLoggedHoursTotal } from "@/api/hooks";
+import { isApiProjectId } from "@/app/data/dashboardPlaceholderProjects";
 import { welcomeResourcesMock } from "@/app/data/welcomeDashboardMock";
+
+import { LogTimeModal } from "./LogTimeModal";
 
 type TaskPanelsProps = {
   onBack: () => void;
+  /** Route task id; with a numeric `projectId`, hours are loaded from the API. */
+  taskId?: string | null;
+  /** Sprint/board `?project=` when it is a real API project (numeric). */
+  projectId?: string | null;
 };
+
+function formatLoggedHoursSum(hours: number): string {
+  if (!Number.isFinite(hours) || hours < 0) return "0";
+  return new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(hours);
+}
 
 const activityMock = [
   { time: "07:12", title: "Quality assurance", detail: "Status changed from in progress to complete" },
@@ -14,7 +29,27 @@ const activityMock = [
   { time: "10 February 2026", title: "Todd Phillips", detail: "Project manager deleted 2 tasks" },
 ];
 
-export function TaskPanels({ onBack }: TaskPanelsProps) {
+export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPanelsProps) {
+  const [logTimeOpen, setLogTimeOpen] = useState(false);
+
+  const apiProjectId = projectId != null && isApiProjectId(projectId) ? projectId : null;
+  const numericProjectForModal = apiProjectId != null ? Number(apiProjectId) : undefined;
+
+  const canLoadHours = apiProjectId != null && taskId != null && /^\d+$/.test(String(taskId).trim());
+
+  const { data: loggedHoursTotal, isLoading: hoursLoading, isError: hoursError } = useTaskLoggedHoursTotal(
+    apiProjectId,
+    taskId,
+    { enabled: canLoadHours },
+  );
+
+  const loggedDisplay = useMemo(() => {
+    if (!canLoadHours) return null;
+    if (hoursLoading) return "loading" as const;
+    if (hoursError) return "error" as const;
+    return formatLoggedHoursSum(loggedHoursTotal ?? 0);
+  }, [canLoadHours, hoursLoading, hoursError, loggedHoursTotal]);
+
   return (
     <div className="flex h-full w-full min-h-0 items-stretch">
       <main className="min-h-0 flex-1 overflow-y-auto rounded-[12px] bg-[#f9fafb] p-4">
@@ -215,14 +250,31 @@ export function TaskPanels({ onBack }: TaskPanelsProps) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-[16px] font-medium text-[#0b191f]">Time tracked</p>
-              <button className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white">
+              <button
+                type="button"
+                onClick={() => setLogTimeOpen(true)}
+                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white"
+              >
                 <Plus size={16} />
                 Log Time
               </button>
             </div>
             <div className="flex justify-between text-[16px]">
               <span className="text-[#727d83]">Logged</span>
-              <span className="text-[#0b191f]">120.30</span>
+              <span className="flex min-h-[24px] items-center justify-end gap-2 text-[#0b191f]">
+                {loggedDisplay === "loading" ? (
+                  <>
+                    <Loader2 className="size-4 shrink-0 animate-spin text-[#727d83]" aria-hidden />
+                    <span className="sr-only">Loading logged hours</span>
+                  </>
+                ) : loggedDisplay === "error" ? (
+                  <span className="text-[14px] text-[#727d83]">Unable to load</span>
+                ) : loggedDisplay === null ? (
+                  <span className="text-[#727d83]">—</span>
+                ) : (
+                  loggedDisplay
+                )}
+              </span>
             </div>
           </div>
           <div className="space-y-4">
@@ -242,6 +294,13 @@ export function TaskPanels({ onBack }: TaskPanelsProps) {
           </div>
         </div>
       </aside>
+
+      <LogTimeModal
+        open={logTimeOpen}
+        onOpenChange={setLogTimeOpen}
+        projectId={numericProjectForModal}
+        prefillTaskId={taskId ?? undefined}
+      />
     </div>
   );
 }

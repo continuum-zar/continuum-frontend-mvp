@@ -27,6 +27,7 @@ import {
     uploadProjectAttachment,
     addProjectAttachmentLink,
     deleteProjectAttachment,
+    normalizeProjectKeyId,
 } from './projects';
 export { projectKeys };
 import {
@@ -61,7 +62,7 @@ import {
     addTaskLabel,
     removeTaskLabel,
 } from './tasks';
-import { fetchLoggedHours, createLoggedHour } from './loggedHours';
+import { fetchLoggedHours, createLoggedHour, sumLoggedHoursForTask } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
 import type { Task, TaskAPIResponse, TaskStatus, ScopeWeight } from '@/types/task';
 import type { CreateTaskBody } from './tasks';
@@ -225,6 +226,32 @@ export function useLoggedHours(projectId?: string | null, options?: { limit?: nu
             limit,
         }),
         enabled: options?.enabled,
+    });
+}
+
+/**
+ * Sum of logged hours for a single task (GET /logged-hours with project_id + task_id).
+ * Refetches when `useCreateLoggedHour` invalidates the `logged-hours` query prefix.
+ */
+export function useTaskLoggedHoursTotal(
+    projectId: number | string | null | undefined,
+    taskId: string | number | null | undefined,
+    options?: { enabled?: boolean },
+) {
+    const pidRaw = projectId != null && projectId !== '' ? String(projectId).trim() : '';
+    const tidRaw = taskId != null && taskId !== '' ? String(taskId).trim() : '';
+    const validProject = /^\d+$/.test(pidRaw);
+    const validTask = /^\d+$/.test(tidRaw);
+    const enabled =
+        (options?.enabled !== false) &&
+        validProject &&
+        validTask;
+
+    return useQuery({
+        queryKey: ['logged-hours', 'task-total', normalizeProjectKeyId(pidRaw), tidRaw] as const,
+        queryFn: () => sumLoggedHoursForTask({ project_id: pidRaw, task_id: tidRaw }),
+        enabled,
+        staleTime: 30 * 1000,
     });
 }
 

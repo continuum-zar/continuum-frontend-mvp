@@ -40,7 +40,11 @@ export function DashboardPlaceholderTaskView() {
             {isRealTask ? (
               <TaskDetail taskIdOverride={taskId} onBack={handleBack} />
             ) : (
-              <TaskPanels onBack={handleBack} />
+              <TaskPanels
+                onBack={handleBack}
+                taskId={taskId ?? null}
+                projectId={projectParam && isApiProjectId(projectParam) ? projectParam : null}
+              />
             )}
           </section>
         </div>
