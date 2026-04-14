@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CURSOR_HOTSPOTS, type CustomCursorKind, cursorAssetUrl } from "@/lib/customCursorAssets";
+import {
+  CURSOR_ASSET_INTRINSIC_PX,
+  CURSOR_HOTSPOTS,
+  CURSOR_OVERLAY_DISPLAY_PX,
+  type CustomCursorKind,
+  cursorAssetUrl,
+} from "@/lib/customCursorAssets";
 import { resolveCustomCursor, type ResolvedCustomCursor } from "@/lib/resolveCustomCursor";
 
 let srcCache: Record<CustomCursorKind, string> | null = null;
@@ -13,13 +19,17 @@ function getSrc(kind: CustomCursorKind): string {
       pointer: cursorAssetUrl("pointer"),
       grab: cursorAssetUrl("grab"),
       grabbing: cursorAssetUrl("grabbing"),
+      textCursor: cursorAssetUrl("textCursor"),
     };
   }
   return srcCache[kind];
 }
 
 function applyTransform(el: HTMLElement, clientX: number, clientY: number, kind: CustomCursorKind) {
-  const { x: hx, y: hy } = CURSOR_HOTSPOTS[kind];
+  const scale = CURSOR_OVERLAY_DISPLAY_PX / CURSOR_ASSET_INTRINSIC_PX;
+  const { x: hx56, y: hy56 } = CURSOR_HOTSPOTS[kind];
+  const hx = hx56 * scale;
+  const hy = hy56 * scale;
   el.style.transform = `translate3d(${clientX - hx}px, ${clientY - hy}px, 0)`;
 }
 
@@ -120,8 +130,8 @@ export function CustomCursorOverlay() {
       data-custom-cursor-overlay
       src={getSrc(kind)}
       alt=""
-      width={64}
-      height={64}
+      width={CURSOR_OVERLAY_DISPLAY_PX}
+      height={CURSOR_OVERLAY_DISPLAY_PX}
       draggable={false}
       className="pointer-events-none fixed left-0 top-0 z-[2147483647] select-none will-change-transform"
       style={{

@@ -2,7 +2,6 @@ import type { CustomCursorKind } from "./customCursorAssets";
 
 export type ResolvedCustomCursor =
   | { mode: "custom"; kind: CustomCursorKind }
-  | { mode: "text" }
   | { mode: "native" };
 
 const TEXT_INPUT_TYPES = new Set([
@@ -31,7 +30,7 @@ function remember(clientX: number, clientY: number, r: ResolvedCustomCursor): Re
 
 /**
  * Decide which cursor to show. Kanban drag (data-kanban-dragging) forces grabbing.
- * Text fields and a few native-heavy cases use the real OS cursor.
+ * Text fields use the text SVG cursor; a few native-heavy cases use the real OS cursor.
  * Caches last hit-test; cache key includes coords + drag state so it invalidates when drag ends.
  */
 export function resolveCustomCursor(clientX: number, clientY: number): ResolvedCustomCursor {
@@ -58,15 +57,15 @@ export function resolveCustomCursor(clientX: number, clientY: number): ResolvedC
       const t = it.type;
       if (t === "hidden") continue;
       if (t === "" || TEXT_INPUT_TYPES.has(t)) {
-        return remember(clientX, clientY, { mode: "text" });
+        return remember(clientX, clientY, { mode: "custom", kind: "textCursor" });
       }
       return remember(clientX, clientY, { mode: "native" });
     }
     if (el.matches("textarea")) {
-      return remember(clientX, clientY, { mode: "text" });
+      return remember(clientX, clientY, { mode: "custom", kind: "textCursor" });
     }
     if (el.matches("[contenteditable='true']")) {
-      return remember(clientX, clientY, { mode: "text" });
+      return remember(clientX, clientY, { mode: "custom", kind: "textCursor" });
     }
     if (el.matches("select")) {
       return remember(clientX, clientY, { mode: "native" });
@@ -118,6 +117,9 @@ export function resolveCustomCursor(clientX: number, clientY: number): ResolvedC
     }
     if (cls.contains("cursor-pointer") || cls.contains("cursor-alias") || cls.contains("cursor-copy")) {
       return remember(clientX, clientY, { mode: "custom", kind: "pointer" });
+    }
+    if (cls.contains("cursor-text")) {
+      return remember(clientX, clientY, { mode: "custom", kind: "textCursor" });
     }
     if (cls.contains("cursor-default")) {
       return remember(clientX, clientY, { mode: "custom", kind: "default" });

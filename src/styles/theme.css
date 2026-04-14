@@ -66,16 +66,18 @@
   --sidebar-ring: #2563eb;
 
   /**
-   * Custom cursor SVGs — public/assets/cursors/*.svg (64×64 raster, 32×32 viewBox).
-   * Hotspots are in image pixel space (2× vs original 32px assets).
+   * Custom cursor SVGs — public/assets/cursors/*.svg (56×56 intrinsic, 32×32 viewBox).
+   * CustomCursorOverlay scales them to CURSOR_OVERLAY_DISPLAY_PX for on-screen size.
    */
   --cursor-svg-default: url('/assets/cursors/default.svg');
   --cursor-svg-pointing: url('/assets/cursors/handpointing.svg');
   --cursor-svg-open-hand: url('/assets/cursors/handopen.svg');
-  --cursor-app-default: var(--cursor-svg-default) 10 10, default;
-  --cursor-app-pointer: var(--cursor-svg-pointing) 22 16, pointer;
-  --cursor-app-grab: var(--cursor-svg-open-hand) 24 26, grab;
-  --cursor-app-grabbing: url('/assets/cursors/handgrabbing.svg') 24 28, grabbing;
+  --cursor-svg-text: url('/assets/cursors/textcursor.svg');
+  --cursor-app-default: var(--cursor-svg-default) 7 7, default;
+  --cursor-app-pointer: var(--cursor-svg-pointing) 16 12, pointer;
+  --cursor-app-grab: var(--cursor-svg-open-hand) 19 21, grab;
+  --cursor-app-grabbing: url('/assets/cursors/handgrabbing.svg') 19 23, grabbing;
+  --cursor-app-text: var(--cursor-svg-text) 17 10, text;
 }
 
 .dark {
@@ -246,6 +248,19 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+
+  input:not([type]),
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="url"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  [contenteditable="true"] {
+    cursor: var(--cursor-app-text);
+  }
 }
 
 /** Hide native scrollbar while keeping scroll (wheel / touch / keyboard). */
@@ -256,7 +271,7 @@
   }
 
   .cursor-open-hand:active {
-    cursor: url('/assets/cursors/handgrabbing.svg') 24 28, grabbing;
+    cursor: url('/assets/cursors/handgrabbing.svg') 19 23, grabbing;
   }
 
   .scrollbar-none {
@@ -287,7 +302,7 @@
 html[data-kanban-dragging]:not([data-custom-cursor-active]) *,
 html[data-kanban-dragging]:not([data-custom-cursor-active]) *::before,
 html[data-kanban-dragging]:not([data-custom-cursor-active]) *::after {
-  cursor: url('/assets/cursors/handgrabbing.svg') 24 28, grabbing !important;
+  cursor: url('/assets/cursors/handgrabbing.svg') 19 23, grabbing !important;
 }
 
 /* Respect user preference for reduced motion (WCAG 2.2.2, vestibular safety) */
