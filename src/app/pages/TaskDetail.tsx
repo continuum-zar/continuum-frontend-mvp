@@ -997,7 +997,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     className="max-w-xs border-0 bg-black text-balance text-white shadow-md"
                     arrowClassName="bg-black fill-black"
                   >
-                    {`Copies the Cursor MCP task page link for this task. Paste it into Cursor chat when you need the agent to open that view.`}
+                    {`Copies the Cursor MCP task page link. For full agent integration (checklists, status changes), configure the Continuum MCP server in Cursor.`}
                   </TooltipContent>
                 </Tooltip>
                 <button

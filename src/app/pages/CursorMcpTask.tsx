@@ -108,7 +108,7 @@ export function CursorMcpTask() {
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom" className="max-w-xs text-balance">
-                                    {`Copies this page's link. Paste it into Cursor chat so the agent can open this MCP task view.`}
+                                    {`Copies this page's URL for sharing. For full Cursor agent integration (pull tasks, update checklists, change status), configure the Continuum MCP server.`}
                                 </TooltipContent>
                             </Tooltip>
                             <Button type="button" variant="ghost" size="sm" asChild>
