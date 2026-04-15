@@ -8,8 +8,18 @@ export interface CursorMcpTaskDetail {
     comments: CommentAPIResponse[];
 }
 
+/** Backend `TaskCursorMcpDetail` uses a nested `branch`; list views use flat `linked_*` on the task. */
+type CursorMcpBranchPayload = {
+    linked_repo: string;
+    linked_branch: string;
+    linked_branch_full_ref?: string | null;
+};
+
 type CursorMcpTaskDetailPayload =
-    | (TaskAPIResponse & { comments?: CommentAPIResponse[] | null })
+    | (TaskAPIResponse & {
+          comments?: CommentAPIResponse[] | null;
+          branch?: CursorMcpBranchPayload | null;
+      })
     | { task: TaskAPIResponse; comments?: CommentAPIResponse[] | null };
 
 function normalizeCursorMcpTaskDetail(data: CursorMcpTaskDetailPayload): CursorMcpTaskDetail {
@@ -20,19 +30,33 @@ function normalizeCursorMcpTaskDetail(data: CursorMcpTaskDetailPayload): CursorM
             comments: Array.isArray(wrapped.comments) ? wrapped.comments : [],
         };
     }
-    const flat = data as TaskAPIResponse & { comments?: CommentAPIResponse[] | null };
-    const { comments, ...rest } = flat;
+    const flat = data as TaskAPIResponse & {
+        comments?: CommentAPIResponse[] | null;
+        branch?: CursorMcpBranchPayload | null;
+    };
+    const { comments, branch, ...rest } = flat;
+    const base = rest as TaskAPIResponse;
+    const task =
+        branch && !base.linked_repo && !base.linked_branch
+            ? {
+                  ...base,
+                  status: base.status ?? 'todo',
+                  linked_repo: branch.linked_repo,
+                  linked_branch: branch.linked_branch,
+                  linked_branch_full_ref: branch.linked_branch_full_ref ?? null,
+              }
+            : { ...base, status: base.status ?? 'todo' };
     return {
-        task: rest as TaskAPIResponse,
+        task,
         comments: Array.isArray(comments) ? comments : [],
     };
 }
 
 /**
  * Aggregated task payload for Cursor MCP (title, description, checklists, branch, comments).
- * GET /api/v1/cursor-mcp/task/:id
+ * GET /api/v1/tasks/:id/cursor-mcp
  */
 export async function fetchCursorMcpTaskDetail(taskId: number | string): Promise<CursorMcpTaskDetail> {
-    const { data } = await api.get<CursorMcpTaskDetailPayload>(`/cursor-mcp/task/${taskId}`);
+    const { data } = await api.get<CursorMcpTaskDetailPayload>(`/tasks/${encodeURIComponent(String(taskId))}/cursor-mcp`);
     return normalizeCursorMcpTaskDetail(data);
 }
