@@ -49,12 +49,13 @@ type SettingsModalProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-type SettingsSection = "general" | "notification" | "invoice" | "support";
+type SettingsSection = "general" | "notification" | "invoice" | "integrations" | "support";
 
 const NAV: { id: SettingsSection; label: string }[] = [
   { id: "general", label: "General" },
   { id: "notification", label: "Notifications" },
   { id: "invoice", label: "Invoice" },
+  { id: "integrations", label: "Integrations" },
   { id: "support", label: "Support & legal" },
 ];
 
@@ -62,6 +63,7 @@ const SECTION_TITLE: Record<SettingsSection, string> = {
   general: "General",
   notification: "Notifications",
   invoice: "Invoice",
+  integrations: "Integrations",
   support: "Support & legal",
 };
 
@@ -437,6 +439,32 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         aria-label="Default hourly rate"
                       />
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {section === "integrations" && (
+                <div className="flex flex-col gap-4 pt-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                        Cursor MCP
+                      </p>
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                        Connect Cursor to Continuum so your AI agent can pull tasks, update checklists, and change statuses.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleOpenChange(false);
+                        navigate("/mcp-setup");
+                      }}
+                      className={cn(outlineActionClass, "gap-1")}
+                    >
+                      Setup
+                      <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                    </button>
                   </div>
                 </div>
               )}
