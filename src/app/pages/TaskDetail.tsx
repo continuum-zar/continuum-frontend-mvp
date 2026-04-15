@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams } from 'react-router';
@@ -8,6 +8,7 @@ import {
   Activity,
   Check,
   ChevronDown,
+  Copy,
   Download,
   FileText,
   Flag,
@@ -50,6 +51,8 @@ import type { Repository } from '@/types/repository';
 import { AddTaskResourceModal } from '../components/AddTaskResourceModal';
 import { AssignMemberModal } from '../components/AssignMemberModal';
 import { LogTimeModal } from '../components/dashboard-placeholder/LogTimeModal';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
+import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
 
 /* ─── helpers ─── */
 
@@ -413,6 +416,24 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [scopeDropdownOpen, setScopeDropdownOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
+  const [mcpLinkCopied, setMcpLinkCopied] = useState(false);
+
+  const cursorMcpShareUrl = useMemo(() => {
+    if (typeof window === 'undefined' || !taskId) return '';
+    return buildCursorMcpTaskShareUrl(window.location.origin, taskId);
+  }, [taskId]);
+
+  const handleCopyCursorMcpUrl = useCallback(async () => {
+    if (!cursorMcpShareUrl) return;
+    try {
+      await navigator.clipboard.writeText(cursorMcpShareUrl);
+      setMcpLinkCopied(true);
+      toast.success('Link copied — paste it into Cursor chat to open this task view.');
+      window.setTimeout(() => setMcpLinkCopied(false), 2000);
+    } catch {
+      toast.error('Could not copy to clipboard');
+    }
+  }, [cursorMcpShareUrl]);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descTextareaRef = useAutosizeTextarea(descDraft, { minPx: 106, maxPx: 560 });
@@ -953,7 +974,32 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
 
             {/* ─── Update Task button ─── */}
             <div className="border-t border-[#ebedee] pt-5">
-              <div className="flex justify-end">
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyCursorMcpUrl()}
+                      disabled={!cursorMcpShareUrl}
+                      aria-label={mcpLinkCopied ? 'URL copied to clipboard' : 'Copy Cursor MCP task URL'}
+                      className={`inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-[#ebedee] bg-white px-5 text-[14px] font-medium text-[#0b191f] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-50`}
+                    >
+                      {mcpLinkCopied ? (
+                        <Check size={16} className="shrink-0 text-[#0b191f]" aria-hidden />
+                      ) : (
+                        <Copy size={16} className="shrink-0 text-[#606d76]" aria-hidden />
+                      )}
+                      {mcpLinkCopied ? 'Copied' : 'Copy MCP URL'}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="top"
+                    className="max-w-xs border-0 bg-black text-balance text-white shadow-md"
+                    arrowClassName="bg-black fill-black"
+                  >
+                    {`Copies the Cursor MCP task page link for this task. Paste it into Cursor chat when you need the agent to open that view.`}
+                  </TooltipContent>
+                </Tooltip>
                 <button
                   type="button"
                   onClick={handleUpdateTask}

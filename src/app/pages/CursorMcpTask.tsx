@@ -11,6 +11,8 @@ import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/app/components/ui/alert';
 import { Skeleton } from '@/app/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
+import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
 import type { CommentAuthorAPI } from '@/types/comment';
 
 function authorLabel(author: CommentAuthorAPI): string {
@@ -35,7 +37,7 @@ export function CursorMcpTask() {
 
     const shareUrl = useMemo(() => {
         if (typeof window === 'undefined' || !taskId) return '';
-        return new URL(`/cursor-mcp/task/${taskId}`, window.location.origin).href;
+        return buildCursorMcpTaskShareUrl(window.location.origin, taskId);
     }, [taskId]);
 
     const handleCopyUrl = useCallback(async () => {
@@ -43,7 +45,7 @@ export function CursorMcpTask() {
         try {
             await navigator.clipboard.writeText(shareUrl);
             setCopied(true);
-            toast.success('Task URL copied');
+            toast.success('Link copied — paste it into Cursor chat to open this task view.');
             window.setTimeout(() => setCopied(false), 2000);
         } catch {
             toast.error('Could not copy to clipboard');
@@ -69,39 +71,71 @@ export function CursorMcpTask() {
     return (
         <div className="min-h-svh bg-background text-foreground">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 md:py-10">
-                <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0 space-y-1">
-                        <p className="text-muted-foreground text-sm font-medium tracking-tight">Cursor MCP</p>
-                        {isLoading ? (
-                            <Skeleton className="h-8 w-[min(100%,320px)] max-w-full" />
-                        ) : data ? (
-                            <h1 className="text-foreground text-xl font-semibold tracking-tight md:text-2xl">
-                                {data.task.title}
-                            </h1>
-                        ) : (
-                            <h1 className="text-foreground text-xl font-semibold tracking-tight md:text-2xl">
-                                Task {taskId}
-                            </h1>
-                        )}
+                <header className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 space-y-1">
+                            <p className="text-muted-foreground text-sm font-medium tracking-tight">Cursor MCP</p>
+                            {isLoading ? (
+                                <Skeleton className="h-8 w-[min(100%,320px)] max-w-full" />
+                            ) : data ? (
+                                <h1 className="text-foreground text-xl font-semibold tracking-tight md:text-2xl">
+                                    {data.task.title}
+                                </h1>
+                            ) : (
+                                <h1 className="text-foreground text-xl font-semibold tracking-tight md:text-2xl">
+                                    Task {taskId}
+                                </h1>
+                            )}
+                        </div>
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={handleCopyUrl}
+                                        disabled={!shareUrl}
+                                        aria-label={copied ? 'URL copied to clipboard' : 'Copy Cursor MCP task URL'}
+                                    >
+                                        {copied ? (
+                                            <Check className="size-4" aria-hidden />
+                                        ) : (
+                                            <Copy className="size-4" aria-hidden />
+                                        )}
+                                        {copied ? 'Copied' : 'Copy URL'}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="max-w-xs text-balance">
+                                    {`Copies this page's link. Paste it into Cursor chat so the agent can open this MCP task view.`}
+                                </TooltipContent>
+                            </Tooltip>
+                            <Button type="button" variant="ghost" size="sm" asChild>
+                                <Link to={`/tasks/${taskId}`} className="gap-2">
+                                    <Link2 className="size-4" aria-hidden />
+                                    Open in app
+                                </Link>
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="gap-2"
-                            onClick={handleCopyUrl}
-                            disabled={!shareUrl}
-                        >
-                            {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
-                            {copied ? 'Copied' : 'Copy URL'}
-                        </Button>
-                        <Button type="button" variant="ghost" size="sm" asChild>
-                            <Link to={`/tasks/${taskId}`} className="gap-2">
-                                <Link2 className="size-4" aria-hidden />
-                                Open in app
-                            </Link>
-                        </Button>
+
+                    <div className="border-border bg-muted/30 flex flex-col gap-2 rounded-lg border px-3 py-3 sm:flex-row sm:items-center sm:gap-3">
+                        <div className="min-w-0 flex-1 space-y-1">
+                            <p className="text-muted-foreground text-xs font-medium tracking-tight">
+                                MCP task link (same URL you copy)
+                            </p>
+                            {shareUrl ? (
+                                <p
+                                    className="text-foreground font-mono text-sm leading-snug break-all select-all"
+                                    title={shareUrl}
+                                >
+                                    {shareUrl}
+                                </p>
+                            ) : (
+                                <Skeleton className="h-5 w-full max-w-md" />
+                            )}
+                        </div>
                     </div>
                 </header>
 
