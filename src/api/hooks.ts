@@ -40,6 +40,8 @@ import {
 export { invitationKeys };
 import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
+import { fetchCursorMcpTaskDetail } from './cursorMcp';
+
 import {
     fetchTask,
     fetchProjectTasks,
@@ -68,6 +70,10 @@ import type { Task, TaskAPIResponse, TaskStatus, ScopeWeight } from '@/types/tas
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
 import axios from 'axios';
+
+export const cursorMcpKeys = {
+    taskDetail: (taskId: number | string) => ['cursor-mcp', 'task', taskId] as const,
+};
 
 const taskDetailKey = (taskId: number | string) => ['tasks', 'detail', taskId] as const;
 const taskTimelineKey = (taskId: number | string) => ['taskTimeline', taskId] as const;
@@ -580,6 +586,14 @@ export function useTask(taskId: number | string | undefined | null) {
     return useQuery({
         queryKey: taskDetailKey(taskId!),
         queryFn: () => fetchTask(taskId!),
+        enabled: taskId != null && taskId !== '',
+    });
+}
+
+export function useCursorMcpTaskDetail(taskId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: cursorMcpKeys.taskDetail(String(taskId)),
+        queryFn: () => fetchCursorMcpTaskDetail(taskId!),
         enabled: taskId != null && taskId !== '',
     });
 }

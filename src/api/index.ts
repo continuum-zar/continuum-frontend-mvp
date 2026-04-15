@@ -18,6 +18,8 @@ export {
     downloadProjectAttachment,
 } from './projects';
 export type { DownloadProjectAttachmentResult } from './projects';
+export { fetchCursorMcpTaskDetail } from './cursorMcp';
+export type { CursorMcpTaskDetail } from './cursorMcp';
 export {
     fetchTask,
     createTask,
@@ -88,6 +90,8 @@ export {
     useAllTasks,
     useCreateTask,
     useTask,
+    useCursorMcpTaskDetail,
+    cursorMcpKeys,
     useProjectMilestones,
     useProjectMembers,
     useCreateProject,
