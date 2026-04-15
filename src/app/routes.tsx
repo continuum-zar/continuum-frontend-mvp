@@ -28,6 +28,9 @@ const ClientPortal = lazy(() => import("./pages/ClientPortal").then(m => ({ defa
 const RoleSelection = lazy(() => import("./pages/RoleSelection").then(m => ({ default: m.RoleSelection })));
 const AIProjectPlanner = lazy(() => import("./pages/AIProjectPlanner").then(m => ({ default: m.AIProjectPlanner })));
 const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
+const CursorMcpTask = lazy(() =>
+  import("./pages/CursorMcpTask").then((m) => ({ default: m.CursorMcpTask }))
+);
 const DashboardPlaceholder = lazy(() =>
   import("./pages/DashboardPlaceholder").then((m) => ({ default: m.DashboardPlaceholder }))
 );
@@ -131,6 +134,16 @@ export const router = createBrowserRouter([
   {
     path: "/invite",
     element: <InviteHandler />,
+  },
+  {
+    path: "/cursor-mcp/task/:taskId",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <CursorMcpTask />
+        </Suspense>
+      </AuthGuard>
+    ),
   },
   {
     path: `${WORKSPACE_BASE}/entry`,
