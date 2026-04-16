@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { FileContent } from './planner';
 
 // Dashboard metrics
 export interface DashboardHealth {
@@ -231,6 +232,8 @@ export interface ProjectQueryRequest {
     query: string;
     /** When true (default), backend includes semantic retrieval over indexed project content. */
     use_rag?: boolean;
+    /** Optional uploaded file extracts (same shape as planner/wiki). */
+    file_contents?: FileContent[];
 }
 
 /** Structured signal sources returned with project query answers (matches API). */

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from './hooks';
 import { projectKeys } from './hooks';
+import type { FileContent } from './planner';
 
 export interface ScanRepositoryRequest {
     repository_id: number;
@@ -81,11 +82,15 @@ export async function getWikiScanStatus(
 
 export async function generateTasks(
     projectId: number | string,
-    body: { prompt: string; max_tasks?: number }
+    body: { prompt: string; max_tasks?: number; file_contents?: FileContent[] }
 ): Promise<GenerateTasksResponse> {
     const { data } = await api.post<GenerateTasksResponse>(
         `/projects/${projectId}/wiki/generate`,
-        { prompt: body.prompt, max_tasks: body.max_tasks ?? 10 },
+        {
+            prompt: body.prompt,
+            max_tasks: body.max_tasks ?? 10,
+            ...(body.file_contents?.length ? { file_contents: body.file_contents } : {}),
+        },
         { timeout: 600_000 },
     );
     return data;
