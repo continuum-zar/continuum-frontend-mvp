@@ -142,6 +142,9 @@ export const projectKeys = {
         [...projectKeys.list(), userId ?? 'signed-out'] as const,
     detail: (id: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(id)] as const,
     tasks: (projectId: number | string) => [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'tasks'] as const,
+    /** Paginated project tasks (`useProjectTasksInfinite`). Invalidation: use `tasks(projectId)` prefix. */
+    tasksInfinite: (projectId: number | string) =>
+        [...projectKeys.tasks(projectId), 'infinite'] as const,
     allTasks: () => ['tasks', 'all'] as const,
     /** Tasks assigned to a user (GET /tasks/?assigned_to=) — scoped under projects for cache invalidation. */
     assignedToMeTasks: (userId: string | number | undefined | null) =>

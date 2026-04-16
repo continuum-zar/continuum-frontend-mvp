@@ -25,6 +25,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Skeleton } from '../components/ui/skeleton';
+import { VirtualList } from '../components/ui/VirtualList';
 import {
   Select,
   SelectContent,
@@ -1129,9 +1130,17 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
               ) : activityFeedFromApi.length === 0 ? (
                 <div className="text-sm text-muted-foreground">No recent activity</div>
               ) : (
-              <div className="space-y-6">
-                {activityFeedFromApi.map((activity) => (
-                  <div key={activity.id} className="flex gap-4">
+              <VirtualList
+                items={activityFeedFromApi}
+                threshold={12}
+                estimateSize={52}
+                gap={24}
+                maxHeight="min(50vh, 400px)"
+                getItemKey={(a) => a.id}
+                scrollClassName="pr-1"
+              >
+                {(activity) => (
+                  <div className="flex gap-4">
                     <div className={`mt-1 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${activity.bg}`}>
                       <activity.icon className={`h-4 w-4 ${activity.color}`} />
                     </div>
@@ -1144,8 +1153,8 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
                       <span className="text-xs text-muted-foreground">{activity.time}</span>
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
+              </VirtualList>
               )}
             </motion.div>
           </div>

@@ -1,4 +1,10 @@
-import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+    useQuery,
+    useMutation,
+    useQueryClient,
+    useInfiniteQuery,
+    type QueryClient,
+} from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
     fetchProjectIntegrations,
@@ -45,6 +51,9 @@ import { fetchCursorMcpTaskDetail } from './cursorMcp';
 import {
     fetchTask,
     fetchProjectTasks,
+    fetchProjectTasksPage,
+    fetchTaskTimelinePage,
+    fetchTaskCommentsPage,
     fetchAllTasks,
     fetchTasksAssignedToUser,
     fetchTasksCreatedByUser,
@@ -170,6 +179,27 @@ export function useProjectTasks(projectId: number | string | undefined | null) {
     return useQuery({
         queryKey: projectKeys.tasks(projectId!),
         queryFn: () => fetchProjectTasks(projectId!),
+        enabled: projectId != null && projectId !== '',
+        staleTime: STALE_TASK_LIST_MS,
+        gcTime: LONG_GC_MS,
+        refetchOnWindowFocus: false,
+    });
+}
+
+const PROJECT_TASKS_PAGE_SIZE = 80;
+
+/** Project tasks with pagination — merges pages for kanban and large lists. */
+export function useProjectTasksInfinite(projectId: number | string | undefined | null) {
+    return useInfiniteQuery({
+        queryKey: projectKeys.tasksInfinite(projectId!),
+        queryFn: ({ pageParam }) =>
+            fetchProjectTasksPage(projectId!, { limit: PROJECT_TASKS_PAGE_SIZE, skip: pageParam }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, _pages, lastPageParam) => {
+            const skip = (lastPageParam as number) + lastPage.tasks.length;
+            if (lastPage.tasks.length === 0) return undefined;
+            return skip < lastPage.total ? skip : undefined;
+        },
         enabled: projectId != null && projectId !== '',
         staleTime: STALE_TASK_LIST_MS,
         gcTime: LONG_GC_MS,
@@ -726,6 +756,24 @@ export function useTaskComments(taskId: number | string | undefined | null) {
     });
 }
 
+const TASK_COMMENTS_PAGE_SIZE = 40;
+
+export function useTaskCommentsInfinite(taskId: number | string | undefined | null) {
+    return useInfiniteQuery({
+        queryKey: [...taskCommentsKey(taskId!), 'infinite'] as const,
+        queryFn: ({ pageParam }) =>
+            fetchTaskCommentsPage(taskId!, { limit: TASK_COMMENTS_PAGE_SIZE, skip: pageParam }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, _pages, lastPageParam) => {
+            if (!lastPage.hasMore) return undefined;
+            return (lastPageParam as number) + lastPage.comments.length;
+        },
+        enabled: taskId != null && taskId !== '',
+        staleTime: STALE_SHORT_MS,
+        refetchOnWindowFocus: false,
+    });
+}
+
 export function useCreateTaskComment(taskId: number | string | undefined | null) {
     const queryClient = useQueryClient();
     return useMutation({
@@ -874,6 +922,24 @@ export function useTaskTimeline(taskId: number | string | undefined | null) {
     return useQuery({
         queryKey: taskTimelineKey(taskId!),
         queryFn: () => fetchTaskTimeline(taskId!),
+        enabled: taskId != null && taskId !== '',
+        staleTime: STALE_SHORT_MS,
+        refetchOnWindowFocus: false,
+    });
+}
+
+const TASK_TIMELINE_PAGE_SIZE = 25;
+
+export function useTaskTimelineInfinite(taskId: number | string | undefined | null) {
+    return useInfiniteQuery({
+        queryKey: [...taskTimelineKey(taskId!), 'infinite'] as const,
+        queryFn: ({ pageParam }) =>
+            fetchTaskTimelinePage(taskId!, { limit: TASK_TIMELINE_PAGE_SIZE, skip: pageParam }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, _pages, lastPageParam) => {
+            if (!lastPage.hasMore) return undefined;
+            return (lastPageParam as number) + lastPage.entries.length;
+        },
         enabled: taskId != null && taskId !== '',
         staleTime: STALE_SHORT_MS,
         refetchOnWindowFocus: false,

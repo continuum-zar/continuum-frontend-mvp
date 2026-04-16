@@ -1,12 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 import { SprintKanbanListView } from "./SprintKanbanListView";
 
-import { useProjectTasks, useUpdateTaskStatus } from "@/api/hooks";
+import { useProjectTasksInfinite, useUpdateTaskStatus } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { useKanbanPointerDrag } from "@/lib/useKanbanPointerDrag";
 import { workspaceJoin } from "@/lib/workspacePaths";
@@ -60,16 +60,28 @@ export function GetStartedKanbanLive({
 }: GetStartedKanbanLiveProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const tasksQuery = useProjectTasks(projectId);
+  const tasksQuery = useProjectTasksInfinite(projectId);
   const updateStatusMutation = useUpdateTaskStatus(projectId);
   const pendingMoveRef = useRef(new Set<string>());
   const memberByUserId = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
 
+  const mergedTasks = useMemo(
+    () => tasksQuery.data?.pages.flatMap((p) => p.tasks) ?? [],
+    [tasksQuery.data?.pages],
+  );
+
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = tasksQuery;
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const filtered = useMemo(() => {
-    const list = tasksQuery.data ?? [];
+    const list = mergedTasks;
     if (!milestoneId) return list;
     return list.filter((t) => t.milestoneId === milestoneId);
-  }, [tasksQuery.data, milestoneId]);
+  }, [mergedTasks, milestoneId]);
 
   const byColumn = useMemo(() => {
     return {

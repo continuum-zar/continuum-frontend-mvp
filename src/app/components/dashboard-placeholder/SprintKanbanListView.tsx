@@ -12,6 +12,7 @@ import type { Member } from "@/types/member";
 import type { Task } from "@/types/task";
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { cn } from "../ui/utils";
+import { VirtualList } from "@/app/components/ui/VirtualList";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgLucideSquircleDashed = mcpAsset("e2efeca9-31cd-4cf9-ac56-b2799ee8a450");
@@ -96,7 +97,6 @@ export function SprintKanbanListView({
 
     return (
       <div
-        key={task.id}
         onPointerDown={cardPointerDown(task.id)}
         onClick={() =>
           navigate(`${workspaceJoin("task", String(task.id))}?${searchParams.toString()}`)
@@ -274,7 +274,18 @@ export function SprintKanbanListView({
               {list.length === 0 ? (
                 <p className="px-4 py-6 font-['Satoshi',sans-serif] text-[13px] text-[#727d83]">{emptyMsg}</p>
               ) : (
-                list.map((t) => renderRow(t))
+                <VirtualList
+                  items={list}
+                  threshold={16}
+                  estimateSize={54}
+                  gap={0}
+                  maxHeight="min(70vh, 720px)"
+                  fixedHeight
+                  getItemKey={(t) => t.id}
+                  scrollClassName="rounded-b-[8px]"
+                >
+                  {(t) => renderRow(t)}
+                </VirtualList>
               )}
             </div>
           </div>
