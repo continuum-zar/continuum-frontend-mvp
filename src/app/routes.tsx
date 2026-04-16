@@ -14,19 +14,14 @@ import { SignUp } from "./pages/auth/SignUp";
 import { Loading } from "./pages/auth/Loading";
 import { PostAuthBoardRedirect } from "./pages/auth/PostAuthBoardRedirect";
 import { ResetPassword } from "./pages/auth/ResetPassword";
-import { DashboardLayout } from "./layouts/DashboardLayout";
+import { projectSprintHref } from "./data/dashboardPlaceholderProjects";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { RouteSkeleton } from "./components/ui/RouteSkeleton";
 import { LandingRoute } from "./pages/public/LandingRoute";
 import { InviteHandler } from "./pages/InviteHandler";
 
 // Lazy-loaded pages
-const ProjectBoard = lazy(() => import("./pages/ProjectBoard").then(m => ({ default: m.ProjectBoard })));
-const TaskDetail = lazy(() => import("./pages/TaskDetail").then(m => ({ default: m.TaskDetail })));
-const CreateTask = lazy(() => import("./pages/CreateTask").then(m => ({ default: m.CreateTask })));
-const ClientPortal = lazy(() => import("./pages/ClientPortal").then(m => ({ default: m.ClientPortal })));
 const RoleSelection = lazy(() => import("./pages/RoleSelection").then(m => ({ default: m.RoleSelection })));
-const AIProjectPlanner = lazy(() => import("./pages/AIProjectPlanner").then(m => ({ default: m.AIProjectPlanner })));
 const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 const CursorMcpTask = lazy(() =>
   import("./pages/CursorMcpTask").then((m) => ({ default: m.CursorMcpTask }))
@@ -94,6 +89,41 @@ function LegacyWorkspaceProjectRedirect() {
 }
 
 function LegacyWorkspaceTaskRedirect() {
+  const { taskId } = useParams();
+  const location = useLocation();
+  return (
+    <Navigate
+      to={{
+        pathname: `${WORKSPACE_BASE}/task/${taskId ?? ""}`,
+        search: location.search,
+        hash: location.hash,
+      }}
+      replace
+    />
+  );
+}
+
+/** Legacy `/projects/:id` and `/tasks/:id` (hub layout) → workspace sprint / task. */
+function withPreservedSearchHash(destination: string, location: ReturnType<typeof useLocation>): string {
+  const url = new URL(destination, "http://localhost");
+  if (location.search) {
+    const extra = new URLSearchParams(location.search);
+    extra.forEach((value, key) => {
+      url.searchParams.set(key, value);
+    });
+  }
+  if (location.hash) url.hash = location.hash;
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function LegacyHubProjectRedirect() {
+  const { projectId } = useParams();
+  const location = useLocation();
+  const target = projectId ? projectSprintHref(String(projectId)) : WORKSPACE_BASE;
+  return <Navigate to={withPreservedSearchHash(target, location)} replace />;
+}
+
+function LegacyHubTaskRedirect() {
   const { taskId } = useParams();
   const location = useLocation();
   return (
@@ -417,54 +447,46 @@ export const router = createBrowserRouter([
       </AuthGuard>
     ),
   },
+  /** Legacy hub URLs (former `DashboardLayout` children) → workspace. */
   {
+    path: "/projects/ai-planner",
     element: (
       <AuthGuard>
-        <DashboardLayout />
+        <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/ai-planner`} />
       </AuthGuard>
     ),
-    children: [
-      {
-        path: "projects/ai-planner",
-        element: (
-          <Suspense fallback={<RouteSkeleton />}>
-            <AIProjectPlanner />
-          </Suspense>
-        ),
-      },
-      {
-        path: "projects/:projectId",
-        element: (
-          <Suspense fallback={<RouteSkeleton />}>
-            <ProjectBoard />
-          </Suspense>
-        ),
-      },
-      {
-        path: "tasks/:taskId",
-        element: (
-          <Suspense fallback={<RouteSkeleton />}>
-            <TaskDetail />
-          </Suspense>
-        ),
-      },
-      {
-        path: "tasks/new",
-        element: (
-          <Suspense fallback={<RouteSkeleton />}>
-            <CreateTask />
-          </Suspense>
-        ),
-      },
-      {
-        path: "client",
-        element: (
-          <Suspense fallback={<RouteSkeleton />}>
-            <ClientPortal />
-          </Suspense>
-        ),
-      },
-    ],
+  },
+  {
+    path: "/projects/:projectId",
+    element: (
+      <AuthGuard>
+        <LegacyHubProjectRedirect />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/tasks/new",
+    element: (
+      <AuthGuard>
+        <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/${WORKSPACE_SPRINT_SEGMENT}`} />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/tasks/:taskId",
+    element: (
+      <AuthGuard>
+        <LegacyHubTaskRedirect />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/client",
+    element: (
+      <AuthGuard>
+        <LegacyWorkspacePathRedirect targetPathname={WORKSPACE_BASE} />
+      </AuthGuard>
+    ),
   },
   {
     path: "*",

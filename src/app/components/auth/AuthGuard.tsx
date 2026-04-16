@@ -45,7 +45,8 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             p.startsWith(WORKSPACE_BASE) ||
             p.startsWith(LEGACY_WORKSPACE_BASE) ||
             p.startsWith('/role-selection') ||
-            p.startsWith('/projects/ai-planner') ||
+            p.startsWith('/tasks/') ||
+            p.startsWith('/projects/') ||
             p.startsWith('/cursor-mcp')
         ) {
             void import('@/styles/load-decorative-fonts');

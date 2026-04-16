@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams } from 'react-router';
+import { projectSprintHref } from '@/app/data/dashboardPlaceholderProjects';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
 import {
   ArrowLeft,
@@ -488,7 +489,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const handleNavigateBack = () => {
     if (onBack) { onBack(); return; }
     const projectId = task?.project_id ?? state.projectId;
-    if (projectId != null) navigate(`/projects/${projectId}`);
+    if (projectId != null) navigate(projectSprintHref(String(projectId)));
     else navigate(-1);
   };
 
