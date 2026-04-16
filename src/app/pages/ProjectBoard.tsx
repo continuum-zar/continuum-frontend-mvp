@@ -65,6 +65,7 @@ import {
   getAttachmentLinkLabel,
   fetchTask,
   getApiErrorMessage,
+  TASK_DETAIL_STALE_MS,
 } from '@/api';
 import { useRole } from '@/app/context/RoleContext';
 import { useAuthStore } from '@/store/authStore';
@@ -124,15 +125,12 @@ function TaskCard({ task, onRequestDelete }: TaskCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   const prefetchTaskDetail = useCallback(() => {
-    queryClient.prefetchQuery({
+    void queryClient.prefetchQuery({
       queryKey: [...TASK_DETAIL_QUERY_KEY, task.id],
       queryFn: () => fetchTask(task.id),
+      staleTime: TASK_DETAIL_STALE_MS,
     });
   }, [queryClient, task.id]);
-
-  useEffect(() => {
-    prefetchTaskDetail();
-  }, [prefetchTaskDetail]);
 
   const [{ isDragging }, drag, dragPreview] = useDrag(() => ({
     type: 'task',
@@ -410,19 +408,6 @@ export function ProjectBoard() {
       window.history.replaceState({}, document.title);
     }
   }, [location.state, projectId, queryClient]);
-
-  const PREFETCH_TASK_DETAIL_COUNT = 5;
-  useEffect(() => {
-    const taskList = tasksQuery.data;
-    if (!taskList?.length) return;
-    const firstFew = taskList.slice(0, PREFETCH_TASK_DETAIL_COUNT);
-    firstFew.forEach((t) => {
-      queryClient.prefetchQuery({
-        queryKey: ['tasks', 'detail', t.id],
-        queryFn: () => fetchTask(t.id),
-      });
-    });
-  }, [tasksQuery.data, queryClient]);
 
   const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ name: '', desc: '', date: '' });

@@ -76,6 +76,9 @@ export const cursorMcpKeys = {
 };
 
 const taskDetailKey = (taskId: number | string) => ['tasks', 'detail', taskId] as const;
+
+/** Shared with prefetch callers so hover/board warmups don’t refetch sooner than `useTask`. */
+export const TASK_DETAIL_STALE_MS = 60_000;
 const taskTimelineKey = (taskId: number | string) => ['taskTimeline', taskId] as const;
 
 function invalidateDerivedTaskLists(queryClient: QueryClient) {
@@ -587,6 +590,8 @@ export function useTask(taskId: number | string | undefined | null) {
         queryKey: taskDetailKey(taskId!),
         queryFn: () => fetchTask(taskId!),
         enabled: taskId != null && taskId !== '',
+        staleTime: TASK_DETAIL_STALE_MS,
+        refetchOnWindowFocus: false,
     });
 }
 

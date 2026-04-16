@@ -90,6 +90,7 @@ export {
     useAllTasks,
     useCreateTask,
     useTask,
+    TASK_DETAIL_STALE_MS,
     useCursorMcpTaskDetail,
     cursorMcpKeys,
     useProjectMilestones,
