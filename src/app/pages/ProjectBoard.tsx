@@ -31,6 +31,7 @@ import type { Repository } from '@/types/repository';
 import type { RepositoryProvider } from '@/types/repository';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
 import { parseApiUtcDateTime } from '@/lib/parseApiUtcDateTime';
+import { playRepoIndexingCompleteSound } from '@/lib/playRepoIndexingCompleteSound';
 import {
   useProject,
   useProjectTasks,
@@ -518,6 +519,7 @@ export function ProjectBoard() {
     const prev = previouslyScanningRepoIdsRef.current;
     const finished = [...prev].filter((id) => !nowScanning.has(id));
     if (finished.length > 0) {
+      playRepoIndexingCompleteSound();
       toast.success(
         finished.length === 1
           ? 'Repository indexing complete. You can create tasks from AI with code context.'

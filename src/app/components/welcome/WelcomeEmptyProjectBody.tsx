@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { parseApiUtcDateTime } from "@/lib/parseApiUtcDateTime";
+import { playRepoIndexingCompleteSound } from "@/lib/playRepoIndexingCompleteSound";
 import { Download, ExternalLink, FileText, GitCommit, Link2, Loader2, X } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
@@ -562,6 +563,7 @@ export function WelcomeEmptyProjectBody({
     const prev = previouslyScanningRepoIdsRef.current;
     const finished = [...prev].filter((id) => !nowScanning.has(id));
     if (finished.length > 0) {
+      playRepoIndexingCompleteSound();
       toast.success(
         finished.length === 1
           ? "Repository indexing complete."
