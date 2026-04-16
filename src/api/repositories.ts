@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from './hooks';
 import { normalizeProjectKeyId, projectKeys } from './projects';
+import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
 
 /** Shape of the paginated envelope returned by the backend list endpoints. */
 interface PaginatedResponse<T> {
@@ -81,6 +82,8 @@ export function useRepositoryBranches(
             projectId !== '' &&
             repositoryId != null &&
             typeof repositoryId === 'number',
+        staleTime: STALE_MODERATE_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -89,6 +92,8 @@ export function useProjectRepositories(projectId: number | string | undefined | 
         queryKey: projectKeys.repositories(projectId!),
         queryFn: () => fetchRepositories(projectId!),
         enabled: projectId != null && projectId !== '',
+        staleTime: STALE_REFERENCE_MS,
+        refetchOnWindowFocus: false,
     });
 }
 

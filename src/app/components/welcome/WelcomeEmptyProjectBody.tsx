@@ -11,6 +11,7 @@ import { playRepoIndexingCompleteSound } from "@/lib/playRepoIndexingCompleteSou
 import { Download, ExternalLink, FileText, GitCommit, Link2, Loader2, X } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
+import { STALE_SHORT_MS, STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
 import {
   downloadProjectAttachment,
   fetchClassificationBreakdown,
@@ -246,8 +247,8 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
     queryKey: ["projects", projectId, "git-contributions", "recent"],
     queryFn: () => fetchProjectGitContributions(projectId, { limit: RECENT_ACTIVITY_FETCH_LIMIT }),
     enabled: projectId != null,
-    staleTime: 30_000,
-    refetchInterval: 45_000,
+    staleTime: STALE_SHORT_MS,
+    refetchInterval: STALE_TIME_DATA_MS,
   });
 
   const rows = useMemo(() => data?.data ?? [], [data?.data]);
@@ -577,25 +578,25 @@ export function WelcomeEmptyProjectBody({
     queryKey: ["projects", projectId, "stats"],
     queryFn: () => fetchProjectStats(projectId),
     enabled: projectId != null,
-    staleTime: 60_000,
+    staleTime: STALE_TIME_DATA_MS,
   });
   const { data: healthData } = useQuery({
     queryKey: ["projects", projectId, "health"],
     queryFn: () => fetchProjectHealth(projectId),
     enabled: projectId != null,
-    staleTime: 60_000,
+    staleTime: STALE_TIME_DATA_MS,
   });
   const { data: classificationData } = useQuery({
     queryKey: ["projects", projectId, "classification-breakdown"],
     queryFn: () => fetchClassificationBreakdown(projectId),
     enabled: projectId != null,
-    staleTime: 60_000,
+    staleTime: STALE_TIME_DATA_MS,
   });
   const { data: memberContributions = [], isPending: contributionsLoading } = useQuery({
     queryKey: ["projects", projectId, "member-contributions"],
     queryFn: () => fetchMemberContributions(projectId),
     enabled: projectId != null,
-    staleTime: 60_000,
+    staleTime: STALE_TIME_DATA_MS,
   });
 
   const contributionByUserId = useMemo(() => {

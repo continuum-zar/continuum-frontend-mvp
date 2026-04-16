@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { STALE_TIME_DATA_MS } from '@/lib/queryDefaults';
 
 /** GET /api/v1/users/me/hours - total hours in range (total_hours in hours). */
 export interface UserHoursResponse {
@@ -100,6 +101,8 @@ export function useUserHours(startDate: string, endDate: string) {
         queryKey: userHoursKeys.range(startDate, endDate),
         queryFn: () => fetchUserHours(startDate, endDate),
         enabled: Boolean(startDate && endDate),
+        staleTime: STALE_TIME_DATA_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -108,5 +111,7 @@ export function useUserHoursByDay(startDate: string, endDate: string) {
         queryKey: userHoursKeys.byDay(startDate, endDate),
         queryFn: () => fetchUserHoursByDay(startDate, endDate),
         enabled: Boolean(startDate && endDate),
+        staleTime: STALE_TIME_DATA_MS,
+        refetchOnWindowFocus: false,
     });
 }

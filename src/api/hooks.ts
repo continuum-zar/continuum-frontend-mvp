@@ -70,15 +70,24 @@ import type { Task, TaskAPIResponse, TaskStatus, ScopeWeight } from '@/types/tas
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
 import axios from 'axios';
+import {
+    STALE_REFERENCE_MS,
+    STALE_MODERATE_MS,
+    STALE_TASK_LIST_MS,
+    STALE_ASSIGNED_LIST_MS,
+    TASK_DETAIL_STALE_MS,
+    STALE_TIME_DATA_MS,
+    STALE_SHORT_MS,
+    LONG_GC_MS,
+} from '@/lib/queryDefaults';
+
+export { TASK_DETAIL_STALE_MS };
 
 export const cursorMcpKeys = {
     taskDetail: (taskId: number | string) => ['cursor-mcp', 'task', taskId] as const,
 };
 
 const taskDetailKey = (taskId: number | string) => ['tasks', 'detail', taskId] as const;
-
-/** Shared with prefetch callers so hover/board warmups don’t refetch sooner than `useTask`. */
-export const TASK_DETAIL_STALE_MS = 60_000;
 const taskTimelineKey = (taskId: number | string) => ['taskTimeline', taskId] as const;
 
 function invalidateDerivedTaskLists(queryClient: QueryClient) {
@@ -140,8 +149,8 @@ export function useProjects(options?: { enabled?: boolean }) {
         queryKey: projectKeys.listForUser(userId),
         queryFn: fetchProjects,
         enabled,
-        // Reference data: keep longer in cache and avoid refetch on window focus
-        staleTime: 3 * 60 * 1000,
+        staleTime: STALE_REFERENCE_MS,
+        gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
     });
 }
@@ -151,6 +160,9 @@ export function useProject(projectId: number | string | undefined | null) {
         queryKey: projectKeys.detail(projectId!),
         queryFn: () => fetchProject(projectId!),
         enabled: projectId != null && projectId !== '',
+        staleTime: STALE_MODERATE_MS,
+        gcTime: LONG_GC_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -159,6 +171,9 @@ export function useProjectTasks(projectId: number | string | undefined | null) {
         queryKey: projectKeys.tasks(projectId!),
         queryFn: () => fetchProjectTasks(projectId!),
         enabled: projectId != null && projectId !== '',
+        staleTime: STALE_TASK_LIST_MS,
+        gcTime: LONG_GC_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -168,6 +183,9 @@ export function useAllTasks(options?: { enabled?: boolean }) {
         queryKey: projectKeys.allTasks(),
         queryFn: fetchAllTasks,
         enabled: options?.enabled,
+        staleTime: STALE_TASK_LIST_MS,
+        gcTime: LONG_GC_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -185,7 +203,9 @@ export function useAssignedToMeTasks(options?: { enabled?: boolean }) {
             isAuthenticated &&
             numericUserId != null &&
             Number.isFinite(numericUserId),
-        staleTime: 60 * 1000,
+        staleTime: STALE_ASSIGNED_LIST_MS,
+        gcTime: LONG_GC_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -203,7 +223,9 @@ export function useCreatedByMeTasks(options?: { enabled?: boolean }) {
             isAuthenticated &&
             numericUserId != null &&
             Number.isFinite(numericUserId),
-        staleTime: 60 * 1000,
+        staleTime: STALE_ASSIGNED_LIST_MS,
+        gcTime: LONG_GC_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -235,6 +257,8 @@ export function useLoggedHours(projectId?: string | null, options?: { limit?: nu
             limit,
         }),
         enabled: options?.enabled,
+        staleTime: STALE_TIME_DATA_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -260,7 +284,8 @@ export function useTaskLoggedHoursTotal(
         queryKey: ['logged-hours', 'task-total', normalizeProjectKeyId(pidRaw), tidRaw] as const,
         queryFn: () => sumLoggedHoursForTask({ project_id: pidRaw, task_id: tidRaw }),
         enabled,
-        staleTime: 30 * 1000,
+        staleTime: STALE_TIME_DATA_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -283,6 +308,9 @@ export function useProjectMilestones(projectId: number | string | undefined | nu
         queryKey: projectKeys.milestones(projectId!),
         queryFn: () => fetchMilestones(projectId!),
         enabled: projectId != null && projectId !== '',
+        staleTime: STALE_REFERENCE_MS,
+        gcTime: LONG_GC_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -291,8 +319,8 @@ export function useProjectMembers(projectId: number | string | undefined | null,
         queryKey: projectKeys.members(projectId!),
         queryFn: () => fetchMembers(projectId!),
         enabled: (projectId != null && projectId !== '' && options?.enabled !== false) ?? false,
-        // Members are reference-ish data; keep slightly longer cached and avoid refetch on focus
-        staleTime: 3 * 60 * 1000,
+        staleTime: STALE_REFERENCE_MS,
+        gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
     });
 }
@@ -464,6 +492,8 @@ export function usePendingInvitations(options?: { enabled?: boolean }) {
         queryKey: [...invitationKeys.pending(), userId ?? 'signed-out'],
         queryFn: fetchPendingInvitations,
         enabled,
+        staleTime: STALE_MODERATE_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -474,6 +504,8 @@ export function useInvitationByToken(token: string | null | undefined, options?:
         queryKey: invitationKeys.byToken(t),
         queryFn: () => fetchInvitationByToken(t),
         enabled,
+        staleTime: STALE_MODERATE_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -591,6 +623,7 @@ export function useTask(taskId: number | string | undefined | null) {
         queryFn: () => fetchTask(taskId!),
         enabled: taskId != null && taskId !== '',
         staleTime: TASK_DETAIL_STALE_MS,
+        gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
     });
 }
@@ -600,6 +633,8 @@ export function useCursorMcpTaskDetail(taskId: number | string | undefined | nul
         queryKey: cursorMcpKeys.taskDetail(String(taskId)),
         queryFn: () => fetchCursorMcpTaskDetail(taskId!),
         enabled: taskId != null && taskId !== '',
+        staleTime: STALE_REFERENCE_MS,
+        refetchOnWindowFocus: false,
     });
 }
 export function useAssignTask() {
@@ -686,6 +721,8 @@ export function useTaskComments(taskId: number | string | undefined | null) {
         queryKey: taskCommentsKey(taskId!),
         queryFn: () => fetchTaskComments(taskId!),
         enabled: taskId != null && taskId !== '',
+        staleTime: STALE_SHORT_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -714,6 +751,8 @@ export function useTaskAttachments(taskId: number | string | undefined | null) {
         queryKey: taskAttachmentsKey(taskId!),
         queryFn: () => fetchTaskAttachments(taskId!),
         enabled: taskId != null && taskId !== '',
+        staleTime: STALE_TIME_DATA_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -780,6 +819,8 @@ export function useProjectAttachments(projectId: number | string | undefined | n
         queryKey: projectAttachmentsKey(projectId!),
         queryFn: () => fetchProjectAttachments(projectId!),
         enabled: projectId != null && projectId !== '',
+        staleTime: STALE_TIME_DATA_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -834,6 +875,8 @@ export function useTaskTimeline(taskId: number | string | undefined | null) {
         queryKey: taskTimelineKey(taskId!),
         queryFn: () => fetchTaskTimeline(taskId!),
         enabled: taskId != null && taskId !== '',
+        staleTime: STALE_SHORT_MS,
+        refetchOnWindowFocus: false,
     });
 }
 
@@ -855,7 +898,8 @@ export function useClientDetail(clientId: number | string | undefined | null) {
         queryKey: clientKeys.detail(clientId!),
         queryFn: () => fetchClient(clientId!),
         enabled: clientId != null && clientId !== '',
-        staleTime: 3 * 60 * 1000,
+        staleTime: STALE_REFERENCE_MS,
+        gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
     });
 }
@@ -867,6 +911,8 @@ export function useProjectIntegrations(projectId: number | string | undefined | 
         queryKey: integrationKeys.list(projectId!),
         queryFn: () => fetchProjectIntegrations(projectId!),
         enabled: projectId != null && projectId !== '',
+        staleTime: STALE_REFERENCE_MS,
+        refetchOnWindowFocus: false,
     });
 }
 

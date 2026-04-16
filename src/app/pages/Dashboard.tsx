@@ -50,6 +50,7 @@ import {
   fetchProjectStats,
 } from '@/api';
 import { useAuthStore } from '@/store/authStore';
+import { STALE_MODERATE_MS, STALE_REFERENCE_MS, STALE_TIME_DATA_MS } from '@/lib/queryDefaults';
 import {
   Bar,
   LineChart,
@@ -213,7 +214,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     queryKey: ['user-rhythm', rhythmUserId],
     queryFn: () => fetchUserRhythm(rhythmUserId!),
     enabled: rhythmUserId != null && effectiveRole !== 'Client',
-    staleTime: 5 * 60_000, // 5 min – rhythm data is slow-changing
+    staleTime: STALE_REFERENCE_MS,
     placeholderData: (previousData) => previousData,
   });
 
@@ -236,7 +237,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     queryKey: ['project-dashboard', selectedProject],
     queryFn: () => fetchProjectDashboard(selectedProject),
     enabled: hasProjectSelected && effectiveRole !== 'Client',
-    staleTime: 2 * 60_000, // 2 min – avoid refetch on tab switch
+    staleTime: STALE_MODERATE_MS,
     placeholderData: (previousData) => previousData,
   });
 
@@ -245,7 +246,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     queryKey: ['project-stats', selectedProject, snapshotMember],
     queryFn: () => fetchProjectStats(selectedProject, Number(snapshotMember)),
     enabled: needMemberStats,
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME_DATA_MS,
     placeholderData: (previousData) => previousData,
   });
 
@@ -279,7 +280,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     queryKey: ['classification-breakdown', selectedProject],
     queryFn: () => fetchClassificationBreakdown(selectedProject),
     enabled: hasProjectSelected && isProjectPM,
-    staleTime: 2 * 60_000,
+    staleTime: STALE_MODERATE_MS,
     placeholderData: (previousData) => previousData,
   });
 
@@ -298,7 +299,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     queryKey: ['client-projects'],
     queryFn: fetchClientProjects,
     enabled: userRole === 'Client',
-    staleTime: 3 * 60_000,
+    staleTime: STALE_REFERENCE_MS,
   });
 
   const clientProjectId = userRole === 'Client' && clientProjectsList.length > 0
@@ -314,6 +315,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     queryKey: ['client-progress', clientProjectId],
     queryFn: () => fetchClientProjectProgress(clientProjectId),
     enabled: effectiveRole === 'Client' && !!clientProjectId && clientProjectId !== 'all',
+    staleTime: STALE_MODERATE_MS,
     placeholderData: (previousData) => previousData,
   });
 
@@ -357,7 +359,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     queryKey: ['stale-work', selectedProject],
     queryFn: () => fetchProjectStaleWork(selectedProject),
     enabled: hasProjectSelected && isProjectPM,
-    staleTime: 5 * 60_000, // 5 min – stale branch data changes infrequently
+    staleTime: STALE_REFERENCE_MS,
     placeholderData: (previousData) => previousData,
   });
 
@@ -412,7 +414,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     queryKey: ['milestone-burndown', milestoneId],
     queryFn: () => fetchMilestoneBurndown(milestoneId!),
     enabled: !!milestoneId && isProjectPM,
-    staleTime: 2 * 60_000,
+    staleTime: STALE_MODERATE_MS,
     placeholderData: (previousData) => previousData,
   });
 
@@ -440,7 +442,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     queryKey: ['velocity-report', selectedProject],
     queryFn: () => fetchProjectVelocityReport(selectedProject),
     enabled: hasProjectSelected && effectiveRole !== 'Client',
-    staleTime: 2 * 60_000,
+    staleTime: STALE_MODERATE_MS,
     placeholderData: (previousData) => previousData,
   });
 

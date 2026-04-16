@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 import { Link, useSearchParams } from "react-router";
+import { STALE_MODERATE_MS } from "@/lib/queryDefaults";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import {
@@ -707,12 +708,16 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
     queryKey: ["projects", liveProjectNumericId, "member-contributions"],
     queryFn: () => fetchMemberContributions(liveProjectNumericId!),
     enabled: liveProjectNumericId != null,
+    staleTime: STALE_MODERATE_MS,
+    refetchOnWindowFocus: false,
   });
 
   const { data: velocityReport, isPending: velocityLoading } = useQuery({
     queryKey: ["projects", liveProjectNumericId, "velocity-report", 104],
     queryFn: () => fetchProjectVelocityReport(liveProjectNumericId!, 104),
     enabled: liveProjectNumericId != null,
+    staleTime: STALE_MODERATE_MS,
+    refetchOnWindowFocus: false,
   });
 
   const velocityWeeks = useMemo(
