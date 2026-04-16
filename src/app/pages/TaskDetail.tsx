@@ -32,14 +32,14 @@ import {
   mapAttachment,
   getAttachmentLinkHref,
   getAttachmentLinkLabel,
-  useTaskTimeline,
+  useTaskTimelineInfinite,
   useProjectMembers,
   useAddTaskLabel,
   useRemoveTaskLabel,
   useProjectRepositories,
   useRepositoryBranches,
   useSetTaskLinkedBranch,
-  useTaskComments,
+  useTaskCommentsInfinite,
   useCreateTaskComment,
 } from '@/api';
 import { getApiErrorMessage, useTaskLoggedHoursTotal } from '@/api/hooks';
@@ -54,10 +54,7 @@ import { AssignMemberModal } from '../components/AssignMemberModal';
 import { LogTimeModal } from '../components/dashboard-placeholder/LogTimeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
-import {
-  sliceTaskActivityTimeline,
-  taskActivityTimelineHasMore,
-} from '@/lib/taskActivityTimelineDisplay';
+import { VirtualList } from '@/app/components/ui/VirtualList';
 
 /* ─── helpers ─── */
 
@@ -383,8 +380,12 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const updateTaskMutation = useUpdateTask();
   const { data: attachments } = useTaskAttachments(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
-  const { data: timeline, isLoading: timelineLoading } = useTaskTimeline(taskId);
-  const { data: comments, isLoading: commentsLoading } = useTaskComments(taskId);
+  const timelineQuery = useTaskTimelineInfinite(taskId);
+  const timeline = timelineQuery.data?.pages.flatMap((p) => p.entries) ?? [];
+  const timelineLoading = timelineQuery.isLoading;
+  const commentsQuery = useTaskCommentsInfinite(taskId);
+  const comments = commentsQuery.data?.pages.flatMap((p) => p.comments) ?? [];
+  const commentsLoading = commentsQuery.isLoading;
   const createCommentMutation = useCreateTaskComment(taskId);
   const { data: members } = useProjectMembers(task?.project_id, { enabled: !!task?.project_id });
   const addTaskLabelMutation = useAddTaskLabel(taskId);
@@ -422,7 +423,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [scopeDropdownOpen, setScopeDropdownOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [mcpLinkCopied, setMcpLinkCopied] = useState(false);
-  const [activityTimelineExpanded, setActivityTimelineExpanded] = useState(false);
 
   const cursorMcpShareUrl = useMemo(() => {
     if (typeof window === 'undefined' || !taskId) return '';
@@ -441,11 +441,17 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     }
   }, [cursorMcpShareUrl]);
 
-  const activityTimelineEntries = useMemo(
-    () => sliceTaskActivityTimeline(timeline, activityTimelineExpanded),
-    [timeline, activityTimelineExpanded],
-  );
-  const activityTimelineShowMore = useMemo(() => taskActivityTimelineHasMore(timeline), [timeline]);
+  const loadMoreTimeline = useCallback(() => {
+    if (timelineQuery.hasNextPage && !timelineQuery.isFetchingNextPage) {
+      void timelineQuery.fetchNextPage();
+    }
+  }, [timelineQuery]);
+
+  const loadMoreComments = useCallback(() => {
+    if (commentsQuery.hasNextPage && !commentsQuery.isFetchingNextPage) {
+      void commentsQuery.fetchNextPage();
+    }
+  }, [commentsQuery]);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descTextareaRef = useAutosizeTextarea(descDraft, { minPx: 106, maxPx: 560 });
@@ -473,9 +479,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     setBranchDropdownOpen(false);
   }, [task?.id]);
 
-  useEffect(() => {
-    setActivityTimelineExpanded(false);
-  }, [taskId]);
 
   /* When the task has a linked repo from the API, select matching repository row */
   useEffect(() => {
@@ -1297,9 +1300,18 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 ))}
               </div>
             ) : sortedComments.length > 0 ? (
-              <div className="space-y-4">
-                {sortedComments.map((c) => (
-                  <div key={c.id} className="flex gap-4">
+              <VirtualList
+                items={sortedComments}
+                threshold={12}
+                estimateSize={96}
+                gap={16}
+                maxHeight="min(45vh, 420px)"
+                getItemKey={(c) => c.id}
+                onEndReached={loadMoreComments}
+                scrollClassName="pr-1"
+              >
+                {(c) => (
+                  <div className="flex gap-4">
                     <div className="mt-1 shrink-0">
                       <TaskCommentAvatar author={c.author} />
                     </div>
@@ -1313,11 +1325,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
+              </VirtualList>
             ) : (
               <p className="text-[13px] text-[#727d83]">No comments yet.</p>
             )}
+            {sortedComments.length > 0 && commentsQuery.isFetchingNextPage ? (
+              <p className="mt-2 text-[13px] text-[#727d83]">Loading more comments…</p>
+            ) : null}
           </div>
 
           {/* Activity */}
@@ -1339,43 +1354,40 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   </div>
                 ))}
               </div>
-            ) : timeline && timeline.length > 0 ? (
+            ) : timeline.length > 0 ? (
               <>
-                <div id="task-activity-timeline-list" className="relative flex flex-col gap-4" role="list">
-                  <div
-                    className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
-                    aria-hidden
-                  />
-                  {activityTimelineEntries.map((entry) => (
-                    <div key={entry.id} className="relative z-[1] flex gap-4" role="listitem">
-                      <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
-                        <Activity size={16} className="text-[#727d83]" />
-                      </div>
-                      <div>
-                        <p className="text-[12px] text-[#727d83]">
-                          {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
-                        </p>
-                        <p className="text-[16px] leading-none text-[#0b191f]">{timelineActorName(entry)}</p>
-                        <p className="text-[12px] text-[#727d83]">{getActivityLabel(entry, members)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {activityTimelineShowMore ? (
-                  <button
-                    type="button"
-                    onClick={() => setActivityTimelineExpanded((v) => !v)}
-                    aria-expanded={activityTimelineExpanded}
-                    aria-controls="task-activity-timeline-list"
-                    aria-label={
-                      activityTimelineExpanded
-                        ? 'Show fewer task activities'
-                        : `Show all ${timeline.length} task activities`
-                    }
-                    className="mt-2 self-start pl-[66px] font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 outline-none hover:text-[#0d52cc] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40"
+                <div id="task-activity-timeline-list" role="list">
+                  <VirtualList
+                    items={timeline}
+                    threshold={10}
+                    estimateSize={88}
+                    gap={16}
+                    maxHeight="min(45vh, 420px)"
+                    getItemKey={(entry) => entry.id}
+                    timelineLineLeftPx={24}
+                    onEndReached={loadMoreTimeline}
+                    scrollClassName="pr-1"
                   >
-                    {activityTimelineExpanded ? 'Show less' : 'Show more'}
-                  </button>
+                    {(entry) => (
+                      <div className="relative z-[1] flex gap-4" role="listitem">
+                        <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
+                          <Activity size={16} className="text-[#727d83]" />
+                        </div>
+                        <div>
+                          <p className="text-[12px] text-[#727d83]">
+                            {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
+                          </p>
+                          <p className="text-[16px] leading-none text-[#0b191f]">{timelineActorName(entry)}</p>
+                          <p className="text-[12px] text-[#727d83]">{getActivityLabel(entry, members)}</p>
+                        </div>
+                      </div>
+                    )}
+                  </VirtualList>
+                </div>
+                {timelineQuery.isFetchingNextPage ? (
+                  <p className="mt-2 pl-[66px] font-['Satoshi',sans-serif] text-[13px] text-[#727d83]">
+                    Loading more activity…
+                  </p>
                 ) : null}
               </>
             ) : (

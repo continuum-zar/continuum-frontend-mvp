@@ -155,6 +155,22 @@ export async function fetchProjectTasks(projectId: number | string): Promise<Tas
     return (data.data ?? []).map(mapTask);
 }
 
+/** Paginated project tasks (`GET /tasks/?project_id=&limit=&skip=`). */
+export async function fetchProjectTasksPage(
+    projectId: number | string,
+    opts: { limit: number; skip: number },
+): Promise<{ tasks: Task[]; total: number; skip: number; limit: number }> {
+    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>(`/tasks/`, {
+        params: { project_id: projectId, limit: opts.limit, skip: opts.skip },
+    });
+    return {
+        tasks: (data.data ?? []).map(mapTask),
+        total: data.total,
+        skip: data.skip,
+        limit: data.limit,
+    };
+}
+
 /** Update task status. Returns updated task from API. */
 export async function updateTaskStatus(
     taskId: number | string,
@@ -167,13 +183,45 @@ export async function updateTaskStatus(
     return data;
 }
 
-/** Fetch comments for a task. Returns raw API comment objects. */
-export async function fetchTaskComments(taskId: number | string): Promise<CommentAPIResponse[]> {
-    const { data } = await api.get<
-        CommentAPIResponse[] | { comments?: CommentAPIResponse[] }
-    >(`/tasks/${taskId}/comments`);
+type CommentsListPayload =
+    | CommentAPIResponse[]
+    | { comments?: CommentAPIResponse[]; total?: number; skip?: number; limit?: number };
+
+function parseCommentsPayload(data: CommentsListPayload): CommentAPIResponse[] {
     if (Array.isArray(data)) return data;
     return data?.comments ?? [];
+}
+
+/** Fetch comments for a task. Returns raw API comment objects. */
+export async function fetchTaskComments(taskId: number | string): Promise<CommentAPIResponse[]> {
+    const { data } = await api.get<CommentsListPayload>(`/tasks/${taskId}/comments`);
+    return parseCommentsPayload(data);
+}
+
+/** Paginated comments when the backend supports `limit` / `skip`; otherwise first page returns the full list. */
+export interface TaskCommentsPageResult {
+    comments: CommentAPIResponse[];
+    total: number;
+    hasMore: boolean;
+}
+
+export async function fetchTaskCommentsPage(
+    taskId: number | string,
+    opts: { limit: number; skip: number },
+): Promise<TaskCommentsPageResult> {
+    const { data } = await api.get<CommentsListPayload>(`/tasks/${taskId}/comments`, {
+        params: { limit: opts.limit, skip: opts.skip },
+    });
+    const comments = parseCommentsPayload(data);
+    const loaded = opts.skip + comments.length;
+    const total =
+        !Array.isArray(data) && typeof data.total === 'number' ? data.total : loaded;
+    const hasMore = Array.isArray(data)
+        ? false
+        : typeof data.total === 'number'
+          ? loaded < data.total
+          : comments.length === opts.limit;
+    return { comments, total, hasMore };
 }
 
 /** Post a comment to a task. Returns the created comment. */
@@ -253,13 +301,45 @@ export async function downloadTaskAttachment(attachmentId: number | string): Pro
     return { blob: res.data, filename };
 }
 
-/** Fetch timeline for a task. Returns raw API timeline objects. */
-export async function fetchTaskTimeline(taskId: number | string): Promise<TaskTimelineEntry[]> {
-    const { data } = await api.get<
-        TaskTimelineEntry[] | { activities?: TaskTimelineEntry[]; total?: number; skip?: number; limit?: number }
-    >(`/tasks/${taskId}/timeline`);
+type TimelinePayload =
+    | TaskTimelineEntry[]
+    | { activities?: TaskTimelineEntry[]; total?: number; skip?: number; limit?: number };
+
+function parseTimelinePayload(data: TimelinePayload): TaskTimelineEntry[] {
     if (Array.isArray(data)) return data;
     return data?.activities ?? [];
+}
+
+/** Fetch timeline for a task. Returns raw API timeline objects. */
+export async function fetchTaskTimeline(taskId: number | string): Promise<TaskTimelineEntry[]> {
+    const { data } = await api.get<TimelinePayload>(`/tasks/${taskId}/timeline`);
+    return parseTimelinePayload(data);
+}
+
+/** Paginated timeline (`GET /tasks/{id}/timeline?limit=&skip=`). */
+export interface TaskTimelinePageResult {
+    entries: TaskTimelineEntry[];
+    total: number;
+    hasMore: boolean;
+}
+
+export async function fetchTaskTimelinePage(
+    taskId: number | string,
+    opts: { limit: number; skip: number },
+): Promise<TaskTimelinePageResult> {
+    const { data } = await api.get<TimelinePayload>(`/tasks/${taskId}/timeline`, {
+        params: { limit: opts.limit, skip: opts.skip },
+    });
+    const entries = parseTimelinePayload(data);
+    const loaded = opts.skip + entries.length;
+    const total =
+        !Array.isArray(data) && typeof data.total === 'number' ? data.total : loaded;
+    const hasMore = Array.isArray(data)
+        ? false
+        : typeof data.total === 'number'
+          ? loaded < data.total
+          : entries.length === opts.limit;
+    return { entries, total, hasMore };
 }
 
 /** Assign a task to a user. PATCH /api/v1/tasks/{id}/assign. */
