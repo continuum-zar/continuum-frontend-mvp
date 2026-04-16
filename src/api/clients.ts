@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchInvoices } from './invoices';
 import { fetchProjects, projectKeys } from './projects';
 import { useAuthStore } from '@/store/authStore';
+import { STALE_REFERENCE_MS, LONG_GC_MS } from '@/lib/queryDefaults';
 
 export interface ClientAPIResponse {
     id: number;
@@ -105,8 +106,8 @@ export function useClients() {
                 };
             });
         },
-        // Reference data: keep longer in cache and avoid refetch on window focus
-        staleTime: 3 * 60 * 1000,
+        staleTime: STALE_REFERENCE_MS,
+        gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
     });
 }

@@ -4,6 +4,7 @@ import type { InvoiceAPIResponse, InvoiceWithItems } from '@/types/invoice';
 import { mapInvoice } from './mappers';
 import { fetchProjects, projectKeys } from './projects';
 import { useAuthStore } from '@/store/authStore';
+import { STALE_MODERATE_MS, LONG_GC_MS } from '@/lib/queryDefaults';
 
 export async function fetchInvoices(params?: { project_id?: number | string; status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' }): Promise<InvoiceAPIResponse[]> {
     const res = await api.get<InvoiceAPIResponse[]>('/invoices/', { params });
@@ -98,5 +99,8 @@ export function useInvoices(params?: { project_id?: number | string }) {
 
             return invoices.map((inv) => mapInvoice(inv, projectNameMap));
         },
+        staleTime: STALE_MODERATE_MS,
+        gcTime: LONG_GC_MS,
+        refetchOnWindowFocus: false,
     });
 }

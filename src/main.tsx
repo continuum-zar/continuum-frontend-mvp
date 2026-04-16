@@ -6,14 +6,13 @@ import "@fontsource-variable/manrope";
 import "@fontsource-variable/jetbrains-mono";
 import App from "./app/App.tsx";
 import "./styles/index.css";
+import { DEFAULT_GC_MS, DEFAULT_STALE_MS } from "./lib/queryDefaults.ts";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30 * 1000,
-      // Keep unused cache around for 5 minutes by default to avoid
-      // refetching when users navigate back and forth between views.
-      gcTime: 5 * 60 * 1000,
+      staleTime: DEFAULT_STALE_MS,
+      gcTime: DEFAULT_GC_MS,
       refetchOnWindowFocus: false,
     },
   },

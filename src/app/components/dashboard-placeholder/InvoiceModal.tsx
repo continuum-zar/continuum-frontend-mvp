@@ -23,6 +23,7 @@ import {
 import type { Project } from "@/types/project";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "../ui/utils";
+import { STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
 
 type InvoiceModalProps = {
   open: boolean;
@@ -132,7 +133,7 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
     queryKey: ["invoice-modal-project-hours", selectedProject?.apiId],
     queryFn: () => aggregateLoggedHoursByTaskForProject(selectedProject!.apiId),
     enabled: Boolean(open && selectedProject),
-    staleTime: 60 * 1000,
+    staleTime: STALE_TIME_DATA_MS,
     refetchOnWindowFocus: false,
   });
 

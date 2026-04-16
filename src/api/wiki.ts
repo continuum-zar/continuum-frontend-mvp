@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from './hooks';
 import { projectKeys } from './hooks';
+import { STALE_MODERATE_MS, WIKI_SCAN_POLL_MS } from '@/lib/queryDefaults';
 import type { FileContent } from './planner';
 
 export interface ScanRepositoryRequest {
@@ -111,14 +112,15 @@ export async function confirmTasks(
 export const wikiScanStatusKey = (projectId: number | string) =>
     [...projectKeys.detail(projectId), 'wiki', 'scan-status'] as const;
 
-/** Fetch scan status for all repos in a project. Polls every 3s while any repo is scanning. */
+/** Fetch scan status for all repos in a project. Polls while any repo is scanning (interval from `WIKI_SCAN_POLL_MS`). */
 export function useWikiScanStatus(projectId: number | string | undefined | null) {
     return useQuery({
         queryKey: projectId != null ? wikiScanStatusKey(projectId) : ['wiki', 'scan-status', 'disabled'],
         queryFn: () => getWikiScanStatus(projectId!),
         enabled: projectId != null && projectId !== '',
+        staleTime: STALE_MODERATE_MS,
         refetchInterval: (query) =>
-            query.state.data?.some((s) => s.is_scanning) ? 3000 : false,
+            query.state.data?.some((s) => s.is_scanning) ? WIKI_SCAN_POLL_MS : false,
     });
 }
 

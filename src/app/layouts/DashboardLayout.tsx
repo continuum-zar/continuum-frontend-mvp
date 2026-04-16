@@ -19,6 +19,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useRole } from '../context/RoleContext';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { WORKSPACE_BASE, workspaceJoin } from '@/lib/workspacePaths';
+import { STALE_REFERENCE_MS, STALE_TASK_LIST_MS } from '@/lib/queryDefaults';
 
 export function DashboardLayout() {
   const navigate = useNavigate();
@@ -74,12 +75,12 @@ export function DashboardLayout() {
               void queryClient.prefetchQuery({
                 queryKey: projectKeys.listForUser(uid),
                 queryFn: fetchProjects,
-                staleTime: 3 * 60 * 1000,
+                staleTime: STALE_REFERENCE_MS,
               });
               void queryClient.prefetchQuery({
                 queryKey: projectKeys.allTasks(),
                 queryFn: fetchAllTasks,
-                staleTime: 60 * 1000,
+                staleTime: STALE_TASK_LIST_MS,
               });
             }}
             className={({ isActive }) =>
