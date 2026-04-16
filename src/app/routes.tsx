@@ -31,6 +31,8 @@ const NotFound = lazy(() => import("./pages/NotFound").then(m => ({ default: m.N
 const CursorMcpTask = lazy(() =>
   import("./pages/CursorMcpTask").then((m) => ({ default: m.CursorMcpTask }))
 );
+const McpOAuth = lazy(() => import("./pages/McpOAuth").then((m) => ({ default: m.McpOAuth })));
+const McpSetup = lazy(() => import("./pages/McpSetup").then((m) => ({ default: m.McpSetup })));
 const DashboardPlaceholder = lazy(() =>
   import("./pages/DashboardPlaceholder").then((m) => ({ default: m.DashboardPlaceholder }))
 );
@@ -141,6 +143,26 @@ export const router = createBrowserRouter([
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
           <CursorMcpTask />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/mcp-oauth",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <McpOAuth />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/mcp-setup",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <McpSetup />
         </Suspense>
       </AuthGuard>
     ),
