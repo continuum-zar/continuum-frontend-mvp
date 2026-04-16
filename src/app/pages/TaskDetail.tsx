@@ -53,6 +53,10 @@ import { AssignMemberModal } from '../components/AssignMemberModal';
 import { LogTimeModal } from '../components/dashboard-placeholder/LogTimeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
+import {
+  sliceTaskActivityTimeline,
+  taskActivityTimelineHasMore,
+} from '@/lib/taskActivityTimelineDisplay';
 
 /* ─── helpers ─── */
 
@@ -417,6 +421,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [scopeDropdownOpen, setScopeDropdownOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [mcpLinkCopied, setMcpLinkCopied] = useState(false);
+  const [activityTimelineExpanded, setActivityTimelineExpanded] = useState(false);
 
   const cursorMcpShareUrl = useMemo(() => {
     if (typeof window === 'undefined' || !taskId) return '';
@@ -434,6 +439,12 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       toast.error('Could not copy to clipboard');
     }
   }, [cursorMcpShareUrl]);
+
+  const activityTimelineEntries = useMemo(
+    () => sliceTaskActivityTimeline(timeline, activityTimelineExpanded),
+    [timeline, activityTimelineExpanded],
+  );
+  const activityTimelineShowMore = useMemo(() => taskActivityTimelineHasMore(timeline), [timeline]);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descTextareaRef = useAutosizeTextarea(descDraft, { minPx: 106, maxPx: 560 });
@@ -460,6 +471,10 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     setRepoDropdownOpen(false);
     setBranchDropdownOpen(false);
   }, [task?.id]);
+
+  useEffect(() => {
+    setActivityTimelineExpanded(false);
+  }, [taskId]);
 
   /* When the task has a linked repo from the API, select matching repository row */
   useEffect(() => {
@@ -1308,10 +1323,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
           <div className="space-y-4">
             <p className="text-[16px] font-medium text-[#0b191f]">Activity</p>
             {timelineLoading ? (
-              <div className="space-y-4">
+              <div className="relative flex flex-col gap-4">
+                <div
+                  className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
+                  aria-hidden
+                />
                 {[0, 1].map((i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="size-[50px] shrink-0 animate-pulse rounded-[99px] bg-[#e4eaec]" />
+                  <div key={i} className="relative z-[1] flex gap-4">
+                    <div className="mt-1 size-[50px] shrink-0 animate-pulse rounded-[99px] bg-[#e4eaec]" />
                     <div className="flex-1 space-y-2 py-1">
                       <div className="h-3 w-20 animate-pulse rounded bg-[#e4eaec]" />
                       <div className="h-4 w-40 animate-pulse rounded bg-[#e4eaec]" />
@@ -1320,20 +1339,44 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 ))}
               </div>
             ) : timeline && timeline.length > 0 ? (
-              timeline.map((entry) => (
-                <div key={entry.id} className="flex gap-4">
-                  <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
-                    <Activity size={16} className="text-[#727d83]" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] text-[#727d83]">
-                      {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
-                    </p>
-                    <p className="text-[16px] leading-none text-[#0b191f]">{timelineActorName(entry)}</p>
-                    <p className="text-[12px] text-[#727d83]">{getActivityLabel(entry, members)}</p>
-                  </div>
+              <>
+                <div id="task-activity-timeline-list" className="relative flex flex-col gap-4" role="list">
+                  <div
+                    className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
+                    aria-hidden
+                  />
+                  {activityTimelineEntries.map((entry) => (
+                    <div key={entry.id} className="relative z-[1] flex gap-4" role="listitem">
+                      <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
+                        <Activity size={16} className="text-[#727d83]" />
+                      </div>
+                      <div>
+                        <p className="text-[12px] text-[#727d83]">
+                          {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
+                        </p>
+                        <p className="text-[16px] leading-none text-[#0b191f]">{timelineActorName(entry)}</p>
+                        <p className="text-[12px] text-[#727d83]">{getActivityLabel(entry, members)}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))
+                {activityTimelineShowMore ? (
+                  <button
+                    type="button"
+                    onClick={() => setActivityTimelineExpanded((v) => !v)}
+                    aria-expanded={activityTimelineExpanded}
+                    aria-controls="task-activity-timeline-list"
+                    aria-label={
+                      activityTimelineExpanded
+                        ? 'Show fewer task activities'
+                        : `Show all ${timeline.length} task activities`
+                    }
+                    className="mt-2 self-start pl-[66px] font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 outline-none hover:text-[#0d52cc] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40"
+                  >
+                    {activityTimelineExpanded ? 'Show less' : 'Show more'}
+                  </button>
+                ) : null}
+              </>
             ) : (
               <p className="text-[13px] text-[#727d83]">No activity logged yet.</p>
             )}
