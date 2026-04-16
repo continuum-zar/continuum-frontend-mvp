@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
+  FileText,
   Loader2,
   Plus,
   X,
@@ -23,8 +24,17 @@ import {
 } from '../components/ui/select';
 import { Label } from '../components/ui/label';
 import api from '../../lib/api';
-import { generateTasks } from '@/api';
+import { generateTasks, useUploadPlannerFile, type FileContent } from '@/api';
 import { getApiErrorMessage } from '../../api/hooks';
+import { aiPlannerComposerPlusSrc } from '../assets/dashboardPlaceholderAssets';
+
+type AiChatAttachment = {
+  id: string;
+  fileContent: FileContent;
+  isImage: boolean;
+  /** Object URL for pasted or picked images (revoked on remove / unmount). */
+  previewUrl?: string;
+};
 
 interface LocationState {
   projectId?: string | number;
@@ -42,6 +52,20 @@ export function CreateTask() {
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiChatAttachments, setAiChatAttachments] = useState<AiChatAttachment[]>([]);
+  const aiFileInputRef = useRef<HTMLInputElement>(null);
+  const aiAttachmentsRef = useRef(aiChatAttachments);
+  aiAttachmentsRef.current = aiChatAttachments;
+
+  const uploadMutation = useUploadPlannerFile();
+
+  useEffect(() => {
+    return () => {
+      for (const a of aiAttachmentsRef.current) {
+        if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
+      }
+    };
+  }, []);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -101,6 +125,47 @@ export function CreateTask() {
     setChecklists(checklists.filter((_, i) => i !== index));
   };
 
+  const addUploadedFile = useCallback((file: File, content: FileContent) => {
+    const isImage = file.type.startsWith('image/');
+    const previewUrl = isImage ? URL.createObjectURL(file) : undefined;
+    setAiChatAttachments((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+        fileContent: content,
+        isImage,
+        previewUrl,
+      },
+    ]);
+  }, []);
+
+  const handleAiFilesSelected = async (files: File[]) => {
+    for (const file of files) {
+      try {
+        const result = await uploadMutation.mutateAsync(file);
+        addUploadedFile(file, result);
+        toast.success(`Uploaded ${result.filename}`);
+      } catch {
+        // Error toast from useUploadPlannerFile
+      }
+    }
+    if (aiFileInputRef.current) aiFileInputRef.current.value = '';
+  };
+
+  const handleAiFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const list = e.target.files;
+    if (!list?.length) return;
+    await handleAiFilesSelected(Array.from(list));
+  };
+
+  const handleRemoveAiAttachment = (id: string) => {
+    setAiChatAttachments((prev) => {
+      const found = prev.find((a) => a.id === id);
+      if (found?.previewUrl) URL.revokeObjectURL(found.previewUrl);
+      return prev.filter((a) => a.id !== id);
+    });
+  };
+
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     if (!projectId) {
@@ -113,6 +178,7 @@ export function CreateTask() {
       const res = await generateTasks(Number(projectId), {
         prompt: prompt.trim(),
         max_tasks: 1,
+        file_contents: aiChatAttachments.map((a) => a.fileContent),
       });
       const task = res.tasks?.[0];
       if (!task) {
@@ -413,57 +479,161 @@ export function CreateTask() {
         </motion.div>
       </div>
 
-      {/* Floating AI Assistant Section */}
+      {/* Floating AI Assistant — composer pattern aligned with AI Project Planner */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-8 right-8 w-72 p-4 bg-card border border-foreground rounded-lg shadow-lg z-50"
+        className="fixed bottom-8 right-8 z-50 w-[min(100vw-2rem,22rem)] p-4 bg-card border border-border rounded-lg shadow-lg"
       >
         <div className="mb-3 flex items-center justify-between">
           <div>
             <h3 className="font-medium text-foreground text-sm mb-1">AI Assistant</h3>
             <p className="text-xs text-muted-foreground">
               {projectId
-                ? 'Describe the task and let AI fill in the details.'
+                ? 'Describe the task, attach files or images, then generate.'
                 : 'Select a project first (e.g. from the project board) to use AI.'}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col space-y-2">
-          <TextareaAutosize
-            data-slot="textarea"
-            placeholder='e.g., "Add playwright tests..."'
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            minRows={2}
-            maxRows={9}
-            aria-label="Describe the task for AI generation"
-            className={cn(
-              'resize-none border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full rounded-md border bg-background px-3 py-2 text-sm transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 border-border focus-visible:ring-foreground overflow-y-auto',
-            )}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleGenerate();
-              }
-            }}
+        <div className="flex flex-col gap-2">
+          {aiChatAttachments.length > 0 && (
+            <div className="flex flex-wrap gap-2" aria-label="Attachments for AI generation">
+              {aiChatAttachments.map((a) =>
+                a.isImage && a.previewUrl ? (
+                  <span
+                    key={a.id}
+                    className="relative inline-flex overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm"
+                  >
+                    <img
+                      src={a.previewUrl}
+                      alt={a.fileContent.filename}
+                      className="h-[72px] w-[72px] object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAiAttachment(a.id)}
+                      className="absolute right-0.5 top-0.5 inline-flex size-6 items-center justify-center rounded-md bg-black/50 text-white hover:bg-black/70"
+                      aria-label={`Remove image ${a.fileContent.filename}`}
+                    >
+                      <X className="size-3.5" strokeWidth={2} />
+                    </button>
+                  </span>
+                ) : (
+                  <span
+                    key={a.id}
+                    className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm"
+                  >
+                    <span
+                      className="flex w-9 shrink-0 items-center justify-center self-stretch bg-[#edf0f3]"
+                      aria-hidden
+                    >
+                      <FileText
+                        className="size-4 shrink-0 text-[#606d76]"
+                        strokeWidth={1.75}
+                      />
+                    </span>
+                    <span className="min-w-0 max-w-[180px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f]">
+                      {a.fileContent.filename}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAiAttachment(a.id)}
+                      className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-[#606d76] hover:text-[#0b191f]"
+                      aria-label={`Remove ${a.fileContent.filename}`}
+                    >
+                      <X className="size-3.5" strokeWidth={2} />
+                    </button>
+                  </span>
+                ),
+              )}
+            </div>
+          )}
+
+          <input
+            ref={aiFileInputRef}
+            type="file"
+            className="hidden"
+            multiple
+            accept="image/*,.txt,.md,.pdf,.doc,.docx"
+            onChange={handleAiFileInputChange}
           />
-          <Button
-            onClick={handleGenerate}
-            disabled={isGenerating || !prompt.trim() || !projectId}
-            size="sm"
-            className="w-full bg-foreground text-background hover:bg-foreground/90 transition-colors"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              'Generate'
+
+          <div
+            className={cn(
+              'overflow-hidden rounded-[14px] border border-solid border-[#edecea] bg-white shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]',
             )}
-          </Button>
+          >
+            <div className="relative flex min-h-[88px] shrink-0 flex-col gap-1 bg-white pb-[7px] pt-[11px]">
+              <div className="relative flex w-full min-h-0 items-start justify-center px-[13px]">
+                <label className="sr-only" htmlFor="create-task-ai-prompt">
+                  Describe the task for AI generation
+                </label>
+                <TextareaAutosize
+                  id="create-task-ai-prompt"
+                  data-slot="textarea"
+                  placeholder='e.g., "Add playwright tests..."'
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  minRows={2}
+                  maxRows={9}
+                  disabled={isGenerating}
+                  onPaste={(e) => {
+                    const { files } = e.clipboardData;
+                    if (files?.length) {
+                      e.preventDefault();
+                      void handleAiFilesSelected(Array.from(files));
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      void handleGenerate();
+                    }
+                  }}
+                  className="max-h-[200px] min-h-[40px] w-full resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0 disabled:opacity-40"
+                />
+              </div>
+              <div className="flex shrink-0 items-center justify-between px-[11px]">
+                <button
+                  type="button"
+                  onClick={() => aiFileInputRef.current?.click()}
+                  disabled={uploadMutation.isPending || isGenerating || !projectId}
+                  className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center p-0 disabled:opacity-50"
+                  aria-label="Attach file or image"
+                >
+                  {uploadMutation.isPending ? (
+                    <Loader2 className="h-[18px] w-[18px] animate-spin text-[#727d83]" aria-hidden />
+                  ) : (
+                    <img
+                      src={aiPlannerComposerPlusSrc}
+                      alt=""
+                      width={18}
+                      height={18}
+                      className="h-[18px] w-[18px] object-contain"
+                      aria-hidden
+                    />
+                  )}
+                </button>
+                <Button
+                  type="button"
+                  onClick={() => void handleGenerate()}
+                  disabled={isGenerating || !prompt.trim() || !projectId}
+                  size="sm"
+                  className="h-8 shrink-0 bg-foreground text-background hover:bg-foreground/90"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>

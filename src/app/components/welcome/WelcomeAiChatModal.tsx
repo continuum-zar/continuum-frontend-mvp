@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Check, Loader2, Minus } from "lucide-react";
+import { ArrowUp, Check, FileText, Loader2, Minus, X } from "lucide-react";
 import {
   Fragment,
   useCallback,
@@ -20,6 +20,8 @@ import {
   getApiErrorMessage,
   postProjectQuery,
   projectKeys,
+  useUploadPlannerFile,
+  type FileContent,
 } from "@/api";
 import TextareaAutosize from "react-textarea-autosize";
 import type { GeneratedTask, WikiConfirmTaskItem } from "@/api";
@@ -70,6 +72,13 @@ const MOCK_AI_BODY =
   "42% of weighted scope is complete. There have been 3 structural updates in the last sprint. Signals are Stable based on hours-per-scope efficiency. 2 tasks are currently flagged as stalled or missing scope.";
 
 const THINKING_MS = 1600;
+
+type WelcomeComposerAttachment = {
+  id: string;
+  fileContent: FileContent;
+  isImage: boolean;
+  previewUrl?: string;
+};
 
 type ChatPhase = "welcome" | "thinking" | "responded" | "getStartedLoading" | "getStartedAnswer";
 
@@ -191,6 +200,55 @@ export function WelcomeAiChatModal({
   const reportingAbortRef = useRef<AbortController | null>(null);
   const reportingLockRef = useRef(false);
 
+  const [composerAttachments, setComposerAttachments] = useState<WelcomeComposerAttachment[]>([]);
+  const composerAttachmentsRef = useRef(composerAttachments);
+  composerAttachmentsRef.current = composerAttachments;
+  const welcomeFileInputRef = useRef<HTMLInputElement>(null);
+  const uploadMutation = useUploadPlannerFile();
+
+  const clearComposerAttachments = useCallback(() => {
+    setComposerAttachments((prev) => {
+      for (const a of prev) {
+        if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
+      }
+      return [];
+    });
+  }, []);
+
+  const addComposerFiles = useCallback(
+    async (files: File[]) => {
+      for (const file of files) {
+        try {
+          const result = await uploadMutation.mutateAsync(file);
+          const isImage = file.type.startsWith("image/");
+          const previewUrl = isImage ? URL.createObjectURL(file) : undefined;
+          setComposerAttachments((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+              fileContent: result,
+              isImage,
+              previewUrl,
+            },
+          ]);
+          toast.success(`Uploaded ${result.filename}`);
+        } catch {
+          // toast from hook
+        }
+      }
+      if (welcomeFileInputRef.current) welcomeFileInputRef.current.value = "";
+    },
+    [uploadMutation],
+  );
+
+  const removeComposerAttachment = useCallback((id: string) => {
+    setComposerAttachments((prev) => {
+      const found = prev.find((a) => a.id === id);
+      if (found?.previewUrl) URL.revokeObjectURL(found.previewUrl);
+      return prev.filter((a) => a.id !== id);
+    });
+  }, []);
+
   const milestoneIdForConfirm = useMemo(
     () => parseMilestoneIdParam(milestoneIdParam ?? null),
     [milestoneIdParam],
@@ -203,6 +261,7 @@ export function WelcomeAiChatModal({
 
   useEffect(() => {
     if (!open) {
+      clearComposerAttachments();
       setPhase("welcome");
       setSelectedPrompt(null);
       setDraftMessage("");
@@ -221,7 +280,7 @@ export function WelcomeAiChatModal({
       reportingAbortRef.current?.abort();
       reportingAbortRef.current = null;
     }
-  }, [open]);
+  }, [open, clearComposerAttachments]);
 
   // showQuickActions=true mock "thinking -> responded" transition (welcome demo only — no projectId)
   useEffect(() => {
@@ -234,6 +293,7 @@ export function WelcomeAiChatModal({
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || projectId == null || reportingLockRef.current) return;
+      const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
       reportingLockRef.current = true;
       const pid = projectId;
       const controller = new AbortController();
@@ -242,7 +302,14 @@ export function WelcomeAiChatModal({
       setReportingThread((prev) => [...prev, { id: crypto.randomUUID(), role: "user", content: trimmed }]);
       setDraftMessage("");
       try {
-        const res = await postProjectQuery(pid, { query: trimmed }, { signal: controller.signal });
+        const res = await postProjectQuery(
+          pid,
+          {
+            query: trimmed,
+            ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
+          },
+          { signal: controller.signal },
+        );
         if (controller.signal.aborted) return;
         setReportingThread((prev) => [
           ...prev,
@@ -253,6 +320,7 @@ export function WelcomeAiChatModal({
             confidence: res.confidence,
           },
         ]);
+        clearComposerAttachments();
       } catch (err) {
         if (isAbortError(err)) return;
         const msg = getApiErrorMessage(err, "Could not get an answer. Try again.");
@@ -266,7 +334,7 @@ export function WelcomeAiChatModal({
         reportingAbortRef.current = null;
       }
     },
-    [projectId],
+    [projectId, clearComposerAttachments],
   );
 
   const startPrompt = (text: string) => {
@@ -290,7 +358,12 @@ export function WelcomeAiChatModal({
     abortRef.current = controller;
 
     try {
-      const res = await generateTasks(projectId, { prompt: text, max_tasks: 10 });
+      const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+      const res = await generateTasks(projectId, {
+        prompt: text,
+        max_tasks: 10,
+        ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
+      });
       if (controller.signal.aborted) return;
 
       setGeneratedTasks(res.tasks);
@@ -303,6 +376,7 @@ export function WelcomeAiChatModal({
             : `I generated ${count} tasks based on your request.`,
       );
       setPhase("getStartedAnswer");
+      clearComposerAttachments();
     } catch (err) {
       if (controller.signal.aborted) return;
       const msg = getApiErrorMessage(
@@ -312,11 +386,12 @@ export function WelcomeAiChatModal({
       setApiError(msg);
       setPhase("getStartedAnswer");
     }
-  }, [draftMessage, projectId]);
+  }, [draftMessage, projectId, clearComposerAttachments]);
 
   const stopGetStarted = () => {
     abortRef.current?.abort();
     abortRef.current = null;
+    clearComposerAttachments();
     setPhase("welcome");
     setSelectedPrompt(null);
     setGeneratedTasks([]);
@@ -514,29 +589,31 @@ export function WelcomeAiChatModal({
 
                 <div className="pointer-events-none absolute bottom-0 left-0 flex w-full max-w-[395px] flex-col items-center bg-gradient-to-b from-[rgba(255,255,255,0)] to-[25.182%] to-white px-4 pb-[27px]">
                   <div className="pointer-events-auto w-full">
-                    <div className="relative mb-[-11px] flex w-full shrink-0 items-center justify-center rounded-tl-[14px] rounded-tr-[14px] bg-[#e7f2fc] px-2.5 pb-[21px] pt-2.5">
-                      <div className="relative flex w-[346px] max-w-full shrink-0 items-center gap-2">
-                        <div className="relative flex shrink-0 items-center">
-                          <div className="relative size-[13px] shrink-0 overflow-clip">
-                            <div className="absolute inset-[16.67%_8.33%]">
-                              <div className="absolute inset-[-3.13%_-2.5%_-3.12%_-2.5%]">
-                                <img alt="" className="block size-full max-w-none" src={imgBot} />
+                    {useReportingApi && (
+                      <div className="relative mb-[-11px] flex w-full shrink-0 items-center justify-center rounded-tl-[14px] rounded-tr-[14px] bg-[#e7f2fc] px-2.5 pb-[21px] pt-2.5">
+                        <div className="relative flex w-[346px] max-w-full shrink-0 items-center gap-2">
+                          <div className="relative flex shrink-0 items-center">
+                            <div className="relative size-[13px] shrink-0 overflow-clip">
+                              <div className="absolute inset-[16.67%_8.33%]">
+                                <div className="absolute inset-[-3.13%_-2.5%_-3.12%_-2.5%]">
+                                  <img alt="" className="block size-full max-w-none" src={imgBot} />
+                                </div>
                               </div>
                             </div>
                           </div>
+                          <p className="relative shrink-0 whitespace-nowrap font-['Inter',sans-serif] text-[11px] font-medium not-italic leading-[0] text-[#727d83]">
+                            <span className="leading-[normal]">The AI is restricted to reporting on system states. </span>
+                            <button
+                              type="button"
+                              title={REPORTING_LEARN_MORE}
+                              className="border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[11px] font-medium not-italic leading-normal text-[#2E96F9]"
+                            >
+                              Learn more
+                            </button>
+                          </p>
                         </div>
-                        <p className="relative shrink-0 whitespace-nowrap font-['Inter',sans-serif] text-[11px] font-medium not-italic leading-[0] text-[#727d83]">
-                          <span className="leading-[normal]">The AI is restricted to reporting on system states. </span>
-                          <button
-                            type="button"
-                            title={REPORTING_LEARN_MORE}
-                            className="border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[11px] font-medium not-italic leading-normal text-[#2E96F9]"
-                          >
-                            Learn more
-                          </button>
-                        </p>
                       </div>
-                    </div>
+                    )}
                     <ComposerWelcome
                       draft={draftMessage}
                       onDraftChange={setDraftMessage}
@@ -553,6 +630,14 @@ export function WelcomeAiChatModal({
                           : undefined
                       }
                       disabled={isGetStartedFlow && !projectId}
+                      attachments={composerAttachments}
+                      onRemoveAttachment={removeComposerAttachment}
+                      fileInputRef={welcomeFileInputRef}
+                      onAddFiles={(files) => void addComposerFiles(files)}
+                      uploadPending={uploadMutation.isPending}
+                      attachmentsEnabled={
+                        Boolean((isGetStartedFlow && projectId) || useReportingApi)
+                      }
                     />
                   </div>
                 </div>
@@ -566,6 +651,11 @@ export function WelcomeAiChatModal({
               setDraftMessage={setDraftMessage}
               sendReportingQuery={sendReportingQuery}
               onStopReporting={() => reportingAbortRef.current?.abort()}
+              attachments={composerAttachments}
+              onRemoveAttachment={removeComposerAttachment}
+              fileInputRef={welcomeFileInputRef}
+              onAddFiles={(files) => void addComposerFiles(files)}
+              uploadPending={uploadMutation.isPending}
             />
           ) : (
             <div className="relative z-[5] flex min-h-0 w-full flex-1 flex-col">
@@ -752,6 +842,12 @@ function ComposerWelcome({
   disabled,
   placeholder,
   inputId = "welcome-ai-chat-input",
+  attachments,
+  onRemoveAttachment,
+  fileInputRef,
+  onAddFiles,
+  uploadPending,
+  attachmentsEnabled,
 }: {
   draft: string;
   onDraftChange: (value: string) => void;
@@ -759,6 +855,12 @@ function ComposerWelcome({
   disabled?: boolean;
   placeholder?: string;
   inputId?: string;
+  attachments: WelcomeComposerAttachment[];
+  onRemoveAttachment: (id: string) => void;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  onAddFiles: (files: File[]) => void;
+  uploadPending: boolean;
+  attachmentsEnabled: boolean;
 }) {
   const canSend = Boolean(onSubmit && draft.trim() && !disabled);
   const placeholderText =
@@ -766,66 +868,162 @@ function ComposerWelcome({
     (disabled ? "Open a project board to use AI..." : "Do anything with AI...");
 
   return (
-    <div className="relative mb-[-11px] flex min-h-[88px] shrink-0 flex-col items-stretch gap-1 rounded-[14px] border border-solid border-[#edecea] bg-white pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
-      <div className="relative flex w-full min-h-0 items-start justify-center px-[13px]">
-        <label className="sr-only" htmlFor={inputId}>
-          Message
-        </label>
-        <TextareaAutosize
-          id={inputId}
-          value={draft}
-          onChange={(e) => onDraftChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (!canSend) return;
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              onSubmit?.();
-            }
-          }}
-          placeholder={placeholderText}
-          minRows={1}
-          maxRows={9}
-          className="w-full min-h-[40px] resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
-        />
-      </div>
-      <div className="relative flex w-full shrink-0 items-center justify-between px-[11px]">
-        <div className="relative flex shrink-0 items-center gap-[7px]">
-          <div className="relative size-[18px] shrink-0 overflow-clip">
-            <div className="absolute inset-[20.83%]">
-              <div className="absolute inset-[-4.76%]">
-                <img alt="" className="block size-full max-w-none" src={imgPlus} />
-              </div>
-            </div>
-          </div>
-          <div className="relative size-[18px] shrink-0 overflow-clip">
-            <div className="absolute inset-[16.67%]">
-              <div className="absolute inset-[-4.17%]">
-                <img alt="" className="block size-full max-w-none" src={imgSettings2} />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="relative flex shrink-0 items-center gap-2.5">
-          <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#727d83]">
-            Auto
-          </p>
-          <button
-            type="button"
-            disabled={!canSend}
-            onClick={() => onSubmit?.()}
-            aria-label="Send message"
-            className={cn(
-              "relative flex size-[26px] shrink-0 items-center justify-center rounded-[999px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#2E96F9] focus-visible:ring-offset-2 disabled:pointer-events-none",
-              canSend
-                ? "cursor-pointer bg-[#2E96F9] text-white"
-                : "cursor-default bg-[#f9f9f8] text-[#727d83] opacity-40",
-            )}
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        multiple
+        accept="image/*,.txt,.md,.pdf,.doc,.docx"
+        onChange={(e) => {
+          onAddFiles(Array.from(e.target.files ?? []));
+        }}
+      />
+      <div className="relative mb-[-11px] flex shrink-0 flex-col gap-2">
+        {attachments.length > 0 && (
+          <div
+            className="flex flex-wrap gap-2"
+            aria-label="Attachments for AI message"
           >
-            <ArrowUp className="size-[18px] shrink-0" strokeWidth={2} aria-hidden />
-          </button>
+            {attachments.map((a) =>
+              a.isImage && a.previewUrl ? (
+                <span
+                  key={a.id}
+                  className="relative inline-flex overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm"
+                >
+                  <img
+                    src={a.previewUrl}
+                    alt={a.fileContent.filename}
+                    className="h-[72px] w-[72px] object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onRemoveAttachment(a.id)}
+                    className="absolute right-0.5 top-0.5 inline-flex size-6 items-center justify-center rounded-md bg-black/50 text-white hover:bg-black/70"
+                    aria-label={`Remove image ${a.fileContent.filename}`}
+                  >
+                    <X className="size-3.5" strokeWidth={2} />
+                  </button>
+                </span>
+              ) : (
+                <span
+                  key={a.id}
+                  className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm"
+                >
+                  <span
+                    className="flex w-9 shrink-0 items-center justify-center self-stretch bg-[#edf0f3]"
+                    aria-hidden
+                  >
+                    <FileText
+                      className="size-4 shrink-0 text-[#606d76]"
+                      strokeWidth={1.75}
+                    />
+                  </span>
+                  <span className="min-w-0 max-w-[180px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f]">
+                    {a.fileContent.filename}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveAttachment(a.id)}
+                    className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-[#606d76] hover:text-[#0b191f]"
+                    aria-label={`Remove ${a.fileContent.filename}`}
+                  >
+                    <X className="size-3.5" strokeWidth={2} />
+                  </button>
+                </span>
+              ),
+            )}
+          </div>
+        )}
+
+        <div className="flex min-h-[88px] flex-col items-stretch gap-1 rounded-[14px] border border-solid border-[#edecea] bg-white pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
+          <div className="relative flex w-full min-h-0 items-start justify-center px-[13px]">
+            <label className="sr-only" htmlFor={inputId}>
+              Message
+            </label>
+            <TextareaAutosize
+              id={inputId}
+              value={draft}
+              onChange={(e) => onDraftChange(e.target.value)}
+              onPaste={(e) => {
+                if (!attachmentsEnabled) return;
+                const { files } = e.clipboardData;
+                if (files?.length) {
+                  e.preventDefault();
+                  onAddFiles(Array.from(files));
+                }
+              }}
+              onKeyDown={(e) => {
+                if (!canSend) return;
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  onSubmit?.();
+                }
+              }}
+              placeholder={placeholderText}
+              minRows={1}
+              maxRows={9}
+              disabled={disabled}
+              className="w-full min-h-[40px] resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0 disabled:opacity-40"
+            />
+          </div>
+          <div className="relative flex w-full shrink-0 items-center justify-between px-[11px]">
+            <div className="relative flex shrink-0 items-center gap-[7px]">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!attachmentsEnabled || uploadPending || disabled}
+                className="relative inline-flex size-[18px] shrink-0 items-center justify-center overflow-clip p-0 disabled:opacity-50"
+                aria-label="Attach file or image"
+              >
+                {uploadPending ? (
+                  <Loader2
+                    className="size-[18px] animate-spin text-[#727d83]"
+                    aria-hidden
+                  />
+                ) : (
+                  <span className="absolute inset-[20.83%] block">
+                    <span className="absolute inset-[-4.76%] block">
+                      <img
+                        alt=""
+                        className="block size-full max-w-none"
+                        src={imgPlus}
+                      />
+                    </span>
+                  </span>
+                )}
+              </button>
+              <div className="relative size-[18px] shrink-0 overflow-clip">
+                <div className="absolute inset-[16.67%]">
+                  <div className="absolute inset-[-4.17%]">
+                    <img alt="" className="block size-full max-w-none" src={imgSettings2} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="relative flex shrink-0 items-center gap-2.5">
+              <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#727d83]">
+                Auto
+              </p>
+              <button
+                type="button"
+                disabled={!canSend}
+                onClick={() => onSubmit?.()}
+                aria-label="Send message"
+                className={cn(
+                  "relative flex size-[26px] shrink-0 items-center justify-center rounded-[999px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#2E96F9] focus-visible:ring-offset-2 disabled:pointer-events-none",
+                  canSend
+                    ? "cursor-pointer bg-[#2E96F9] text-white"
+                    : "cursor-default bg-[#f9f9f8] text-[#727d83] opacity-40",
+                )}
+              >
+                <ArrowUp className="size-[18px] shrink-0" strokeWidth={2} aria-hidden />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -847,6 +1045,11 @@ function ReportingAssistantPanel({
   setDraftMessage,
   sendReportingQuery,
   onStopReporting,
+  attachments,
+  onRemoveAttachment,
+  fileInputRef,
+  onAddFiles,
+  uploadPending,
 }: {
   reportingThread: ReportingMsg[];
   reportingPending: boolean;
@@ -854,6 +1057,11 @@ function ReportingAssistantPanel({
   setDraftMessage: (v: string) => void;
   sendReportingQuery: (text: string) => void | Promise<void>;
   onStopReporting: () => void;
+  attachments: WelcomeComposerAttachment[];
+  onRemoveAttachment: (id: string) => void;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  onAddFiles: (files: File[]) => void;
+  uploadPending: boolean;
 }) {
   return (
     <div className="relative z-[5] flex min-h-0 w-full flex-1 flex-col">
@@ -922,6 +1130,12 @@ function ReportingAssistantPanel({
             placeholder="Ask a follow-up…"
             disabled={false}
             inputId="welcome-ai-chat-followup"
+            attachments={attachments}
+            onRemoveAttachment={onRemoveAttachment}
+            fileInputRef={fileInputRef}
+            onAddFiles={onAddFiles}
+            uploadPending={uploadPending}
+            attachmentsEnabled
           />
         )}
       </div>
