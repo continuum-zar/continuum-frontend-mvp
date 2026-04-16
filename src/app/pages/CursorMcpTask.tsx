@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/app/components/ui/alert';
 import { Skeleton } from '@/app/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
+import { workspaceJoin } from '@/lib/workspacePaths';
 import type { CommentAuthorAPI } from '@/types/comment';
 
 function authorLabel(author: CommentAuthorAPI): string {
@@ -112,7 +113,7 @@ export function CursorMcpTask() {
                                 </TooltipContent>
                             </Tooltip>
                             <Button type="button" variant="ghost" size="sm" asChild>
-                                <Link to={`/tasks/${taskId}`} className="gap-2">
+                                <Link to={workspaceJoin('task', taskId)} className="gap-2">
                                     <Link2 className="size-4" aria-hidden />
                                     Open in app
                                 </Link>

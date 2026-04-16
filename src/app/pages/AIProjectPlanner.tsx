@@ -311,15 +311,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                 `Project created with ${res.milestone_count} milestones and ${res.task_count} tasks`,
             );
             setPhase('complete');
-            setTimeout(
-                () =>
-                    navigate(
-                        embedded
-                            ? projectMainHref(String(res.project_id))
-                            : `/projects/${res.project_id}`,
-                    ),
-                1500,
-            );
+            setTimeout(() => navigate(projectMainHref(String(res.project_id))), 1500);
         } catch {
             setPhase('plan_review');
         }
