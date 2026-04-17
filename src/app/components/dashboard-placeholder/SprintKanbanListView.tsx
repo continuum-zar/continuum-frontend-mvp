@@ -14,6 +14,7 @@ import { workspaceJoin } from "@/lib/workspacePaths";
 import { cn } from "../ui/utils";
 import { VirtualList } from "@/app/components/ui/VirtualList";
 import type { KanbanColumnConfig } from "./kanbanBoardTypes";
+import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgLucideSquircleDashed = mcpAsset("e2efeca9-31cd-4cf9-ac56-b2799ee8a450");
@@ -93,8 +94,8 @@ export function SprintKanbanListView({
   const renderRow = (task: Task) => {
     const isDragging = draggingId === task.id;
     const desc = task.description?.trim() ?? "";
-    const descPreview =
-      desc.length > 120 ? `${desc.slice(0, 117).trim()}…` : desc;
+    const { preview: descPreview, isTruncated: descTruncated } =
+      kanbanTaskDescriptionPreview(desc);
     const { total: checklistTotal, completed: checklistDone } = task.checklists;
     const checklistPct =
       checklistTotal > 0 ? Math.min(100, Math.round((checklistDone / checklistTotal) * 100)) : 0;
@@ -137,6 +138,7 @@ export function SprintKanbanListView({
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
           }}
+          title={descTruncated ? desc : undefined}
         >
           {descPreview || "—"}
         </p>
