@@ -112,7 +112,11 @@ export async function confirmTasks(
 export const wikiScanStatusKey = (projectId: number | string) =>
     [...projectKeys.detail(projectId), 'wiki', 'scan-status'] as const;
 
-/** Fetch scan status for all repos in a project. Polls while any repo is scanning (interval from `WIKI_SCAN_POLL_MS`). */
+/**
+ * Scan status for all linked repos. Uses short **conditional** polling only while at least one repo has
+ * `is_scanning` so the UI can reflect indexing progress without user action. No polling when idle.
+ * Prefer replacing this interval with SSE/WebSocket events when the API supports them (see `queryDefaults` note).
+ */
 export function useWikiScanStatus(projectId: number | string | undefined | null) {
     return useQuery({
         queryKey: projectId != null ? wikiScanStatusKey(projectId) : ['wiki', 'scan-status', 'disabled'],
