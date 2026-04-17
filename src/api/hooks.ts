@@ -78,7 +78,7 @@ import {
 import { fetchLoggedHours, createLoggedHour, sumLoggedHoursForTask } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
 import type { KanbanBoardColumnApi } from '@/types/kanban';
-import type { Task, TaskAPIResponse, TaskStatus, ScopeWeight } from '@/types/task';
+import type { Task, TaskAPIResponse, ScopeWeight } from '@/types/task';
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
 import axios from 'axios';
@@ -447,7 +447,7 @@ export function useUpdateTaskStatus(projectId: number | string | undefined | nul
     const queryClient = useQueryClient();
     const key = projectId != null && projectId !== '' ? projectKeys.tasks(projectId) : null;
     return useMutation({
-        mutationFn: ({ taskId, status }: { taskId: string; status: TaskStatus }) => updateTaskStatus(taskId, status),
+        mutationFn: ({ taskId, status }: { taskId: string; status: string }) => updateTaskStatus(taskId, status),
         onMutate: async ({ taskId, status }) => {
             if (!key) return {};
             await queryClient.cancelQueries({ queryKey: key });
@@ -607,7 +607,7 @@ export function useUpdateTask() {
             taskId: string | number;
             title?: string;
             description?: string | null;
-            status?: TaskStatus;
+            status?: string;
             scope_weight?: ScopeWeight;
             due_date?: string | null;
             estimated_hours?: number | null;

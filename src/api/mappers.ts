@@ -48,7 +48,7 @@ export function mapProjectDetail(res: ProjectDetailAPIResponse): ProjectDetail {
 function mapTaskStatus(s: string): TaskStatus {
     if (s === 'in_progress') return 'in-progress';
     if (s === 'todo' || s === 'done') return s;
-    return 'todo';
+    return s;
 }
 
 export function mapTask(t: TaskAPIResponse): Task {
