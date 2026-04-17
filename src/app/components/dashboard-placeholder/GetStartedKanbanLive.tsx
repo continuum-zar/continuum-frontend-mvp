@@ -8,6 +8,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
+import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
 import { SprintKanbanListView } from "./SprintKanbanListView";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "@/app/components/ui/dialog";
@@ -210,7 +211,8 @@ export function GetStartedKanbanLive({
   const renderLiveCard = (task: Task) => {
     const isDragging = draggingId === task.id;
     const desc = task.description?.trim() ?? "";
-    const descPreview = desc.length > 220 ? `${desc.slice(0, 217).trim()}…` : desc;
+    const { preview: descPreview, isTruncated: descTruncated } =
+      kanbanTaskDescriptionPreview(desc);
     const showBadges = task.attachments > 0 || task.comments > 0;
     const { total: checklistTotal, completed: checklistDone } = task.checklists;
     const checklistPct =
@@ -294,7 +296,10 @@ export function GetStartedKanbanLive({
                     </div>
                   </div>
                   <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full line-clamp-4">
+                    <p
+                      className="font-['Satoshi:Medium',sans-serif] line-clamp-2 leading-[normal] not-italic relative shrink-0 w-full text-[#606d76] text-[16px]"
+                      title={descTruncated ? desc : undefined}
+                    >
                       {descPreview}
                     </p>
                   </div>
