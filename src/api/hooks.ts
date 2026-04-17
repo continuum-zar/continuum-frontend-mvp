@@ -78,7 +78,7 @@ import {
 import { fetchLoggedHours, createLoggedHour, sumLoggedHoursForTask } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
 import type { KanbanBoardColumnApi } from '@/types/kanban';
-import type { Task, TaskAPIResponse, ScopeWeight } from '@/types/task';
+import type { Task, TaskAPIResponse, ScopeWeight, TaskPriority } from '@/types/task';
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
 import axios from 'axios';
@@ -598,6 +598,7 @@ export function useUpdateTask() {
             description,
             status,
             scope_weight,
+            priority,
             due_date,
             estimated_hours,
             linked_repo,
@@ -609,6 +610,7 @@ export function useUpdateTask() {
             description?: string | null;
             status?: string;
             scope_weight?: ScopeWeight;
+            priority?: TaskPriority;
             due_date?: string | null;
             estimated_hours?: number | null;
             linked_repo?: string | null;
@@ -620,6 +622,7 @@ export function useUpdateTask() {
                 description,
                 status,
                 scope_weight,
+                priority,
                 due_date,
                 estimated_hours,
                 linked_repo,

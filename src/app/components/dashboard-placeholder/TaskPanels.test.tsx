@@ -4,9 +4,13 @@ import { render, screen } from "@testing-library/react";
 import { TaskPanels } from "./TaskPanels";
 
 const mockUseTaskLoggedHoursTotal = vi.fn();
+const mockUseTask = vi.fn();
+const mockUpdateTaskMutate = vi.fn();
 
 vi.mock("@/api/hooks", () => ({
   useTaskLoggedHoursTotal: (...args: unknown[]) => mockUseTaskLoggedHoursTotal(...args),
+  useTask: (...args: unknown[]) => mockUseTask(...args),
+  useUpdateTask: () => ({ mutate: mockUpdateTaskMutate, isPending: false }),
 }));
 
 vi.mock("./LogTimeModal", () => ({
@@ -21,6 +25,9 @@ describe("TaskPanels", () => {
       isLoading: false,
       isError: false,
     });
+    mockUseTask.mockReset();
+    mockUseTask.mockReturnValue({ data: undefined });
+    mockUpdateTaskMutate.mockReset();
   });
 
   it("shows an em dash when project/task IDs are not available for API hours", () => {
