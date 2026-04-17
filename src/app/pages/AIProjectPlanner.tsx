@@ -415,7 +415,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                         {generateMutation.isPending ? (
                                             <div className="flex min-h-[min(70vh,520px)] flex-1 flex-col items-center justify-center gap-5 px-9 py-16">
                                                 <p
-                                                    className="animate-pulse-soft bg-clip-text font-['Sarina',cursive] text-[42px] font-normal leading-none tracking-[-0.85px] text-transparent"
+                                                    className="animate-pulse-soft bg-clip-text font-sarina text-[42px] font-normal leading-none tracking-[-0.85px] text-transparent"
                                                     style={{
                                                         backgroundImage:
                                                             'linear-gradient(135.275deg, rgb(36, 181, 248) 4.6217%, rgb(85, 33, 254) 148.53%)',

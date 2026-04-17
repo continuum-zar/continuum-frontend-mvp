@@ -37,8 +37,8 @@ export default function Collaboration() {
         >
           <ChevronLeft size={20} style={{ color: "#252014" }} />
           <span
+            className="font-sarina"
             style={{
-              fontFamily: "Sarina",
               fontWeight: 400,
               fontSize: "20.89px",
               lineHeight: "23.42px",

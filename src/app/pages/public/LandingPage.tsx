@@ -417,14 +417,14 @@ export default function LandingPage() {
       >
         <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[16px] items-center not-italic relative shrink-0 text-center w-full">
           <p className="bg-clip-text leading-[0] min-w-full relative shrink-0 text-[62px] text-[transparent] w-[min-content]" style={{ backgroundImage: "linear-gradient(135.275deg, rgb(36, 181, 248) 4.6217%, rgb(85, 33, 254) 148.53%)" }}>
-            <span className="bg-clip-text font-['Sarina',sans-serif] font-normal leading-[1.04]" style={{ backgroundImage: "linear-gradient(135.275deg, rgb(36, 181, 248) 4.6217%, rgb(85, 33, 254) 148.53%)" }}>
+            <span className="bg-clip-text font-sarina-sans font-normal leading-[1.04]" style={{ backgroundImage: "linear-gradient(135.275deg, rgb(36, 181, 248) 4.6217%, rgb(85, 33, 254) 148.53%)" }}>
               Continuum
             </span>
             <span className="leading-[1.04]">{` connects delivery with profitability.`}</span>
           </p>
           <p className="leading-[normal] relative shrink-0 text-[#606d76] text-[16px] w-[580px]">The operating system for modern software teams. Seamlessly bridge the gap between agile sprint planning, precise time tracking, and client invoicing.</p>
           <p className="-translate-x-1/2 absolute leading-[0] left-[388px] text-[#0b191f] text-[62px] top-0 w-[776px]">
-            <span className="font-['Sarina',sans-serif] font-normal leading-[1.04] text-[rgba(11,25,31,0)]">Continuum</span>
+            <span className="font-sarina-sans font-normal leading-[1.04] text-[rgba(11,25,31,0)]">Continuum</span>
             <span className="leading-[1.04] text-[rgba(11,25,31,0)]">{` `}</span>
             <span className="leading-[1.04]">connects delivery with profitability.</span>
           </p>
@@ -1171,7 +1171,7 @@ export default function LandingPage() {
         <div className="flex min-w-0 flex-1 justify-start">
           <Link
             to="/"
-            className="font-['Sarina',sans-serif] font-normal leading-[24px] not-italic text-[#0b191f] text-[21.405px] tracking-[-0.4281px] no-underline whitespace-nowrap hover:opacity-90"
+            className="font-sarina-sans font-normal leading-[24px] not-italic text-[#0b191f] text-[21.405px] tracking-[-0.4281px] no-underline whitespace-nowrap hover:opacity-90"
           >
             Continuum
           </Link>
@@ -1207,7 +1207,7 @@ export default function LandingPage() {
           }}
         >
           <div className="flex min-w-0 flex-1 flex-col items-start justify-center text-left whitespace-nowrap">
-            <p className="font-['Sarina',sans-serif] font-normal leading-[47.662px] relative shrink-0 text-[#0b191f] text-[42.509px] tracking-[-0.8502px]">
+            <p className="font-sarina-sans font-normal leading-[47.662px] relative shrink-0 text-[#0b191f] text-[42.509px] tracking-[-0.8502px]">
               Continuum
             </p>
             <p className="font-['Sathu:Regular',sans-serif] leading-[normal] opacity-80 relative shrink-0 text-[#252014] text-[15.458px] tracking-[-0.1546px]">

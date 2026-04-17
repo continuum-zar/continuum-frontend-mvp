@@ -520,7 +520,7 @@ export function DashboardLeftRail() {
         <div className="content-stretch flex flex-col gap-[9.534px] items-center pb-[16px] pt-[32px] relative shrink-0 w-full" data-node-id="7:2822">
           <div className="content-stretch flex flex-col items-center relative shrink-0" data-node-id="7:2824">
             <p
-              className="relative shrink-0 text-center font-normal font-['Sarina',sans-serif] text-[26.219px] leading-[29.397px] tracking-[-0.5244px] whitespace-nowrap text-[#1A4659]"
+              className="relative shrink-0 text-center font-normal font-sarina-sans text-[26.219px] leading-[29.397px] tracking-[-0.5244px] whitespace-nowrap text-[#1A4659]"
               data-node-id="7:2825"
             >
               Continuum
