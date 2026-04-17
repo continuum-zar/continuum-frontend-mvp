@@ -156,7 +156,10 @@ export interface CreateTaskBody {
 
 /** Create a task. POST /tasks/ */
 export async function createTask(body: CreateTaskBody): Promise<TaskAPIResponse> {
-    const { data } = await api.post<TaskAPIResponse>('/tasks/', body);
+    const { data } = await api.post<TaskAPIResponse>('/tasks/', {
+        ...body,
+        priority: body.priority ?? 'medium',
+    });
     return data;
 }
 

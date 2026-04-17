@@ -128,6 +128,7 @@ function mapGeneratedTaskToConfirmItem(
     description: task.description ?? null,
     project_id: projectId,
     milestone_id: milestoneId,
+    priority: task.priority ?? "medium",
     scope_weight: task.scope_weight,
     status: "todo",
     checklists:
