@@ -26,6 +26,12 @@ export function taskPriorityLabel(p: string | null | undefined): string {
     return row?.label ?? 'Medium';
 }
 
+/** Tailwind classes for Lucide `Flag` — matches `TASK_PRIORITY_OPTIONS`; neutral gray when unset or unknown. */
+export function taskPriorityFlagClass(priority?: TaskPriority | null): string {
+    if (priority == null) return 'text-[#606d76]';
+    return TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.flagColorClass ?? 'text-[#606d76]';
+}
+
 /** Raw task from API (GET /tasks/, GET /tasks/:id, PATCH /tasks/:id/status) */
 export interface TaskAPIResponse {
     id: number;

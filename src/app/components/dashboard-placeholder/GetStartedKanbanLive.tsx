@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Flag, Plus, Trash2 } from "lucide-react";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
 import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
@@ -26,7 +26,7 @@ import { useKanbanPointerDrag } from "@/lib/useKanbanPointerDrag";
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
-import type { Task, TaskStatus } from "@/types/task";
+import { taskPriorityFlagClass, taskPriorityLabel, type Task, type TaskStatus } from "@/types/task";
 
 import {
   DEFAULT_KANBAN_COLUMNS,
@@ -40,7 +40,6 @@ import {
 } from "./kanbanBoardTypes";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
-const imgLucideFlag = mcpAsset("299f17ae-de59-4012-9bb8-ae6509081405");
 const imgVector13 = mcpAsset("c1ddd3b4-d26b-4a92-b752-d84ba0208f8a");
 const imgFrame308 = mcpAsset("5b22b8e9-bd31-437e-a559-232247be56a0");
 const imgLucidePaperclip = mcpAsset("c4929b2e-a9fc-4fce-913e-ecf4dafe6944");
@@ -282,9 +281,11 @@ export function GetStartedKanbanLive({
                     {task.title}
                   </p>
                   <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]">
-                    <div className="relative shrink-0 size-[16px]">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideFlag} />
-                    </div>
+                    <Flag
+                      size={16}
+                      className={taskPriorityFlagClass(task.priority)}
+                      aria-label={`Priority: ${taskPriorityLabel(task.priority)}`}
+                    />
                   </div>
                 </div>
               </div>

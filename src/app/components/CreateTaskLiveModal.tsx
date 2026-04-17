@@ -24,6 +24,7 @@ import { useCreateTask, useProjectMembers } from "@/api/hooks";
 import { formatEstimatedEffortLabel } from "@/api";
 import {
   TASK_PRIORITY_OPTIONS,
+  taskPriorityFlagClass,
   type ScopeWeight,
   type TaskPriority,
 } from "@/types/task";
@@ -231,7 +232,7 @@ export function CreateTaskLiveModal({
             <p className="pointer-events-none absolute left-1/2 top-[25px] -translate-x-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
               Create Task
             </p>
-            <Flag size={16} className="text-[#606d76]" />
+            <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
           </div>
 
           {/* ─── Scrollable body ─── */}
@@ -283,14 +284,7 @@ export function CreateTaskLiveModal({
                     onClick={() => setPriorityOpen(!priorityOpen)}
                     className="flex items-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_2px_2px_0px_rgba(14,14,34,0.03)]"
                   >
-                    <Flag
-                      size={14}
-                      className={
-                        TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.flagColorClass ??
-                        "text-yellow-500"
-                      }
-                      aria-hidden
-                    />
+                    <Flag size={14} className={taskPriorityFlagClass(priority)} aria-hidden />
                     {TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.label ?? priority}
                     <ChevronDown size={14} className="text-[#606d76]" />
                   </button>
