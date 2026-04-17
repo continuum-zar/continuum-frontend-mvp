@@ -629,12 +629,13 @@ export function useUpdateTask() {
                 linked_branch,
                 checklists,
             }),
-        onSuccess: (_data, { taskId }) => {
-            // Show success toast
+        onSuccess: (data, { taskId }) => {
             toast.success('Task updated successfully');
+            if (taskId && data) {
+                queryClient.setQueryData(taskDetailKey(taskId), data);
+            }
             if (taskId) {
                 queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
-                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
             }
         },
         onError: (err) => {
