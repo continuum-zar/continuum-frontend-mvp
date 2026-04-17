@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useLocation, useParams } from 'react-router';
+import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
 import { projectSprintHref } from '@/app/data/dashboardPlaceholderProjects';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
 import {
@@ -367,6 +367,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const taskId = taskIdOverride ?? routeTaskId;
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const state = (location.state as { projectId?: string | number } | undefined) || {};
 
@@ -478,6 +479,22 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     setRepoDropdownOpen(false);
     setBranchDropdownOpen(false);
   }, [task?.id]);
+
+  /* Kanban context menu: open task with ?edit=title to focus title editing */
+  useEffect(() => {
+    if (searchParams.get('edit') !== 'title' || !task) return;
+    setTitleDraft(task.title ?? '');
+    setEditingTitle(true);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('edit');
+        return next;
+      },
+      { replace: true },
+    );
+    window.setTimeout(() => titleInputRef.current?.focus(), 0);
+  }, [task, searchParams, setSearchParams]);
 
 
   /* When the task has a linked repo from the API, select matching repository row */

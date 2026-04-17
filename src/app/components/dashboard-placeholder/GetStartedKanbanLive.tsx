@@ -3,10 +3,16 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
+import { toast } from "sonner";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
+import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
 import { SprintKanbanListView } from "./SprintKanbanListView";
 
-import { useProjectTasksInfinite, useUpdateTaskStatus } from "@/api/hooks";
+import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "@/app/components/ui/dialog";
+import { cn } from "@/app/components/ui/utils";
+import { useAssignTask, useDeleteTask, useProjectTasksInfinite, useUpdateTaskStatus } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { useKanbanPointerDrag } from "@/lib/useKanbanPointerDrag";
 import { workspaceJoin } from "@/lib/workspacePaths";
@@ -62,6 +68,8 @@ export function GetStartedKanbanLive({
   const [searchParams] = useSearchParams();
   const tasksQuery = useProjectTasksInfinite(projectId);
   const updateStatusMutation = useUpdateTaskStatus(projectId);
+  const deleteTaskMutation = useDeleteTask(projectId);
+  const assignTaskMutation = useAssignTask();
   const pendingMoveRef = useRef(new Set<string>());
   const memberByUserId = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
 
@@ -92,6 +100,7 @@ export function GetStartedKanbanLive({
   }, [filtered]);
 
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [taskPendingDelete, setTaskPendingDelete] = useState<Task | null>(null);
 
   const handleMove = (taskId: string, newStatus: TaskStatus) => {
     if (pendingMoveRef.current.has(taskId)) return;
@@ -133,15 +142,46 @@ export function GetStartedKanbanLive({
         : undefined;
     const assigneeMissing = assigneeUserId != null && assignee == null;
 
+    const taskPath = workspaceJoin("task", String(task.id));
+    const taskSearch = searchParams.toString();
+    const taskHref = taskSearch ? `${taskPath}?${taskSearch}` : taskPath;
+
+    const copyTaskLink = async () => {
+      try {
+        const url = new URL(taskHref, window.location.origin).href;
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+      } catch {
+        toast.error("Could not copy link");
+      }
+    };
+
     return (
-      <div
+      <KanbanTaskCardContextMenu
         key={task.id}
-        className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${isDragging ? "opacity-0" : "cursor-open-hand"}`}
-        onPointerDown={cardPointerDown(task.id)}
-        onClick={() =>
-          navigate(`${workspaceJoin("task", String(task.id))}?${searchParams.toString()}`)
-        }
+        taskId={task.id}
+        currentStatus={task.status}
+        members={members}
+        currentAssigneeId={assigneeUserId}
+        onAssignMember={(userId) => {
+          if (userId === assigneeUserId) return;
+          assignTaskMutation.mutate({ taskId: task.id, userId });
+        }}
+        onOpenTask={() => navigate(taskHref)}
+        onEditTask={() => {
+          const next = new URLSearchParams(searchParams);
+          next.set("edit", "title");
+          navigate(`${taskPath}?${next.toString()}`);
+        }}
+        onCopyLink={() => void copyTaskLink()}
+        onDelete={() => setTaskPendingDelete(task)}
+        onMoveTo={(status) => handleMove(task.id, status)}
       >
+        <div
+          className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${isDragging ? "opacity-0" : "cursor-open-hand"}`}
+          onPointerDown={cardPointerDown(task.id)}
+          onClick={() => navigate(taskHref)}
+        >
         <div
           className={`bg-white ${isDragging ? "border-2 border-[#24B5F8]" : "border border-[#ebedee]"} border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full`}
         >
@@ -262,7 +302,8 @@ export function GetStartedKanbanLive({
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </KanbanTaskCardContextMenu>
     );
   };
 
@@ -455,6 +496,82 @@ export function GetStartedKanbanLive({
         projectId={projectId}
         milestoneId={milestoneId}
       />
+      <Dialog
+        open={taskPendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setTaskPendingDelete(null);
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="bg-black/25" />
+          <DialogPrimitive.Content
+            className={cn(
+              "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            )}
+          >
+            <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+              <DialogClose asChild>
+                <button
+                  type="button"
+                  className="inline-flex size-5 items-center justify-center text-[#606d76] transition-colors hover:text-[#0b191f]"
+                  aria-label="Close"
+                >
+                  <ArrowLeft className="size-5" />
+                </button>
+              </DialogClose>
+              <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                Delete task
+              </DialogPrimitive.Title>
+              <div className="size-5" />
+            </div>
+
+            <div className="flex w-full flex-col gap-6 px-9 py-6">
+              <div className="flex items-start gap-3">
+                <div className="flex shrink-0 items-start pt-0.5 text-[#dc2626]" aria-hidden>
+                  <Trash2 className="size-5" strokeWidth={1.75} />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <p className="font-['Satoshi',sans-serif] text-[18px] font-medium leading-tight tracking-[-0.18px] text-[#0b191f]">
+                    Delete this task?
+                  </p>
+                  <DialogPrimitive.Description className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-[#606d76]">
+                    {taskPendingDelete?.title ? (
+                      <>
+                        <span className="text-[#0b191f]">“{taskPendingDelete.title}”</span>{" "}
+                        will be permanently removed. This action cannot be undone.
+                      </>
+                    ) : (
+                      "This task will be permanently removed. This action cannot be undone."
+                    )}
+                  </DialogPrimitive.Description>
+                </div>
+              </div>
+
+              <div className="flex w-full items-center justify-end gap-2">
+                <DialogClose asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] transition-colors duration-150 hover:bg-[#f5f7f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/10"
+                  >
+                    Cancel
+                  </button>
+                </DialogClose>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (taskPendingDelete) deleteTaskMutation.mutate(taskPendingDelete.id);
+                    setTaskPendingDelete(null);
+                  }}
+                  disabled={deleteTaskMutation.isPending}
+                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-[#dc2626] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deleteTaskMutation.isPending ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPortal>
+      </Dialog>
     </>
   );
 }
