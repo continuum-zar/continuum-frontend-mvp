@@ -49,6 +49,7 @@ import type { Attachment } from '@/types/attachment';
 import { formatDistanceToNow } from 'date-fns';
 import {
   TASK_PRIORITY_OPTIONS,
+  taskPriorityFlagClass,
   taskPriorityLabel,
   type ScopeWeight,
   type TaskPriority,
@@ -766,7 +767,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <ArrowLeft size={20} />
             </button>
             <p className="text-[16px] font-medium tracking-[-0.16px] text-[#595959]">Update Task</p>
-            <Flag size={16} className="text-[#606d76]" />
+            <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
           </div>
 
           <div className="space-y-12 py-4">
@@ -1123,13 +1124,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
               >
                 <span className="flex items-center gap-2 text-[16px] font-medium text-[#0b191f]">
-                  <Flag
-                    size={16}
-                    className={
-                      TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.flagColorClass ?? 'text-yellow-500'
-                    }
-                    aria-hidden
-                  />
+                  <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
                   {taskPriorityLabel(priority)}
                 </span>
                 <ChevronDown size={16} />

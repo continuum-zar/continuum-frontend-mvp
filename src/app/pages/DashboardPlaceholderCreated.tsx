@@ -9,7 +9,7 @@ import { useCreatedByMeTasks } from "@/api/hooks";
 import { fetchMembers, projectKeys } from "@/api/projects";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
-import type { TaskAPIResponse } from "@/types/task";
+import { taskPriorityFlagClass, type TaskAPIResponse } from "@/types/task";
 
 function checklistProgressPercent(task: TaskAPIResponse): string {
   const items = task.checklists ?? [];
@@ -233,7 +233,7 @@ export function DashboardPlaceholderCreated() {
                       </div>
                       <p className="text-[14px] text-[#697378]">{formatDueDate(row.due_date)}</p>
                       <div className="flex justify-center text-[#697378]">
-                        <Flag size={16} aria-hidden />
+                        <Flag size={16} className={taskPriorityFlagClass(row.priority)} aria-hidden />
                       </div>
                       <p className="text-[14px] text-[#697378]">{checklistProgressPercent(row)}</p>
                       <div className="flex justify-center text-[#697378]">

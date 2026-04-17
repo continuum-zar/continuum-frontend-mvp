@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
-import { Timer } from "lucide-react";
+import { Flag, Timer } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { GetStartedKanbanLive } from "../components/dashboard-placeholder/GetStartedKanbanLive";
@@ -22,6 +22,7 @@ import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 import type { Milestone } from "@/types/milestone";
+import { taskPriorityFlagClass, type TaskPriority } from "@/types/task";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { DiscordIntegrationModal } from "../components/dashboard-placeholder/DiscordIntegrationModal";
@@ -64,7 +65,6 @@ const imgLucideSearch1 = mcpAsset("c5ee61c3-f628-42e7-b456-58f9c49a5cfe");
 const imgVector10 = mcpAsset("0d58a9e0-9d27-4eb3-ad07-b2ad64a15f10");
 const imgVector11 = mcpAsset("4912f83a-d378-4c38-9bf2-ce38aa20cc19");
 const imgVector12 = mcpAsset("64e38728-fa1b-4a8c-97d3-cbb7f586a27c");
-const imgLucideFlag = mcpAsset("299f17ae-de59-4012-9bb8-ae6509081405");
 const imgVector13 = mcpAsset("c1ddd3b4-d26b-4a92-b752-d84ba0208f8a");
 const imgFrame308 = mcpAsset("5b22b8e9-bd31-437e-a559-232247be56a0");
 const imgVector14 = mcpAsset("a92d5710-b68e-4205-9b7a-c40338695c51");
@@ -352,13 +352,14 @@ interface TaskCardData {
   clipCount: number;
   msgCount: number;
   badgesHidden: boolean;
+  priority: TaskPriority;
 }
 
 const TASKS: TaskCardData[] = [
-  { id: 1, title: "View project overview", descriptionLines: ['To view the project status, select "Welcome to Continuum!" in the top left under the "Projects" label.'], clipCount: 1, msgCount: 1, badgesHidden: false },
-  { id: 2, title: "Add a new task", descriptionLines: ['To find, organise, and add a new task, use the "+" icon in the top right corner of ', "To-Do."], multiLineDesc: true, clipCount: 1, msgCount: 1, badgesHidden: false },
-  { id: 3, title: "Add a new project", descriptionLines: ["Find, organise, and add a new project using the sidebar to the left."], clipCount: 1, msgCount: 1, badgesHidden: false },
-  { id: 4, title: "Create an account with Continuum", clipCount: 5, msgCount: 3, badgesHidden: true },
+  { id: 1, title: "View project overview", descriptionLines: ['To view the project status, select "Welcome to Continuum!" in the top left under the "Projects" label.'], clipCount: 1, msgCount: 1, badgesHidden: false, priority: "info" },
+  { id: 2, title: "Add a new task", descriptionLines: ['To find, organise, and add a new task, use the "+" icon in the top right corner of ', "To-Do."], multiLineDesc: true, clipCount: 1, msgCount: 1, badgesHidden: false, priority: "high" },
+  { id: 3, title: "Add a new project", descriptionLines: ["Find, organise, and add a new project using the sidebar to the left."], clipCount: 1, msgCount: 1, badgesHidden: false, priority: "low" },
+  { id: 4, title: "Create an account with Continuum", clipCount: 5, msgCount: 3, badgesHidden: true, priority: "medium" },
 ];
 
 const INITIAL_COLUMNS: Record<number, ColumnId> = { 1: "todo", 2: "todo", 3: "todo", 4: "completed" };
@@ -567,9 +568,7 @@ export function DashboardPlaceholder() {
                     {task.title}
                   </p>
                   <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]">
-                    <div className="relative shrink-0 size-[16px]">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideFlag} />
-                    </div>
+                    <Flag size={16} className={taskPriorityFlagClass(task.priority)} aria-hidden />
                   </div>
                 </div>
               </div>
@@ -1019,9 +1018,13 @@ export function DashboardPlaceholder() {
                               View project overview
                             </p>
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2912;2437:23807">
-                              <div className="relative shrink-0 size-[16px]" data-name="lucide/flag" data-node-id="I7:2912;2437:23808">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideFlag} />
-                              </div>
+                              <Flag
+                                size={16}
+                                className={taskPriorityFlagClass(TASKS.find((t) => t.id === 1)?.priority)}
+                                aria-hidden
+                                data-name="lucide/flag"
+                                data-node-id="I7:2912;2437:23808"
+                              />
                             </div>
                           </div>
                         </div>
@@ -1099,9 +1102,13 @@ export function DashboardPlaceholder() {
                               Add a new task
                             </p>
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2913;2437:23807">
-                              <div className="relative shrink-0 size-[16px]" data-name="lucide/flag" data-node-id="I7:2913;2437:23808">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideFlag} />
-                              </div>
+                              <Flag
+                                size={16}
+                                className={taskPriorityFlagClass(TASKS.find((t) => t.id === 2)?.priority)}
+                                aria-hidden
+                                data-name="lucide/flag"
+                                data-node-id="I7:2913;2437:23808"
+                              />
                             </div>
                           </div>
                         </div>
@@ -1180,9 +1187,13 @@ export function DashboardPlaceholder() {
                               Add a new project
                             </p>
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2914;2437:23807">
-                              <div className="relative shrink-0 size-[16px]" data-name="lucide/flag" data-node-id="I7:2914;2437:23808">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideFlag} />
-                              </div>
+                              <Flag
+                                size={16}
+                                className={taskPriorityFlagClass(TASKS.find((t) => t.id === 3)?.priority)}
+                                aria-hidden
+                                data-name="lucide/flag"
+                                data-node-id="I7:2914;2437:23808"
+                              />
                             </div>
                           </div>
                         </div>
@@ -1318,9 +1329,13 @@ export function DashboardPlaceholder() {
                               Create an account with Continuum
                             </p>
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2935;2437:23807">
-                              <div className="relative shrink-0 size-[16px]" data-name="lucide/flag" data-node-id="I7:2935;2437:23808">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideFlag} />
-                              </div>
+                              <Flag
+                                size={16}
+                                className={taskPriorityFlagClass(TASKS.find((t) => t.id === 4)?.priority)}
+                                aria-hidden
+                                data-name="lucide/flag"
+                                data-node-id="I7:2935;2437:23808"
+                              />
                             </div>
                           </div>
                         </div>

@@ -4,12 +4,12 @@ import type React from "react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { ChevronDown, GripVertical } from "lucide-react";
+import { ChevronDown, Flag, GripVertical } from "lucide-react";
 
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
-import type { Task } from "@/types/task";
+import { taskPriorityFlagClass, taskPriorityLabel, type Task } from "@/types/task";
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { cn } from "../ui/utils";
 import { VirtualList } from "@/app/components/ui/VirtualList";
@@ -22,7 +22,6 @@ const imgLucideCircleCheckBig = mcpAsset("244bb570-3aed-481d-8cf9-f067c69c50b0")
 const imgLucideSearch1 = mcpAsset("c5ee61c3-f628-42e7-b456-58f9c49a5cfe");
 const imgVector10 = mcpAsset("0d58a9e0-9d27-4eb3-ad07-b2ad64a15f10");
 const imgVector11 = mcpAsset("4912f83a-d378-4c38-9bf2-ce38aa20cc19");
-const imgLucideFlag = mcpAsset("299f17ae-de59-4012-9bb8-ae6509081405");
 const imgFrame308 = mcpAsset("5b22b8e9-bd31-437e-a559-232247be56a0");
 const imgLucideEllipsis = mcpAsset("9baf5fcb-1676-4740-8a31-f190f218b100");
 
@@ -168,8 +167,8 @@ export function SprintKanbanListView({
           {formatDueLong(task.dueDate)}
         </p>
         <div className="content-stretch flex w-[52px] shrink-0 items-center justify-center">
-          <div className="relative size-[16px] shrink-0" title={`Scope: ${task.scope}`}>
-            <img alt="" className="absolute block max-w-none size-full" src={imgLucideFlag} />
+          <div className="relative flex size-[16px] shrink-0 items-center justify-center" title={`Priority: ${taskPriorityLabel(task.priority)}`}>
+            <Flag size={16} className={taskPriorityFlagClass(task.priority)} aria-hidden />
           </div>
         </div>
         <div className="content-stretch flex min-h-px min-w-0 flex-[1_0_0] flex-col items-start">
@@ -265,7 +264,7 @@ export function SprintKanbanListView({
                 Priority
               </p>
               <p className="font-['Satoshi:Medium',sans-serif] min-w-0 flex-[1_0_0] overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-[#606d76]">
-                Priority
+                Progress
               </p>
               <div className="w-[24px] shrink-0" aria-hidden />
             </div>
