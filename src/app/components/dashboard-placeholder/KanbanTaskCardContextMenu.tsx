@@ -24,7 +24,7 @@ import {
 
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
-import type { TaskStatus } from "@/types/task";
+import type { KanbanColumnKind } from "./kanbanBoardTypes";
 
 const satoshi = "font-['Satoshi',sans-serif]";
 
@@ -33,12 +33,17 @@ const optionIconClass = "size-4 shrink-0 stroke-[1.75] text-[#0b191f]";
 export type KanbanTaskCardContextMenuProps = {
   children: ReactNode;
   taskId: string;
-  currentStatus: TaskStatus;
+  /** Resolved column id for this task (matches board column `id`). */
+  currentColumnId: string;
+  /** Column kind for menu placement (e.g. open left when ``done``). */
+  currentColumnKind: KanbanColumnKind;
+  /** Board columns offered in “Move to…”. */
+  moveColumnOptions: { id: string; label: string }[];
   onOpenTask: () => void;
   onEditTask: () => void;
   onCopyLink: () => void;
   onDelete: () => void;
-  onMoveTo: (status: TaskStatus) => void;
+  onMoveToColumn: (columnId: string) => void;
   /** Project members for the "Assign member" inline picker. Omit/empty to hide the option. */
   members?: Member[];
   /** Current assignee's user id, or null when unassigned. */
@@ -46,12 +51,6 @@ export type KanbanTaskCardContextMenuProps = {
   /** Fired from the inline member picker. Pass `null` to unassign. Omit to hide the option. */
   onAssignMember?: (userId: number | null) => void;
 };
-
-const MOVE_OPTIONS: { status: TaskStatus; label: string }[] = [
-  { status: "todo", label: "To-do" },
-  { status: "in-progress", label: "In progress" },
-  { status: "done", label: "Done" },
-];
 
 /** Radix positions context UI with `side: right` from the cursor; we shift the stack for completed tasks. */
 const contentRootClassName = cn(
@@ -170,12 +169,14 @@ function ContextMenuDimBackdrop({ hole }: { hole: DOMRect | null }) {
 export function KanbanTaskCardContextMenu({
   children,
   taskId,
-  currentStatus,
+  currentColumnId,
+  currentColumnKind,
+  moveColumnOptions,
   onOpenTask,
   onEditTask,
   onCopyLink,
   onDelete,
-  onMoveTo,
+  onMoveToColumn,
   members,
   currentAssigneeId = null,
   onAssignMember,
@@ -213,7 +214,7 @@ export function KanbanTaskCardContextMenu({
    * We override Radix's popper wrapper inline style and reapply via MutationObserver,
    * because Radix repositions on scroll/resize via @floating-ui autoUpdate.
    */
-  const openToLeft = currentStatus === "done";
+  const openToLeft = currentColumnKind === "done";
 
   useLayoutEffect(() => {
     if (!menuOpen || !cardHole) return;
@@ -423,17 +424,17 @@ export function KanbanTaskCardContextMenu({
               Move to…
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className={subShellClassName} sideOffset={8}>
-              {MOVE_OPTIONS.map(({ status, label }) => (
+              {moveColumnOptions.map(({ id, label }) => (
                 <ContextMenuItem
-                  key={status}
+                  key={id}
                   className={optionChipClassName}
-                  disabled={currentStatus === status}
+                  disabled={currentColumnId === id}
                   onSelect={() => {
-                    if (currentStatus !== status) onMoveTo(status);
+                    if (currentColumnId !== id) onMoveToColumn(id);
                   }}
                 >
                   {label}
-                  {currentStatus === status ? (
+                  {currentColumnId === id ? (
                     <span className={cn(satoshi, "ml-auto text-xs font-normal text-[#727d83]")}>Current</span>
                   ) : null}
                 </ContextMenuItem>

@@ -1,8 +1,8 @@
-/** Backend task status (API) */
-export type TaskStatusAPI = 'todo' | 'in_progress' | 'done';
+/** Backend task status: Kanban column id or legacy todo | in_progress | done */
+export type TaskStatusAPI = string;
 
-/** Frontend task status (display) */
-export type TaskStatus = 'todo' | 'in-progress' | 'done';
+/** UI task status (same as API after mapping); may be a column id for custom boards */
+export type TaskStatus = string;
 
 export type ScopeWeight = 'XS' | 'S' | 'M' | 'L' | 'XL';
 
@@ -11,7 +11,7 @@ export interface TaskAPIResponse {
     id: number;
     title: string;
     description?: string | null;
-    status: TaskStatusAPI;
+    status: string;
     project_id: number;
     milestone_id?: number | null;
     assigned_to?: number | null;

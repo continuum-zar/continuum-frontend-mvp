@@ -29,7 +29,6 @@ import type { Task, TaskStatus } from "@/types/task";
 
 import {
   DEFAULT_KANBAN_COLUMNS,
-  firstColumnIdForStatus,
   kindForTaskStatus,
   mapKanbanBoardFromApi,
   mapKanbanBoardToApi,
@@ -167,23 +166,16 @@ export function GetStartedKanbanLive({
 
     setTaskColumnPreference((prev) => ({ ...prev, [taskId]: targetColumnId }));
 
-    if (task.status === targetCol.taskStatus) return;
-
     if (pendingMoveRef.current.has(taskId)) return;
     pendingMoveRef.current.add(taskId);
     updateStatusMutation.mutate(
-      { taskId, status: targetCol.taskStatus },
+      { taskId, status: targetCol.id },
       {
         onSettled: () => {
           pendingMoveRef.current.delete(taskId);
         },
       },
     );
-  };
-
-  const handleMoveToStatus = (taskId: string, status: TaskStatus) => {
-    const colId = firstColumnIdForStatus(columns, status);
-    handleMoveToColumn(taskId, colId);
   };
 
   const confirmAddColumn = () => {
@@ -246,11 +238,16 @@ export function GetStartedKanbanLive({
       }
     };
 
+    const resolvedColId = resolveTaskColumnId(task, columns, taskColumnPreference);
+    const resolvedCol = columns.find((c) => c.id === resolvedColId);
+
     return (
       <KanbanTaskCardContextMenu
         key={task.id}
         taskId={task.id}
-        currentStatus={task.status}
+        currentColumnId={resolvedColId}
+        currentColumnKind={resolvedCol?.kind ?? "todo"}
+        moveColumnOptions={columns.map((c) => ({ id: c.id, label: c.title }))}
         members={members}
         currentAssigneeId={assigneeUserId}
         onAssignMember={(userId) => {
@@ -265,7 +262,7 @@ export function GetStartedKanbanLive({
         }}
         onCopyLink={() => void copyTaskLink()}
         onDelete={() => setTaskPendingDelete(task)}
-        onMoveTo={(status) => handleMoveToStatus(task.id, status)}
+        onMoveToColumn={(columnId) => handleMoveToColumn(task.id, columnId)}
       >
         <div
           className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${isDragging ? "opacity-0" : "cursor-open-hand"}`}

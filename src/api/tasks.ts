@@ -59,7 +59,7 @@ export async function updateTask(
     body: {
         title?: string;
         description?: string | null;
-        status?: TaskStatus;
+        status?: string;
         scope_weight?: ScopeWeight;
         due_date?: string | null;
         estimated_hours?: number | null;
@@ -80,7 +80,8 @@ export async function updateTask(
         payload.description = body.description;
     }
     if (body.status !== undefined) {
-        payload.status = body.status === 'in-progress' ? 'in_progress' : body.status;
+        const s = body.status;
+        payload.status = s === 'in-progress' ? 'in_progress' : s;
     }
     if (body.scope_weight !== undefined) {
         payload.scope_weight = body.scope_weight;
@@ -174,7 +175,7 @@ export async function fetchProjectTasksPage(
 /** Update task status. Returns updated task from API. */
 export async function updateTaskStatus(
     taskId: number | string,
-    status: TaskStatus
+    status: string
 ): Promise<TaskAPIResponse> {
     const backendStatus = status === 'in-progress' ? 'in_progress' : status;
     const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/status`, {

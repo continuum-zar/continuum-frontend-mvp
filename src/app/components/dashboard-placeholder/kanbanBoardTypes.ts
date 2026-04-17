@@ -30,9 +30,11 @@ export function resolveTaskColumnId(
 ): string {
   const prefId = preferenceByTaskId[task.id];
   if (prefId) {
-    const col = columns.find((c) => c.id === prefId);
-    if (col && col.taskStatus === task.status) return prefId;
+    const prefCol = columns.find((c) => c.id === prefId);
+    if (prefCol) return prefId;
   }
+  const byStoredId = columns.find((c) => c.id === task.status);
+  if (byStoredId) return byStoredId.id;
   const first = columns.find((c) => c.taskStatus === task.status);
   return first?.id ?? columns[0]!.id;
 }
@@ -59,6 +61,7 @@ export type { KanbanBoardColumnApi } from "@/types/kanban";
 
 function taskStatusFromApi(s: TaskStatusAPI): TaskStatus {
   if (s === "in_progress") return "in-progress";
+  if (s === "todo" || s === "done") return s;
   return s;
 }
 

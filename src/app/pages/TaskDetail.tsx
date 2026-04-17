@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { DEFAULT_KANBAN_COLUMNS, mapKanbanBoardFromApi, type KanbanColumnConfig } from '@/app/components/dashboard-placeholder/kanbanBoardTypes';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
@@ -37,6 +38,7 @@ import {
   useAddTaskLabel,
   useRemoveTaskLabel,
   useProjectRepositories,
+  useProjectKanbanBoard,
   useRepositoryBranches,
   useSetTaskLinkedBranch,
   useTaskCommentsInfinite,
@@ -45,7 +47,7 @@ import {
 import { getApiErrorMessage, useTaskLoggedHoursTotal } from '@/api/hooks';
 import type { Attachment } from '@/types/attachment';
 import { formatDistanceToNow } from 'date-fns';
-import type { TaskStatus, ScopeWeight, TaskTimelineEntry } from '@/types/task';
+import type { ScopeWeight, TaskTimelineEntry } from '@/types/task';
 import type { CommentAuthorAPI } from '@/types/comment';
 import type { Member } from '@/types/member';
 import type { Repository } from '@/types/repository';
@@ -69,6 +71,12 @@ function statusLabel(s: string): string {
   return 'To-Do';
 }
 
+function statusLabelFromBoard(stored: string, columns: KanbanColumnConfig[]): string {
+  const col = columns.find((c) => c.id === stored);
+  if (col) return col.title;
+  return statusLabel(taskStatusToDisplay(stored));
+}
+
 function scopeLabel(s: string): string {
   const map: Record<string, string> = { XS: 'Extra Small (XS)', S: 'Small (S)', M: 'Medium (M)', L: 'Large (L)', XL: 'Extra Large (XL)' };
   return map[s] ?? 'Medium (M)';
@@ -78,12 +86,6 @@ function formatLoggedHoursSum(hours: number): string {
   if (!Number.isFinite(hours) || hours < 0) return '0';
   return new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(hours);
 }
-
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: 'todo', label: 'To-Do' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'done', label: 'Done' },
-];
 
 const SCOPE_OPTIONS: { value: ScopeWeight; label: string }[] = [
   { value: 'XS', label: 'Extra Small (XS)' },
@@ -394,6 +396,15 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const taskDetailQueryKey = ['tasks', 'detail', taskId] as const;
   const setLinkedBranchMutation = useSetTaskLinkedBranch();
   const { data: projectRepos = [], isLoading: reposLoading } = useProjectRepositories(task?.project_id);
+  const { data: kanbanColumnsApi = [] } = useProjectKanbanBoard(task?.project_id ?? null);
+  const boardColumns = useMemo(() => {
+    if (kanbanColumnsApi.length > 0) return mapKanbanBoardFromApi(kanbanColumnsApi);
+    return [...DEFAULT_KANBAN_COLUMNS];
+  }, [kanbanColumnsApi]);
+  const statusOptions = useMemo(
+    () => boardColumns.map((c) => ({ value: c.id, label: c.title })),
+    [boardColumns],
+  );
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
   const [repoDropdownOpen, setRepoDropdownOpen] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
@@ -464,7 +475,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   /* ─ init from task ─ */
   useEffect(() => {
     if (task) {
-      setStatus(taskStatusToDisplay(task.status ?? 'todo'));
+      setStatus(task.status ?? 'todo');
       setScope((task.scope_weight ?? 'M') as string);
       setLocalChecklists(task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : []);
       // Keep drafts in sync so "Update" does not send empty description/title when the user never opened edit mode.
@@ -642,11 +653,10 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   };
 
   /* ─ status / scope ─ */
-  const handleStatusChange = (newStatus: string) => {
-    setStatus(newStatus);
+  const handleStatusChange = (newColumnId: string) => {
+    setStatus(newColumnId);
     setStatusDropdownOpen(false);
-    const frontendStatus: TaskStatus = newStatus === 'in_progress' ? 'in-progress' : (newStatus as TaskStatus);
-    if (taskId) updateTaskMutation.mutate({ taskId, status: frontendStatus });
+    if (taskId) updateTaskMutation.mutate({ taskId, status: newColumnId });
   };
 
   const handleScopeChange = (newScope: string) => {
@@ -1066,18 +1076,18 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
                 className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
               >
-                <span className="text-[16px] font-medium text-[#0b191f]">{statusLabel(status)}</span>
+                <span className="text-[16px] font-medium text-[#0b191f]">{statusLabelFromBoard(status, boardColumns)}</span>
                 <ChevronDown size={16} />
               </button>
               {statusDropdownOpen && (
                 <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md">
-                  {STATUS_OPTIONS.map((opt) => (
+                  {statusOptions.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => handleStatusChange(opt.value)}
                       className={`flex w-full items-center px-4 py-3 text-left text-[14px] font-medium hover:bg-[#f0f3f5] ${
-                        status === opt.value || (status === 'in-progress' && opt.value === 'in_progress') ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                        status === opt.value ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
                       }`}
                     >
                       {opt.label}

@@ -4,37 +4,46 @@ import userEvent from "@testing-library/user-event";
 
 import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
 
+const defaultMoveOptions = [
+  { id: "todo", label: "To-do" },
+  { id: "in-progress", label: "In progress" },
+  { id: "completed", label: "Done" },
+];
+
 function renderMenu(
   overrides: Partial<{
     onOpenTask: () => void;
     onEditTask: () => void;
     onCopyLink: () => void;
     onDelete: () => void;
-    onMoveTo: (s: "todo" | "in-progress" | "done") => void;
-    currentStatus: "todo" | "in-progress" | "done";
+    onMoveToColumn: (columnId: string) => void;
+    currentColumnId: string;
+    currentColumnKind: "todo" | "in-progress" | "done";
   }> = {},
 ) {
   const onOpenTask = overrides.onOpenTask ?? vi.fn();
   const onEditTask = overrides.onEditTask ?? vi.fn();
   const onCopyLink = overrides.onCopyLink ?? vi.fn();
   const onDelete = overrides.onDelete ?? vi.fn();
-  const onMoveTo = overrides.onMoveTo ?? vi.fn();
+  const onMoveToColumn = overrides.onMoveToColumn ?? vi.fn();
 
   render(
     <KanbanTaskCardContextMenu
       taskId="task-1"
-      currentStatus={overrides.currentStatus ?? "todo"}
+      currentColumnId={overrides.currentColumnId ?? "todo"}
+      currentColumnKind={overrides.currentColumnKind ?? "todo"}
+      moveColumnOptions={defaultMoveOptions}
       onOpenTask={onOpenTask}
       onEditTask={onEditTask}
       onCopyLink={onCopyLink}
       onDelete={onDelete}
-      onMoveTo={onMoveTo}
+      onMoveToColumn={onMoveToColumn}
     >
       <div data-testid="kanban-card">Example task card</div>
     </KanbanTaskCardContextMenu>,
   );
 
-  return { onOpenTask, onEditTask, onCopyLink, onDelete, onMoveTo };
+  return { onOpenTask, onEditTask, onCopyLink, onDelete, onMoveToColumn };
 }
 
 describe("KanbanTaskCardContextMenu", () => {
