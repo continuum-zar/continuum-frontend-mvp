@@ -11,6 +11,7 @@ import {
     mapMilestone,
     mapMember,
 } from '@/api/mappers';
+import type { KanbanBoardColumnApi } from '@/types/kanban';
 import type { Project, ProjectDetail } from '@/types/project';
 import type { Milestone } from '@/types/milestone';
 import type { Member } from '@/types/member';
@@ -64,6 +65,23 @@ export async function deleteProject(projectId: number | string): Promise<void> {
 export async function fetchProject(id: number | string): Promise<ProjectDetail> {
     const { data } = await api.get<ProjectDetailAPIResponse>(`/projects/${id}`);
     return mapProjectDetail(data);
+}
+
+/** GET /projects/{id}/kanban-board — ordered swimlane definitions (API shape). */
+export async function fetchProjectKanbanBoard(projectId: number | string): Promise<KanbanBoardColumnApi[]> {
+    const { data } = await api.get<{ columns: KanbanBoardColumnApi[] }>(`/projects/${projectId}/kanban-board`);
+    return data.columns ?? [];
+}
+
+/** PUT /projects/{id}/kanban-board — replace persisted columns. */
+export async function updateProjectKanbanBoard(
+    projectId: number | string,
+    columns: KanbanBoardColumnApi[],
+): Promise<KanbanBoardColumnApi[]> {
+    const { data } = await api.put<{ columns: KanbanBoardColumnApi[] }>(`/projects/${projectId}/kanban-board`, {
+        columns,
+    });
+    return data.columns ?? [];
 }
 
 /** Fetch milestones for a project. Returns UI-shaped milestones. */
@@ -158,6 +176,8 @@ export const projectKeys = {
     loggedHours: (projectId?: string | null) => ['logged-hours', projectId ?? 'all'] as const,
     projectAttachments: (projectId: number | string) =>
         [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'attachments'] as const,
+    kanbanBoard: (projectId: number | string) =>
+        [...projectKeys.all, 'detail', normalizeProjectKeyId(projectId), 'kanban-board'] as const,
 };
 
 // ---------------------------------------------------------------------------

@@ -28,6 +28,8 @@ import {
     createProject,
     updateProject,
     deleteProject,
+    fetchProjectKanbanBoard,
+    updateProjectKanbanBoard,
     projectKeys,
     fetchProjectAttachments,
     uploadProjectAttachment,
@@ -75,6 +77,7 @@ import {
 } from './tasks';
 import { fetchLoggedHours, createLoggedHour, sumLoggedHoursForTask } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
+import type { KanbanBoardColumnApi } from '@/types/kanban';
 import type { Task, TaskAPIResponse, TaskStatus, ScopeWeight } from '@/types/task';
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
@@ -355,6 +358,30 @@ export function useProjectMembers(projectId: number | string | undefined | null,
     });
 }
 
+export function useProjectKanbanBoard(projectId: number | string | undefined | null) {
+    return useQuery({
+        queryKey: projectKeys.kanbanBoard(projectId!),
+        queryFn: () => fetchProjectKanbanBoard(projectId!),
+        enabled: projectId != null && projectId !== '',
+        staleTime: STALE_REFERENCE_MS,
+        gcTime: LONG_GC_MS,
+        refetchOnWindowFocus: false,
+    });
+}
+
+export function useUpdateProjectKanbanBoard(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (columns: KanbanBoardColumnApi[]) => updateProjectKanbanBoard(projectId!, columns),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: projectKeys.kanbanBoard(projectId!) });
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to save Kanban board'));
+        },
+    });
+}
+
 export function useCreateProject() {
     const queryClient = useQueryClient();
     return useMutation({
@@ -403,6 +430,7 @@ export function useDeleteProject() {
             queryClient.removeQueries({ queryKey: projectKeys.members(projectId) });
             queryClient.removeQueries({ queryKey: projectKeys.repositories(projectId) });
             queryClient.removeQueries({ queryKey: projectKeys.projectAttachments(projectId) });
+            queryClient.removeQueries({ queryKey: projectKeys.kanbanBoard(projectId) });
             toast.success('Project deleted');
         },
         onError: (err) => {
