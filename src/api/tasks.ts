@@ -1,7 +1,14 @@
 import api from '@/lib/api';
 import type { PaginatedResponse } from '@/types/api';
 import { mapTask } from '@/api/mappers';
-import type { TaskAPIResponse, Task, TaskStatus, ScopeWeight, TaskTimelineEntry } from '@/types/task';
+import type {
+    TaskAPIResponse,
+    Task,
+    TaskStatus,
+    ScopeWeight,
+    TaskPriority,
+    TaskTimelineEntry,
+} from '@/types/task';
 import type { CommentAPIResponse } from '@/types/comment';
 import type { AttachmentAPIResponse } from '@/types/attachment';
 
@@ -61,6 +68,7 @@ export async function updateTask(
         description?: string | null;
         status?: string;
         scope_weight?: ScopeWeight;
+        priority?: TaskPriority;
         due_date?: string | null;
         estimated_hours?: number | null;
         linked_repo?: string | null;
@@ -70,7 +78,7 @@ export async function updateTask(
 ): Promise<TaskAPIResponse> {
     const payload: Record<
         string,
-        TaskStatus | ScopeWeight | string | number | null | TaskChecklistItemUpdate[] | undefined
+        TaskStatus | ScopeWeight | TaskPriority | string | number | null | TaskChecklistItemUpdate[] | undefined
     > = {};
 
     if (body.title !== undefined) {
@@ -85,6 +93,9 @@ export async function updateTask(
     }
     if (body.scope_weight !== undefined) {
         payload.scope_weight = body.scope_weight;
+    }
+    if (body.priority !== undefined) {
+        payload.priority = body.priority;
     }
     if (body.due_date !== undefined) {
         payload.due_date = body.due_date;
@@ -134,6 +145,7 @@ export interface CreateTaskBody {
     description?: string | null;
     status?: 'todo' | 'in_progress' | 'done';
     scope_weight?: ScopeWeight;
+    priority?: TaskPriority;
     due_date?: string | null;
     estimated_hours?: number | null;
     assigned_to?: number | null;

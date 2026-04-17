@@ -47,7 +47,13 @@ import {
 import { getApiErrorMessage, useTaskLoggedHoursTotal } from '@/api/hooks';
 import type { Attachment } from '@/types/attachment';
 import { formatDistanceToNow } from 'date-fns';
-import type { ScopeWeight, TaskTimelineEntry } from '@/types/task';
+import {
+  TASK_PRIORITY_OPTIONS,
+  taskPriorityLabel,
+  type ScopeWeight,
+  type TaskPriority,
+  type TaskTimelineEntry,
+} from '@/types/task';
 import type { CommentAuthorAPI } from '@/types/comment';
 import type { Member } from '@/types/member';
 import type { Repository } from '@/types/repository';
@@ -432,6 +438,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [logTimeOpen, setLogTimeOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
   const [scopeDropdownOpen, setScopeDropdownOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [mcpLinkCopied, setMcpLinkCopied] = useState(false);
@@ -476,6 +484,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   useEffect(() => {
     if (task) {
       setStatus(task.status ?? 'todo');
+      setPriority((task.priority ?? 'medium') as TaskPriority);
       setScope((task.scope_weight ?? 'M') as string);
       setLocalChecklists(task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : []);
       // Keep drafts in sync so "Update" does not send empty description/title when the user never opened edit mode.
@@ -663,6 +672,12 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     setScope(newScope);
     setScopeDropdownOpen(false);
     if (taskId) updateTaskMutation.mutate({ taskId, scope_weight: newScope as ScopeWeight });
+  };
+
+  const handlePriorityChange = (newPriority: TaskPriority) => {
+    setPriority(newPriority);
+    setPriorityDropdownOpen(false);
+    if (taskId) updateTaskMutation.mutate({ taskId, priority: newPriority });
   };
 
   const selectedRepo = selectedRepoId != null ? projectRepos.find((r) => r.id === selectedRepoId) : undefined;
@@ -1090,6 +1105,47 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                         status === opt.value ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
                       }`}
                     >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Priority */}
+          <div className="space-y-4">
+            <p className="text-[16px] font-medium text-[#0b191f]">Priority</p>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setPriorityDropdownOpen(!priorityDropdownOpen)}
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
+              >
+                <span className="flex items-center gap-2 text-[16px] font-medium text-[#0b191f]">
+                  <Flag
+                    size={16}
+                    className={
+                      TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.flagColorClass ?? 'text-yellow-500'
+                    }
+                    aria-hidden
+                  />
+                  {taskPriorityLabel(priority)}
+                </span>
+                <ChevronDown size={16} />
+              </button>
+              {priorityDropdownOpen && (
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md">
+                  {TASK_PRIORITY_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handlePriorityChange(opt.value)}
+                      className={`flex w-full items-center gap-2 px-4 py-3 text-left text-[14px] font-medium hover:bg-[#f0f3f5] ${
+                        priority === opt.value ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                      }`}
+                    >
+                      <Flag size={16} className={opt.flagColorClass} aria-hidden />
                       {opt.label}
                     </button>
                   ))}

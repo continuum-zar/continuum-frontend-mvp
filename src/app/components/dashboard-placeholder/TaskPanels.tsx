@@ -1,9 +1,11 @@
 "use client";
 
 import { Activity, ArrowLeft, CalendarPlus, Check, ChevronDown, FileText, Flag, Link2, Loader2, Plus, Tag, UserRoundPlus, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { useTaskLoggedHoursTotal } from "@/api/hooks";
+import { TASK_PRIORITY_OPTIONS, taskPriorityLabel, type TaskPriority } from "@/types/task";
+
+import { useTaskLoggedHoursTotal, useTask, useUpdateTask } from "@/api/hooks";
 import { isApiProjectId } from "@/app/data/dashboardPlaceholderProjects";
 import { welcomeResourcesMock } from "@/app/data/welcomeDashboardMock";
 
@@ -31,17 +33,38 @@ const activityMock = [
 
 export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPanelsProps) {
   const [logTimeOpen, setLogTimeOpen] = useState(false);
+  const [priority, setPriority] = useState<TaskPriority>("medium");
+  const [priorityOpen, setPriorityOpen] = useState(false);
 
   const apiProjectId = projectId != null && isApiProjectId(projectId) ? projectId : null;
   const numericProjectForModal = apiProjectId != null ? Number(apiProjectId) : undefined;
 
   const canLoadHours = apiProjectId != null && taskId != null && /^\d+$/.test(String(taskId).trim());
+  const canSyncTaskFields = canLoadHours;
+
+  const { data: apiTask } = useTask(canSyncTaskFields ? taskId : undefined);
+  const updateTaskMutation = useUpdateTask();
+
+  useEffect(() => {
+    const p = apiTask?.priority;
+    if (p === "high" || p === "medium" || p === "low" || p === "info") {
+      setPriority(p);
+    }
+  }, [apiTask?.priority]);
 
   const { data: loggedHoursTotal, isLoading: hoursLoading, isError: hoursError } = useTaskLoggedHoursTotal(
     apiProjectId,
     taskId,
     { enabled: canLoadHours },
   );
+
+  const handlePrioritySelect = (opt: TaskPriority) => {
+    setPriority(opt);
+    setPriorityOpen(false);
+    if (canSyncTaskFields && taskId) {
+      updateTaskMutation.mutate({ taskId, priority: opt });
+    }
+  };
 
   const loggedDisplay = useMemo(() => {
     if (!canLoadHours) return null;
@@ -234,6 +257,45 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
               <span className="text-[16px] font-medium text-[#0b191f]">To-Do</span>
               <ChevronDown size={16} />
             </button>
+          </div>
+          <div className="space-y-4">
+            <p className="text-[16px] font-medium text-[#0b191f]">Priority</p>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setPriorityOpen(!priorityOpen)}
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
+              >
+                <span className="flex items-center gap-2 text-[16px] font-medium text-[#0b191f]">
+                  <Flag
+                    size={16}
+                    className={
+                      TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.flagColorClass ?? "text-yellow-500"
+                    }
+                    aria-hidden
+                  />
+                  {taskPriorityLabel(priority)}
+                </span>
+                <ChevronDown size={16} />
+              </button>
+              {priorityOpen && (
+                <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md">
+                  {TASK_PRIORITY_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handlePrioritySelect(opt.value)}
+                      className={`flex w-full items-center gap-2 px-4 py-3 text-left text-[14px] font-medium hover:bg-[#f0f3f5] ${
+                        priority === opt.value ? "bg-[#f0f3f5] text-[#0b191f]" : "text-[#606d76]"
+                      }`}
+                    >
+                      <Flag size={16} className={opt.flagColorClass} aria-hidden />
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="space-y-4">
             <p className="text-[16px] font-medium text-[#0b191f]">Scope</p>
