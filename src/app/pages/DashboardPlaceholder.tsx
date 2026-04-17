@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { Timer } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { GetStartedKanbanLive } from "../components/dashboard-placeholder/GetStartedKanbanLive";
+import { KanbanBoardScrollSlider } from "../components/dashboard-placeholder/KanbanBoardScrollSlider";
 import {
   DASHBOARD_WELCOME_PROJECT,
   isApiProjectId,
@@ -378,6 +379,8 @@ export function DashboardPlaceholder() {
   const [welcomeToContinuumOpen, setWelcomeToContinuumOpen] = useState(false);
   /** Live sprint area only: board vs list (same tasks). */
   const [sprintView, setSprintView] = useState<"board" | "list">("board");
+  /** Horizontal scroll container of the live Kanban board — driven by the top-bar slider. */
+  const kanbanBoardScrollRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get("project");
@@ -846,6 +849,11 @@ export function DashboardPlaceholder() {
                     </div>
                   </button>
                 </div>
+                {isLiveBoard && sprintView === "board" ? (
+                  <div className="mx-[24px] flex min-w-0 flex-1 items-center">
+                    <KanbanBoardScrollSlider scrollRef={kanbanBoardScrollRef} />
+                  </div>
+                ) : null}
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2902">
                   <div className="content-stretch flex items-center pr-[10.667px] relative shrink-0" data-name="Component 33" data-node-id="7:2903">
                     {isLiveBoard ? (
@@ -938,6 +946,7 @@ export function DashboardPlaceholder() {
                 milestoneId={milestoneParam}
                 members={liveMembers}
                 view={sprintView}
+                boardScrollRef={kanbanBoardScrollRef}
               />
             ) : (
               <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]" data-node-id="7:2908">

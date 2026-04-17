@@ -2,13 +2,11 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { setKanbanDragActive } from "./kanbanCursor";
 
-type ColumnId = "todo" | "in-progress" | "completed";
-
 const DRAG_THRESHOLD_PX = 5;
 
 interface Options {
-  onDrop: (taskId: string, col: ColumnId) => void;
-  getTaskColumn: (taskId: string) => ColumnId | null;
+  onDrop: (taskId: string, columnId: string) => void;
+  getTaskColumn: (taskId: string) => string | null;
 }
 
 interface DragRef {
@@ -24,7 +22,7 @@ interface DragRef {
 
 export function useKanbanPointerDrag({ onDrop, getTaskColumn }: Options) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragOverCol, setDragOverCol] = useState<ColumnId | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
   const drag = useRef<DragRef | null>(null);
   const onDropRef = useRef(onDrop);
@@ -33,13 +31,14 @@ export function useKanbanPointerDrag({ onDrop, getTaskColumn }: Options) {
   getTaskColumnRef.current = getTaskColumn;
 
   const findColumn = useCallback(
-    (x: number, y: number, ghost: HTMLElement | null): ColumnId | null => {
+    (x: number, y: number, ghost: HTMLElement | null): string | null => {
       if (ghost) ghost.style.display = "none";
       const els = document.elementsFromPoint(x, y);
       if (ghost) ghost.style.display = "";
       for (const el of els) {
         const col = (el as HTMLElement).closest<HTMLElement>("[data-kanban-col]");
-        if (col) return col.dataset.kanbanCol as ColumnId;
+        const id = col?.dataset.kanbanCol;
+        if (id) return id;
       }
       return null;
     },

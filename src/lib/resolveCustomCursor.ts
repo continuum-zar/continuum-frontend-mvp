@@ -28,6 +28,64 @@ function remember(clientX: number, clientY: number, r: ResolvedCustomCursor): Re
   return r;
 }
 
+function overflowAxisScrollable(overflow: string): boolean {
+  return overflow === "auto" || overflow === "scroll" || overflow === "overlay";
+}
+
+/** Classic (non-overlay) scrollbars reserve gutter space: use layout thickness vs client box. */
+function isOverHorizontalScrollbar(el: HTMLElement, x: number, y: number): boolean {
+  const style = getComputedStyle(el);
+  if (!overflowAxisScrollable(style.overflowX)) return false;
+  if (el.scrollWidth <= el.clientWidth + 1) return false;
+
+  const thickness = el.offsetHeight - el.clientHeight;
+  if (thickness < 2) return false;
+
+  const rect = el.getBoundingClientRect();
+  if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return false;
+  const barTop = rect.bottom - thickness;
+  return y >= barTop;
+}
+
+function isOverVerticalScrollbar(el: HTMLElement, x: number, y: number): boolean {
+  const style = getComputedStyle(el);
+  if (!overflowAxisScrollable(style.overflowY)) return false;
+  if (el.scrollHeight <= el.clientHeight + 1) return false;
+
+  const thickness = el.offsetWidth - el.clientWidth;
+  if (thickness < 2) return false;
+
+  const rect = el.getBoundingClientRect();
+  if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return false;
+  const barLeft = rect.right - thickness;
+  return x >= barLeft;
+}
+
+/**
+ * When the pointer is over a real OS scrollbar gutter, `elementsFromPoint` often hits content
+ * underneath, so the custom overlay would still show and stack with the native scrollbar cursor.
+ */
+function isPointerOverNativeScrollbar(clientX: number, clientY: number, stack: Element[]): boolean {
+  const seen = new Set<HTMLElement>();
+  for (const raw of stack) {
+    if (!(raw instanceof HTMLElement)) continue;
+    let node: HTMLElement | null = raw;
+    while (node) {
+      if (!seen.has(node)) {
+        seen.add(node);
+        if (
+          isOverHorizontalScrollbar(node, clientX, clientY) ||
+          isOverVerticalScrollbar(node, clientX, clientY)
+        ) {
+          return true;
+        }
+      }
+      node = node.parentElement;
+    }
+  }
+  return false;
+}
+
 /**
  * Decide which cursor to show. Kanban drag (data-kanban-dragging) forces grabbing.
  * Text fields use the text SVG cursor; a few native-heavy cases use the real OS cursor.
@@ -48,6 +106,10 @@ export function resolveCustomCursor(clientX: number, clientY: number): ResolvedC
   }
 
   const stack = document.elementsFromPoint(clientX, clientY);
+  if (isPointerOverNativeScrollbar(clientX, clientY, stack)) {
+    return remember(clientX, clientY, { mode: "native" });
+  }
+
   for (const el of stack) {
     if (!(el instanceof HTMLElement)) continue;
     if (el.hasAttribute("data-custom-cursor-overlay")) continue;

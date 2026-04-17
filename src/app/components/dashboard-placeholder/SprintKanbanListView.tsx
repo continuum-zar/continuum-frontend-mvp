@@ -2,7 +2,7 @@
 
 import type React from "react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { ChevronDown, GripVertical } from "lucide-react";
 
@@ -13,6 +13,7 @@ import type { Task } from "@/types/task";
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { cn } from "../ui/utils";
 import { VirtualList } from "@/app/components/ui/VirtualList";
+import type { KanbanColumnConfig } from "./kanbanBoardTypes";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgLucideSquircleDashed = mcpAsset("e2efeca9-31cd-4cf9-ac56-b2799ee8a450");
@@ -24,8 +25,6 @@ const imgLucideFlag = mcpAsset("299f17ae-de59-4012-9bb8-ae6509081405");
 const imgFrame308 = mcpAsset("5b22b8e9-bd31-437e-a559-232247be56a0");
 const imgLucideEllipsis = mcpAsset("9baf5fcb-1676-4740-8a31-f190f218b100");
 
-type ColumnKey = "todo" | "in-progress" | "completed";
-
 function formatDueLong(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
@@ -35,18 +34,30 @@ function formatDueLong(iso: string | null | undefined): string {
 
 export type SprintKanbanListViewProps = {
   tasks: Task[];
+  /** Column definitions (order matches board). */
+  columns: KanbanColumnConfig[];
+  /** Tasks per `column.id`, including column preference routing from the parent. */
+  columnTasks: Record<string, Task[]>;
   members: Member[];
   projectId: number;
   milestoneId: string | null;
   onCreateTask: () => void;
   /** Drag-and-drop between sections — same behavior as board view. */
   draggingId: string | null;
-  dragOverCol: ColumnKey | null;
+  dragOverCol: string | null;
   cardPointerDown: (taskId: string) => (e: React.PointerEvent<HTMLDivElement>) => void;
 };
 
+function iconSrcForKanbanColumnKind(kind: KanbanColumnConfig["kind"]): string {
+  if (kind === "in-progress") return imgLucideSquircleDashed;
+  if (kind === "done") return imgLucideCircleCheckBig;
+  return imgLucideListTodo;
+}
+
 export function SprintKanbanListView({
-  tasks,
+  tasks: _tasks,
+  columns,
+  columnTasks,
   members,
   projectId,
   milestoneId,
@@ -56,26 +67,27 @@ export function SprintKanbanListView({
   cardPointerDown,
 }: SprintKanbanListViewProps) {
   void projectId;
+  void _tasks;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const memberByUserId = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
 
-  const [expanded, setExpanded] = useState<Record<ColumnKey, boolean>>({
-    todo: true,
-    "in-progress": true,
-    completed: true,
-  });
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(columns.map((c) => [c.id, true])),
+  );
 
-  const byColumn = useMemo(() => {
-    return {
-      todo: tasks.filter((t) => t.status === "todo"),
-      "in-progress": tasks.filter((t) => t.status === "in-progress"),
-      completed: tasks.filter((t) => t.status === "done"),
-    };
-  }, [tasks]);
+  useEffect(() => {
+    setExpanded((prev) => {
+      const next = { ...prev };
+      for (const c of columns) {
+        if (!(c.id in next)) next[c.id] = true;
+      }
+      return next;
+    });
+  }, [columns]);
 
-  const toggle = (col: ColumnKey) => {
-    setExpanded((e) => ({ ...e, [col]: !e[col] }));
+  const toggle = (colId: string) => {
+    setExpanded((e) => ({ ...e, [colId]: !e[colId] }));
   };
 
   const renderRow = (task: Task) => {
@@ -200,31 +212,29 @@ export function SprintKanbanListView({
   };
 
   const section = (
-    col: ColumnKey,
-    label: string,
-    iconSrc: string,
+    col: KanbanColumnConfig,
     headerRight: ReactNode,
     emptyMsg: string,
   ) => {
-    const list = byColumn[col];
-    const isOpen = expanded[col];
+    const list = columnTasks[col.id] ?? [];
+    const isOpen = expanded[col.id] ?? true;
 
     return (
       <div
-        key={col}
+        key={col.id}
         className="content-stretch flex w-full flex-col items-start overflow-clip rounded-tl-[8px] rounded-tr-[8px]"
       >
         <div className="flex w-full min-w-0 shrink-0 items-center justify-between gap-3 py-[8px]">
           <button
             type="button"
-            onClick={() => toggle(col)}
+            onClick={() => toggle(col.id)}
             className="flex min-w-0 max-w-[min(100%,520px)] cursor-pointer items-center gap-[8px] border-0 bg-transparent p-0 text-left"
           >
             <div className="relative size-[16px] shrink-0">
-              <img alt="" className="absolute block max-w-none size-full" src={iconSrc} />
+              <img alt="" className="absolute block max-w-none size-full" src={iconSrcForKanbanColumnKind(col.kind)} />
             </div>
             <p className="font-['Satoshi:Medium',sans-serif] min-w-0 shrink truncate text-[14px] leading-[normal] not-italic text-[#606d76]">
-              {label}
+              {col.title}
             </p>
             <ChevronDown
               className={cn("size-4 shrink-0 text-[#606d76] transition-transform", isOpen && "-rotate-180")}
@@ -258,14 +268,14 @@ export function SprintKanbanListView({
               <div className="w-[24px] shrink-0" aria-hidden />
             </div>
             <div
-              data-kanban-col={col}
+              data-kanban-col={col.id}
               className={cn(
                 "relative flex w-full flex-col items-stretch overflow-clip rounded-b-[8px] transition-colors duration-200",
                 list.length === 0 ? "min-h-[52px]" : "min-h-0",
-                dragOverCol === col && draggingId !== null && "bg-[rgba(249,250,251,0.75)]",
+                dragOverCol === col.id && draggingId !== null && "bg-[rgba(249,250,251,0.75)]",
               )}
             >
-              {dragOverCol === col && draggingId !== null ? (
+              {dragOverCol === col.id && draggingId !== null ? (
                 <div
                   className="h-[52px] w-full shrink-0 rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.55)]"
                   aria-hidden
@@ -316,46 +326,41 @@ export function SprintKanbanListView({
     </>
   );
 
+  const createTaskControl = (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onCreateTask();
+      }}
+      className="content-stretch flex shrink-0 cursor-pointer items-center overflow-clip rounded-[6px] border-0 bg-transparent p-[5px]"
+      aria-label="Create task"
+    >
+      <div className="relative size-[14px] shrink-0">
+        <div className="absolute inset-[-5.36%]">
+          <img alt="" className="block max-w-none size-full" src={imgVector11} />
+        </div>
+      </div>
+    </button>
+  );
+
   return (
     <div className="scrollbar-none content-stretch relative z-[1] flex w-full min-h-0 flex-1 flex-col items-stretch gap-[24px] overflow-x-auto overflow-y-auto font-['Satoshi',sans-serif]">
-      {section(
-        "todo",
-        "To-do",
-        imgLucideListTodo,
-        <>
-          {searchEllipsis}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCreateTask();
-            }}
-            className="content-stretch flex shrink-0 cursor-pointer items-center overflow-clip rounded-[6px] border-0 bg-transparent p-[5px]"
-            aria-label="Create task"
-          >
-            <div className="relative size-[14px] shrink-0">
-              <div className="absolute inset-[-5.36%]">
-                <img alt="" className="block max-w-none size-full" src={imgVector11} />
-              </div>
-            </div>
-          </button>
-        </>,
-        `No tasks in To-do${milestoneId ? " for this milestone" : ""}.`,
-      )}
-      {section(
-        "in-progress",
-        "In-Progress",
-        imgLucideSquircleDashed,
-        searchEllipsis,
-        "No tasks in progress.",
-      )}
-      {section(
-        "completed",
-        "Completed",
-        imgLucideCircleCheckBig,
-        searchEllipsis,
-        "No completed tasks.",
-      )}
+      {columns.map((col) => {
+        const headerRight =
+          col.taskStatus === "todo" ? (
+            <>
+              {searchEllipsis}
+              {createTaskControl}
+            </>
+          ) : (
+            searchEllipsis
+          );
+        const emptyTail =
+          col.taskStatus === "todo" && milestoneId ? " for this milestone" : "";
+        const emptyMsg = `No tasks in ${col.title}${emptyTail}.`;
+        return section(col, headerRight, emptyMsg);
+      })}
     </div>
   );
 }

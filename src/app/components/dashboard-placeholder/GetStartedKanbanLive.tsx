@@ -1,11 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
 import { SprintKanbanListView } from "./SprintKanbanListView";
@@ -19,6 +19,16 @@ import { workspaceJoin } from "@/lib/workspacePaths";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 import type { Task, TaskStatus } from "@/types/task";
+
+import {
+  DEFAULT_KANBAN_COLUMNS,
+  firstColumnIdForStatus,
+  kindForTaskStatus,
+  newKanbanColumnId,
+  resolveTaskColumnId,
+  tasksForKanbanColumn,
+  type KanbanColumnConfig,
+} from "./kanbanBoardTypes";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgLucideFlag = mcpAsset("299f17ae-de59-4012-9bb8-ae6509081405");
@@ -34,21 +44,6 @@ const imgVector12 = mcpAsset("64e38728-fa1b-4a8c-97d3-cbb7f586a27c");
 const imgLucideSquircleDashed = mcpAsset("e2efeca9-31cd-4cf9-ac56-b2799ee8a450");
 const imgLucideCircleCheckBig = mcpAsset("244bb570-3aed-481d-8cf9-f067c69c50b0");
 
-type ColumnId = "todo" | "in-progress" | "completed";
-
-function statusForColumn(col: ColumnId): TaskStatus {
-  if (col === "todo") return "todo";
-  if (col === "in-progress") return "in-progress";
-  return "done";
-}
-
-function columnForTaskStatus(status: TaskStatus): ColumnId {
-  if (status === "todo") return "todo";
-  if (status === "in-progress") return "in-progress";
-  return "completed";
-}
-
-
 export type GetStartedKanbanLiveProps = {
   projectId: number;
   milestoneId: string | null;
@@ -56,6 +51,8 @@ export type GetStartedKanbanLiveProps = {
   members?: Member[];
   /** Board columns vs list table — same task data. */
   view?: "board" | "list";
+  /** Ref to the board's horizontal scroll container — lets the top-bar slider drive scrollLeft. */
+  boardScrollRef?: RefObject<HTMLDivElement | null>;
 };
 
 export function GetStartedKanbanLive({
@@ -63,6 +60,7 @@ export function GetStartedKanbanLive({
   milestoneId,
   members = [],
   view = "board",
+  boardScrollRef,
 }: GetStartedKanbanLiveProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -91,37 +89,78 @@ export function GetStartedKanbanLive({
     return list.filter((t) => t.milestoneId === milestoneId);
   }, [mergedTasks, milestoneId]);
 
-  const byColumn = useMemo(() => {
-    return {
-      todo: filtered.filter((t) => t.status === "todo"),
-      "in-progress": filtered.filter((t) => t.status === "in-progress"),
-      completed: filtered.filter((t) => t.status === "done"),
-    };
-  }, [filtered]);
+  const [columns, setColumns] = useState<KanbanColumnConfig[]>(() => [...DEFAULT_KANBAN_COLUMNS]);
+  const [taskColumnPreference, setTaskColumnPreference] = useState<Record<string, string>>({});
+
+  const columnTasks = useMemo(() => {
+    const m: Record<string, Task[]> = {};
+    for (const c of columns) {
+      m[c.id] = tasksForKanbanColumn(filtered, c, columns, taskColumnPreference);
+    }
+    return m;
+  }, [filtered, columns, taskColumnPreference]);
 
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [taskPendingDelete, setTaskPendingDelete] = useState<Task | null>(null);
+  const [addColumnOpen, setAddColumnOpen] = useState(false);
+  const [newColumnTitle, setNewColumnTitle] = useState("");
+  const [newColumnStatus, setNewColumnStatus] = useState<TaskStatus>("todo");
 
-  const handleMove = (taskId: string, newStatus: TaskStatus) => {
-    if (pendingMoveRef.current.has(taskId)) return;
+  const handleMoveToColumn = (taskId: string, targetColumnId: string) => {
+    const targetCol = columns.find((c) => c.id === targetColumnId);
     const task = filtered.find((t) => t.id === taskId);
-    if (!task || task.status === newStatus) return;
+    if (!task || !targetCol) return;
+
+    const sourceColId = resolveTaskColumnId(task, columns, taskColumnPreference);
+    if (sourceColId === targetColumnId) return;
+
+    setTaskColumnPreference((prev) => ({ ...prev, [taskId]: targetColumnId }));
+
+    if (task.status === targetCol.taskStatus) return;
+
+    if (pendingMoveRef.current.has(taskId)) return;
     pendingMoveRef.current.add(taskId);
     updateStatusMutation.mutate(
-      { taskId, status: newStatus },
+      { taskId, status: targetCol.taskStatus },
       {
         onSettled: () => {
           pendingMoveRef.current.delete(taskId);
         },
-      }
+      },
     );
   };
 
+  const handleMoveToStatus = (taskId: string, status: TaskStatus) => {
+    const colId = firstColumnIdForStatus(columns, status);
+    handleMoveToColumn(taskId, colId);
+  };
+
+  const confirmAddColumn = () => {
+    const title = newColumnTitle.trim();
+    if (!title) {
+      toast.error("Enter a column name");
+      return;
+    }
+    const col: KanbanColumnConfig = {
+      id: newKanbanColumnId(),
+      title,
+      taskStatus: newColumnStatus,
+      kind: kindForTaskStatus(newColumnStatus),
+    };
+    setColumns((prev) => [...prev, col]);
+    setNewColumnTitle("");
+    setNewColumnStatus("todo");
+    setAddColumnOpen(false);
+    toast.success(`Added column “${title}”`);
+  };
+
   const { draggingId, dragOverCol, cardPointerDown } = useKanbanPointerDrag({
-    onDrop: (taskId, col) => handleMove(taskId, statusForColumn(col)),
+    onDrop: (taskId, colId) => {
+      handleMoveToColumn(taskId, colId);
+    },
     getTaskColumn: (taskId) => {
       const task = filtered.find((t) => t.id === taskId);
-      return task ? columnForTaskStatus(task.status) : null;
+      return task ? resolveTaskColumnId(task, columns, taskColumnPreference) : null;
     },
   });
 
@@ -175,7 +214,7 @@ export function GetStartedKanbanLive({
         }}
         onCopyLink={() => void copyTaskLink()}
         onDelete={() => setTaskPendingDelete(task)}
-        onMoveTo={(status) => handleMove(task.id, status)}
+        onMoveTo={(status) => handleMoveToStatus(task.id, status)}
       >
         <div
           className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${isDragging ? "opacity-0" : "cursor-open-hand"}`}
@@ -328,6 +367,8 @@ export function GetStartedKanbanLive({
       <>
         <SprintKanbanListView
           tasks={filtered}
+          columns={columns}
+          columnTasks={columnTasks}
           members={members}
           projectId={projectId}
           milestoneId={milestoneId}
@@ -354,11 +395,27 @@ export function GetStartedKanbanLive({
     </div>
   );
 
-  const colWrap = (col: ColumnId, children: ReactNode, header: ReactNode) => (
+  const headerDotsMenu = (
+    <div className="content-stretch flex flex-col items-start overflow-clip px-[4px] py-[11px] relative rounded-[4px] shrink-0 w-[24px]">
+      <div className="h-[2px] relative shrink-0 w-[16px]">
+        <div className="absolute inset-[-50%_-6.25%]">
+          <img alt="" className="block max-w-none size-full" src={imgVector10} />
+        </div>
+      </div>
+    </div>
+  );
+
+  const colWrap = (columnId: string, children: ReactNode, header: ReactNode) => (
     <div
-      data-kanban-col={col}
-      className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === col ? "border-2 border-dashed border-[#cdd2d5]" : ""}`}
+      key={columnId}
+      data-kanban-col={columnId}
+      className={`content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === columnId ? "border-2 border-dashed border-[#cdd2d5]" : ""}`}
       style={{
+        flexGrow: 1,
+        flexShrink: 0,
+        flexBasis: "350px",
+        width: "350px",
+        minWidth: "350px",
         backgroundImage:
           "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
       }}
@@ -368,7 +425,7 @@ export function GetStartedKanbanLive({
         {columnHeaderDivider}
       </div>
       <div className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pt-4">
-        {dragOverCol === col && draggingId !== null && (
+        {dragOverCol === columnId && draggingId !== null && (
           <div className="h-[184px] w-full shrink-0 rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
         )}
         {children}
@@ -376,119 +433,117 @@ export function GetStartedKanbanLive({
     </div>
   );
 
-  const todoHeader = (
-    <div className="content-stretch flex items-center justify-between relative isolate w-full shrink-0 z-[2]">
-      <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
-        <div className="relative shrink-0 size-[16px]">
-          <img alt="" className="absolute block max-w-none size-full" src={imgLucideListTodo} />
-        </div>
-        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap">
-          To-do
-        </p>
-      </div>
-      <div className="content-stretch flex gap-[12px] items-center relative shrink-0 ml-auto">
-        <button type="button" className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0" aria-hidden>
-          <img alt="" className="block size-full max-h-full max-w-full object-contain" src={imgLucideSearch1} />
-        </button>
-        <div className="content-stretch flex flex-col items-start overflow-clip px-[4px] py-[11px] relative rounded-[4px] shrink-0 w-[24px]">
-          <div className="h-[2px] relative shrink-0 w-[16px]">
-            <div className="absolute inset-[-50%_-6.25%]">
-              <img alt="" className="block max-w-none size-full" src={imgVector10} />
-            </div>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setCreateTaskOpen(true);
-          }}
-          className="content-stretch flex shrink-0 cursor-pointer items-center overflow-clip border-0 bg-transparent p-[5px] relative rounded-[6px]"
-          aria-label="Create task"
-        >
-          <div className="relative shrink-0 size-[14px]">
-            <div className="absolute inset-[-5.36%]">
-              <img alt="" className="block max-w-none size-full" src={imgVector11} />
-            </div>
-          </div>
-        </button>
-      </div>
-    </div>
-  );
+  const boardColumnIconSrc = (kind: KanbanColumnConfig["kind"]) => {
+    if (kind === "in-progress") return imgLucideSquircleDashed;
+    if (kind === "done") return imgLucideCircleCheckBig;
+    return imgLucideListTodo;
+  };
 
-  const inProgressHeader = (
-    <div className="content-stretch flex items-center justify-between relative shrink-0 w-full">
-      <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
-        <div className="relative shrink-0 size-[16px]">
-          <img alt="" className="absolute block max-w-none size-full" src={imgLucideSquircleDashed} />
-        </div>
-        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap">
-          In-Progress
-        </p>
-      </div>
-      <div className="content-stretch flex items-center relative shrink-0">
-        <div className="content-stretch flex flex-col items-start overflow-clip px-[4px] py-[11px] relative rounded-[4px] shrink-0 w-[24px]">
-          <div className="h-[2px] relative shrink-0 w-[16px]">
-            <div className="absolute inset-[-50%_-6.25%]">
-              <img alt="" className="block max-w-none size-full" src={imgVector10} />
-            </div>
+  const renderBoardColumnHeader = (col: KanbanColumnConfig) => {
+    const showSearchAndCreate = col.taskStatus === "todo";
+    return (
+      <div
+        className={`content-stretch flex items-center justify-between relative ${showSearchAndCreate ? "isolate z-[2]" : ""} w-full shrink-0`}
+      >
+        <div className="content-stretch flex min-w-0 gap-[8px] items-center relative shrink-0">
+          <div className="relative shrink-0 size-[16px]">
+            <img alt="" className="absolute block max-w-none size-full" src={boardColumnIconSrc(col.kind)} />
           </div>
+          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 shrink truncate text-[#606d76] text-[14px]">
+            {col.title}
+          </p>
+        </div>
+        <div className="content-stretch flex shrink-0 items-center gap-[12px]">
+          {showSearchAndCreate ? (
+            <>
+              <button
+                type="button"
+                className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
+                aria-hidden
+              >
+                <img alt="" className="block size-full max-h-full max-w-full object-contain" src={imgLucideSearch1} />
+              </button>
+              {headerDotsMenu}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCreateTaskOpen(true);
+                }}
+                className="content-stretch flex shrink-0 cursor-pointer items-center overflow-clip border-0 bg-transparent p-[5px] relative rounded-[6px]"
+                aria-label="Create task"
+              >
+                <div className="relative shrink-0 size-[14px]">
+                  <div className="absolute inset-[-5.36%]">
+                    <img alt="" className="block max-w-none size-full" src={imgVector11} />
+                  </div>
+                </div>
+              </button>
+            </>
+          ) : (
+            headerDotsMenu
+          )}
         </div>
       </div>
-    </div>
-  );
-
-  const doneHeader = (
-    <div className="content-stretch flex items-center justify-between relative shrink-0 w-full">
-      <div className="content-stretch flex gap-[8px] items-center relative shrink-0">
-        <div className="relative shrink-0 size-[16px]">
-          <img alt="" className="absolute block max-w-none size-full" src={imgLucideCircleCheckBig} />
-        </div>
-        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap">
-          Completed
-        </p>
-      </div>
-      <div className="content-stretch flex items-center relative shrink-0">
-        <div className="content-stretch flex flex-col items-start overflow-clip px-[4px] py-[11px] relative rounded-[4px] shrink-0 w-[24px]">
-          <div className="h-[2px] relative shrink-0 w-[16px]">
-            <div className="absolute inset-[-50%_-6.25%]">
-              <img alt="" className="block max-w-none size-full" src={imgVector10} />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
-      <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]">
-        {colWrap(
-          "todo",
-          <>
-            {byColumn.todo.map(renderLiveCard)}
-            {byColumn.todo.length === 0 && (
-              <p className="text-[13px] text-[#727d83]">No tasks in To-do{milestoneId ? " for this milestone" : ""}.</p>
-            )}
-          </>,
-          todoHeader
-        )}
-        {colWrap(
-          "in-progress",
-          <>
-            {byColumn["in-progress"].map(renderLiveCard)}
-            {byColumn["in-progress"].length === 0 && <p className="text-[13px] text-[#727d83]">No tasks in progress.</p>}
-          </>,
-          inProgressHeader
-        )}
-        {colWrap(
-          "completed",
-          <>
-            {byColumn.completed.map(renderLiveCard)}
-            {byColumn.completed.length === 0 && <p className="text-[13px] text-[#727d83]">No completed tasks.</p>}
-          </>,
-          doneHeader
-        )}
+      <style>{`
+        [data-kanban-board-row] {
+          flex-wrap: nowrap !important;
+          overflow-x: auto !important;
+          min-width: 0 !important;
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+        }
+        [data-kanban-board-row]::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        [data-kanban-board-row] > [data-kanban-col] {
+          flex-grow: 1 !important;
+          flex-shrink: 0 !important;
+          flex-basis: 350px !important;
+          width: 350px !important;
+          min-width: 350px !important;
+        }
+      `}</style>
+      <div
+        ref={boardScrollRef}
+        data-kanban-board-row
+        className="content-stretch relative z-[1] flex w-full min-w-0 flex-1 min-h-0 flex-nowrap items-stretch gap-[16px] overflow-x-auto"
+      >
+        {columns.map((col) => {
+          const list = columnTasks[col.id] ?? [];
+          const emptyTail = col.taskStatus === "todo" && milestoneId ? " for this milestone" : "";
+          return colWrap(
+            col.id,
+            <>
+              {list.map(renderLiveCard)}
+              {list.length === 0 && (
+                <p className="text-[13px] text-[#727d83]">
+                  No tasks in {col.title}
+                  {emptyTail}.
+                </p>
+              )}
+            </>,
+            renderBoardColumnHeader(col),
+          );
+        })}
+        <div className="flex shrink-0 flex-col items-stretch justify-start pt-[16px]">
+          <button
+            type="button"
+            onClick={() => setAddColumnOpen(true)}
+            className="border-border text-muted-foreground hover:bg-muted/40 flex h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-2 rounded-[16px] border border-dashed px-3 font-['Satoshi:Medium',sans-serif] text-[13px] transition-colors"
+            aria-label="Add column"
+          >
+            <Plus className="size-4 shrink-0" aria-hidden />
+            <span className="hidden sm:inline">Add column</span>
+          </button>
+        </div>
       </div>
       <CreateTaskLiveModal
         open={createTaskOpen}
@@ -496,6 +551,90 @@ export function GetStartedKanbanLive({
         projectId={projectId}
         milestoneId={milestoneId}
       />
+      <Dialog
+        open={addColumnOpen}
+        onOpenChange={(open) => {
+          setAddColumnOpen(open);
+          if (!open) {
+            setNewColumnTitle("");
+            setNewColumnStatus("todo");
+          }
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="bg-black/25" />
+          <DialogPrimitive.Content
+            className={cn(
+              "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            )}
+          >
+            <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+              <DialogClose asChild>
+                <button
+                  type="button"
+                  className="inline-flex size-5 items-center justify-center text-[#606d76] transition-colors hover:text-[#0b191f]"
+                  aria-label="Close"
+                >
+                  <ArrowLeft className="size-5" />
+                </button>
+              </DialogClose>
+              <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                Add column
+              </DialogPrimitive.Title>
+              <div className="size-5" />
+            </div>
+            <div className="flex w-full flex-col gap-5 px-9 py-6">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="kanban-new-col-title" className="font-['Satoshi',sans-serif] text-[13px] font-medium text-[#606d76]">
+                  Column name
+                </label>
+                <input
+                  id="kanban-new-col-title"
+                  value={newColumnTitle}
+                  onChange={(e) => setNewColumnTitle(e.target.value)}
+                  placeholder="e.g. Backlog, Review, Blocked"
+                  className="font-['Satoshi',sans-serif] h-11 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-3 text-[14px] text-[#0b191f] outline-none ring-0 placeholder:text-[#9fa5a8] focus:border-[#0b191f]/20 focus:ring-2 focus:ring-[#0b191f]/10"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="kanban-new-col-status" className="font-['Satoshi',sans-serif] text-[13px] font-medium text-[#606d76]">
+                  Task status for this column
+                </label>
+                <select
+                  id="kanban-new-col-status"
+                  value={newColumnStatus}
+                  onChange={(e) => setNewColumnStatus(e.target.value as TaskStatus)}
+                  className="font-['Satoshi',sans-serif] h-11 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-3 text-[14px] text-[#0b191f] outline-none focus:border-[#0b191f]/20 focus:ring-2 focus:ring-[#0b191f]/10"
+                >
+                  <option value="todo">To-do</option>
+                  <option value="in-progress">In progress</option>
+                  <option value="done">Done</option>
+                </select>
+                <p className="font-['Satoshi',sans-serif] text-[12px] leading-relaxed text-[#727d83]">
+                  Tasks dropped here update to this status. You can add several columns that share a status to split work visually.
+                </p>
+              </div>
+              <div className="flex w-full items-center justify-end gap-2">
+                <DialogClose asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] transition-colors duration-150 hover:bg-[#f5f7f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/10"
+                  >
+                    Cancel
+                  </button>
+                </DialogClose>
+                <button
+                  type="button"
+                  onClick={confirmAddColumn}
+                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-[#0b191f] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#1a2d36] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/20"
+                >
+                  Add column
+                </button>
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPortal>
+      </Dialog>
       <Dialog
         open={taskPendingDelete !== null}
         onOpenChange={(open) => {
