@@ -39,27 +39,58 @@ export function KanbanBoardScrollSlider({ scrollRef, className }: Props) {
   }, [scrollRef]);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
+    /**
+     * The parent renders this slider before `GetStartedKanbanLive` mounts its scroll div
+     * (tasks + board config load first), so `scrollRef.current` is initially null.
+     * React does not re-run this effect when the ref's `.current` changes, so we poll
+     * via rAF until the element appears, then attach listeners. We also poll for element
+     * identity changes (project swap, board/list toggle) so listeners always track the
+     * currently mounted scroll container.
+     */
+    let rafId = 0;
+    let attachedEl: HTMLDivElement | null = null;
+    let onScroll: (() => void) | null = null;
+    let ro: ResizeObserver | null = null;
+    let mo: MutationObserver | null = null;
+    const onWindowResize = () => readScroll();
 
-    readScroll();
+    const detach = () => {
+      if (attachedEl && onScroll) attachedEl.removeEventListener("scroll", onScroll);
+      ro?.disconnect();
+      mo?.disconnect();
+      attachedEl = null;
+      onScroll = null;
+      ro = null;
+      mo = null;
+    };
 
-    const onScroll = () => readScroll();
-    el.addEventListener("scroll", onScroll, { passive: true });
+    const attach = (el: HTMLDivElement) => {
+      attachedEl = el;
+      onScroll = () => readScroll();
+      el.addEventListener("scroll", onScroll, { passive: true });
+      ro = new ResizeObserver(readScroll);
+      ro.observe(el);
+      mo = new MutationObserver(readScroll);
+      mo.observe(el, { childList: true, subtree: true });
+      readScroll();
+    };
 
-    const ro = new ResizeObserver(readScroll);
-    ro.observe(el);
+    const tick = () => {
+      const el = scrollRef.current;
+      if (el !== attachedEl) {
+        detach();
+        if (el) attach(el);
+      }
+      rafId = window.requestAnimationFrame(tick);
+    };
 
-    const mo = new MutationObserver(readScroll);
-    mo.observe(el, { childList: true, subtree: true });
-
-    window.addEventListener("resize", readScroll);
+    window.addEventListener("resize", onWindowResize);
+    rafId = window.requestAnimationFrame(tick);
 
     return () => {
-      el.removeEventListener("scroll", onScroll);
-      ro.disconnect();
-      mo.disconnect();
-      window.removeEventListener("resize", readScroll);
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", onWindowResize);
+      detach();
     };
   }, [readScroll, scrollRef]);
 

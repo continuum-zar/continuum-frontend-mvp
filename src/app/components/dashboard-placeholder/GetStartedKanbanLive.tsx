@@ -12,7 +12,14 @@ import { SprintKanbanListView } from "./SprintKanbanListView";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "@/app/components/ui/dialog";
 import { cn } from "@/app/components/ui/utils";
-import { useAssignTask, useDeleteTask, useProjectTasksInfinite, useUpdateTaskStatus } from "@/api/hooks";
+import {
+  useAssignTask,
+  useDeleteTask,
+  useProjectKanbanBoard,
+  useProjectTasksInfinite,
+  useUpdateProjectKanbanBoard,
+  useUpdateTaskStatus,
+} from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { useKanbanPointerDrag } from "@/lib/useKanbanPointerDrag";
 import { workspaceJoin } from "@/lib/workspacePaths";
@@ -24,6 +31,8 @@ import {
   DEFAULT_KANBAN_COLUMNS,
   firstColumnIdForStatus,
   kindForTaskStatus,
+  mapKanbanBoardFromApi,
+  mapKanbanBoardToApi,
   newKanbanColumnId,
   resolveTaskColumnId,
   tasksForKanbanColumn,
@@ -65,10 +74,14 @@ export function GetStartedKanbanLive({
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tasksQuery = useProjectTasksInfinite(projectId);
+  const kanbanBoardQuery = useProjectKanbanBoard(projectId);
+  const updateKanbanBoardMutation = useUpdateProjectKanbanBoard(projectId);
   const updateStatusMutation = useUpdateTaskStatus(projectId);
   const deleteTaskMutation = useDeleteTask(projectId);
   const assignTaskMutation = useAssignTask();
   const pendingMoveRef = useRef(new Set<string>());
+  const kanbanInitializedRef = useRef(false);
+  const kanbanLastSavedSerializedRef = useRef<string | null>(null);
   const memberByUserId = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
 
   const mergedTasks = useMemo(
@@ -91,6 +104,44 @@ export function GetStartedKanbanLive({
 
   const [columns, setColumns] = useState<KanbanColumnConfig[]>(() => [...DEFAULT_KANBAN_COLUMNS]);
   const [taskColumnPreference, setTaskColumnPreference] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    kanbanInitializedRef.current = false;
+    kanbanLastSavedSerializedRef.current = null;
+    setColumns([...DEFAULT_KANBAN_COLUMNS]);
+    setTaskColumnPreference({});
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!kanbanBoardQuery.isSuccess || kanbanBoardQuery.data == null) return;
+    if (kanbanInitializedRef.current) return;
+    setColumns(mapKanbanBoardFromApi(kanbanBoardQuery.data));
+    kanbanLastSavedSerializedRef.current = JSON.stringify(kanbanBoardQuery.data);
+    kanbanInitializedRef.current = true;
+  }, [kanbanBoardQuery.isSuccess, kanbanBoardQuery.data]);
+
+  useEffect(() => {
+    if (!kanbanBoardQuery.isError || kanbanInitializedRef.current) return;
+    const fallback = [...DEFAULT_KANBAN_COLUMNS];
+    setColumns(fallback);
+    kanbanLastSavedSerializedRef.current = JSON.stringify(mapKanbanBoardToApi(fallback));
+    kanbanInitializedRef.current = true;
+  }, [kanbanBoardQuery.isError]);
+
+  useEffect(() => {
+    if (!kanbanInitializedRef.current) return;
+    const payload = mapKanbanBoardToApi(columns);
+    const serialized = JSON.stringify(payload);
+    if (serialized === kanbanLastSavedSerializedRef.current) return;
+    const timer = window.setTimeout(() => {
+      updateKanbanBoardMutation.mutate(payload, {
+        onSuccess: () => {
+          kanbanLastSavedSerializedRef.current = serialized;
+        },
+      });
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [columns, updateKanbanBoardMutation]);
 
   const columnTasks = useMemo(() => {
     const m: Record<string, Task[]> = {};
@@ -346,7 +397,7 @@ export function GetStartedKanbanLive({
     );
   };
 
-  if (tasksQuery.isLoading) {
+  if (tasksQuery.isLoading || kanbanBoardQuery.isLoading) {
     return (
       <div className="content-stretch relative z-[1] flex w-full min-h-[200px] flex-1 items-center justify-center gap-[16px] font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
         Loading tasks…
@@ -504,7 +555,7 @@ export function GetStartedKanbanLive({
           height: 0 !important;
         }
         [data-kanban-board-row] > [data-kanban-col] {
-          flex-grow: 1 !important;
+          flex-grow: 0 !important;
           flex-shrink: 0 !important;
           flex-basis: 350px !important;
           width: 350px !important;
