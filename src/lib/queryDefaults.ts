@@ -38,5 +38,14 @@ export const STALE_TIME_DATA_MS = 60_000;
 /** Short TTL for widgets that should feel responsive (welcome demo, member drill-down). */
 export const STALE_SHORT_MS = 45_000;
 
-/** Wiki repo scan: poll while indexing only; keep interval modest to reduce API load. */
+/**
+ * Wiki repo scan: TanStack Query `refetchInterval` while `is_scanning` is true (see `useWikiScanStatus`).
+ * When server push is available, replace this with WebSocket or SSE-driven invalidation and drop the interval.
+ */
 export const WIKI_SCAN_POLL_MS = 5_000;
+
+/**
+ * Candidates for future WebSocket / SSE (push invalidation instead of polling):
+ * - Wiki repository scan status (`useWikiScanStatus`) — progress while indexing
+ * - Welcome “Recent activity” git feed — if live commit stream becomes a product requirement
+ */

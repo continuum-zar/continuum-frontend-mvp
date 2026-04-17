@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { formatDistanceToNow } from "date-fns";
 import { parseApiUtcDateTime } from "@/lib/parseApiUtcDateTime";
 import { playRepoIndexingCompleteSound } from "@/lib/playRepoIndexingCompleteSound";
-import { Download, ExternalLink, FileText, GitCommit, Link2, Loader2, X } from "lucide-react";
+import { Download, ExternalLink, FileText, GitCommit, Link2, Loader2, RefreshCw, X } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
 import { STALE_SHORT_MS, STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
@@ -228,6 +228,32 @@ function formatActivityTimelineDate(iso: string | null | undefined): string {
 const RECENT_ACTIVITY_PAGE_SIZE = 7;
 const RECENT_ACTIVITY_FETCH_LIMIT = 100;
 
+function RecentActivitySkeletonRows() {
+  return (
+    <div
+      className="flex w-full max-w-[474px] flex-col gap-4"
+      aria-busy="true"
+      aria-label="Loading recent activity"
+    >
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div
+          key={i}
+          className="relative z-[1] flex max-w-[474px] items-start overflow-hidden rounded-[8px] pr-2"
+        >
+          <div className="flex w-[50px] shrink-0 justify-center">
+            <div className="size-[50px] shrink-0 rounded-[99px] bg-[#edf0f3] motion-reduce:animate-none animate-pulse" />
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-2 py-1.5 pl-4 pr-2">
+            <div className="h-3 w-20 rounded bg-[#edf0f3] motion-reduce:animate-none animate-pulse" />
+            <div className="h-4 w-[min(100%,280px)] rounded bg-[#edf0f3] motion-reduce:animate-none animate-pulse" />
+            <div className="h-3 w-32 rounded bg-[#edf0f3] motion-reduce:animate-none animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function LiveRecentActivityList({ projectId, members }: { projectId: number; members: Member[] }) {
   const [activityExpanded, setActivityExpanded] = useState(false);
 
@@ -243,12 +269,11 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
     return m;
   }, [members]);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["projects", projectId, "git-contributions", "recent"],
     queryFn: () => fetchProjectGitContributions(projectId, { limit: RECENT_ACTIVITY_FETCH_LIMIT }),
     enabled: projectId != null,
     staleTime: STALE_SHORT_MS,
-    refetchInterval: STALE_TIME_DATA_MS,
   });
 
   const rows = useMemo(() => data?.data ?? [], [data?.data]);
@@ -258,28 +283,46 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
   }, [rows, activityExpanded]);
   const hasMoreThanPage = rows.length > RECENT_ACTIVITY_PAGE_SIZE;
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[185px] w-full items-center justify-center rounded-[12px] bg-white font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
-        <Loader2 className="size-5 animate-spin" strokeWidth={2} aria-hidden />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex min-h-[120px] w-full items-center justify-center rounded-[12px] border border-solid border-[#ebedee] bg-white px-4 py-6 text-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
-        Couldn&apos;t load recent activity.
-      </div>
-    );
-  }
-
-  if (rows.length === 0) {
-    return <EmptyPlaceholderCard icon={imgLucideActivity} title="No recent activity" />;
-  }
-
   return (
-    <div className="flex w-full max-w-[474px] flex-col">
+    <>
+      <div className="flex w-full items-center justify-between gap-3">
+        <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Recent activity</p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          disabled={isFetching}
+          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] disabled:cursor-not-allowed disabled:opacity-60"
+          aria-label={isFetching ? "Refreshing recent activity" : "Refresh recent activity"}
+        >
+          <RefreshCw
+            className={`size-4 shrink-0 text-[#606d76] ${isFetching ? "animate-spin" : ""}`}
+            strokeWidth={2}
+            aria-hidden
+          />
+          Refresh
+        </button>
+      </div>
+
+      {isLoading ? (
+        <RecentActivitySkeletonRows />
+      ) : isError ? (
+        <div className="flex min-h-[120px] w-full flex-col items-center justify-center gap-3 rounded-[12px] border border-solid border-[#ebedee] bg-white px-4 py-6 text-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+          <p>Couldn&apos;t load recent activity.</p>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+          >
+            <RefreshCw className="size-4 shrink-0 text-[#606d76]" strokeWidth={2} aria-hidden />
+            Try again
+          </button>
+        </div>
+      ) : rows.length === 0 ? (
+        <EmptyPlaceholderCard icon={imgLucideActivity} title="No recent activity" />
+      ) : (
+    <div
+      className={`flex w-full max-w-[474px] flex-col ${isFetching && !isLoading ? "opacity-80 transition-opacity motion-reduce:transition-none" : ""}`}
+    >
       <div className="relative flex flex-col gap-4">
         <div
           className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
@@ -345,6 +388,8 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
         </button>
       ) : null}
     </div>
+      )}
+    </>
   );
 }
 
@@ -640,7 +685,6 @@ export function WelcomeEmptyProjectBody({
       </div>
 
       <div className="flex w-full max-w-[815px] flex-col gap-4">
-        <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Recent activity</p>
         <LiveRecentActivityList projectId={projectId} members={members} />
       </div>
 
@@ -665,9 +709,29 @@ export function WelcomeEmptyProjectBody({
       </div>
 
       <div className="flex w-full max-w-[815px] flex-col gap-4">
-        <div className="flex w-full items-center justify-between">
+        <div className="flex w-full items-center justify-between gap-3">
           <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Repository</p>
-          <AddButton label="Connect" onClick={() => setLinkRepoOpen(true)} />
+          <div className="flex shrink-0 items-center gap-2">
+            {wikiScanStatusQuery.data?.some((s) => s.is_scanning) ? (
+              <button
+                type="button"
+                onClick={() => void wikiScanStatusQuery.refetch()}
+                disabled={wikiScanStatusQuery.isFetching}
+                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label={
+                  wikiScanStatusQuery.isFetching ? "Refreshing repository status" : "Refresh repository status"
+                }
+              >
+                <RefreshCw
+                  className={`size-3.5 shrink-0 text-[#606d76] ${wikiScanStatusQuery.isFetching ? "animate-spin" : ""}`}
+                  strokeWidth={2}
+                  aria-hidden
+                />
+                Refresh status
+              </button>
+            ) : null}
+            <AddButton label="Connect" onClick={() => setLinkRepoOpen(true)} />
+          </div>
         </div>
         {repositoriesQuery.isLoading ? (
           <div className="flex min-h-[185px] w-full items-center justify-center rounded-[12px] bg-white font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
