@@ -78,7 +78,7 @@ export function ReleaseNotesModal({
         <DialogOverlay className="z-[100] bg-black/50" />
         <DialogPrimitive.Content
           className={cn(
-            "fixed top-1/2 left-1/2 z-[101] max-h-[min(90vh,calc(100dvh-2rem))] w-[min(763px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[16px] border-0 bg-transparent p-0 outline-none",
+            "fixed top-1/2 left-1/2 z-[101] max-h-[min(90vh,calc(100dvh-2rem))] w-[min(860px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[16px] border-0 bg-transparent p-0 outline-none ring-0 ring-offset-0 focus:outline-none focus-visible:outline-none",
             modalShadow,
           )}
           onPointerDownOutside={(e) => e.preventDefault()}
@@ -91,13 +91,13 @@ export function ReleaseNotesModal({
             <button
               type="button"
               onClick={dismiss}
-              className="absolute top-4 right-4 z-[200] flex size-10 cursor-pointer items-center justify-center rounded-full border-0 bg-white p-0 shadow-[0px_2px_8px_rgba(11,25,31,0.12)] outline-none ring-1 ring-[#ededed] hover:opacity-90"
+              className="absolute top-4 right-4 z-[200] flex size-10 cursor-pointer items-center justify-center rounded-full border-0 bg-white p-0 shadow-[0px_2px_8px_rgba(11,25,31,0.12)] outline-none ring-0 hover:opacity-90 focus-visible:ring-0"
               aria-label="Close"
             >
               <X className="size-[18px] shrink-0 text-[#0B191F]" strokeWidth={2} aria-hidden />
             </button>
 
-            <div className="flex w-full shrink-0 flex-col gap-8 border-[#ededed] px-8 py-12 sm:px-10 sm:py-14 md:w-[408px] md:border-r md:border-solid">
+            <div className="flex w-full shrink-0 flex-col gap-8 border-[#ededed] px-8 py-12 sm:px-10 sm:py-14 md:w-[452px] md:shrink-0 md:border-r md:border-solid">
               <div className="flex min-w-0 flex-col gap-5">
                 <div className="flex min-w-0 flex-col gap-5">
                   <div
@@ -161,8 +161,20 @@ export function ReleaseNotesModal({
               <CollageStack offsetClass="left-[calc(50%-169.09px)] top-[calc(50%+152.9px)]" />
 
               {rightPanelBadge ? (
-                <div className="absolute top-[26px] left-4 z-10 flex items-center justify-center gap-[9px] rounded-[12px] border-[0.535px] border-solid border-[#ededed] bg-[rgba(255,255,255,0.98)] px-[15px] py-[4px]">
-                  <p className="whitespace-nowrap font-['Satoshi',sans-serif] text-[9px] font-medium text-[#0b191f]">
+                <div
+                  className={cn(
+                    "absolute top-[22px] left-4 z-10 flex items-center justify-center gap-[9px] rounded-[14px] border border-[#ededed] bg-[rgba(255,255,255,0.98)] shadow-sm",
+                    isReleaseNotes ? "px-5 py-2.5" : "border-[0.535px] px-[15px] py-[4px]",
+                  )}
+                >
+                  <p
+                    className={cn(
+                      "whitespace-nowrap font-['Satoshi',sans-serif] text-[#0b191f]",
+                      isReleaseNotes
+                        ? "text-[13px] font-bold leading-none tracking-[-0.02em]"
+                        : "text-[9px] font-medium",
+                    )}
+                  >
                     {rightPanelBadge}
                   </p>
                 </div>

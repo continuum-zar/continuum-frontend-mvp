@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Flag, Timer } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
@@ -17,12 +16,6 @@ import {
 import { workspaceJoin } from "@/lib/workspacePaths";
 
 import { useProject, useProjectMembers, useProjectMilestones } from "@/api/hooks";
-import {
-  fetchLatestReleaseNote,
-  markReleaseNoteSeen,
-  releaseNoteKeys,
-  type LatestReleaseNote,
-} from "@/api/releaseNotes";
 import { useAuthStore } from "@/store/authStore";
 import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
@@ -387,8 +380,6 @@ export function DashboardPlaceholder() {
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
   const [discordIntegrationOpen, setDiscordIntegrationOpen] = useState(false);
   const [welcomeToContinuumOpen, setWelcomeToContinuumOpen] = useState(false);
-  const [apiReleaseNote, setApiReleaseNote] = useState<LatestReleaseNote | null>(null);
-  const queryClient = useQueryClient();
   /** Live sprint area only: board vs list (same tasks). */
   const [sprintView, setSprintView] = useState<"board" | "list">("board");
   /** Horizontal scroll container of the live Kanban board — driven by the top-bar slider. */
@@ -401,41 +392,6 @@ export function DashboardPlaceholder() {
   const liveProjectId = isLiveBoard && projectParam ? Number(projectParam) : null;
   const userId = useAuthStore((s) => s.user?.id);
   const queueTourAfterWelcome = useWorkspaceTourStore((s) => s.queueAfterWelcomeDismiss);
-
-  const { data: latestRelease } = useQuery({
-    queryKey: releaseNoteKeys.latest(),
-    queryFn: fetchLatestReleaseNote,
-    enabled: Boolean(userId),
-    staleTime: 60_000,
-  });
-
-  const welcomePending =
-    typeof window !== "undefined" &&
-    userId != null &&
-    sessionStorage.getItem(SESSION_POST_ONBOARDING_WELCOME_KEY) === "1" &&
-    localStorage.getItem(welcomeModalDismissedKeyForUser(userId)) !== "1";
-
-  useEffect(() => {
-    if (!latestRelease || latestRelease.seen) return;
-    if (welcomeToContinuumOpen || welcomePending) return;
-    setApiReleaseNote((prev) => (prev?.id === latestRelease.id ? prev : latestRelease));
-  }, [latestRelease, welcomeToContinuumOpen, welcomePending, userId]);
-
-  const handleApiReleaseOpenChange = (open: boolean) => {
-    if (open) return;
-    setApiReleaseNote((current) => {
-      if (current) {
-        const id = current.id;
-        queryClient.setQueryData(releaseNoteKeys.latest(), (prev: LatestReleaseNote | null | undefined) =>
-          prev && prev.id === id ? { ...prev, seen: true } : prev
-        );
-        void markReleaseNoteSeen(id).finally(() => {
-          void queryClient.invalidateQueries({ queryKey: releaseNoteKeys.latest() });
-        });
-      }
-      return null;
-    });
-  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1648,22 +1604,6 @@ export function DashboardPlaceholder() {
         open={welcomeToContinuumOpen}
         onOpenChange={handleWelcomeToContinuumOpenChange}
       />
-      {apiReleaseNote ? (
-        <ReleaseNotesModal
-          mode="release-notes"
-          open
-          onOpenChange={handleApiReleaseOpenChange}
-          ariaTitle={`What's new in Continuum v${apiReleaseNote.version}`}
-          ariaDescription={apiReleaseNote.title}
-          title={
-            <span className="font-['Satoshi',sans-serif] font-medium text-[#0b191f]">{apiReleaseNote.title}</span>
-          }
-          description={<span className="whitespace-pre-wrap">{apiReleaseNote.content}</span>}
-          checklistItems={apiReleaseNote.checklist_items}
-          primaryButtonLabel="Got it"
-          rightPanelBadge={`v${apiReleaseNote.version}`}
-        />
-      ) : null}
     </div>
   );
 }
