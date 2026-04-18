@@ -78,6 +78,8 @@ import {
 } from './tasks';
 import { fetchLoggedHours, createLoggedHour, sumLoggedHoursForTask } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
+import { submitIssueReport } from './feedback';
+import type { SubmitIssueReportBody } from './feedback';
 import type { KanbanBoardColumnApi } from '@/types/kanban';
 import type { Task, TaskAPIResponse, ScopeWeight, TaskPriority } from '@/types/task';
 import type { CreateTaskBody } from './tasks';
@@ -334,6 +336,13 @@ export function useCreateLoggedHour() {
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to log time. You may not have access to this project or task.'));
         },
+    });
+}
+
+/** Submit feedback / issue report (POST /issue-reports). Inline error UI is handled by the caller. */
+export function useSubmitIssueReport() {
+    return useMutation({
+        mutationFn: (body: SubmitIssueReportBody) => submitIssueReport(body),
     });
 }
 

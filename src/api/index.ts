@@ -137,6 +137,7 @@ export {
     useDeleteTask,
     useAddTaskLabel,
     useRemoveTaskLabel,
+    useSubmitIssueReport,
     projectKeys,
     getApiErrorMessage,
 } from './hooks';
@@ -255,6 +256,8 @@ export { checkEmailExists, postWaitlistSignup } from './auth';
 export type { EmailExistsResponse, WaitlistSignupResponse } from './auth';
 export { updateCurrentUserProfile } from './users';
 export type { UpdateCurrentUserBody, CurrentUserResponse } from './users';
+export { submitIssueReport } from './feedback';
+export type { SubmitIssueReportBody, IssueReportResponse } from './feedback';
 export type { Client, ClientAPIResponse, ClientCreate } from './clients';
 export type { Invoice, InvoiceAPIResponse, InvoiceItem, InvoiceWithItems } from '@/types/invoice';
 export { mapInvoice } from './mappers';

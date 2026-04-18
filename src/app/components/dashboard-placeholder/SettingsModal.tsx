@@ -11,6 +11,7 @@ import { useAuthStore } from "@/store/authStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
+import { FeedbackModal } from "./FeedbackModal";
 import {
   Select,
   SelectContent,
@@ -29,7 +30,7 @@ const CURRENCY_SYMBOL: Record<(typeof INVOICE_CURRENCIES)[number], string> = {
   GBP: "£",
 };
 
-const SUPPORT_EMAIL = "support@continuum.coza";
+const SUPPORT_EMAIL = "support@continuum.co.za";
 
 /** Opens Gmail compose in a new tab with To pre-filled. */
 const GMAIL_COMPOSE_HREF = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(SUPPORT_EMAIL)}`;
@@ -148,6 +149,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [notificationPrefs, setNotificationPrefs] = useState(defaultNotificationPrefs);
   const [invoiceCurrency, setInvoiceCurrency] = useState<(typeof INVOICE_CURRENCIES)[number]>("ZAR");
   const [invoiceHourlyRate, setInvoiceHourlyRate] = useState("200");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -167,7 +169,10 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   }, [open, user]);
 
   const handleOpenChange = (next: boolean) => {
-    if (!next) setSection("general");
+    if (!next) {
+      setSection("general");
+      setFeedbackOpen(false);
+    }
     onOpenChange(next);
   };
 
@@ -225,6 +230,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     section === "general" || section === "notification" || section === "invoice";
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogPortal>
         <DialogOverlay className="bg-black/25" />
@@ -501,25 +507,41 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   </div>
 
                   <div className="flex items-center justify-between gap-4">
-                    <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <p
+                      id="settings-support-report-heading"
+                      className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]"
+                    >
                       Report issue
                     </p>
-                    <button type="button" className={placeholderActionClass} aria-disabled="true">
+                    <button
+                      type="button"
+                      onClick={() => setFeedbackOpen(true)}
+                      className={cn(outlineActionClass, "gap-1")}
+                      aria-labelledby="settings-support-report-heading"
+                    >
                       Report
                       <ChevronRight className="size-6 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
                       Legal
                     </p>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:justify-end">
                       <button type="button" className={placeholderLinkClass} aria-disabled="true">
                         Privacy
                       </button>
                       <button type="button" className={placeholderLinkClass} aria-disabled="true">
                         Terms
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFeedbackOpen(true)}
+                        aria-label="Report an issue from the Legal section"
+                        className="cursor-pointer border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] underline decoration-solid underline-offset-2 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        Report issue
                       </button>
                     </div>
                   </div>
@@ -550,5 +572,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>
+    <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+    </>
   );
 }
