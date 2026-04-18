@@ -297,3 +297,17 @@ export {
     useDeleteIntegration,
     useTestIntegration,
 } from './hooks';
+export {
+    fetchLatestReleaseNote,
+    markReleaseNoteSeen,
+    fetchAdminReleaseNotes,
+    createAdminReleaseNote,
+    updateAdminReleaseNote,
+    releaseNoteKeys,
+} from './releaseNotes';
+export type {
+    LatestReleaseNote,
+    ReleaseNoteAdminItem,
+    ReleaseNoteCreateBody,
+    ReleaseNoteUpdateBody,
+} from './releaseNotes';

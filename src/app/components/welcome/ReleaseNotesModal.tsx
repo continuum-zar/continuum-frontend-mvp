@@ -43,6 +43,8 @@ export type ReleaseNotesModalProps = {
   primaryButtonLabel: string;
   /** Optional badge on the illustration panel */
   rightPanelBadge?: string | null;
+  /** Runs before the primary button closes the dialog (e.g. persist “seen”). */
+  onPrimaryClick?: () => void | Promise<void>;
 };
 
 /**
@@ -61,8 +63,13 @@ export function ReleaseNotesModal({
   footnote,
   primaryButtonLabel,
   rightPanelBadge,
+  onPrimaryClick,
 }: ReleaseNotesModalProps) {
   const dismiss = () => onOpenChange(false);
+  const handlePrimary = async () => {
+    await onPrimaryClick?.();
+    dismiss();
+  };
   const isReleaseNotes = mode === "release-notes";
 
   return (
@@ -138,7 +145,7 @@ export function ReleaseNotesModal({
               </div>
               <button
                 type="button"
-                onClick={dismiss}
+                onClick={() => void handlePrimary()}
                 className="box-border inline-flex h-8 w-[107px] shrink-0 items-center justify-center gap-[6px] rounded-[8px] border border-[rgba(255,255,255,0.1)] px-4 font-['Satoshi',sans-serif] text-[14px] font-bold leading-none text-white shadow-[0px_12px_3px_0px_rgba(45,154,249,0),0px_8px_3px_0px_rgba(45,154,249,0.03),0px_4px_3px_0px_rgba(45,154,249,0.11),0px_2px_2px_0px_rgba(45,154,249,0.19),0px_0px_1px_0px_rgba(45,154,249,0.21)]"
                 style={getStartedButtonBackground}
               >

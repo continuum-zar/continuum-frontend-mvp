@@ -56,6 +56,9 @@ const DashboardPlaceholderGetStartedTimeLogs = lazy(() =>
     default: m.DashboardPlaceholderGetStartedTimeLogs,
   }))
 );
+const AdminReleaseNotes = lazy(() =>
+  import("./pages/AdminReleaseNotes").then((m) => ({ default: m.AdminReleaseNotes }))
+);
 
 const OnboardingUsage = lazy(() => import("./pages/onboarding/Usage"));
 const OnboardingCollaboration = lazy(() => import("./pages/onboarding/Collaboration"));
@@ -295,6 +298,16 @@ export const router = createBrowserRouter([
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>
           <WelcomeContinuumView />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: workspaceJoin("admin", "release-notes"),
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <AdminReleaseNotes />
         </Suspense>
       </AuthGuard>
     ),
