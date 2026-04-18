@@ -441,40 +441,6 @@ export function GetStartedKanbanLive({
     );
   }
 
-  if (view === "list") {
-    return (
-      <>
-        <SprintKanbanListView
-          tasks={filtered}
-          columns={columns}
-          columnTasks={columnTasks}
-          members={members}
-          projectId={projectId}
-          milestoneId={milestoneId}
-          onCreateTask={() => setCreateTaskOpen(true)}
-          draggingId={draggingId}
-          dragOverCol={dragOverCol}
-          cardPointerDown={cardPointerDown}
-          columnKebabMenu={(col) => (
-            <KanbanColumnHeaderKebabMenu
-              column={col}
-              onAddList={() => setAddColumnOpen(true)}
-              onRequestDeleteList={
-                isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
-              }
-            />
-          )}
-        />
-        <CreateTaskLiveModal
-          open={createTaskOpen}
-          onOpenChange={setCreateTaskOpen}
-          projectId={projectId}
-          milestoneId={milestoneId}
-        />
-      </>
-    );
-  }
-
   const columnHeaderDivider = (
     <div className="h-0 relative w-full shrink-0">
       <div className="absolute inset-[-0.57px_0]">
@@ -580,6 +546,30 @@ export function GetStartedKanbanLive({
 
   return (
     <>
+      {view === "list" ? (
+        <SprintKanbanListView
+          tasks={filtered}
+          columns={columns}
+          columnTasks={columnTasks}
+          members={members}
+          projectId={projectId}
+          milestoneId={milestoneId}
+          onCreateTask={() => setCreateTaskOpen(true)}
+          draggingId={draggingId}
+          dragOverCol={dragOverCol}
+          cardPointerDown={cardPointerDown}
+          columnKebabMenu={(col) => (
+            <KanbanColumnHeaderKebabMenu
+              column={col}
+              onAddList={() => setAddColumnOpen(true)}
+              onRequestDeleteList={
+                isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
+              }
+            />
+          )}
+        />
+      ) : (
+        <>
       <style>{`
         [data-kanban-board-row] {
           flex-wrap: nowrap !important;
@@ -635,6 +625,8 @@ export function GetStartedKanbanLive({
           </button>
         </div>
       </div>
+        </>
+      )}
       <CreateTaskLiveModal
         open={createTaskOpen}
         onOpenChange={setCreateTaskOpen}
