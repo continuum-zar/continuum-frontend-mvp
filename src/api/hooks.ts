@@ -358,11 +358,14 @@ export function useSubmitIssueReport() {
     });
 }
 
-export function useProjectMilestones(projectId: number | string | undefined | null) {
+export function useProjectMilestones(
+    projectId: number | string | undefined | null,
+    options?: { enabled?: boolean },
+) {
     return useQuery({
         queryKey: projectKeys.milestones(projectId!),
         queryFn: () => fetchMilestones(projectId!),
-        enabled: projectId != null && projectId !== '',
+        enabled: projectId != null && projectId !== '' && options?.enabled !== false,
         staleTime: STALE_REFERENCE_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,

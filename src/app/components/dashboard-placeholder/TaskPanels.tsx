@@ -42,7 +42,39 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
   const canLoadHours = apiProjectId != null && taskId != null && /^\d+$/.test(String(taskId).trim());
   const canSyncTaskFields = canLoadHours;
 
-  const { data: apiTask } = useTask(canSyncTaskFields ? taskId : undefined);
+  /** Task detail + logged-hour total are sidebar metadata; defer until idle so shell paints first. */
+  const [deferTaskPanelApi, setDeferTaskPanelApi] = useState(false);
+  useEffect(() => {
+    if (!canSyncTaskFields) {
+      setDeferTaskPanelApi(false);
+      return;
+    }
+    type IdleHandle = number;
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => IdleHandle;
+      cancelIdleCallback?: (handle: IdleHandle) => void;
+    };
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) setDeferTaskPanelApi(true);
+    };
+    let handle: IdleHandle | ReturnType<typeof setTimeout>;
+    if (typeof win.requestIdleCallback === "function") {
+      handle = win.requestIdleCallback(run, { timeout: 2_000 });
+    } else {
+      handle = window.setTimeout(run, 0);
+    }
+    return () => {
+      cancelled = true;
+      if (typeof win.requestIdleCallback === "function" && typeof win.cancelIdleCallback === "function") {
+        win.cancelIdleCallback(handle as IdleHandle);
+      } else {
+        clearTimeout(handle as ReturnType<typeof setTimeout>);
+      }
+    };
+  }, [canSyncTaskFields]);
+
+  const { data: apiTask } = useTask(canSyncTaskFields && deferTaskPanelApi ? taskId : undefined);
   const updateTaskMutation = useUpdateTask();
 
   useEffect(() => {
@@ -55,7 +87,7 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
   const { data: loggedHoursTotal, isLoading: hoursLoading, isError: hoursError } = useTaskLoggedHoursTotal(
     apiProjectId,
     taskId,
-    { enabled: canLoadHours },
+    { enabled: canLoadHours && deferTaskPanelApi },
   );
 
   const handlePrioritySelect = (opt: TaskPriority) => {
@@ -68,10 +100,11 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
 
   const loggedDisplay = useMemo(() => {
     if (!canLoadHours) return null;
+    if (!deferTaskPanelApi) return null;
     if (hoursLoading) return "loading" as const;
     if (hoursError) return "error" as const;
     return formatLoggedHoursSum(loggedHoursTotal ?? 0);
-  }, [canLoadHours, hoursLoading, hoursError, loggedHoursTotal]);
+  }, [canLoadHours, deferTaskPanelApi, hoursLoading, hoursError, loggedHoursTotal]);
 
   return (
     <div className="flex h-full w-full min-h-0 items-stretch">
