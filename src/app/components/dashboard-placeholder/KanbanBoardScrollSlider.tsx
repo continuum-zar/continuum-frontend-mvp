@@ -40,8 +40,8 @@ export function KanbanBoardScrollSlider({ scrollRef, className }: Props) {
 
   useEffect(() => {
     /**
-     * The parent renders this slider before `GetStartedKanbanLive` mounts its scroll div
-     * (tasks + board config load first), so `scrollRef.current` is initially null.
+     * `scrollRef` points at `GetStartedKanbanLive`'s board row; it stays null until that
+     * scroll div mounts (tasks + board config load first).
      * React does not re-run this effect when the ref's `.current` changes, so we poll
      * via rAF until the element appears, then attach listeners. We also poll for element
      * identity changes (project swap, board/list toggle) so listeners always track the
@@ -174,7 +174,7 @@ export function KanbanBoardScrollSlider({ scrollRef, className }: Props) {
       tabIndex={disabled ? -1 : 0}
       onPointerDown={disabled ? undefined : onPointerDown}
       onKeyDown={disabled ? undefined : onKeyDown}
-      className={`relative w-full select-none py-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40 ${
+      className={`relative z-[20] w-full select-none px-3 py-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40 ${
         disabled ? "cursor-default opacity-40" : "cursor-pointer"
       } ${className ?? ""}`}
     >
