@@ -5,10 +5,19 @@ export type SubmitIssueReportBody = {
     contact_email?: string | null;
 };
 
+/** Response from POST /issue-reports (201). */
+export type IssueReportResponse = {
+    id: number;
+    message: string;
+    user_id: number | null;
+    contact_email: string | null;
+    created_at: string;
+};
+
 /**
- * POST /users/me/feedback — submit an issue report from the feedback modal (authenticated).
+ * POST /issue-reports — submit an issue report (optional auth links the row to the current user).
  */
-export async function submitIssueReport(body: SubmitIssueReportBody): Promise<void> {
+export async function submitIssueReport(body: SubmitIssueReportBody): Promise<IssueReportResponse> {
     const payload: Record<string, unknown> = {
         message: body.message.trim(),
     };
@@ -16,5 +25,6 @@ export async function submitIssueReport(body: SubmitIssueReportBody): Promise<vo
     if (contact) {
         payload.contact_email = contact;
     }
-    await api.post('/users/me/feedback', payload);
+    const { data } = await api.post<IssueReportResponse>('/issue-reports', payload);
+    return data;
 }

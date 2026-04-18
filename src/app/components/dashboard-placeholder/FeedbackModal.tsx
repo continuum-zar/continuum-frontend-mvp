@@ -2,10 +2,10 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useEffect, useId, useRef, useState } from "react";
-import { Check, Loader2, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
+import { toast } from "sonner";
 
-import { submitIssueReport } from "@/api/feedback";
-import { getApiErrorMessage } from "@/api/hooks";
+import { getApiErrorMessage, useSubmitIssueReport } from "@/api/hooks";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import { cn } from "../ui/utils";
@@ -15,8 +15,6 @@ const inputClass =
 
 const textareaClass =
   "min-h-[120px] w-full resize-y rounded-[8px] border border-[#ebedee] px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-ring";
-
-type Phase = "form" | "success";
 
 export type FeedbackModalProps = {
   open: boolean;
@@ -31,13 +29,14 @@ function isValidOptionalEmail(value: string): boolean {
 }
 
 export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
+  const submitMutation = useSubmitIssueReport();
+  const { reset: resetSubmitMutation } = submitMutation;
   const [message, setMessage] = useState("");
   const [contactEmail, setContactEmail] = useState("");
-  const [phase, setPhase] = useState<Phase>("form");
-  const [pending, setPending] = useState(false);
   const [messageError, setMessageError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const pending = submitMutation.isPending;
 
   const messageId = useId();
   const emailId = useId();
@@ -47,15 +46,14 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     if (!open) {
       setMessage("");
       setContactEmail("");
-      setPhase("form");
-      setPending(false);
       setMessageError(null);
       setEmailError(null);
       setSubmitError(null);
+      resetSubmitMutation();
     }
-  }, [open]);
+  }, [open, resetSubmitMutation]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     const trimmed = message.trim();
     if (!trimmed) {
       setMessageError("Please describe what happened.");
@@ -70,29 +68,31 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     setEmailError(null);
     setSubmitError(null);
 
-    setPending(true);
-    try {
-      await submitIssueReport({
+    submitMutation.mutate(
+      {
         message: trimmed,
         contact_email: contactEmail.trim() || null,
-      });
-      setPhase("success");
-    } catch (err) {
-      setSubmitError(getApiErrorMessage(err, "Something went wrong. Please try again."));
-    } finally {
-      setPending(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          toast.success("Thanks — we've received your report.");
+          onOpenChange(false);
+        },
+        onError: (err) => {
+          setSubmitError(getApiErrorMessage(err, "Something went wrong. Please try again."));
+        },
+      },
+    );
   };
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setMessage("");
       setContactEmail("");
-      setPhase("form");
-      setPending(false);
       setMessageError(null);
       setEmailError(null);
       setSubmitError(null);
+      resetSubmitMutation();
     }
     onOpenChange(next);
   };
@@ -119,9 +119,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                 Report an issue
               </p>
               <p className="mt-1 font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
-                {phase === "success"
-                  ? "Your message was sent to the team."
-                  : "Tell us what went wrong. Add a contact email if you want a reply."}
+                Tell us what went wrong. Add a contact email if you want a reply.
               </p>
             </div>
             <DialogClose asChild>
@@ -135,29 +133,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
             </DialogClose>
           </div>
 
-          {phase === "success" ? (
-            <div className="flex flex-col items-center gap-4 px-6 py-10">
-              <div
-                className="flex size-12 items-center justify-center rounded-full bg-[#ecfdf3]"
-                aria-hidden
-              >
-                <Check className="size-7 text-[#027a48]" strokeWidth={2} />
-              </div>
-              <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                Thanks — we&apos;ve received your report.
-              </p>
-              <DialogClose asChild>
-                <button
-                  type="button"
-                  className="h-10 rounded-[8px] bg-[#0b191f] px-6 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Close
-                </button>
-              </DialogClose>
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-col gap-4 px-6 py-5">
+          <div className="flex flex-col gap-4 px-6 py-5">
                 {submitError ? (
                   <p
                     role="alert"
@@ -252,8 +228,6 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                   )}
                 </button>
               </div>
-            </>
-          )}
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>

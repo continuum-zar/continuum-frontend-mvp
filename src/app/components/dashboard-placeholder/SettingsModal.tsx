@@ -30,7 +30,7 @@ const CURRENCY_SYMBOL: Record<(typeof INVOICE_CURRENCIES)[number], string> = {
   GBP: "£",
 };
 
-const SUPPORT_EMAIL = "support@continuum.coza";
+const SUPPORT_EMAIL = "support@continuum.co.za";
 
 /** Opens Gmail compose in a new tab with To pre-filled. */
 const GMAIL_COMPOSE_HREF = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(SUPPORT_EMAIL)}`;
