@@ -94,7 +94,7 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
 
   return (
     <>
-      <div className="flex w-full flex-col gap-4">
+      <div className="flex w-full flex-col gap-4" data-tour="welcome-milestones">
         <div className="flex w-full items-center justify-between">
           <p className="font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal whitespace-nowrap text-[#0b191f]">
             Milestone timelines

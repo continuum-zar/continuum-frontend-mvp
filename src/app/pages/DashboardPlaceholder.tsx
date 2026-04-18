@@ -34,6 +34,7 @@ import {
   SESSION_POST_ONBOARDING_WELCOME_KEY,
   welcomeModalDismissedKeyForUser,
 } from "../components/welcome/welcomeModalAssets";
+import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgEllipse21 = mcpAsset("a0e3fea4-5911-470e-aa3e-64387b06a92f");
@@ -389,6 +390,7 @@ export function DashboardPlaceholder() {
   const isLiveBoard = projectParam != null && isApiProjectId(projectParam);
   const liveProjectId = isLiveBoard && projectParam ? Number(projectParam) : null;
   const userId = useAuthStore((s) => s.user?.id);
+  const queueTourAfterWelcome = useWorkspaceTourStore((s) => s.queueAfterWelcomeDismiss);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -405,6 +407,7 @@ export function DashboardPlaceholder() {
         localStorage.setItem(welcomeModalDismissedKeyForUser(userId), "1");
       }
       sessionStorage.removeItem(SESSION_POST_ONBOARDING_WELCOME_KEY);
+      queueTourAfterWelcome();
     }
   };
   const liveMembersQuery = useProjectMembers(liveProjectId, { enabled: liveProjectId != null });
@@ -735,6 +738,7 @@ export function DashboardPlaceholder() {
                   </div>
                   <button
                     type="button"
+                    data-tour="sprint-discord-notify"
                     className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
                     data-name="Component 5"
                     data-node-id="7:2876"
@@ -792,6 +796,7 @@ export function DashboardPlaceholder() {
                 <div className="content-stretch flex gap-[8px] h-[40px] items-center relative rounded-[10px] shrink-0" data-name="Component 121" data-node-id="7:2901">
                   <button
                     type="button"
+                    data-tour="sprint-board-view"
                     disabled={!isLiveBoard}
                     onClick={() => isLiveBoard && setSprintView("board")}
                     aria-pressed={!isLiveBoard || sprintView === "board"}
@@ -817,6 +822,7 @@ export function DashboardPlaceholder() {
                   </button>
                   <button
                     type="button"
+                    data-tour="sprint-list-view"
                     disabled={!isLiveBoard}
                     onClick={() => isLiveBoard && setSprintView("list")}
                     aria-pressed={isLiveBoard && sprintView === "list"}
@@ -920,6 +926,7 @@ export function DashboardPlaceholder() {
                   <div className="flex flex-row items-center self-stretch">
                     <button
                       type="button"
+                      data-tour="sprint-log-time"
                       onClick={() =>
                         useTimeRecordingStore.getState().openLogModalManual(isLiveBoard ? liveProjectId : null)
                       }
@@ -972,6 +979,7 @@ export function DashboardPlaceholder() {
                       </div>
                       <button
                         type="button"
+                        data-tour="sprint-create-task"
                         onClick={() => setCreateTaskOpen(true)}
                         className="content-stretch flex cursor-pointer items-center overflow-clip border-0 bg-transparent p-[5px] relative rounded-[6px] shrink-0"
                         data-name="Component 134"
@@ -1394,6 +1402,7 @@ export function DashboardPlaceholder() {
           onClick={() => setAiChatOpen(true)}
           className="absolute bottom-[14px] right-[14px] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Open AI assistant"
+          data-tour="sprint-ai-assistant"
           data-node-id="7:2936"
         >
           <div className="-translate-x-1/2 -translate-y-1/2 absolute content-stretch flex items-center left-[calc(50%+0.5px)] top-[calc(50%+0.5px)] z-[3]" data-node-id="I7:2936;3646:40266">

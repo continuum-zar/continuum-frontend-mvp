@@ -183,6 +183,7 @@ export function WelcomeContinuumView() {
                         </div>
                         <button
                           type="button"
+                          data-tour="welcome-invite-members"
                           className="border border-[#ebedee] border-solid content-stretch flex cursor-pointer gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                           data-name="Component 2"
                           data-node-id="8:3726"
@@ -276,6 +277,7 @@ export function WelcomeContinuumView() {
               type="button"
               className="absolute bottom-[14px] right-[14px] z-20 flex size-[48px] flex-col items-start isolate overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Open AI assistant"
+              data-tour="welcome-project-assistant"
               data-node-id="8:3521-fab"
               onClick={() => setAiChatOpen(true)}
             >

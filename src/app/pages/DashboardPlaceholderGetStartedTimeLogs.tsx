@@ -43,6 +43,7 @@ import { useLoggedHours, useProject } from "@/api/hooks";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { useTimeTracking } from "../context/TimeTrackingContext";
+import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 
 const tabBtn = (active: boolean) =>
   `rounded-[8px] px-4 py-2 text-[14px] font-medium ${
@@ -699,6 +700,11 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
 
   const [page, setPage] = useState(1);
   const [activityView, setActivityView] = useState<"members" | "trends" | "performance">("members");
+  const tourActivityView = useWorkspaceTourStore((s) => s.timeLogsActivityView);
+
+  useEffect(() => {
+    if (tourActivityView) setActivityView(tourActivityView);
+  }, [tourActivityView]);
 
   const liveProjectNumericId = apiProjectId != null ? Number(apiProjectId) : null;
   /** Welcome demo uses `populated`; real API projects always use live data. */
@@ -840,12 +846,14 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                   </Link>
                   <Link
                     to={qsTimeLogs}
+                    data-tour="timelogs-tab-time-logs"
                     className={`inline-flex h-9 items-center justify-center rounded-[8px] px-4 no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${tabBtn(mainTab === "time-logs")}`}
                   >
                     Time logs
                   </Link>
                   <Link
                     to={qsActivity}
+                    data-tour="timelogs-tab-activity"
                     className={`inline-flex h-9 items-center justify-center rounded-[8px] px-4 no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${tabBtn(mainTab === "activity")}`}
                   >
                     Activity
@@ -904,7 +912,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                     <div className="flex w-full flex-wrap items-center gap-2">
                       {activityView === "trends" ? (
                         /* Figma 4:1611 — Trends toolbar */
-                        <div className="flex h-10 items-center gap-2 rounded-[10px]">
+                        <div className="flex h-10 items-center gap-2 rounded-[10px]" data-tour="activity-sub-trends">
                           <button
                             type="button"
                             onClick={() => setActivityView("members")}
@@ -928,7 +936,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         </div>
                       ) : activityView === "performance" ? (
                         /* Figma 4:1953 — Performance toolbar */
-                        <div className="flex h-10 items-center gap-2 rounded-[10px]">
+                        <div className="flex h-10 items-center gap-2 rounded-[10px]" data-tour="activity-sub-performance">
                           <button
                             type="button"
                             onClick={() => setActivityView("members")}
@@ -952,7 +960,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         </div>
                       ) : (
                         /* Figma 4:1269 — Members toolbar */
-                        <div className="flex h-10 items-center gap-2 rounded-[10px]">
+                        <div className="flex h-10 items-center gap-2 rounded-[10px]" data-tour="activity-sub-members">
                           <button
                             type="button"
                             onClick={() => setActivityView("members")}

@@ -55,7 +55,7 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
             toast.success(label ?? 'Copied to clipboard');
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            toast.error('Failed to copy — try selecting and copying manually.');
+            toast.error('Failed to copy, try selecting and copying manually.');
         }
     }, [text, label]);
 
