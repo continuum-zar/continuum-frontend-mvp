@@ -30,6 +30,7 @@ import {
     deleteProject,
     fetchProjectKanbanBoard,
     updateProjectKanbanBoard,
+    deleteProjectKanbanColumn,
     projectKeys,
     fetchProjectAttachments,
     uploadProjectAttachment,
@@ -378,6 +379,21 @@ export function useUpdateProjectKanbanBoard(projectId: number | string | undefin
         },
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to save Kanban board'));
+        },
+    });
+}
+
+export function useDeleteProjectKanbanColumn(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (columnId: string) => deleteProjectKanbanColumn(projectId!, columnId),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: projectKeys.kanbanBoard(projectId!) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId!) });
+            invalidateDerivedTaskLists(queryClient);
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to delete column'));
         },
     });
 }

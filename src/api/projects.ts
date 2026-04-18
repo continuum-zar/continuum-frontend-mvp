@@ -84,6 +84,18 @@ export async function updateProjectKanbanBoard(
     return data.columns ?? [];
 }
 
+/** DELETE /projects/{id}/kanban-board/columns/{column_id} — remove one custom swimlane; server migrates tasks. */
+export async function deleteProjectKanbanColumn(
+    projectId: number | string,
+    columnId: string,
+): Promise<KanbanBoardColumnApi[]> {
+    const encoded = encodeURIComponent(columnId);
+    const { data } = await api.delete<{ columns: KanbanBoardColumnApi[] }>(
+        `/projects/${projectId}/kanban-board/columns/${encoded}`,
+    );
+    return data.columns ?? [];
+}
+
 /** Fetch milestones for a project. Returns UI-shaped milestones. */
 export async function fetchMilestones(projectId: number | string): Promise<Milestone[]> {
     const { data } = await api.get<MilestoneAPIResponse[]>(`/projects/${projectId}/milestones`);

@@ -16,6 +16,7 @@ import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "@/app/componen
 import { cn } from "@/app/components/ui/utils";
 import {
   useAssignTask,
+  useDeleteProjectKanbanColumn,
   useDeleteTask,
   useProjectKanbanBoard,
   useProjectTasksInfinite,
@@ -77,6 +78,7 @@ export function GetStartedKanbanLive({
   const tasksQuery = useProjectTasksInfinite(projectId);
   const kanbanBoardQuery = useProjectKanbanBoard(projectId);
   const updateKanbanBoardMutation = useUpdateProjectKanbanBoard(projectId);
+  const deleteKanbanColumnMutation = useDeleteProjectKanbanColumn(projectId);
   const updateStatusMutation = useUpdateTaskStatus(projectId);
   const deleteTaskMutation = useDeleteTask(projectId);
   const assignTaskMutation = useAssignTask();
@@ -206,20 +208,38 @@ export function GetStartedKanbanLive({
       setColumnPendingDelete(null);
       return;
     }
+    const prevColumns = columns;
+    const prevPreference = taskColumnPreference;
+    const prevSerialized = kanbanLastSavedSerializedRef.current;
+
     const remaining = columns.filter((c) => c.id !== col.id);
     const fallbackId = firstColumnIdForStatus(remaining, col.taskStatus);
-    setTaskColumnPreference((prev) => {
-      const next = { ...prev };
-      for (const task of filtered) {
-        if (resolveTaskColumnId(task, columns, prev) === col.id) {
-          next[task.id] = fallbackId;
-        }
+    const nextPreference: Record<string, string> = { ...taskColumnPreference };
+    for (const task of filtered) {
+      if (resolveTaskColumnId(task, columns, taskColumnPreference) === col.id) {
+        nextPreference[task.id] = fallbackId;
       }
-      return next;
-    });
+    }
+
     setColumns(remaining);
+    setTaskColumnPreference(nextPreference);
     setColumnPendingDelete(null);
-    toast.success(`Removed column “${col.title}”`);
+
+    const optimisticPayload = mapKanbanBoardToApi(remaining);
+    kanbanLastSavedSerializedRef.current = JSON.stringify(optimisticPayload);
+
+    deleteKanbanColumnMutation.mutate(col.id, {
+      onSuccess: (apiColumns) => {
+        toast.success(`Removed column “${col.title}”`);
+        kanbanLastSavedSerializedRef.current = JSON.stringify(apiColumns);
+        setColumns(mapKanbanBoardFromApi(apiColumns));
+      },
+      onError: () => {
+        setColumns(prevColumns);
+        setTaskColumnPreference(prevPreference);
+        kanbanLastSavedSerializedRef.current = prevSerialized;
+      },
+    });
   };
 
   const { draggingId, dragOverCol, cardPointerDown } = useKanbanPointerDrag({
