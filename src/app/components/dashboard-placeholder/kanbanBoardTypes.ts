@@ -17,6 +17,13 @@ export const DEFAULT_KANBAN_COLUMNS: KanbanColumnConfig[] = [
   { id: "completed", title: "Completed", taskStatus: "done", kind: "done" },
 ];
 
+const DEFAULT_KANBAN_COLUMN_IDS = new Set(DEFAULT_KANBAN_COLUMNS.map((c) => c.id));
+
+/** Built-in columns (To-do, In-Progress, Completed) cannot be removed from the board. */
+export function isDefaultKanbanColumn(col: KanbanColumnConfig): boolean {
+  return DEFAULT_KANBAN_COLUMN_IDS.has(col.id);
+}
+
 export function kindForTaskStatus(status: TaskStatus): KanbanColumnKind {
   if (status === "done") return "done";
   if (status === "in-progress") return "in-progress";

@@ -24,11 +24,20 @@ import {
 
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
+import {
+  dashboardPlaceholderFloatingMenuContentClassName,
+  dashboardPlaceholderMenuOptionChipClassName,
+  dashboardPlaceholderMenuOptionIconClass,
+  dashboardPlaceholderMenuStackClassName,
+  dashboardPlaceholderSatoshi,
+} from "./dashboardPlaceholderMenuChips";
 import type { KanbanColumnKind } from "./kanbanBoardTypes";
 
-const satoshi = "font-['Satoshi',sans-serif]";
+const satoshi = dashboardPlaceholderSatoshi;
 
-const optionIconClass = "size-4 shrink-0 stroke-[1.75] text-[#0b191f]";
+const optionIconClass = dashboardPlaceholderMenuOptionIconClass;
+const optionChipClassName = dashboardPlaceholderMenuOptionChipClassName;
+const menuStackClassName = dashboardPlaceholderMenuStackClassName;
 
 export type KanbanTaskCardContextMenuProps = {
   children: ReactNode;
@@ -53,28 +62,7 @@ export type KanbanTaskCardContextMenuProps = {
 };
 
 /** Radix positions context UI with `side: right` from the cursor; we shift the stack for completed tasks. */
-const contentRootClassName = cn(
-  "z-[200] border-0 bg-transparent p-0 shadow-none ring-0",
-  "!overflow-visible",
-);
-
-const menuStackClassName = cn(
-  "inline-flex w-max max-w-[min(100vw-2rem,300px)] flex-col gap-2.5",
-  satoshi,
-  "text-sm font-medium text-[#0b191f]",
-);
-
-/** White chips, dark text — subtle hover; matches dashboard neutrals. */
-const optionChipClassName = cn(
-  satoshi,
-  "relative flex w-full min-w-[12rem] cursor-pointer items-center gap-3 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2.5",
-  "text-sm font-medium leading-snug text-[#0b191f] shadow-sm",
-  "outline-none transition-[box-shadow,background-color,color] duration-100",
-  "focus-visible:ring-2 focus-visible:ring-[#0b191f]/10 focus-visible:ring-offset-0",
-  "focus:bg-white focus:text-[#0b191f] focus-visible:bg-[#f5f7f8] focus-visible:text-[#0b191f]",
-  "data-[highlighted]:bg-[#f5f7f8] data-[highlighted]:text-[#0b191f] data-[highlighted]:shadow-md",
-  "data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
-);
+const contentRootClassName = dashboardPlaceholderFloatingMenuContentClassName;
 
 /**
  * Submenu container — no parent background, border, padding, or shadow; the option chips

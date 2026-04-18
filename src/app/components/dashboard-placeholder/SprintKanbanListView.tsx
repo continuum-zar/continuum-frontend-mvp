@@ -46,6 +46,8 @@ export type SprintKanbanListViewProps = {
   draggingId: string | null;
   dragOverCol: string | null;
   cardPointerDown: (taskId: string) => (e: React.PointerEvent<HTMLDivElement>) => void;
+  /** Kebab menu for column headers; when omitted, a static placeholder icon is shown. */
+  columnKebabMenu?: (col: KanbanColumnConfig) => ReactNode;
 };
 
 function iconSrcForKanbanColumnKind(kind: KanbanColumnConfig["kind"]): string {
@@ -65,6 +67,7 @@ export function SprintKanbanListView({
   draggingId,
   dragOverCol,
   cardPointerDown,
+  columnKebabMenu,
 }: SprintKanbanListViewProps) {
   void projectId;
   void _tasks;
@@ -305,7 +308,7 @@ export function SprintKanbanListView({
     );
   };
 
-  const searchEllipsis = (
+  const searchAndKebab = (col: KanbanColumnConfig) => (
     <>
       <button
         type="button"
@@ -314,16 +317,20 @@ export function SprintKanbanListView({
       >
         <img alt="" className="block size-full max-h-full max-w-full object-contain" src={imgLucideSearch1} />
       </button>
-      <div
-        className="inline-flex size-[24px] shrink-0 items-center justify-center overflow-hidden rounded-[4px] px-[4px]"
-        aria-hidden
-      >
-        <div className="relative h-[2px] w-[16px] shrink-0">
-          <div className="absolute inset-[-50%_-6.25%]">
-            <img alt="" className="block max-w-none size-full" src={imgVector10} />
+      {columnKebabMenu ? (
+        columnKebabMenu(col)
+      ) : (
+        <div
+          className="inline-flex size-[24px] shrink-0 items-center justify-center overflow-hidden rounded-[4px] px-[4px]"
+          aria-hidden
+        >
+          <div className="relative h-[2px] w-[16px] shrink-0">
+            <div className="absolute inset-[-50%_-6.25%]">
+              <img alt="" className="block max-w-none size-full" src={imgVector10} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 
@@ -351,11 +358,11 @@ export function SprintKanbanListView({
         const headerRight =
           col.taskStatus === "todo" ? (
             <>
-              {searchEllipsis}
+              {searchAndKebab(col)}
               {createTaskControl}
             </>
           ) : (
-            searchEllipsis
+            searchAndKebab(col)
           );
         const emptyTail =
           col.taskStatus === "todo" && milestoneId ? " for this milestone" : "";
