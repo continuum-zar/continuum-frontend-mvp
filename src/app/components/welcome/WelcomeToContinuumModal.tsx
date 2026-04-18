@@ -68,7 +68,7 @@ export function WelcomeToContinuumModal({ open, onOpenChange }: WelcomeToContinu
                   <p className="w-full text-[clamp(28px,4vw,36px)] leading-[1.04]">
                     <span className="font-['Satoshi',sans-serif] font-medium text-[#0b191f]">Welcome to </span>
                     <span
-                      className="font-['Sarina',cursive] bg-clip-text font-normal text-transparent"
+                      className="font-sarina bg-clip-text font-normal text-transparent"
                       style={{
                         backgroundImage:
                           "linear-gradient(125.28deg, rgb(36, 181, 248) 4.62%, rgb(85, 33, 254) 148.53%)",

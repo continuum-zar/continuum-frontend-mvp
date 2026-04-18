@@ -56,7 +56,7 @@ export function WaitlistSignUp() {
         <div className="w-full overflow-hidden rounded-2xl border border-[#F5F5F5] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]">
           <div className="flex flex-col items-center border-b border-[#F5F5F5] bg-white px-6 pb-6 pt-9">
             <div className="flex flex-col items-center gap-3 text-center text-[#252014]">
-              <p className="font-['Sarina',sans-serif] text-[33px] leading-[37px] tracking-[-0.66px]">Continuum</p>
+              <p className="font-sarina-sans text-[33px] leading-[37px] tracking-[-0.66px]">Continuum</p>
               <p className="font-['Sathu:Regular',sans-serif] text-xs tracking-[-0.12px] opacity-80">Time track with one click.</p>
             </div>
           </div>

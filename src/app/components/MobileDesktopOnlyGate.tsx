@@ -40,7 +40,7 @@ export function MobileDesktopOnlyScreen() {
     >
       <header className="flex shrink-0 justify-center pt-7">
         <p
-          className="text-center font-['Sarina',sans-serif] text-[21.405px] leading-6 tracking-[-0.4281px] text-[#0b191f]"
+          className="text-center font-sarina-sans text-[21.405px] leading-6 tracking-[-0.4281px] text-[#0b191f]"
           aria-label="Continuum"
         >
           Continuum
@@ -57,7 +57,7 @@ export function MobileDesktopOnlyScreen() {
             <span className="font-['Satoshi',sans-serif] font-bold not-italic text-[#0b191f]">We&apos;re</span>
             <span className="font-['Satoshi',sans-serif] font-bold text-[#0b191f]"> </span>
             <span
-              className="bg-clip-text font-['Sarina',sans-serif] font-normal not-italic text-transparent"
+              className="bg-clip-text font-sarina-sans font-normal not-italic text-transparent"
               style={{ backgroundImage: HEADLINE_GRADIENT }}
             >
               better

@@ -1,0 +1,19 @@
+/**
+ * Sarina applies only after `html.sarina-loaded` (see load-decorative-fonts.ts)
+ * so text does not jump from a mismatched fallback to Sarina (FOUT).
+ */
+.font-sarina {
+  font-family: cursive, serif;
+}
+
+.font-sarina-sans {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+html.sarina-loaded .font-sarina {
+  font-family: "Sarina", cursive, serif;
+}
+
+html.sarina-loaded .font-sarina-sans {
+  font-family: "Sarina", ui-sans-serif, system-ui, sans-serif;
+}
