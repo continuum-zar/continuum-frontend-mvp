@@ -30,6 +30,7 @@ import {
     deleteProject,
     fetchProjectKanbanBoard,
     updateProjectKanbanBoard,
+    deleteProjectKanbanColumn,
     projectKeys,
     fetchProjectAttachments,
     uploadProjectAttachment,
@@ -78,7 +79,7 @@ import {
 import { fetchLoggedHours, createLoggedHour, sumLoggedHoursForTask } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
 import type { KanbanBoardColumnApi } from '@/types/kanban';
-import type { Task, TaskAPIResponse, ScopeWeight } from '@/types/task';
+import type { Task, TaskAPIResponse, ScopeWeight, TaskPriority } from '@/types/task';
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
 import axios from 'axios';
@@ -382,6 +383,21 @@ export function useUpdateProjectKanbanBoard(projectId: number | string | undefin
     });
 }
 
+export function useDeleteProjectKanbanColumn(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (columnId: string) => deleteProjectKanbanColumn(projectId!, columnId),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: projectKeys.kanbanBoard(projectId!) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId!) });
+            invalidateDerivedTaskLists(queryClient);
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to delete column'));
+        },
+    });
+}
+
 export function useCreateProject() {
     const queryClient = useQueryClient();
     return useMutation({
@@ -598,6 +614,7 @@ export function useUpdateTask() {
             description,
             status,
             scope_weight,
+            priority,
             due_date,
             estimated_hours,
             linked_repo,
@@ -609,6 +626,7 @@ export function useUpdateTask() {
             description?: string | null;
             status?: string;
             scope_weight?: ScopeWeight;
+            priority?: TaskPriority;
             due_date?: string | null;
             estimated_hours?: number | null;
             linked_repo?: string | null;
@@ -620,18 +638,20 @@ export function useUpdateTask() {
                 description,
                 status,
                 scope_weight,
+                priority,
                 due_date,
                 estimated_hours,
                 linked_repo,
                 linked_branch,
                 checklists,
             }),
-        onSuccess: (_data, { taskId }) => {
-            // Show success toast
+        onSuccess: (data, { taskId }) => {
             toast.success('Task updated successfully');
+            if (taskId && data) {
+                queryClient.setQueryData(taskDetailKey(taskId), data);
+            }
             if (taskId) {
                 queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
-                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
             }
         },
         onError: (err) => {

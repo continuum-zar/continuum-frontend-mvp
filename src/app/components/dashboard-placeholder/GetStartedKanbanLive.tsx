@@ -5,16 +5,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Flag, Plus, Trash2 } from "lucide-react";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
 import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
+import { KanbanColumnHeaderKebabMenu } from "./KanbanColumnHeaderKebabMenu";
 import { SprintKanbanListView } from "./SprintKanbanListView";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "@/app/components/ui/dialog";
 import { cn } from "@/app/components/ui/utils";
 import {
   useAssignTask,
+  useDeleteProjectKanbanColumn,
   useDeleteTask,
   useProjectKanbanBoard,
   useProjectTasksInfinite,
@@ -26,10 +28,12 @@ import { useKanbanPointerDrag } from "@/lib/useKanbanPointerDrag";
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
-import type { Task, TaskStatus } from "@/types/task";
+import { taskPriorityFlagClass, taskPriorityLabel, type Task, type TaskStatus } from "@/types/task";
 
 import {
   DEFAULT_KANBAN_COLUMNS,
+  firstColumnIdForStatus,
+  isDefaultKanbanColumn,
   kindForTaskStatus,
   mapKanbanBoardFromApi,
   mapKanbanBoardToApi,
@@ -40,13 +44,11 @@ import {
 } from "./kanbanBoardTypes";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
-const imgLucideFlag = mcpAsset("299f17ae-de59-4012-9bb8-ae6509081405");
 const imgVector13 = mcpAsset("c1ddd3b4-d26b-4a92-b752-d84ba0208f8a");
 const imgFrame308 = mcpAsset("5b22b8e9-bd31-437e-a559-232247be56a0");
 const imgLucidePaperclip = mcpAsset("c4929b2e-a9fc-4fce-913e-ecf4dafe6944");
 const imgLucideMessageCircle = mcpAsset("ff8c6057-7f55-46be-8899-4cb59d2eda1a");
 const imgLucideSearch1 = mcpAsset("c5ee61c3-f628-42e7-b456-58f9c49a5cfe");
-const imgVector10 = mcpAsset("0d58a9e0-9d27-4eb3-ad07-b2ad64a15f10");
 /** Plus icon — To-do column “Create task” (same asset as mock Get started kanban, DashboardPlaceholder). */
 const imgVector11 = mcpAsset("4912f83a-d378-4c38-9bf2-ce38aa20cc19");
 const imgVector12 = mcpAsset("64e38728-fa1b-4a8c-97d3-cbb7f586a27c");
@@ -76,6 +78,7 @@ export function GetStartedKanbanLive({
   const tasksQuery = useProjectTasksInfinite(projectId);
   const kanbanBoardQuery = useProjectKanbanBoard(projectId);
   const updateKanbanBoardMutation = useUpdateProjectKanbanBoard(projectId);
+  const deleteKanbanColumnMutation = useDeleteProjectKanbanColumn(projectId);
   const updateStatusMutation = useUpdateTaskStatus(projectId);
   const deleteTaskMutation = useDeleteTask(projectId);
   const assignTaskMutation = useAssignTask();
@@ -153,6 +156,7 @@ export function GetStartedKanbanLive({
 
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [taskPendingDelete, setTaskPendingDelete] = useState<Task | null>(null);
+  const [columnPendingDelete, setColumnPendingDelete] = useState<KanbanColumnConfig | null>(null);
   const [addColumnOpen, setAddColumnOpen] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [newColumnStatus, setNewColumnStatus] = useState<TaskStatus>("todo");
@@ -196,6 +200,46 @@ export function GetStartedKanbanLive({
     setNewColumnStatus("todo");
     setAddColumnOpen(false);
     toast.success(`Added column “${title}”`);
+  };
+
+  const confirmDeleteColumn = () => {
+    const col = columnPendingDelete;
+    if (!col || isDefaultKanbanColumn(col)) {
+      setColumnPendingDelete(null);
+      return;
+    }
+    const prevColumns = columns;
+    const prevPreference = taskColumnPreference;
+    const prevSerialized = kanbanLastSavedSerializedRef.current;
+
+    const remaining = columns.filter((c) => c.id !== col.id);
+    const fallbackId = firstColumnIdForStatus(remaining, col.taskStatus);
+    const nextPreference: Record<string, string> = { ...taskColumnPreference };
+    for (const task of filtered) {
+      if (resolveTaskColumnId(task, columns, taskColumnPreference) === col.id) {
+        nextPreference[task.id] = fallbackId;
+      }
+    }
+
+    setColumns(remaining);
+    setTaskColumnPreference(nextPreference);
+    setColumnPendingDelete(null);
+
+    const optimisticPayload = mapKanbanBoardToApi(remaining);
+    kanbanLastSavedSerializedRef.current = JSON.stringify(optimisticPayload);
+
+    deleteKanbanColumnMutation.mutate(col.id, {
+      onSuccess: (apiColumns) => {
+        toast.success(`Removed column “${col.title}”`);
+        kanbanLastSavedSerializedRef.current = JSON.stringify(apiColumns);
+        setColumns(mapKanbanBoardFromApi(apiColumns));
+      },
+      onError: () => {
+        setColumns(prevColumns);
+        setTaskColumnPreference(prevPreference);
+        kanbanLastSavedSerializedRef.current = prevSerialized;
+      },
+    });
   };
 
   const { draggingId, dragOverCol, cardPointerDown } = useKanbanPointerDrag({
@@ -282,9 +326,11 @@ export function GetStartedKanbanLive({
                     {task.title}
                   </p>
                   <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]">
-                    <div className="relative shrink-0 size-[16px]">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideFlag} />
-                    </div>
+                    <Flag
+                      size={16}
+                      className={taskPriorityFlagClass(task.priority)}
+                      aria-label={`Priority: ${taskPriorityLabel(task.priority)}`}
+                    />
                   </div>
                 </div>
               </div>
@@ -415,45 +461,10 @@ export function GetStartedKanbanLive({
     );
   }
 
-  if (view === "list") {
-    return (
-      <>
-        <SprintKanbanListView
-          tasks={filtered}
-          columns={columns}
-          columnTasks={columnTasks}
-          members={members}
-          projectId={projectId}
-          milestoneId={milestoneId}
-          onCreateTask={() => setCreateTaskOpen(true)}
-          draggingId={draggingId}
-          dragOverCol={dragOverCol}
-          cardPointerDown={cardPointerDown}
-        />
-        <CreateTaskLiveModal
-          open={createTaskOpen}
-          onOpenChange={setCreateTaskOpen}
-          projectId={projectId}
-          milestoneId={milestoneId}
-        />
-      </>
-    );
-  }
-
   const columnHeaderDivider = (
     <div className="h-0 relative w-full shrink-0">
       <div className="absolute inset-[-0.57px_0]">
         <img alt="" className="block max-w-none size-full" src={imgVector12} />
-      </div>
-    </div>
-  );
-
-  const headerDotsMenu = (
-    <div className="content-stretch flex flex-col items-start overflow-clip px-[4px] py-[11px] relative rounded-[4px] shrink-0 w-[24px]">
-      <div className="h-[2px] relative shrink-0 w-[16px]">
-        <div className="absolute inset-[-50%_-6.25%]">
-          <img alt="" className="block max-w-none size-full" src={imgVector10} />
-        </div>
       </div>
     </div>
   );
@@ -516,7 +527,13 @@ export function GetStartedKanbanLive({
               >
                 <img alt="" className="block size-full max-h-full max-w-full object-contain" src={imgLucideSearch1} />
               </button>
-              {headerDotsMenu}
+              <KanbanColumnHeaderKebabMenu
+                column={col}
+                onAddList={() => setAddColumnOpen(true)}
+                onRequestDeleteList={
+                  isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
+                }
+              />
               <button
                 type="button"
                 onClick={(e) => {
@@ -534,7 +551,13 @@ export function GetStartedKanbanLive({
               </button>
             </>
           ) : (
-            headerDotsMenu
+            <KanbanColumnHeaderKebabMenu
+              column={col}
+              onAddList={() => setAddColumnOpen(true)}
+              onRequestDeleteList={
+                isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
+              }
+            />
           )}
         </div>
       </div>
@@ -543,6 +566,30 @@ export function GetStartedKanbanLive({
 
   return (
     <>
+      {view === "list" ? (
+        <SprintKanbanListView
+          tasks={filtered}
+          columns={columns}
+          columnTasks={columnTasks}
+          members={members}
+          projectId={projectId}
+          milestoneId={milestoneId}
+          onCreateTask={() => setCreateTaskOpen(true)}
+          draggingId={draggingId}
+          dragOverCol={dragOverCol}
+          cardPointerDown={cardPointerDown}
+          columnKebabMenu={(col) => (
+            <KanbanColumnHeaderKebabMenu
+              column={col}
+              onAddList={() => setAddColumnOpen(true)}
+              onRequestDeleteList={
+                isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
+              }
+            />
+          )}
+        />
+      ) : (
+        <>
       <style>{`
         [data-kanban-board-row] {
           flex-wrap: nowrap !important;
@@ -598,6 +645,8 @@ export function GetStartedKanbanLive({
           </button>
         </div>
       </div>
+        </>
+      )}
       <CreateTaskLiveModal
         open={createTaskOpen}
         onOpenChange={setCreateTaskOpen}
@@ -682,6 +731,78 @@ export function GetStartedKanbanLive({
                   className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-[#0b191f] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#1a2d36] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/20"
                 >
                   Add column
+                </button>
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPortal>
+      </Dialog>
+      <Dialog
+        open={columnPendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setColumnPendingDelete(null);
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="bg-black/25" />
+          <DialogPrimitive.Content
+            className={cn(
+              "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            )}
+          >
+            <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+              <DialogClose asChild>
+                <button
+                  type="button"
+                  className="inline-flex size-5 items-center justify-center text-[#606d76] transition-colors hover:text-[#0b191f]"
+                  aria-label="Close"
+                >
+                  <ArrowLeft className="size-5" />
+                </button>
+              </DialogClose>
+              <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                Delete list
+              </DialogPrimitive.Title>
+              <div className="size-5" />
+            </div>
+
+            <div className="flex w-full flex-col gap-6 px-9 py-6">
+              <div className="flex items-start gap-3">
+                <div className="flex shrink-0 items-start pt-0.5 text-[#dc2626]" aria-hidden>
+                  <Trash2 className="size-5" strokeWidth={1.75} />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <p className="font-['Satoshi',sans-serif] text-[18px] font-medium leading-tight tracking-[-0.18px] text-[#0b191f]">
+                    Remove this list?
+                  </p>
+                  <DialogPrimitive.Description className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-[#606d76]">
+                    {columnPendingDelete?.title ? (
+                      <>
+                        <span className="text-[#0b191f]">“{columnPendingDelete.title}”</span> will be removed from the
+                        board. Tasks in this list stay on the project and move to another column with the same status.
+                      </>
+                    ) : (
+                      "This list will be removed from the board. Tasks stay on the project and move to another column with the same status."
+                    )}
+                  </DialogPrimitive.Description>
+                </div>
+              </div>
+
+              <div className="flex w-full items-center justify-end gap-2">
+                <DialogClose asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] transition-colors duration-150 hover:bg-[#f5f7f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/10"
+                  >
+                    Cancel
+                  </button>
+                </DialogClose>
+                <button
+                  type="button"
+                  onClick={confirmDeleteColumn}
+                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-[#dc2626] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30"
+                >
+                  Delete list
                 </button>
               </div>
             </div>

@@ -22,7 +22,12 @@ import {
 import { cn } from "./ui/utils";
 import { useCreateTask, useProjectMembers } from "@/api/hooks";
 import { formatEstimatedEffortLabel } from "@/api";
-import type { ScopeWeight } from "@/types/task";
+import {
+  TASK_PRIORITY_OPTIONS,
+  taskPriorityFlagClass,
+  type ScopeWeight,
+  type TaskPriority,
+} from "@/types/task";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 
 type ChecklistRow = { id: string; text: string; done: boolean };
@@ -66,6 +71,8 @@ export function CreateTaskLiveModal({
   const [estimatedHours, setEstimatedHours] = useState<number | null>(null);
   const [addingEffort, setAddingEffort] = useState(false);
   const [effortDraft, setEffortDraft] = useState("");
+  const [priority, setPriority] = useState<TaskPriority>("medium");
+  const [priorityOpen, setPriorityOpen] = useState(false);
   const [scope, setScope] = useState<ScopeWeight>("M");
   const [scopeOpen, setScopeOpen] = useState(false);
   const [assignedTo, setAssignedTo] = useState<number | null>(null);
@@ -90,6 +97,8 @@ export function CreateTaskLiveModal({
     setEstimatedHours(null);
     setAddingEffort(false);
     setEffortDraft("");
+    setPriority("medium");
+    setPriorityOpen(false);
     setScope("M");
     setScopeOpen(false);
     setAssignedTo(null);
@@ -166,6 +175,7 @@ export function CreateTaskLiveModal({
         project_id: projectId,
         description: description.trim() || null,
         status: "todo",
+        priority,
         scope_weight: scope,
         due_date: null,
         estimated_hours: estimatedHours,
@@ -222,7 +232,7 @@ export function CreateTaskLiveModal({
             <p className="pointer-events-none absolute left-1/2 top-[25px] -translate-x-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
               Create Task
             </p>
-            <Flag size={16} className="text-[#606d76]" />
+            <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
           </div>
 
           {/* ─── Scrollable body ─── */}
@@ -259,6 +269,47 @@ export function CreateTaskLiveModal({
                   rows={1}
                   className="max-h-[400px] w-full resize-none overflow-y-auto rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium leading-relaxed text-[#606d76] outline-none placeholder:text-[#cdd2d5]"
                 />
+              </div>
+
+              {DIVIDER}
+
+              {/* ── Priority ── */}
+              <div className="flex w-full items-center justify-between">
+                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  Priority
+                </p>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setPriorityOpen(!priorityOpen)}
+                    className="flex items-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_2px_2px_0px_rgba(14,14,34,0.03)]"
+                  >
+                    <Flag size={14} className={taskPriorityFlagClass(priority)} aria-hidden />
+                    {TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.label ?? priority}
+                    <ChevronDown size={14} className="text-[#606d76]" />
+                  </button>
+                  {priorityOpen && (
+                    <div className="absolute right-0 top-full z-10 mt-1 w-52 rounded-[8px] border border-solid border-[#ebedee] bg-white py-1 shadow-lg">
+                      {TASK_PRIORITY_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setPriority(opt.value);
+                            setPriorityOpen(false);
+                          }}
+                          className={cn(
+                            "flex w-full items-center gap-2 px-3 py-2 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-[#f5f7f8]",
+                            priority === opt.value ? "font-bold text-[#0b191f]" : "text-[#606d76]",
+                          )}
+                        >
+                          <Flag size={14} className={opt.flagColorClass} aria-hidden />
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {DIVIDER}

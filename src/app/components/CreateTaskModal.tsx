@@ -2,7 +2,7 @@
 
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Flag, Plus, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Dialog,
@@ -13,6 +13,7 @@ import { cn } from "./ui/utils";
 import { AddResourceModal } from "./welcome/AddResourceModal";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { formatEstimatedEffortLabel } from "@/api";
+import { taskPriorityFlagClass } from "@/types/task";
 import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
 
 function ChecklistItemTextarea({
@@ -45,8 +46,6 @@ function ChecklistItemTextarea({
 
 const imgLucideArrowLeft =
   mcpAsset("27ca96dc-a695-48d3-8f22-628b8eb437bd");
-const imgLucideFlag =
-  mcpAsset("e52cc33b-1c94-4f51-831d-27613aec8fb7");
 const imgVector15 =
   mcpAsset("ed075df4-e80e-41eb-a544-5369dfb77a46");
 const imgLucideTag =
@@ -231,9 +230,7 @@ export function CreateTaskModal({
               className="inline-flex size-[27px] shrink-0 items-center justify-center rounded-md border-0 bg-transparent p-0"
               aria-label="Flag task"
             >
-              <span className="relative block size-4">
-                <img alt="" className="absolute block size-full max-w-none" src={imgLucideFlag} />
-              </span>
+              <Flag size={16} className={taskPriorityFlagClass("medium")} aria-hidden />
             </button>
           </div>
 

@@ -5,6 +5,7 @@ import { getApiErrorMessage } from './hooks';
 import { projectKeys } from './hooks';
 import { STALE_MODERATE_MS, WIKI_SCAN_POLL_MS } from '@/lib/queryDefaults';
 import type { FileContent } from './planner';
+import type { TaskPriority } from '@/types/task';
 
 export interface ScanRepositoryRequest {
     repository_id: number;
@@ -26,6 +27,8 @@ export interface GeneratedTask {
     title: string;
     description?: string | null;
     scope_weight: 'XS' | 'S' | 'M' | 'L' | 'XL';
+    /** When returned by generate, forwarded to wiki confirm create. */
+    priority?: TaskPriority;
     rationale: string;
     relevant_files: string[];
     checklist: GeneratedTaskChecklistItem[];
@@ -49,6 +52,7 @@ export interface WikiConfirmTaskItem {
     milestone_id?: number | null;
     assigned_to?: number | null;
     due_date?: string | null;
+    priority?: TaskPriority;
     scope_weight: 'XS' | 'S' | 'M' | 'L' | 'XL';
     estimated_hours?: number | null;
     checklists?: Array<{ text: string; done?: boolean }> | null;

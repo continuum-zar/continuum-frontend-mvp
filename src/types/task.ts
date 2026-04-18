@@ -6,6 +6,32 @@ export type TaskStatus = string;
 
 export type ScopeWeight = 'XS' | 'S' | 'M' | 'L' | 'XL';
 
+/** Task priority — maps to flag colors in the UI (red, yellow, green, blue). */
+export type TaskPriority = 'high' | 'medium' | 'low' | 'info';
+
+export const TASK_PRIORITY_OPTIONS: {
+    value: TaskPriority;
+    label: string;
+    /** Tailwind text color for the flag icon */
+    flagColorClass: string;
+}[] = [
+    { value: 'high', label: 'High', flagColorClass: 'text-red-500' },
+    { value: 'medium', label: 'Medium', flagColorClass: 'text-yellow-500' },
+    { value: 'low', label: 'Low', flagColorClass: 'text-green-500' },
+    { value: 'info', label: 'Info', flagColorClass: 'text-blue-500' },
+];
+
+export function taskPriorityLabel(p: string | null | undefined): string {
+    const row = TASK_PRIORITY_OPTIONS.find((o) => o.value === p);
+    return row?.label ?? 'Medium';
+}
+
+/** Tailwind classes for Lucide `Flag` — matches `TASK_PRIORITY_OPTIONS`; neutral gray when unset or unknown. */
+export function taskPriorityFlagClass(priority?: TaskPriority | null): string {
+    if (priority == null) return 'text-[#606d76]';
+    return TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.flagColorClass ?? 'text-[#606d76]';
+}
+
 /** Raw task from API (GET /tasks/, GET /tasks/:id, PATCH /tasks/:id/status) */
 export interface TaskAPIResponse {
     id: number;
@@ -19,6 +45,7 @@ export interface TaskAPIResponse {
     /** Estimated effort in hours (time tracking). */
     estimated_hours?: number | null;
     scope_weight?: ScopeWeight | null;
+    priority?: TaskPriority | null;
     checklists?: Array<{ id?: string; text: string; done: boolean }> | null;
     created_at?: string;
     updated_at?: string | null;
@@ -47,6 +74,7 @@ export interface Task {
     description: string;
     status: TaskStatus;
     scope: ScopeWeight;
+    priority?: TaskPriority;
     assignees: string[];
     attachments: number;
     comments: number;
