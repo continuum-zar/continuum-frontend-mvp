@@ -154,6 +154,10 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
 }
 
 
+/** Share one helper so every navigational list keeps the previous data on refetch
+ *  → no skeleton flash when the cache is warm, big perceived-speed win on slow networks. */
+const keepPrev = <T>(prev: T | undefined) => prev;
+
 export function useProjects(options?: { enabled?: boolean }) {
     const userId = useAuthStore((s) => s.user?.id);
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -167,6 +171,7 @@ export function useProjects(options?: { enabled?: boolean }) {
         staleTime: STALE_REFERENCE_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 
@@ -178,6 +183,7 @@ export function useProject(projectId: number | string | undefined | null) {
         staleTime: STALE_MODERATE_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 
@@ -189,12 +195,14 @@ export function useProjectTasks(projectId: number | string | undefined | null) {
         staleTime: STALE_TASK_LIST_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 
-const PROJECT_TASKS_PAGE_SIZE = 80;
+const PROJECT_TASKS_PAGE_SIZE = 200;
 
-/** Project tasks with pagination — merges pages for kanban and large lists. */
+/** Project tasks with pagination — merges pages for kanban and large lists. Page size tuned so most
+ *  projects load in one round-trip on slow networks (avoids serial page-by-page waterfall). */
 export function useProjectTasksInfinite(projectId: number | string | undefined | null) {
     return useInfiniteQuery({
         queryKey: projectKeys.tasksInfinite(projectId!),
@@ -210,6 +218,7 @@ export function useProjectTasksInfinite(projectId: number | string | undefined |
         staleTime: STALE_TASK_LIST_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 
@@ -222,6 +231,7 @@ export function useAllTasks(options?: { enabled?: boolean }) {
         staleTime: STALE_TASK_LIST_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 
@@ -242,6 +252,7 @@ export function useAssignedToMeTasks(options?: { enabled?: boolean }) {
         staleTime: STALE_ASSIGNED_LIST_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 
@@ -262,6 +273,7 @@ export function useCreatedByMeTasks(options?: { enabled?: boolean }) {
         staleTime: STALE_ASSIGNED_LIST_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 
@@ -354,6 +366,7 @@ export function useProjectMilestones(projectId: number | string | undefined | nu
         staleTime: STALE_REFERENCE_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 
@@ -365,6 +378,7 @@ export function useProjectMembers(projectId: number | string | undefined | null,
         staleTime: STALE_REFERENCE_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 
@@ -376,6 +390,7 @@ export function useProjectKanbanBoard(projectId: number | string | undefined | n
         staleTime: STALE_REFERENCE_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 
@@ -712,6 +727,7 @@ export function useTask(taskId: number | string | undefined | null) {
         staleTime: TASK_DETAIL_STALE_MS,
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
+        placeholderData: keepPrev,
     });
 }
 

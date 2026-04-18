@@ -13,6 +13,10 @@ import { KanbanColumnHeaderKebabMenu } from "./KanbanColumnHeaderKebabMenu";
 import { SprintKanbanListView } from "./SprintKanbanListView";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "@/app/components/ui/dialog";
+import {
+  KanbanBoardSkeleton,
+  SprintKanbanListSkeleton,
+} from "@/app/components/dashboard-placeholder/DashboardPlaceholderSkeletons";
 import { cn } from "@/app/components/ui/utils";
 import {
   useAssignTask,
@@ -94,9 +98,33 @@ export function GetStartedKanbanLive({
 
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = tasksQuery;
   useEffect(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage();
+    if (!hasNextPage || isFetchingNextPage) return;
+    // Defer extra page fetches to the browser's idle window so the first page paints (and the user can
+    // interact) before we churn the network with follow-up pages. Keeps the UI responsive on slow links.
+    type IdleHandle = number;
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => IdleHandle;
+      cancelIdleCallback?: (handle: IdleHandle) => void;
+    };
+    let handle: IdleHandle;
+    let usedIdle = false;
+    if (typeof win.requestIdleCallback === "function") {
+      usedIdle = true;
+      handle = win.requestIdleCallback(() => {
+        void fetchNextPage();
+      }, { timeout: 2_000 });
+    } else {
+      handle = window.setTimeout(() => {
+        void fetchNextPage();
+      }, 250);
     }
+    return () => {
+      if (usedIdle && typeof win.cancelIdleCallback === "function") {
+        win.cancelIdleCallback(handle);
+      } else {
+        window.clearTimeout(handle);
+      }
+    };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const filtered = useMemo(() => {
@@ -446,11 +474,7 @@ export function GetStartedKanbanLive({
   };
 
   if (tasksQuery.isLoading || kanbanBoardQuery.isLoading) {
-    return (
-      <div className="content-stretch relative z-[1] flex w-full min-h-[200px] flex-1 items-center justify-center gap-[16px] font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
-        Loading tasks…
-      </div>
-    );
+    return view === "list" ? <SprintKanbanListSkeleton /> : <KanbanBoardSkeleton />;
   }
 
   if (tasksQuery.isError) {

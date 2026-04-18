@@ -18,8 +18,9 @@ const apiBaseURL = resolveApiBaseURL();
 
 const api = axios.create({
     baseURL: apiBaseURL,
-    // Typical REST; override per request for planner / LLM / long scans.
-    timeout: 90_000,
+    // 30s is plenty for normal REST calls even on slow 4G; 90s hung forever on dropped TCP sockets before failing.
+    // Slow LLM / wiki-scan / planner endpoints pass `{ timeout: ... }` on the call site.
+    timeout: 30_000,
     headers: {
         'Content-Type': 'application/json',
     },

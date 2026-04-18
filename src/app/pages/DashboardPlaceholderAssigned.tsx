@@ -8,6 +8,7 @@ import { useAssignedToMeTasks } from "@/api/hooks";
 import { useAuthStore } from "@/store/authStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
 import { taskPriorityFlagClass, type TaskAPIResponse } from "@/types/task";
+import { DashboardTaskListTableSkeleton } from "@/app/components/dashboard-placeholder/DashboardPlaceholderSkeletons";
 
 function checklistProgressPercent(task: TaskAPIResponse): string {
   const items = task.checklists ?? [];
@@ -125,11 +126,7 @@ export function DashboardPlaceholderAssigned() {
               </div>
             </div>
           ) : isLoading ? (
-            <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
-              <div className="flex flex-col items-center justify-center py-16 text-[#727d83]">
-                <p className="text-[14px]">Loading tasks…</p>
-              </div>
-            </div>
+            <DashboardTaskListTableSkeleton />
           ) : isError ? (
             <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
               <div className="flex flex-col items-center justify-center gap-3 py-16 text-[#727d83]">

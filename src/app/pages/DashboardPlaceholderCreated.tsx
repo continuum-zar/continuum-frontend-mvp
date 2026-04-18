@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { useNavigate } from "react-router";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Bell, Ellipsis, Flag, GripVertical, ListTodo, Share } from "lucide-react";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { workspaceJoin } from "@/lib/workspacePaths";
@@ -10,6 +10,17 @@ import { fetchMembers, projectKeys } from "@/api/projects";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 import { taskPriorityFlagClass, type TaskAPIResponse } from "@/types/task";
+import { STALE_REFERENCE_MS, LONG_GC_MS } from "@/lib/queryDefaults";
+import { Skeleton } from "@/app/components/ui/skeleton";
+import { DashboardTaskListTableSkeleton } from "@/app/components/dashboard-placeholder/DashboardPlaceholderSkeletons";
+
+/**
+ * Upper bound on simultaneous /projects/:id/members fetches from this page.
+ * Keeps the network quiet on refresh: cached project members (populated by
+ * DashboardLeftRail or project pages) are reused for free, and any remaining
+ * uncached project ids are fetched a few at a time instead of N in parallel.
+ */
+const MAX_MEMBER_FETCH_CONCURRENCY = 8;
 
 function checklistProgressPercent(task: TaskAPIResponse): string {
   const items = task.checklists ?? [];
@@ -43,6 +54,7 @@ const tabBtn = (active: boolean) =>
 
 export function DashboardPlaceholderCreated() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<"Deliverables" | "Time logs" | "Activity">("Deliverables");
   const { data: createdTasks = [], isLoading, isError, refetch } = useCreatedByMeTasks({
     enabled: tab === "Deliverables",
@@ -53,25 +65,76 @@ export function DashboardPlaceholderCreated() {
     [createdTasks],
   );
 
+  /**
+   * Split project ids into "already in cache" (free — reuse) vs
+   * "needs fetching" (capped at MAX_MEMBER_FETCH_CONCURRENCY).
+   * Cache hits are populated by DashboardLeftRail + any project page the user
+   * has visited earlier in the session.
+   */
+  const { cachedProjectIds, projectIdsToFetch } = useMemo(() => {
+    const cached: number[] = [];
+    const toFetch: number[] = [];
+    for (const pid of projectIds) {
+      const hit = queryClient.getQueryData<Member[]>(projectKeys.members(pid));
+      if (hit) {
+        cached.push(pid);
+      } else if (toFetch.length < MAX_MEMBER_FETCH_CONCURRENCY) {
+        toFetch.push(pid);
+      }
+      // project ids beyond the cap simply miss their assignee avatars until
+      // the user scrolls/opens the project — a reasonable trade-off vs. an
+      // N-parallel burst on refresh.
+    }
+    return { cachedProjectIds: cached, projectIdsToFetch: toFetch };
+  }, [projectIds, queryClient]);
+
   const memberQueries = useQueries({
-    queries: projectIds.map((pid) => ({
+    queries: projectIdsToFetch.map((pid) => ({
       queryKey: projectKeys.members(pid),
       queryFn: () => fetchMembers(pid),
-      enabled: tab === "Deliverables" && projectIds.length > 0,
+      enabled: tab === "Deliverables",
+      // Match `useProjectMembers` so the cache is shared with the rest of the app (no duplicate fetches
+      // when the user opens a project after visiting Created by Me).
+      staleTime: STALE_REFERENCE_MS,
+      gcTime: LONG_GC_MS,
+      refetchOnWindowFocus: false,
     })),
   });
 
   const memberByProjectUser = useMemo(() => {
     const map = new Map<string, Member>();
-    projectIds.forEach((pid, idx) => {
+    // Fetched (this page's useQueries).
+    projectIdsToFetch.forEach((pid, idx) => {
       const members = memberQueries[idx]?.data;
       if (!members) return;
       for (const m of members) {
         map.set(`${pid}:${m.userId}`, m);
       }
     });
+    // Pre-cached (populated elsewhere in the session).
+    for (const pid of cachedProjectIds) {
+      const members = queryClient.getQueryData<Member[]>(projectKeys.members(pid));
+      if (!members) continue;
+      for (const m of members) {
+        map.set(`${pid}:${m.userId}`, m);
+      }
+    }
     return map;
-  }, [projectIds, memberQueries]);
+  }, [projectIdsToFetch, cachedProjectIds, memberQueries, queryClient]);
+
+  const memberQueryIdxByProjectId = useMemo(() => {
+    const m = new Map<number, number>();
+    projectIdsToFetch.forEach((pid, i) => m.set(pid, i));
+    return m;
+  }, [projectIdsToFetch]);
+
+  const showAssigneeSkeleton = (row: TaskAPIResponse) => {
+    if (row.assigned_to == null) return false;
+    if (memberByProjectUser.has(`${row.project_id}:${row.assigned_to}`)) return false;
+    const idx = memberQueryIdxByProjectId.get(row.project_id);
+    if (idx === undefined) return false;
+    return memberQueries[idx]?.isLoading === true;
+  };
 
   const tasks = tab === "Deliverables" ? createdTasks : [];
 
@@ -142,11 +205,7 @@ export function DashboardPlaceholderCreated() {
               </div>
             </div>
           ) : isLoading ? (
-            <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
-              <div className="flex flex-col items-center justify-center py-16 text-[#727d83]">
-                <p className="text-[14px]">Loading tasks…</p>
-              </div>
-            </div>
+            <DashboardTaskListTableSkeleton />
           ) : isError ? (
             <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
               <div className="flex flex-col items-center justify-center gap-3 py-16 text-[#727d83]">
@@ -219,7 +278,12 @@ export function DashboardPlaceholderCreated() {
                       </p>
                       <p className="line-clamp-2 text-[14px] text-[#727d83]">{row.description?.trim() || "—"}</p>
                       <div className="flex items-center">
-                        {row.assigned_to != null ? (
+                        {showAssigneeSkeleton(row) ? (
+                          <Skeleton
+                            className="h-6 w-6 shrink-0 rounded-full"
+                            aria-label="Loading assignee"
+                          />
+                        ) : row.assigned_to != null ? (
                           <div
                             className="flex h-6 w-6 items-center justify-center rounded-full border border-white text-[9px] text-white"
                             style={{ backgroundColor: assigneeBg }}

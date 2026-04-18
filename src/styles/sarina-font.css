@@ -1,19 +1,12 @@
-/**
- * Sarina applies only after `html.sarina-loaded` (see load-decorative-fonts.ts)
- * so text does not jump from a mismatched fallback to Sarina (FOUT).
+/*
+ * Sarina is a decorative face used for the "Continuum" brand mark. Fontsource
+ * ships its @font-face with `font-display: swap`, so the fallback stack paints
+ * first and Sarina swaps in when ready — no JS gating required.
  */
 .font-sarina {
-  font-family: cursive, serif;
-}
-
-.font-sarina-sans {
-  font-family: ui-sans-serif, system-ui, sans-serif;
-}
-
-html.sarina-loaded .font-sarina {
   font-family: "Sarina", cursive, serif;
 }
 
-html.sarina-loaded .font-sarina-sans {
+.font-sarina-sans {
   font-family: "Sarina", ui-sans-serif, system-ui, sans-serif;
 }

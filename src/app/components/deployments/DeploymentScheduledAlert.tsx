@@ -32,6 +32,8 @@ function formatScheduledAt(iso: string): string {
 export function DeploymentScheduledAlert() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isInitialized = useAuthStore((s) => s.isInitialized);
+  const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [open, setOpen] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<string | null>(null);
@@ -69,21 +71,59 @@ export function DeploymentScheduledAlert() {
   );
 
   useEffect(() => {
-    if (!accessToken || !isAuthenticated) {
+    // Only connect once /users/me has confirmed the token + resolved the user.
+    // Avoids opening the stream with a stale localStorage token on refresh and
+    // stops the SSE from racing with the main data fetches on the critical path.
+    if (!isInitialized || !isAuthenticated || !accessToken || !user) {
       setOpen(false);
       return;
     }
-    const url = deploymentEventsStreamUrl(accessToken);
-    const es = new EventSource(url);
-    es.addEventListener("message", handleMessage as EventListener);
-    es.onerror = () => {
-      es.close();
+
+    type IdleHandle = number;
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => IdleHandle;
+      cancelIdleCallback?: (handle: IdleHandle) => void;
     };
+
+    let es: EventSource | null = null;
+    let idleHandle: IdleHandle | null = null;
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const openStream = () => {
+      if (cancelled) return;
+      const url = deploymentEventsStreamUrl(accessToken);
+      es = new EventSource(url);
+      es.addEventListener("message", handleMessage as EventListener);
+      // Silence the noisy "connection was interrupted" log on HMR/navigation —
+      // the browser cancels in-flight requests during refresh, which is not an
+      // actionable error for users. Downgrade to debug so it's still inspectable.
+      es.onerror = () => {
+        console.debug("[DeploymentScheduledAlert] SSE stream closed or errored");
+        es?.close();
+      };
+    };
+
+    if (typeof win.requestIdleCallback === "function") {
+      idleHandle = win.requestIdleCallback(openStream, { timeout: 3_000 });
+    } else {
+      timeoutHandle = setTimeout(openStream, 1_500);
+    }
+
     return () => {
-      es.removeEventListener("message", handleMessage as EventListener);
-      es.close();
+      cancelled = true;
+      if (idleHandle != null && typeof win.cancelIdleCallback === "function") {
+        win.cancelIdleCallback(idleHandle);
+      }
+      if (timeoutHandle != null) {
+        clearTimeout(timeoutHandle);
+      }
+      if (es) {
+        es.removeEventListener("message", handleMessage as EventListener);
+        es.close();
+      }
     };
-  }, [accessToken, isAuthenticated, handleMessage]);
+  }, [accessToken, isAuthenticated, isInitialized, user, handleMessage]);
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>

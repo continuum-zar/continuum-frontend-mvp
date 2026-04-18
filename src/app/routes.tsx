@@ -17,6 +17,7 @@ import { ResetPassword } from "./pages/auth/ResetPassword";
 import { projectSprintHref } from "./data/dashboardPlaceholderProjects";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { RouteSkeleton } from "./components/ui/RouteSkeleton";
+import { WorkspaceShellSkeleton } from "./components/dashboard-placeholder/WorkspaceShellSkeleton";
 import { LandingRoute } from "./pages/public/LandingRoute";
 import { InviteHandler } from "./pages/InviteHandler";
 
@@ -266,7 +267,7 @@ export const router = createBrowserRouter([
     path: WORKSPACE_BASE,
     element: (
       <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
           <DashboardPlaceholderHome />
         </Suspense>
       </AuthGuard>
@@ -276,7 +277,7 @@ export const router = createBrowserRouter([
     path: `${WORKSPACE_BASE}/${WORKSPACE_SPRINT_SEGMENT}/time-logs`,
     element: (
       <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="list" />}>
           <DashboardPlaceholderGetStartedTimeLogs />
         </Suspense>
       </AuthGuard>
@@ -286,7 +287,7 @@ export const router = createBrowserRouter([
     path: `${WORKSPACE_BASE}/${WORKSPACE_SPRINT_SEGMENT}`,
     element: (
       <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="board" />}>
           <DashboardPlaceholder />
         </Suspense>
       </AuthGuard>
@@ -296,7 +297,7 @@ export const router = createBrowserRouter([
     path: `${WORKSPACE_BASE}/welcome`,
     element: (
       <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
           <WelcomeContinuumView />
         </Suspense>
       </AuthGuard>
@@ -306,7 +307,7 @@ export const router = createBrowserRouter([
     path: workspaceJoin("admin", "release-notes"),
     element: (
       <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
           <AdminReleaseNotes />
         </Suspense>
       </AuthGuard>
@@ -316,7 +317,7 @@ export const router = createBrowserRouter([
     path: `${WORKSPACE_BASE}/project/:projectId`,
     element: (
       <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
           <WelcomeContinuumView />
         </Suspense>
       </AuthGuard>
@@ -326,7 +327,7 @@ export const router = createBrowserRouter([
     path: `${WORKSPACE_BASE}/task/:taskId`,
     element: (
       <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
           <DashboardPlaceholderTaskView />
         </Suspense>
       </AuthGuard>
@@ -336,7 +337,7 @@ export const router = createBrowserRouter([
     path: `${WORKSPACE_BASE}/assigned`,
     element: (
       <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="list" />}>
           <DashboardPlaceholderAssigned />
         </Suspense>
       </AuthGuard>
@@ -346,7 +347,7 @@ export const router = createBrowserRouter([
     path: `${WORKSPACE_BASE}/created`,
     element: (
       <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="list" />}>
           <DashboardPlaceholderCreated />
         </Suspense>
       </AuthGuard>
@@ -356,7 +357,7 @@ export const router = createBrowserRouter([
     path: `${WORKSPACE_BASE}/ai-planner`,
     element: (
       <AuthGuard>
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
           <DashboardPlaceholderAIPlanner />
         </Suspense>
       </AuthGuard>

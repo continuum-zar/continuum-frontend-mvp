@@ -213,4 +213,27 @@ export default defineConfig({
       },
     },
   },
+
+  /**
+   * Pre-bundle the hottest eager vendor modules so Vite's dev server doesn't
+   * waterfall 50+ `GET /node_modules/…` requests on cold start. This is a
+   * dev-only win that directly addresses "refresh on throttled network =
+   * blank for too long" while developing.
+   */
+  optimizeDeps: {
+    include: [
+      '@tanstack/react-query',
+      'react-router',
+      'axios',
+      'zustand',
+      'sonner',
+      'lucide-react',
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'clsx',
+      'tailwind-merge',
+      'date-fns',
+    ],
+  },
 })
