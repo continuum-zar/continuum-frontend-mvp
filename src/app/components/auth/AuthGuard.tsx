@@ -7,6 +7,7 @@ import { Button } from '@/app/components/ui/button';
 import { AlertCircle, RotateCcw } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { LEGACY_WORKSPACE_BASE, WORKSPACE_BASE } from '@/lib/workspacePaths';
+import { ReleaseNotesSessionHost } from '@/app/components/welcome/ReleaseNotesSessionHost';
 
 interface AuthGuardProps {
     children: React.ReactNode;
@@ -93,5 +94,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    return <>{children}</>;
+    return (
+        <>
+            <ReleaseNotesSessionHost />
+            {children}
+        </>
+    );
 };

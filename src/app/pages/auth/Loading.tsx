@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import {
   SESSION_INVITE_TOKEN_KEY,
   SESSION_POST_ONBOARDING_WELCOME_KEY,
+  SESSION_SUPPRESS_RELEASE_NOTES_NEW_SIGNUP_KEY,
 } from '@/app/components/welcome/welcomeModalAssets';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
 import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from '@/lib/workspacePaths';
@@ -45,11 +46,16 @@ export function Loading() {
       });
     };
 
+    const markPostOnboarding = () => {
+      sessionStorage.setItem(SESSION_POST_ONBOARDING_WELCOME_KEY, '1');
+      sessionStorage.setItem(SESSION_SUPPRESS_RELEASE_NOTES_NEW_SIGNUP_KEY, '1');
+    };
+
     Promise.all([minDelay, pathPromise])
       .then(([, path]) => {
         if (!cancelled) {
           if (fromOnboarding) {
-            sessionStorage.setItem(SESSION_POST_ONBOARDING_WELCOME_KEY, '1');
+            markPostOnboarding();
           }
           if (inviteToken && fromLogin) {
             navigate(`/invite?token=${encodeURIComponent(inviteToken)}`, { replace: true });
@@ -62,7 +68,7 @@ export function Loading() {
       .catch(() => {
         if (!cancelled) {
           if (fromOnboarding) {
-            sessionStorage.setItem(SESSION_POST_ONBOARDING_WELCOME_KEY, '1');
+            markPostOnboarding();
           }
           if (inviteToken && fromLogin) {
             navigate(`/invite?token=${encodeURIComponent(inviteToken)}`, { replace: true });

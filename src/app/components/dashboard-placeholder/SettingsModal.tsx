@@ -10,6 +10,7 @@ import { getApiErrorMessage, updateCurrentUserProfile } from "@/api";
 import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
+import { workspaceJoin } from "@/lib/workspacePaths";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import { FeedbackModal } from "./FeedbackModal";
@@ -204,6 +205,7 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
           : "?"
       : "?";
   const avatarBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#e19c02";
+  const showAdminReleaseNotesLink = user?.role?.toLowerCase() === "admin";
 
   const handleSave = async () => {
     if (section === "general") {
@@ -372,6 +374,24 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
                       Used to attribute pushes when your Git config email differs from your Continuum account.
                     </p>
                   </label>
+
+                  {showAdminReleaseNotesLink ? (
+                    <div className="flex flex-col gap-2 border-t border-[#ebedee] pt-6">
+                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                        Product updates
+                      </p>
+                      <button
+                        type="button"
+                        className={outlineActionClass}
+                        onClick={() => {
+                          handleOpenChange(false);
+                          navigate(workspaceJoin("admin", "release-notes"));
+                        }}
+                      >
+                        Manage release notes
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               )}
 
