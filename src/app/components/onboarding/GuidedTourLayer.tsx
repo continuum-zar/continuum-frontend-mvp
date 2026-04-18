@@ -204,14 +204,14 @@ export function GuidedTourLayer() {
     }
 
     if (placement === "left") {
-      let left = Math.max(12, r.left - gap - pr.width);
+      const left = Math.max(12, r.left - gap - pr.width);
       let top = r.top + r.height / 2 - pr.height / 2;
       top = Math.max(12, Math.min(top, window.innerHeight - pr.height - 12));
       setPanelPos((prev) => (prev ? { ...prev, top, left } : null));
       return;
     }
 
-    let left = Math.max(12, Math.min(r.right + gap, window.innerWidth - pr.width - 12));
+    const left = Math.max(12, Math.min(r.right + gap, window.innerWidth - pr.width - 12));
     let top = r.top + r.height / 2 - pr.height / 2;
     top = Math.max(12, Math.min(top, window.innerHeight - pr.height - 12));
     setPanelPos((prev) => (prev ? { ...prev, top, left } : null));
