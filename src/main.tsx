@@ -2,8 +2,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { QueryDevtoolsGate } from "./dev/QueryDevtoolsGate.tsx";
 import App from "./app/App.tsx";
-// Manrope + JetBrains Mono are @imported from index.css so the browser fetches
-// them as part of the main stylesheet, in parallel with the JS bundle.
+// Satoshi is @imported from index.css so it loads with the main stylesheet.
 import "./styles/index.css";
 import { DEFAULT_GC_MS, DEFAULT_STALE_MS } from "./lib/queryDefaults.ts";
 
@@ -41,9 +40,8 @@ createRoot(document.getElementById("root")!).render(
 );
 
 /**
- * Decorative fonts (Sarina + Satoshi) are imported at idle-time so they fetch
- * in parallel with the first interactions instead of gating any render. The
- * import is cached, so subsequent `import()` calls elsewhere are free.
+ * Sarina (accent) loads at idle so it stays off the critical path. Satoshi is
+ * already in index.css. Import is cached; subsequent `import()` calls are free.
  */
 if (typeof window !== "undefined") {
   type IdleHandle = number;

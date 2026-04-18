@@ -6,6 +6,7 @@
   "scripts": {
     "build": "vite build",
     "build:analyze": "ANALYZE=1 vite build",
+    "css:stats": "vite build && node scripts/css-build-stats.mjs",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -14,8 +15,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@fontsource-variable/jetbrains-mono": "^5.2.8",
-    "@fontsource-variable/manrope": "^5.2.8",
     "@fontsource/sarina": "^5.2.7",
     "@popperjs/core": "2.11.8",
     "@radix-ui/react-accordion": "1.2.3",

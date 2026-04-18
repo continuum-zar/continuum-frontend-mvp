@@ -1,5 +1,8 @@
 @import 'tailwindcss' source(none);
 @source '../**/*.{js,ts,jsx,tsx}';
+@source not '../**/*.test.{ts,tsx}';
+@source not '../**/*.spec.{ts,tsx}';
+@source not '../**/__tests__/**';
 
 @import 'tw-animate-css';
 

@@ -1,14 +1,15 @@
-/* Core fonts (Manrope, JetBrains Mono) are self-hosted via Fontsource — imported in main.tsx */
-
+/* UI sans: Satoshi (@import in index.css). Mono: system stack only — no extra webfont bytes. */
 :root {
-  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-sans: 'Satoshi', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 }
 
 body {
   font-family: var(--font-sans);
 }
 
-code, pre, .font-mono {
+code,
+pre,
+.font-mono {
   font-family: var(--font-mono);
 }
