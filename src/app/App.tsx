@@ -10,6 +10,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { CustomCursorOverlay } from './components/CustomCursorOverlay';
 import { MobileDesktopOnlyGate } from './components/MobileDesktopOnlyGate';
 import { AuthQueryCacheSync } from './components/AuthQueryCacheSync';
+import { DeploymentScheduledAlert } from './components/deployments/DeploymentScheduledAlert';
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -24,6 +25,7 @@ function App() {
       <RoleProvider>
         <TimeTrackingProvider>
           <AuthQueryCacheSync />
+          <DeploymentScheduledAlert />
           <MobileDesktopOnlyGate>
             <RouterProvider router={router} />
           </MobileDesktopOnlyGate>

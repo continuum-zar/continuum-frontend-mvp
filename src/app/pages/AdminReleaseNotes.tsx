@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
+import { scheduleDeployment } from "@/api/deployments";
 import {
   createAdminReleaseNote,
   fetchAdminReleaseNotes,
@@ -86,6 +87,14 @@ export function AdminReleaseNotes() {
     onError: (err) => toast.error(getApiErrorMessage(err, "Could not update release note")),
   });
 
+  const scheduleDeploymentMutation = useMutation({
+    mutationFn: scheduleDeployment,
+    onSuccess: (data) => {
+      toast.success(`Deployment alert scheduled — users are notified ${data.minutes_until} minutes ahead.`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, "Could not schedule deployment")),
+  });
+
   const rows = listQuery.data ?? [];
 
   const canSubmit = useMemo(() => {
@@ -159,6 +168,22 @@ export function AdminReleaseNotes() {
           Close
         </button>
       </div>
+
+      <section className="mb-10 rounded-[12px] border border-[#ebedee] bg-white p-6 shadow-sm">
+        <h2 className="text-[18px] font-medium text-[#0b191f]">Product updates</h2>
+        <p className="mt-1 text-[14px] text-[#727d83]">
+          Send a real-time alert to everyone who is signed in so they can save work before production goes offline for
+          this release.
+        </p>
+        <button
+          type="button"
+          disabled={scheduleDeploymentMutation.isPending}
+          className="mt-4 rounded-[8px] border border-[#ebedee] bg-white px-4 py-2 text-[14px] font-medium text-[#0b191f] hover:bg-[#f9f9f9] disabled:opacity-50"
+          onClick={() => scheduleDeploymentMutation.mutate()}
+        >
+          {scheduleDeploymentMutation.isPending ? "Scheduling…" : "Schedule deployment"}
+        </button>
+      </section>
 
       <form onSubmit={handleSubmit} className="mb-12 flex flex-col gap-4 rounded-[12px] border border-[#ebedee] bg-white p-6 shadow-sm">
         <h2 className="text-[18px] font-medium text-[#0b191f]">{editingId == null ? "New release note" : "Edit release note"}</h2>
