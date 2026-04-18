@@ -28,7 +28,8 @@ import { DashboardLeftRail } from "../components/dashboard-placeholder/Dashboard
 import { DiscordIntegrationModal } from "../components/dashboard-placeholder/DiscordIntegrationModal";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
-import { WelcomeToContinuumModal } from "../components/welcome/WelcomeToContinuumModal";
+import { ReleaseNotesModal } from "../components/welcome/ReleaseNotesModal";
+import { welcomeToContinuumModalProps } from "../components/welcome/WelcomeToContinuumModal";
 import { PendingInvitationsHost } from "../components/PendingInvitationsHost";
 import {
   SESSION_POST_ONBOARDING_WELCOME_KEY,
@@ -1598,7 +1599,11 @@ export function DashboardPlaceholder() {
         milestoneId={milestoneParam}
       />
       <PendingInvitationsHost />
-      <WelcomeToContinuumModal open={welcomeToContinuumOpen} onOpenChange={handleWelcomeToContinuumOpenChange} />
+      <ReleaseNotesModal
+        {...welcomeToContinuumModalProps}
+        open={welcomeToContinuumOpen}
+        onOpenChange={handleWelcomeToContinuumOpenChange}
+      />
     </div>
   );
 }
