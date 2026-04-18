@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Check, ChevronRight, LogOut, X } from "lucide-react";
+import { BookOpen, Check, ChevronRight, LogOut, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { getApiErrorMessage, updateCurrentUserProfile } from "@/api";
 import { useAuthStore } from "@/store/authStore";
+import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
@@ -45,12 +46,14 @@ const placeholderActionClass =
 const placeholderLinkClass =
   "cursor-default border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] underline decoration-solid underline-offset-2 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring";
 
+export type SettingsSection = "general" | "notification" | "invoice" | "integrations" | "support";
+
 type SettingsModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When set while the dialog is open, switches the visible section (guided tour). */
+  tourSection?: SettingsSection | null;
 };
-
-type SettingsSection = "general" | "notification" | "invoice" | "integrations" | "support";
 
 const NAV: { id: SettingsSection; label: string }[] = [
   { id: "general", label: "General" },
@@ -135,12 +138,13 @@ function defaultNotificationPrefs(): Record<keyof typeof NOTIFICATION_DEFAULTS, 
   };
 }
 
-export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
+export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModalProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const authLoading = useAuthStore((s) => s.isLoading);
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  const startWorkspaceTour = useWorkspaceTourStore((s) => s.startTour);
   const [section, setSection] = useState<SettingsSection>("general");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -153,7 +157,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   useEffect(() => {
     if (!open) return;
-    setSection("general");
     setNotificationPrefs(defaultNotificationPrefs());
     setInvoiceCurrency("ZAR");
     setInvoiceHourlyRate("200");
@@ -167,6 +170,11 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setGitCommitEmail("");
     }
   }, [open, user]);
+
+  useEffect(() => {
+    if (!open) return;
+    setSection(tourSection ?? "general");
+  }, [open, tourSection]);
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
@@ -226,6 +234,13 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     navigate("/login");
   };
 
+  const handleReplayTutorial = () => {
+    handleOpenChange(false);
+    window.setTimeout(() => {
+      startWorkspaceTour(0);
+    }, 0);
+  };
+
   const showSaveFooter =
     section === "general" || section === "notification" || section === "invoice";
 
@@ -261,6 +276,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 <button
                   key={item.id}
                   type="button"
+                  data-tour={`settings-nav-${item.id}`}
                   onClick={() => setSection(item.id)}
                   className={cn(
                     "flex h-10 w-full items-center rounded-[8px] px-4 py-2 text-left font-['Satoshi',sans-serif] text-[16px] font-medium transition-colors",
@@ -273,15 +289,26 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 </button>
               ))}
             </nav>
-            <button
-              type="button"
-              onClick={() => void handleLogout()}
-              disabled={authLoading}
-              className="flex h-10 w-full shrink-0 items-center gap-2 rounded-[8px] px-4 text-left font-['Satoshi',sans-serif] text-[16px] font-medium text-[#606d76] outline-none transition-colors hover:bg-[rgba(255,255,255,0.6)] focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-            >
-              <LogOut className="size-4 shrink-0" strokeWidth={1.5} aria-hidden />
-              {authLoading ? "Logging out…" : "Log out"}
-            </button>
+            <div className="flex shrink-0 flex-col gap-2">
+              <button
+                type="button"
+                data-tour="settings-replay-tutorial"
+                onClick={handleReplayTutorial}
+                className="flex h-10 w-full items-center gap-2 rounded-[8px] px-4 text-left font-['Satoshi',sans-serif] text-[16px] font-medium text-[#606d76] outline-none transition-colors hover:bg-[rgba(255,255,255,0.6)] focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <BookOpen className="size-4 shrink-0" strokeWidth={1.5} aria-hidden />
+                Tutorial
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                disabled={authLoading}
+                className="flex h-10 w-full items-center gap-2 rounded-[8px] px-4 text-left font-['Satoshi',sans-serif] text-[16px] font-medium text-[#606d76] outline-none transition-colors hover:bg-[rgba(255,255,255,0.6)] focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+              >
+                <LogOut className="size-4 shrink-0" strokeWidth={1.5} aria-hidden />
+                {authLoading ? "Logging out…" : "Log out"}
+              </button>
+            </div>
           </aside>
 
           <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-white">
@@ -515,6 +542,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     </p>
                     <button
                       type="button"
+                      data-tour="settings-report-issue"
                       onClick={() => setFeedbackOpen(true)}
                       className={cn(outlineActionClass, "gap-1")}
                       aria-labelledby="settings-support-report-heading"

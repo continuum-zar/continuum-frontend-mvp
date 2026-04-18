@@ -26,6 +26,8 @@ import {
   projectSprintHref,
 } from "../../data/dashboardPlaceholderProjects";
 import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
+import { GuidedTourLayer } from "@/app/components/onboarding/GuidedTourLayer";
+import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import { cn } from "../ui/utils";
 
 const imgVector = mcpAsset("2470fa31-25cd-47ac-991d-d1c4219bd28d");
@@ -158,6 +160,7 @@ function Frame1({
     <div className={className || "content-stretch flex gap-[8px] items-center relative"} data-node-id="7:72">
       <Link
         to={WORKSPACE_BASE}
+        data-tour="rail-home"
         className="text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Home"
       >
@@ -173,6 +176,7 @@ function Frame1({
       </Link>
       <button
         type="button"
+        data-tour="rail-invoice"
         onClick={onInvoiceClick}
         className="text-inherit outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Invoices"
@@ -187,6 +191,7 @@ function Frame1({
       </button>
       <Link
         to={workspaceJoin("assigned")}
+        data-tour="rail-assigned"
         className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Assigned to me"
       >
@@ -202,6 +207,7 @@ function Frame1({
       </Link>
       <Link
         to={workspaceJoin("created")}
+        data-tour="rail-created"
         className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Created by me"
       >
@@ -506,6 +512,28 @@ export function DashboardLeftRail() {
       : "?";
   const profileAvatarBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#f0f3f5";
 
+  const settingsTourSection = useWorkspaceTourStore((s) => s.settingsPanelSection);
+  const tourSettingsModalOpen = useWorkspaceTourStore((s) => s.tourSettingsModalOpen);
+  const setTourSettingsModalOpen = useWorkspaceTourStore((s) => s.setTourSettingsModalOpen);
+  const tourActive = useWorkspaceTourStore((s) => s.active);
+  const prevTourActiveRef = useRef<boolean | undefined>(undefined);
+
+  /** One-shot open/close from the guided tour (not a sticky counter). */
+  useEffect(() => {
+    if (tourSettingsModalOpen === null) return;
+    setSettingsOpen(tourSettingsModalOpen);
+    setTourSettingsModalOpen(null);
+  }, [tourSettingsModalOpen, setTourSettingsModalOpen]);
+
+  /** When the tour ends, always dismiss settings so it is not left behind the tour UI. */
+  useEffect(() => {
+    const prev = prevTourActiveRef.current;
+    prevTourActiveRef.current = tourActive;
+    if (prev === true && tourActive === false) {
+      setSettingsOpen(false);
+    }
+  }, [tourActive]);
+
   const isHomeActive = pathname === WORKSPACE_BASE;
   const isInvoiceActive = invoiceOpen;
   const isAssignedActive = pathname.startsWith(`${WORKSPACE_BASE}/assigned`);
@@ -513,6 +541,7 @@ export function DashboardLeftRail() {
 
   return (
     <>
+      <GuidedTourLayer />
       <div
         className="flex h-full min-h-0 w-[212px] shrink-0 flex-col items-stretch overflow-hidden z-[2]"
         data-node-id="7:2819"
@@ -561,6 +590,7 @@ export function DashboardLeftRail() {
                   <PopoverTrigger asChild>
                     <button
                       type="button"
+                      data-tour="rail-create-project"
                       className="inline-flex size-[16px] shrink-0 items-center justify-center overflow-clip rounded-[16px] border-0 bg-transparent p-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       aria-label="Create project"
                       aria-expanded={createProjectMenuOpen}
@@ -671,6 +701,7 @@ export function DashboardLeftRail() {
         {/* Figma 13:560 — timer + divider + profile stacked with no extra vertical gap */}
         <div
           ref={setRailPickerContainer}
+          data-tour="rail-time-tracking"
           className="relative flex w-full shrink-0 flex-col gap-0"
           data-node-id="7:2837"
         >
@@ -807,6 +838,7 @@ export function DashboardLeftRail() {
         <div className="h-px w-full shrink-0 bg-[#ebedee]" data-node-id="7:2842" aria-hidden />
         <button
           type="button"
+          data-tour="rail-profile-settings"
           onClick={() => setSettingsOpen(true)}
           className="content-stretch flex h-[40px] w-full shrink-0 cursor-pointer items-center justify-between rounded-[8px] border-0 bg-transparent p-0 text-left outline-none ring-offset-2 transition-colors hover:bg-[rgba(237,240,243,0.85)] focus-visible:ring-2 focus-visible:ring-ring"
           data-name="Component 13"
@@ -846,7 +878,7 @@ export function DashboardLeftRail() {
       </div>
       <CreateProjectModal open={createProjectOpen} onOpenChange={setCreateProjectOpen} />
       <InvoiceModal open={invoiceOpen} onOpenChange={setInvoiceOpen} />
-      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} tourSection={settingsTourSection} />
       <LogTimeModal
         open={logModalOpen}
         onOpenChange={(o) => {

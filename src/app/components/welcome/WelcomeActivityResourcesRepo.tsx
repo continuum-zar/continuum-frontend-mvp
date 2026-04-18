@@ -65,7 +65,7 @@ function ResourceRow({ item }: { item: WelcomeResourceItem }) {
 
 export function WelcomeRecentActivity() {
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-4" data-tour="welcome-recent-activity">
       <div className="flex w-full items-center justify-between">
         <p className="font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal whitespace-nowrap text-[#0b191f]">
           Recent activity
@@ -105,7 +105,7 @@ export function WelcomeResources() {
   const [addResourceOpen, setAddResourceOpen] = useState(false);
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-4" data-tour="welcome-resources">
       <AddResourceModal open={addResourceOpen} onOpenChange={setAddResourceOpen} />
       <div className="flex w-full items-center justify-between">
         <p className="font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal whitespace-nowrap text-[#0b191f]">
@@ -129,7 +129,7 @@ export function WelcomeRepo() {
   const [linkRepoOpen, setLinkRepoOpen] = useState(false);
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-4" data-tour="welcome-repository">
       <WelcomeLinkRepositoryModal open={linkRepoOpen} onOpenChange={setLinkRepoOpen} />
       <div className="flex w-full items-center justify-between">
         <p className="font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal whitespace-nowrap text-[#0b191f]">

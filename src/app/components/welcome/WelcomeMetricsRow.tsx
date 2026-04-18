@@ -17,6 +17,7 @@ export type WelcomeMetricsRowProps = {
 export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
   return (
     <div
+      data-tour="welcome-metrics-row"
       className={`relative mx-auto flex w-full max-w-[815px] shrink-0 flex-wrap items-center rounded-[12px] bg-white sm:gap-x-10 ${
         empty ? "justify-between gap-x-6 gap-y-6" : "justify-center gap-x-8 gap-y-6"
       }`}

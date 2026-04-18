@@ -7,7 +7,11 @@ const imgHeroArcFilled = mcpAsset("1c54c7ec-1cc0-4107-8c3d-ea141fcb2f4e");
 /** Welcome Continuum demo gauge — static Figma image with hardcoded mock data. */
 export function WelcomeProjectHeroGauge() {
   return (
-    <div className="relative h-[191px] w-full max-w-[815px] shrink-0" data-node-id="35:10702">
+    <div
+      className="relative h-[191px] w-full max-w-[815px] shrink-0"
+      data-tour="welcome-hero-gauge"
+      data-node-id="35:10702"
+    >
       <div className="absolute top-0 left-1/2 h-[175.151px] w-[350.302px] -translate-x-1/2">
         <div className="absolute inset-[-4.85%_-2.43%]">
           <img alt="" className="block size-full max-w-none" src={imgHeroArcFilled} />
