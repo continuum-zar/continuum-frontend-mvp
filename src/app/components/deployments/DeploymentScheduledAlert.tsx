@@ -32,22 +32,41 @@ function formatScheduledAt(iso: string): string {
 export function DeploymentScheduledAlert() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const logout = useAuthStore((s) => s.logout);
   const [open, setOpen] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<string | null>(null);
   const [minutesUntil, setMinutesUntil] = useState<number>(15);
 
-  const handleMessage = useCallback((ev: MessageEvent<string>) => {
-    try {
-      const data = JSON.parse(ev.data) as { type?: string; scheduled_at?: string; minutes_until?: number };
-      if (data.type === "deployment_scheduled" && data.scheduled_at) {
-        setScheduledAt(data.scheduled_at);
-        setMinutesUntil(typeof data.minutes_until === "number" ? data.minutes_until : 15);
-        setOpen(true);
+  const handleMessage = useCallback(
+    (ev: MessageEvent<string>) => {
+      try {
+        const data = JSON.parse(ev.data) as {
+          type?: string;
+          scheduled_at?: string;
+          minutes_until?: number;
+          auth_deployment_epoch?: number;
+        };
+        if (data.type === "session_invalidation") {
+          void (async () => {
+            await logout();
+            // This component mounts above <RouterProvider>, so useNavigate is invalid here — full navigation.
+            if (typeof window !== "undefined") {
+              window.location.replace("/login");
+            }
+          })();
+          return;
+        }
+        if (data.type === "deployment_scheduled" && data.scheduled_at) {
+          setScheduledAt(data.scheduled_at);
+          setMinutesUntil(typeof data.minutes_until === "number" ? data.minutes_until : 15);
+          setOpen(true);
+        }
+      } catch {
+        /* ignore malformed */
       }
-    } catch {
-      /* ignore malformed */
-    }
-  }, []);
+    },
+    [logout],
+  );
 
   useEffect(() => {
     if (!accessToken || !isAuthenticated) {
