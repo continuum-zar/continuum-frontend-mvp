@@ -11,7 +11,7 @@ import { useAuthStore } from "@/store/authStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
-import { ReportIssueModal } from "./ReportIssueModal";
+import { FeedbackModal } from "./FeedbackModal";
 import {
   Select,
   SelectContent,
@@ -572,7 +572,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>
-    <ReportIssueModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+    <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </>
   );
 }
