@@ -1,10 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
-import { Flag, Timer } from "lucide-react";
+import { Flag, Loader2, Timer } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
-import { GetStartedKanbanLive } from "../components/dashboard-placeholder/GetStartedKanbanLive";
-import { KanbanBoardScrollSlider } from "../components/dashboard-placeholder/KanbanBoardScrollSlider";
+const GetStartedKanbanLive = lazy(() =>
+  import("../components/dashboard-placeholder/GetStartedKanbanLive").then((m) => ({
+    default: m.GetStartedKanbanLive,
+  }))
+);
+const KanbanBoardScrollSlider = lazy(() =>
+  import("../components/dashboard-placeholder/KanbanBoardScrollSlider").then((m) => ({
+    default: m.KanbanBoardScrollSlider,
+  }))
+);
 import {
   DASHBOARD_WELCOME_PROJECT,
   isApiProjectId,
@@ -36,6 +44,15 @@ import {
   welcomeModalDismissedKeyForUser,
 } from "../components/welcome/welcomeModalAssets";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
+
+function LiveKanbanSuspenseFallback() {
+  return (
+    <div className="relative z-[1] flex min-h-0 min-w-0 w-full flex-1 flex-col items-center justify-center bg-white">
+      <Loader2 className="size-8 animate-spin text-[#606d76]" aria-hidden />
+      <span className="sr-only">Loading board…</span>
+    </div>
+  );
+}
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgEllipse21 = mcpAsset("a0e3fea4-5911-470e-aa3e-64387b06a92f");
@@ -962,22 +979,24 @@ export function DashboardPlaceholder() {
               </div>
             </div>
 {isLiveBoard ? (
-              <div className="relative z-[1] flex min-h-0 min-w-0 w-full flex-1 flex-col">
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                  <GetStartedKanbanLive
-                    projectId={Number(projectParam)}
-                    milestoneId={milestoneParam}
-                    members={liveMembers}
-                    view={sprintView}
-                    boardScrollRef={kanbanBoardScrollRef}
-                  />
-                </div>
-                {sprintView === "board" ? (
-                  <div className="relative z-[20] mt-auto w-full shrink-0 overflow-visible pt-2">
-                    <KanbanBoardScrollSlider scrollRef={kanbanBoardScrollRef} />
+              <Suspense fallback={<LiveKanbanSuspenseFallback />}>
+                <div className="relative z-[1] flex min-h-0 min-w-0 w-full flex-1 flex-col">
+                  <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                    <GetStartedKanbanLive
+                      projectId={Number(projectParam)}
+                      milestoneId={milestoneParam}
+                      members={liveMembers}
+                      view={sprintView}
+                      boardScrollRef={kanbanBoardScrollRef}
+                    />
                   </div>
-                ) : null}
-              </div>
+                  {sprintView === "board" ? (
+                    <div className="relative z-[20] mt-auto w-full shrink-0 overflow-visible pt-2">
+                      <KanbanBoardScrollSlider scrollRef={kanbanBoardScrollRef} />
+                    </div>
+                  ) : null}
+                </div>
+              </Suspense>
             ) : (
               <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]" data-node-id="7:2908">
               <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "todo" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("todo")} onDragLeave={handleColumnDragLeave("todo")} onDrop={handleDrop("todo")}>

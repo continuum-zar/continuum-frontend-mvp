@@ -1,15 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f9fafb" />
+    <link rel="icon" type="image/svg+xml" href="/landing/Favicon%20(512%20x%20512).svg" />
+    <title>Project Management Dashboard UI</title>
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
+    <link rel="dns-prefetch" href="https://api.fontshare.com" />
+    <link rel="dns-prefetch" href="https://cdn.fontshare.com" />
+    <style>
+      /*
+       * First paint before React hydrates — matches post-login `Loading` (src/app/pages/auth/Loading.tsx):
+       * gradient, wordmark, soft pulse. Uses system fonts; logo loads from /public like the app.
+       */
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: linear-gradient(to bottom, #a8e5fe 0%, #faf8f4 100%);
+        color: #0b191f;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Manrope",
+          ui-sans-serif, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      #root {
+        min-height: 100%;
+      }
+      .boot-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        min-height: 100vh;
+        width: 100%;
+        padding: 40px;
+        background: linear-gradient(to bottom, #a8e5fe 0%, #faf8f4 100%);
+      }
+      .boot-loading__inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 19.38px;
+        width: min(354px, calc(100vw - 48px));
+      }
+      .boot-loading__logo {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-height: 60px;
+        object-fit: contain;
+        animation: boot-pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .boot-loading__tagline {
+        margin: 0;
+        width: 100%;
+        max-width: 235px;
+        text-align: center;
+        font-size: 19.38px;
+        font-weight: 400;
+        line-height: 1;
+        letter-spacing: -0.19px;
+        color: rgba(4, 89, 128, 0.8);
+        animation: boot-pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        animation-delay: 0.2s;
+      }
+      .boot-loading__sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      @keyframes boot-pulse-soft {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-loading__logo,
+        .boot-loading__tagline {
+          animation: none;
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
 
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="icon" type="image/svg+xml" href="/landing/Favicon%20(512%20x%20512).svg" />
-      <title>Project Management Dashboard UI</title>
-    </head>
-
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-    </body>
-  </html>
+  <body>
+    <div id="root">
+      <div class="boot-loading" role="status" aria-live="polite">
+        <div class="boot-loading__inner">
+          <img
+            class="boot-loading__logo"
+            src="/auth/Wordmark_colour.svg"
+            alt=""
+            width="354"
+            height="60"
+            decoding="async"
+          />
+          <p class="boot-loading__tagline">Time track with one click...</p>
+          <span class="boot-loading__sr">Loading</span>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

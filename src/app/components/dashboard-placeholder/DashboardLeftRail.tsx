@@ -466,13 +466,21 @@ export function DashboardLeftRail() {
       ? Math.floor((Date.now() - startedAtMs) / 1000)
       : 0;
 
-  /** Load as soon as the rail mounts so the picker isn’t empty while the query warms up after open. */
+  /**
+   * Only fetch when the user actually opens the task picker (or is recording, so the picker is armed).
+   * Previously eager-loaded 500 tasks on every workspace route — big tax on slow networks with no payoff
+   * for users who never use the task picker. Cached results stay warm for subsequent opens.
+   */
+  const shouldLoadPickerTasks = taskPickerOpen || isRecording;
   const {
     data: allTasksForPicker = [],
-    isPending: allTasksPending,
+    isPending: allTasksPendingRaw,
     isError: allTasksError,
     error: allTasksErrorDetail,
-  } = useAllTasks({ enabled: true });
+  } = useAllTasks({ enabled: shouldLoadPickerTasks });
+  // `isPending` is true while query is disabled; treat that as "not loading" in the UI so the empty-state
+  // message doesn't flash as a spinner before the picker is opened for the first time.
+  const allTasksPending = shouldLoadPickerTasks && allTasksPendingRaw;
 
   const filteredRailTasks = useMemo(() => {
     const q = taskSearch.trim().toLowerCase();

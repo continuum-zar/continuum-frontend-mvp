@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { useAuthStore } from '@/store/authStore';
-import { Skeleton } from '@/app/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/app/components/ui/alert';
 import { Button } from '@/app/components/ui/button';
 import { AlertCircle, RotateCcw } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { LEGACY_WORKSPACE_BASE, WORKSPACE_BASE } from '@/lib/workspacePaths';
+import { WorkspaceShellSkeleton } from '@/app/components/dashboard-placeholder/WorkspaceShellSkeleton';
+import { RouteSkeleton } from '@/app/components/ui/RouteSkeleton';
 import { ReleaseNotesSessionHost } from '@/app/components/welcome/ReleaseNotesSessionHost';
 
 interface AuthGuardProps {
@@ -38,22 +39,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         }
     }, [isInitialized, accessToken, fetchError, handleCheckAuth]);
 
-    /** Sarina + Satoshi: onboarding, placeholder shell, and role-selection */
-    useEffect(() => {
-        const p = location.pathname;
-        if (
-            p.startsWith('/onboarding') ||
-            p.startsWith(WORKSPACE_BASE) ||
-            p.startsWith(LEGACY_WORKSPACE_BASE) ||
-            p.startsWith('/role-selection') ||
-            p.startsWith('/tasks/') ||
-            p.startsWith('/projects/') ||
-            p.startsWith('/cursor-mcp')
-        ) {
-            void import('@/styles/load-decorative-fonts');
-        }
-    }, [location.pathname]);
-
     if (fetchError) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] p-6 max-w-md mx-auto space-y-4">
@@ -79,15 +64,16 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     const showLoader = isLoading || (!isInitialized && accessToken);
 
     if (showLoader) {
-        return (
-            <div className="flex flex-col space-y-3 p-8">
-                <Skeleton className="h-[125px] w-full rounded-xl" />
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
-                </div>
-            </div>
-        );
+        const p = location.pathname;
+        const isWorkspacePath =
+            p.startsWith(WORKSPACE_BASE) ||
+            p.startsWith(LEGACY_WORKSPACE_BASE) ||
+            p === '/dashboard' ||
+            p.startsWith('/projects') ||
+            p.startsWith('/tasks') ||
+            p === '/time' ||
+            p === '/invoices';
+        return isWorkspacePath ? <WorkspaceShellSkeleton /> : <RouteSkeleton />;
     }
 
     if (!isAuthenticated) {

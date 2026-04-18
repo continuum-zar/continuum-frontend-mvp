@@ -1,9 +1,23 @@
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
-import { TaskPanels } from "../components/dashboard-placeholder/TaskPanels";
-import { TaskDetail } from "./TaskDetail";
 import { isApiProjectId } from "../data/dashboardPlaceholderProjects";
 import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from "@/lib/workspacePaths";
+
+const TaskPanels = lazy(() =>
+  import("../components/dashboard-placeholder/TaskPanels").then((m) => ({ default: m.TaskPanels }))
+);
+const TaskDetail = lazy(() => import("./TaskDetail").then((m) => ({ default: m.TaskDetail })));
+
+function TaskShellFallback() {
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center bg-white">
+      <Loader2 className="size-8 animate-spin text-[#606d76]" aria-hidden />
+      <span className="sr-only">Loading…</span>
+    </div>
+  );
+}
 
 export function DashboardPlaceholderTaskView() {
   const navigate = useNavigate();
@@ -37,15 +51,17 @@ export function DashboardPlaceholderTaskView() {
         <div className="isolate flex min-h-0 w-full flex-1 items-stretch gap-[16px]">
           <DashboardLeftRail />
           <section className="relative z-[1] isolate flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-[8px] border border-[#ebedee] border-solid bg-white shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
-            {isRealTask ? (
-              <TaskDetail taskIdOverride={taskId} onBack={handleBack} />
-            ) : (
-              <TaskPanels
-                onBack={handleBack}
-                taskId={taskId ?? null}
-                projectId={projectParam && isApiProjectId(projectParam) ? projectParam : null}
-              />
-            )}
+            <Suspense fallback={<TaskShellFallback />}>
+              {isRealTask ? (
+                <TaskDetail taskIdOverride={taskId} onBack={handleBack} />
+              ) : (
+                <TaskPanels
+                  onBack={handleBack}
+                  taskId={taskId ?? null}
+                  projectId={projectParam && isApiProjectId(projectParam) ? projectParam : null}
+                />
+              )}
+            </Suspense>
           </section>
         </div>
       </div>

@@ -1,3 +1,9 @@
+/*
+ * Core fonts live on the main stylesheet so the browser can download them in
+ * parallel with the JS bundle (rather than being gated behind main.tsx).
+ */
+@import '@fontsource-variable/manrope/index.css';
+@import '@fontsource-variable/jetbrains-mono/index.css';
 @import './fonts.css';
 @import './sarina-font.css';
 @import './tailwind.css';
