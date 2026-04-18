@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { Flag, Timer } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
@@ -380,15 +380,34 @@ export function DashboardPlaceholder() {
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
   const [discordIntegrationOpen, setDiscordIntegrationOpen] = useState(false);
   const [welcomeToContinuumOpen, setWelcomeToContinuumOpen] = useState(false);
-  /** Live sprint area only: board vs list (same tasks). */
-  const [sprintView, setSprintView] = useState<"board" | "list">("board");
-  /** Horizontal scroll container of the live Kanban board — driven by the top-bar slider. */
+  /** Horizontal scroll container of the live Kanban board — driven by the bottom slider. */
   const kanbanBoardScrollRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const projectParam = searchParams.get("project");
   const milestoneParam = searchParams.get("milestone");
+  /** Persisted in the URL as `?view=list` so refresh keeps list vs board. */
+  const sprintView: "board" | "list" = searchParams.get("view") === "list" ? "list" : "board";
   const isLiveBoard = projectParam != null && isApiProjectId(projectParam);
+
+  const setSprintView = useCallback(
+    (next: "board" | "list") => {
+      if (!isLiveBoard) return;
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev);
+          if (next === "board") {
+            p.delete("view");
+          } else {
+            p.set("view", "list");
+          }
+          return p;
+        },
+        { replace: true },
+      );
+    },
+    [isLiveBoard, setSearchParams],
+  );
   const liveProjectId = isLiveBoard && projectParam ? Number(projectParam) : null;
   const userId = useAuthStore((s) => s.user?.id);
   const queueTourAfterWelcome = useWorkspaceTourStore((s) => s.queueAfterWelcomeDismiss);
@@ -855,11 +874,6 @@ export function DashboardPlaceholder() {
                     </div>
                   </button>
                 </div>
-                {isLiveBoard && sprintView === "board" ? (
-                  <div className="mx-[24px] flex min-w-0 flex-1 items-center">
-                    <KanbanBoardScrollSlider scrollRef={kanbanBoardScrollRef} />
-                  </div>
-                ) : null}
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2902">
                   <div className="content-stretch flex items-center pr-[10.667px] relative shrink-0" data-name="Component 33" data-node-id="7:2903">
                     {isLiveBoard ? (
@@ -948,13 +962,22 @@ export function DashboardPlaceholder() {
               </div>
             </div>
 {isLiveBoard ? (
-              <GetStartedKanbanLive
-                projectId={Number(projectParam)}
-                milestoneId={milestoneParam}
-                members={liveMembers}
-                view={sprintView}
-                boardScrollRef={kanbanBoardScrollRef}
-              />
+              <div className="relative z-[1] flex min-h-0 min-w-0 w-full flex-1 flex-col">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <GetStartedKanbanLive
+                    projectId={Number(projectParam)}
+                    milestoneId={milestoneParam}
+                    members={liveMembers}
+                    view={sprintView}
+                    boardScrollRef={kanbanBoardScrollRef}
+                  />
+                </div>
+                {sprintView === "board" ? (
+                  <div className="relative z-[20] mt-auto w-full shrink-0 overflow-visible pt-2">
+                    <KanbanBoardScrollSlider scrollRef={kanbanBoardScrollRef} />
+                  </div>
+                ) : null}
+              </div>
             ) : (
               <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]" data-node-id="7:2908">
               <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "todo" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("todo")} onDragLeave={handleColumnDragLeave("todo")} onDrop={handleDrop("todo")}>
@@ -1401,7 +1424,7 @@ export function DashboardPlaceholder() {
         <button
           type="button"
           onClick={() => setAiChatOpen(true)}
-          className="absolute bottom-[14px] right-[14px] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+          className="absolute bottom-[14px] right-[14px] z-[40] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Open AI assistant"
           data-tour="sprint-ai-assistant"
           data-node-id="7:2936"
