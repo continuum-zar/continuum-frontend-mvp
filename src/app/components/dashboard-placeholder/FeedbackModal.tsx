@@ -75,7 +75,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
       },
       {
         onSuccess: () => {
-          toast.success("Thanks — we've received your report.");
+          toast.success("Thanks, we've received your report.");
           onOpenChange(false);
         },
         onError: (err) => {

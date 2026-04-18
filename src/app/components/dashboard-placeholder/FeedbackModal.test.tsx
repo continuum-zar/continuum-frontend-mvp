@@ -75,7 +75,7 @@ describe("FeedbackModal", () => {
       });
     });
 
-    expect(toastSuccess).toHaveBeenCalledWith("Thanks — we've received your report.");
+    expect(toastSuccess).toHaveBeenCalledWith("Thanks, we've received your report.");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
@@ -93,7 +93,7 @@ describe("FeedbackModal", () => {
         contact_email: null,
       });
     });
-    expect(toastSuccess).toHaveBeenCalledWith("Thanks — we've received your report.");
+    expect(toastSuccess).toHaveBeenCalledWith("Thanks, we've received your report.");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 

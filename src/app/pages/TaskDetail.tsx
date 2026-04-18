@@ -455,7 +455,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     try {
       await navigator.clipboard.writeText(cursorMcpShareUrl);
       setMcpLinkCopied(true);
-      toast.success('Link copied — paste it into Cursor chat to open this task view.');
+      toast.success('Link copied, paste it into Cursor chat to open this task view.');
       window.setTimeout(() => setMcpLinkCopied(false), 2000);
     } catch {
       toast.error('Could not copy to clipboard');

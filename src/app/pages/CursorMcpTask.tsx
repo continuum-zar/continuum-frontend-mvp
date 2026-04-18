@@ -46,7 +46,7 @@ export function CursorMcpTask() {
         try {
             await navigator.clipboard.writeText(shareUrl);
             setCopied(true);
-            toast.success('Link copied — paste it into Cursor chat to open this task view.');
+            toast.success('Link copied, paste it into Cursor chat to open this task view.');
             window.setTimeout(() => setCopied(false), 2000);
         } catch {
             toast.error('Could not copy to clipboard');

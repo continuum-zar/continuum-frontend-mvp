@@ -140,7 +140,7 @@ export function useScanRepository(projectId: number | string | undefined | null)
         onSuccess: () => {
             if (projectId != null)
                 queryClient.invalidateQueries({ queryKey: wikiScanStatusKey(projectId) });
-            toast.success('Indexing started. This may take a few minutes — the page will update when done.');
+            toast.success('Indexing started. This may take a few minutes, the page will update when done.');
         },
         onError: (err: unknown) => {
             toast.error(getApiErrorMessage(err, 'Indexing failed. Check repo URL and API token (for private repos).'));

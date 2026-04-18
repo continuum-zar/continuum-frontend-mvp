@@ -60,7 +60,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     body: T([
       { text: "Opens your " },
       { text: "workspace home", h: "cyan" },
-      { text: " — high-level project health and KPIs for the org.", h: "peach" },
+      { text: ", high-level project health and KPIs for the org.", h: "peach" },
     ]),
   },
   {
@@ -117,7 +117,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     body: T([
       { text: "The hero gauge summarizes " },
       { text: "overall project health", h: "cyan" },
-      { text: " — how on-track delivery looks at a glance.", h: "peach" },
+      { text: ", how on-track delivery looks at a glance.", h: "peach" },
     ]),
   },
   {
@@ -135,7 +135,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
       },
       { text: "Tasks completed", h: "cyan" },
       {
-        text: " uses each task’s weight—points done versus total scope for the project. ",
+        text: " uses each task’s weight, points done versus total scope for the project. ",
         h: "peach",
       },
       { text: "Commits", h: "cyan" },
@@ -173,7 +173,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     body: T([
       { text: "A running feed of ", h: "peach" },
       { text: "what changed recently", h: "cyan" },
-      { text: " — comments, moves, and updates.", h: "peach" },
+      { text: ", comments, moves, and updates.", h: "peach" },
     ]),
   },
   {
@@ -202,7 +202,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
       },
       { text: "Indexing", h: "cyan" },
       {
-        text: " refreshes that snapshot—use it after big merges or when status looks stale. ",
+        text: " refreshes that snapshot, use it after big merges or when status looks stale. ",
         h: "peach",
       },
       { text: "Indexed context", h: "cyan" },
@@ -236,7 +236,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
       { text: "The ", h: "peach" },
       { text: "floating assistant", h: "cyan" },
       {
-        text: " answers questions about this project—progress, risks, and scope—using your tasks, time, and linked repo context.",
+        text: " answers questions about this project, progress, risks, and scope, using your tasks, time, and linked repo context.",
         h: "peach",
       },
     ]),
@@ -249,7 +249,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     body: T([
       { text: "The ", h: "peach" },
       { text: "board", h: "cyan" },
-      { text: " view is your default Kanban — columns mirror workflow.", h: "peach" },
+      { text: " view is your default Kanban, columns mirror workflow.", h: "peach" },
     ]),
   },
   {
@@ -284,7 +284,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
       { text: "Open the assistant here to ", h: "peach" },
       { text: "describe work in plain language", h: "cyan" },
       {
-        text: " and generate tasks that match your codebase and backlog—then refine or add them to the board.",
+        text: " and generate tasks that match your codebase and backlog, then refine or add them to the board.",
         h: "peach",
       },
     ]),
@@ -297,7 +297,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     body: T([
       { text: "The ", h: "peach" },
       { text: "Time logs", h: "cyan" },
-      { text: " tab lists recorded hours — your billing and audit trail.", h: "peach" },
+      { text: " tab lists recorded hours, your billing and audit trail.", h: "peach" },
     ]),
   },
   {
@@ -308,7 +308,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     body: T([
       { text: "Activity shows ", h: "peach" },
       { text: "team movement", h: "cyan" },
-      { text: " — who did what across the sprint window.", h: "peach" },
+      { text: ", who did what across the sprint window.", h: "peach" },
     ]),
   },
   {
@@ -320,7 +320,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     body: T([
       { text: "See ", h: "peach" },
       { text: "per-person contribution", h: "cyan" },
-      { text: " — hours, tasks, and commits side by side.", h: "peach" },
+      { text: ", hours, tasks, and commits side by side.", h: "peach" },
     ]),
   },
   {
@@ -344,7 +344,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     body: T([
       { text: "Performance highlights ", h: "peach" },
       { text: "throughput vs. plan", h: "cyan" },
-      { text: " — useful for retros and stakeholder updates.", h: "peach" },
+      { text: ", useful for retros and stakeholder updates.", h: "peach" },
     ]),
   },
   {
@@ -364,7 +364,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     ensureUrl: U.sprintWelcome,
     targetSelector: '[data-tour="sprint-log-time"]',
     body: T([
-      { text: "Log time against work in one click — feeds ", h: "peach" },
+      { text: "Log time against work in one click, feeds ", h: "peach" },
       { text: "reports and invoices", h: "cyan" },
       { text: ".", h: "peach" },
     ]),
@@ -378,7 +378,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     body: T([
       { text: "Pick a ticket, then ", h: "peach" },
       { text: "start/stop", h: "cyan" },
-      { text: " the timer — duration flows into time logs.", h: "peach" },
+      { text: " the timer, duration flows into time logs.", h: "peach" },
     ]),
   },
   {
@@ -469,7 +469,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
       { text: "Send ", h: "peach" },
       { text: "bugs, confusion, or ideas", h: "cyan" },
       {
-        text: " — we read every report and use it to improve Continuum.",
+        text: ", we read every report and use it to improve Continuum.",
         h: "peach",
       },
     ]),
