@@ -429,6 +429,41 @@ export function DashboardPlaceholder() {
   const userId = useAuthStore((s) => s.user?.id);
   const queueTourAfterWelcome = useWorkspaceTourStore((s) => s.queueAfterWelcomeDismiss);
 
+  /**
+   * Members + milestone list are not needed for first paint of the kanban (tasks/board load inside
+   * GetStartedKanbanLive). Defer so the critical path is project detail + board queries only.
+   */
+  const [secondarySprintMetaReady, setSecondarySprintMetaReady] = useState(false);
+  useEffect(() => {
+    if (liveProjectId == null) {
+      setSecondarySprintMetaReady(false);
+      return;
+    }
+    type IdleHandle = number;
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => IdleHandle;
+      cancelIdleCallback?: (handle: IdleHandle) => void;
+    };
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) setSecondarySprintMetaReady(true);
+    };
+    let handle: IdleHandle | ReturnType<typeof setTimeout>;
+    if (typeof win.requestIdleCallback === "function") {
+      handle = win.requestIdleCallback(run, { timeout: 2_000 });
+    } else {
+      handle = window.setTimeout(run, 0);
+    }
+    return () => {
+      cancelled = true;
+      if (typeof win.requestIdleCallback === "function" && typeof win.cancelIdleCallback === "function") {
+        win.cancelIdleCallback(handle as IdleHandle);
+      } else {
+        clearTimeout(handle as ReturnType<typeof setTimeout>);
+      }
+    };
+  }, [liveProjectId]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!userId) return;
@@ -447,9 +482,13 @@ export function DashboardPlaceholder() {
       queueTourAfterWelcome();
     }
   };
-  const liveMembersQuery = useProjectMembers(liveProjectId, { enabled: liveProjectId != null });
+  const liveMembersQuery = useProjectMembers(liveProjectId, {
+    enabled: liveProjectId != null && secondarySprintMetaReady,
+  });
   const liveProjectQuery = useProject(liveProjectId);
-  const liveMilestonesQuery = useProjectMilestones(liveProjectId);
+  const liveMilestonesQuery = useProjectMilestones(liveProjectId, {
+    enabled: liveProjectId != null && secondarySprintMetaReady,
+  });
   const liveMembers: Member[] = liveMembersQuery.data ?? [];
 
   const breadcrumbProjectLabel =
@@ -472,7 +511,7 @@ export function DashboardPlaceholder() {
     isLiveBoard && liveProjectId != null
       ? milestoneParam
         ? liveMilestonesQuery.data?.find((m) => m.id === milestoneParam)?.name ??
-          (liveMilestonesQuery.isLoading ? "…" : "Milestone")
+          (liveMilestonesQuery.isLoading || !secondarySprintMetaReady ? "…" : "Milestone")
         : "Sprint"
       : DASHBOARD_WELCOME_PROJECT.sprintLabel;
   const liveHeaderVisibleMembers = liveMembers.slice(0, LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX);
@@ -723,7 +762,7 @@ export function DashboardPlaceholder() {
                     isLiveBoard={isLiveBoard}
                     milestoneParam={milestoneParam}
                     milestones={liveMilestonesQuery.data}
-                    milestonesLoading={liveMilestonesQuery.isLoading}
+                    milestonesLoading={!secondarySprintMetaReady || liveMilestonesQuery.isLoading}
                   />
                   <div className="bg-[#f0f3f5] content-stretch flex gap-[2px] h-[32px] items-center p-[2px] relative rounded-[8px] shrink-0 w-[251px]" data-node-id="7:2868">
                     <Link
@@ -894,7 +933,7 @@ export function DashboardPlaceholder() {
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2902">
                   <div className="content-stretch flex items-center pr-[10.667px] relative shrink-0" data-name="Component 33" data-node-id="7:2903">
                     {isLiveBoard ? (
-                      liveMembersQuery.isLoading ? (
+                      !secondarySprintMetaReady || liveMembersQuery.isLoading ? (
                         <>
                           <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-[#e4e8eb]" aria-hidden />
                           <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-[#e4e8eb]" aria-hidden />
