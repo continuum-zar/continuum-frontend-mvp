@@ -37,7 +37,7 @@ import { DiscordIntegrationModal } from "../components/dashboard-placeholder/Dis
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
 import { ReleaseNotesModal } from "../components/welcome/ReleaseNotesModal";
-import { welcomeToContinuumModalProps } from "../components/welcome/WelcomeToContinuumModal";
+import { welcomeToContinuumModalProps } from "../components/welcome/welcomeToContinuumModalProps";
 import { PendingInvitationsHost } from "../components/PendingInvitationsHost";
 import {
   SESSION_POST_ONBOARDING_WELCOME_KEY,
