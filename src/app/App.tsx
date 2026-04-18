@@ -9,6 +9,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { CustomCursorOverlay } from './components/CustomCursorOverlay';
 import { MobileDesktopOnlyGate } from './components/MobileDesktopOnlyGate';
 import { AuthQueryCacheSync } from './components/AuthQueryCacheSync';
+import { AuthSessionBootstrap } from './components/AuthSessionBootstrap';
 
 /**
  * SSE listener is a non-critical background feature — lazy-load it so the
@@ -22,13 +23,11 @@ const DeploymentScheduledAlert = lazy(() =>
 );
 
 function App() {
-  // checkAuth is owned by AuthGuard — calling it here too produced duplicate
-  // /users/me pings and a race under StrictMode. Public routes (e.g. /login)
-  // don't need an eager session ping at all.
   return (
     <ErrorBoundary>
       <RoleProvider>
         <TimeTrackingProvider>
+          <AuthSessionBootstrap />
           <AuthQueryCacheSync />
           <Suspense fallback={null}>
             <DeploymentScheduledAlert />

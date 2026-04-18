@@ -71,7 +71,7 @@ const components: Components = {
         }
         return (
             <code
-                className="rounded bg-[#edf0f3] px-1 py-0.5 font-['JetBrains_Mono',ui-monospace,monospace] text-[12px] text-[#0b191f]"
+                className="rounded bg-[#edf0f3] px-1 py-0.5 font-mono text-[12px] text-[#0b191f]"
                 {...props}
             >
                 {children}
@@ -79,7 +79,7 @@ const components: Components = {
         );
     },
     pre: ({ children }) => (
-        <pre className="mb-2 overflow-x-auto rounded-lg border border-[#edecea] bg-[#f9fafb] p-3 font-['JetBrains_Mono',ui-monospace,monospace] text-[12px] leading-[18px] text-[#0b191f] last:mb-0">
+        <pre className="mb-2 overflow-x-auto rounded-lg border border-[#edecea] bg-[#f9fafb] p-3 font-mono text-[12px] leading-[18px] text-[#0b191f] last:mb-0">
             {children}
         </pre>
     ),
