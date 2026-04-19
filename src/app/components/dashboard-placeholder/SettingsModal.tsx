@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { BookOpen, Check, ChevronRight, LogOut, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
-import { getApiErrorMessage, updateCurrentUserProfile } from "@/api";
+import { getApiErrorMessage, sendWaitlistInviteEmail, updateCurrentUserProfile } from "@/api";
 import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
@@ -47,7 +47,13 @@ const placeholderActionClass =
 const placeholderLinkClass =
   "cursor-default border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] underline decoration-solid underline-offset-2 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring";
 
-export type SettingsSection = "general" | "notification" | "invoice" | "integrations" | "support";
+export type SettingsSection =
+  | "general"
+  | "notification"
+  | "invoice"
+  | "integrations"
+  | "support"
+  | "waitlist";
 
 type SettingsModalProps = {
   open: boolean;
@@ -70,6 +76,7 @@ const SECTION_TITLE: Record<SettingsSection, string> = {
   invoice: "Invoice",
   integrations: "Integrations",
   support: "Support & legal",
+  waitlist: "Waitlist",
 };
 
 type NotificationPrefs = { digest: boolean; instant: boolean };
@@ -155,12 +162,25 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
   const [invoiceCurrency, setInvoiceCurrency] = useState<(typeof INVOICE_CURRENCIES)[number]>("ZAR");
   const [invoiceHourlyRate, setInvoiceHourlyRate] = useState("200");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistSendPending, setWaitlistSendPending] = useState(false);
+
+  const isGlobalAdmin = user?.role?.toLowerCase() === "admin";
+
+  const settingsNavItems = useMemo(() => {
+    const items = [...NAV];
+    if (isGlobalAdmin) {
+      items.push({ id: "waitlist", label: "Waitlist" });
+    }
+    return items;
+  }, [isGlobalAdmin]);
 
   useEffect(() => {
     if (!open) return;
     setNotificationPrefs(defaultNotificationPrefs());
     setInvoiceCurrency("ZAR");
     setInvoiceHourlyRate("200");
+    setWaitlistEmail("");
     if (user) {
       setFirstName(user.first_name ?? "");
       setLastName(user.last_name ?? "");
@@ -174,8 +194,18 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
 
   useEffect(() => {
     if (!open) return;
+    if (tourSection === "waitlist" && !isGlobalAdmin) {
+      setSection("general");
+      return;
+    }
     setSection(tourSection ?? "general");
-  }, [open, tourSection]);
+  }, [open, tourSection, isGlobalAdmin]);
+
+  useEffect(() => {
+    if (section === "waitlist" && !isGlobalAdmin) {
+      setSection("general");
+    }
+  }, [section, isGlobalAdmin]);
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
@@ -205,7 +235,7 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
           : "?"
       : "?";
   const avatarBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#e19c02";
-  const showAdminReleaseNotesLink = user?.role?.toLowerCase() === "admin";
+  const showAdminReleaseNotesLink = isGlobalAdmin;
 
   const handleSave = async () => {
     if (section === "general") {
@@ -243,6 +273,24 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
     }, 0);
   };
 
+  const handleWaitlistSend = async () => {
+    const trimmed = waitlistEmail.trim();
+    if (!trimmed) {
+      toast.error("Enter an email address");
+      return;
+    }
+    setWaitlistSendPending(true);
+    try {
+      await sendWaitlistInviteEmail(trimmed);
+      toast.success("Invite email sent");
+      setWaitlistEmail("");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Could not send invite email"));
+    } finally {
+      setWaitlistSendPending(false);
+    }
+  };
+
   const showSaveFooter =
     section === "general" || section === "notification" || section === "invoice";
 
@@ -274,7 +322,7 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
               className="flex min-h-0 flex-1 flex-col gap-0"
               aria-label="Settings sections"
             >
-              {NAV.map((item) => (
+              {settingsNavItems.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -519,6 +567,36 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
                       <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
                     </button>
                   </div>
+                </div>
+              )}
+
+              {section === "waitlist" && isGlobalAdmin && (
+                <div className="flex flex-col gap-6 pt-6">
+                  <p className="font-['Satoshi',sans-serif] text-[14px] font-normal leading-normal text-[#606d76]">
+                    Send the off-waitlist invite email. The recipient gets a message that their account is ready, with a
+                    link to create an account at continuumapp.co.za.
+                  </p>
+                  <label className="flex flex-col gap-3">
+                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">Email</span>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <input
+                        type="email"
+                        value={waitlistEmail}
+                        onChange={(e) => setWaitlistEmail(e.target.value)}
+                        placeholder="name@company.com"
+                        autoComplete="email"
+                        className="h-10 min-w-0 flex-1 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleWaitlistSend()}
+                        disabled={waitlistSendPending}
+                        className="h-10 shrink-0 rounded-[8px] bg-[#0b191f] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {waitlistSendPending ? "Sending…" : "Send"}
+                      </button>
+                    </div>
+                  </label>
                 </div>
               )}
 
