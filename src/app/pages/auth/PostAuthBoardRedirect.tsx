@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 
 import { RouteSkeleton } from "@/app/components/ui/RouteSkeleton";
 import { resolveDefaultBoardPath } from "@/lib/defaultBoardPath";
@@ -10,16 +10,17 @@ import { resolveDefaultBoardPath } from "@/lib/defaultBoardPath";
  */
 export function PostAuthBoardRedirect() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     let cancelled = false;
     resolveDefaultBoardPath().then((path) => {
-      if (!cancelled) navigate(path, { replace: true });
+      if (!cancelled) navigate({ pathname: path, search: location.search }, { replace: true });
     });
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, location.search]);
 
   return <RouteSkeleton />;
 }

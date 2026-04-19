@@ -1,4 +1,4 @@
-import { Navigate } from "react-router";
+import { Navigate, useLocation } from "react-router";
 import "@/styles/load-decorative-fonts";
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { useAuthStore } from "@/store/authStore";
@@ -9,6 +9,7 @@ import LandingPage from "./LandingPage";
  * Public marketing landing at `/`. Authenticated users are sent to the default tasks board.
  */
 export function LandingRoute() {
+  const location = useLocation();
   const { isAuthenticated, isInitialized, accessToken } = useAuthStore();
 
   // Match AuthGuard: while a stored token may still be valid, wait before showing marketing.
@@ -25,7 +26,12 @@ export function LandingRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to={workspaceJoin("entry")} replace />;
+    return (
+      <Navigate
+        to={{ pathname: workspaceJoin("entry"), search: location.search }}
+        replace
+      />
+    );
   }
 
   return (
