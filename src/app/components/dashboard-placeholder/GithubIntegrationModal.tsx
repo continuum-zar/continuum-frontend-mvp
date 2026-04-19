@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, Check, Github, Loader2 } from "lucide-react";
-import { isAxiosError } from "axios";
-import { toast } from "sonner";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
-import { getGitHubOAuthAuthorizeLocation } from "@/api/githubApp";
-import { getApiErrorMessage, useGithubInstallationRepositories, useProjects } from "@/api/hooks";
+import { useProjects } from "@/api/hooks";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import {
@@ -18,9 +15,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { cn } from "../ui/utils";
-
-const PRIMARY_GRADIENT =
-  "linear-gradient(141.68deg, #24B5F8 -123.02%, #5521FE 802.55%)";
+import { GitHubInstallationRepoLinker } from "./GitHubInstallationRepoLinker";
 
 type GithubIntegrationModalProps = {
   open: boolean;
@@ -30,9 +25,6 @@ type GithubIntegrationModalProps = {
 export function GithubIntegrationModal({ open, onOpenChange }: GithubIntegrationModalProps) {
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const [projectApiId, setProjectApiId] = useState<number | null>(null);
-  const [connectBusy, setConnectBusy] = useState(false);
-
-  const reposQuery = useGithubInstallationRepositories(projectApiId, open);
 
   useEffect(() => {
     if (!open) return;
@@ -47,29 +39,8 @@ export function GithubIntegrationModal({ open, onOpenChange }: GithubIntegration
   }, [open, projects]);
 
   const handleClose = (next: boolean) => {
-    if (!next) {
-      setConnectBusy(false);
-    }
     onOpenChange(next);
   };
-
-  const handleConnect = async () => {
-    if (projectApiId == null) return;
-    setConnectBusy(true);
-    try {
-      const url = await getGitHubOAuthAuthorizeLocation(projectApiId);
-      window.location.assign(url);
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Could not start GitHub connection"));
-      setConnectBusy(false);
-    }
-  };
-
-  const axiosStatus = isAxiosError(reposQuery.error) ? reposQuery.error.response?.status : undefined;
-  const notConnected = axiosStatus === 404;
-  const forbidden = axiosStatus === 403;
-  const serviceUnavailable = axiosStatus === 503;
-  const connected = reposQuery.isSuccess;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -117,11 +88,6 @@ export function GithubIntegrationModal({ open, onOpenChange }: GithubIntegration
               </p>
             ) : (
               <div className="flex flex-col gap-5">
-                <p className="text-[14px] leading-relaxed text-[#606d76]">
-                  Link the GitHub App to a Continuum project. After you authorize on GitHub, we show repositories
-                  available to that installation.
-                </p>
-
                 <div className="flex flex-col gap-1">
                   <label htmlFor="github-project" className="text-[14px] font-medium text-[#606d76]">
                     Continuum project
@@ -149,72 +115,8 @@ export function GithubIntegrationModal({ open, onOpenChange }: GithubIntegration
                   </Select>
                 </div>
 
-                <div className="flex flex-col gap-2 rounded-[8px] border border-[#e9e9e9] bg-white px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Github className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
-                    <p className="text-[15px] font-semibold text-[#0b191f]">Connection</p>
-                  </div>
-                  {reposQuery.isLoading ? (
-                    <p className="flex items-center gap-2 text-[14px] text-[#606d76]">
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                      Checking status…
-                    </p>
-                  ) : reposQuery.isError ? (
-                    <>
-                      {notConnected ? (
-                        <p className="text-[14px] text-[#606d76]">
-                          Not connected yet. Use <span className="font-medium text-[#0b191f]">Connect to GitHub</span>{" "}
-                          to authorize the app for this project.
-                        </p>
-                      ) : forbidden ? (
-                        <p className="text-[14px] text-[#0b191f]">
-                          You don&apos;t have access to this project&apos;s GitHub data. Ask a project admin to connect
-                          or grant access.
-                        </p>
-                      ) : serviceUnavailable ? (
-                        <p className="text-[14px] text-[#0b191f]">
-                          GitHub App integration isn&apos;t configured on the server (missing app credentials).
-                        </p>
-                      ) : (
-                        <p className="text-[14px] text-[#0b191f]">
-                          {getApiErrorMessage(reposQuery.error, "Could not load GitHub status.")}
-                        </p>
-                      )}
-                    </>
-                  ) : connected ? (
-                    <p className="flex items-center gap-2 text-[14px] font-medium text-[#0b191f]">
-                      <span className="flex size-5 items-center justify-center rounded-full bg-[#22c55e]">
-                        <Check className="size-3.5 text-white" strokeWidth={2.5} aria-hidden />
-                      </span>
-                      Connected — {reposQuery.data?.length ?? 0} repo
-                      {(reposQuery.data?.length ?? 0) === 1 ? "" : "s"} visible to the installation
-                    </p>
-                  ) : null}
-                </div>
-
-                {connected && (reposQuery.data?.length ?? 0) > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-[13px] font-semibold text-[#252014]">Repositories</p>
-                    <ul className="max-h-[220px] space-y-1.5 overflow-y-auto pr-1">
-                      {reposQuery.data!.map((r) => (
-                        <li
-                          key={r.id}
-                          className="rounded-[6px] border border-[#f0f0f0] bg-[#fafafa] px-3 py-2 font-['Inter',sans-serif] text-[13px] text-[#0b191f]"
-                        >
-                          <span className="font-medium">{r.owner.login}</span>
-                          <span className="text-[#606d76]"> / </span>
-                          <span>{r.name}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                {connected && reposQuery.data?.length === 0 ? (
-                  <p className="text-[13px] text-[#606d76]">
-                    Installation is linked, but no repositories were returned yet. Confirm the GitHub App is installed on
-                    your org or account with repository access.
-                  </p>
+                {projectApiId != null ? (
+                  <GitHubInstallationRepoLinker projectId={projectApiId} queryEnabled={open} />
                 ) : null}
               </div>
             )}
@@ -229,26 +131,6 @@ export function GithubIntegrationModal({ open, onOpenChange }: GithubIntegration
                 Close
               </button>
             </DialogClose>
-            {projects.length > 0 && projectApiId != null ? (
-              <button
-                type="button"
-                onClick={() => void handleConnect()}
-                disabled={connectBusy}
-                style={!connectBusy ? { background: PRIMARY_GRADIENT } : undefined}
-                className={cn(
-                  "inline-flex h-10 min-w-[140px] items-center justify-center rounded-[8px] px-5 text-[14px] font-semibold transition-[filter,opacity] duration-200",
-                  connectBusy
-                    ? "cursor-not-allowed bg-[rgba(96,109,118,0.1)] text-[#606d76]/50"
-                    : "text-white hover:brightness-105",
-                )}
-              >
-                {connectBusy ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  "Connect to GitHub"
-                )}
-              </button>
-            ) : null}
           </div>
         </DialogPrimitive.Content>
       </DialogPortal>
