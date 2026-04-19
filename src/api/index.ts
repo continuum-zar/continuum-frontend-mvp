@@ -311,3 +311,4 @@ export type {
     ReleaseNoteCreateBody,
     ReleaseNoteUpdateBody,
 } from './releaseNotes';
+export { sendWaitlistInviteEmail } from './waitlist';
