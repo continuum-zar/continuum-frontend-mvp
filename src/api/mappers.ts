@@ -36,11 +36,18 @@ export function mapProjectListItem(p: ProjectAPIResponse): Project {
     };
 }
 
+function normalizeProjectDueDateIso(raw: string | null | undefined): string | null {
+    if (raw == null || raw === '') return null;
+    const head = raw.includes('T') ? raw.split('T')[0]! : raw.trim().slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(head) ? head : null;
+}
+
 export function mapProjectDetail(res: ProjectDetailAPIResponse): ProjectDetail {
     return {
         id: res.id,
         name: res.name ?? `Project ${res.id}`,
-        description: res.description ?? 'Track progress and manage tasks for the project',
+        description: res.description ?? '',
+        dueDateIso: normalizeProjectDueDateIso(res.due_date ?? null),
         ...(res.client_id != null ? { clientId: res.client_id } : {}),
     };
 }

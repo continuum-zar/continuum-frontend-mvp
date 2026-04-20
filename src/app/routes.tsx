@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- route table: lazy page imports + `router` export */
 import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet, useLocation, useParams } from "react-router";
+import { RouterStaleChunkErrorRecovery } from "./components/RouterStaleChunkErrorRecovery";
 import {
   LEGACY_WORKSPACE_BASE,
   LEGACY_WORKSPACE_GET_STARTED_SEGMENT,
@@ -142,7 +143,7 @@ function LegacyHubTaskRedirect() {
   );
 }
 
-export const router = createBrowserRouter([
+const appRoutes = [
   {
     path: "/",
     element: <LandingRoute />,
@@ -509,5 +510,13 @@ export const router = createBrowserRouter([
         <NotFound />
       </Suspense>
     ),
+  },
+];
+
+export const router = createBrowserRouter([
+  {
+    element: <Outlet />,
+    errorElement: <RouterStaleChunkErrorRecovery />,
+    children: [...appRoutes],
   },
 ]);

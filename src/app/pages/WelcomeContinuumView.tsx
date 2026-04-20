@@ -6,6 +6,7 @@ import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { DiscordIntegrationModal } from "../components/dashboard-placeholder/DiscordIntegrationModal";
+import { EditProjectModal } from "../components/dashboard-placeholder/EditProjectModal";
 import {
   WelcomeRecentActivity,
   WelcomeRepo,
@@ -66,6 +67,14 @@ export function WelcomeContinuumView() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
   const [discordIntegrationOpen, setDiscordIntegrationOpen] = useState(false);
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
+
+  const canEditProject =
+    isApiRoute &&
+    routeProjectId &&
+    isApiProjectId(routeProjectId) &&
+    projectQuery.isSuccess &&
+    projectQuery.data != null;
 
   const apiProjectIdForDiscord =
     isApiRoute && routeProjectId && isApiProjectId(routeProjectId)
@@ -122,14 +131,25 @@ export function WelcomeContinuumView() {
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
                   </div>
                 </button>
-                <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 9" data-node-id="8:3541">
+                <button
+                  type="button"
+                  data-tour="welcome-edit-project"
+                  data-node-id="8:3541"
+                  disabled={!canEditProject}
+                  onClick={() => {
+                    if (canEditProject) setEditProjectOpen(true);
+                  }}
+                  className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+                  data-name="Component 9"
+                  aria-label="Edit project"
+                >
                   <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-cog" data-node-id="8:3542">
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderCog} />
                   </div>
                   <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3544">
                     Edit
                   </p>
-                </div>
+                </button>
                 <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 6" data-node-id="8:3545">
                   <div className="relative shrink-0 size-[16px]" data-name="lucide/share" data-node-id="8:3546">
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideShare} />
@@ -317,6 +337,16 @@ export function WelcomeContinuumView() {
         onOpenChange={setDiscordIntegrationOpen}
         projectId={apiProjectIdForDiscord}
       />
+      {canEditProject && routeProjectId && (
+        <EditProjectModal
+          open={editProjectOpen}
+          onOpenChange={setEditProjectOpen}
+          projectId={Number(routeProjectId)}
+          initialName={projectQuery.data!.name}
+          initialDescription={projectQuery.data!.description}
+          initialDueDateIso={projectQuery.data!.dueDateIso}
+        />
+      )}
     </div>
   );
 }

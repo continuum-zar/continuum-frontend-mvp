@@ -5,6 +5,13 @@ import App from "./app/App.tsx";
 // Satoshi is @imported from index.css so it loads with the main stylesheet.
 import "./styles/index.css";
 import { DEFAULT_GC_MS, DEFAULT_STALE_MS } from "./lib/queryDefaults.ts";
+import { tryReloadForStaleChunk } from "./lib/staleClientChunk.ts";
+
+if (typeof window !== "undefined") {
+  window.addEventListener("vite:preloadError", () => {
+    void tryReloadForStaleChunk();
+  });
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {

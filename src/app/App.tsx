@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router';
 import { router } from './routes';
 import { Toaster } from './components/ui/sonner';
@@ -10,6 +10,7 @@ import { CustomCursorOverlay } from './components/CustomCursorOverlay';
 import { MobileDesktopOnlyGate } from './components/MobileDesktopOnlyGate';
 import { AuthQueryCacheSync } from './components/AuthQueryCacheSync';
 import { AuthSessionBootstrap } from './components/AuthSessionBootstrap';
+import { resetStaleChunkReloadCount } from '@/lib/staleClientChunk';
 
 /**
  * SSE listener is a non-critical background feature — lazy-load it so the
@@ -23,6 +24,13 @@ const DeploymentScheduledAlert = lazy(() =>
 );
 
 function App() {
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      resetStaleChunkReloadCount();
+    }, 5_000);
+    return () => window.clearTimeout(id);
+  }, []);
+
   return (
     <ErrorBoundary>
       <RoleProvider>
