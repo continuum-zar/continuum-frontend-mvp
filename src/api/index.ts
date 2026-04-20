@@ -312,3 +312,9 @@ export type {
     ReleaseNoteUpdateBody,
 } from './releaseNotes';
 export { sendWaitlistInviteEmail } from './waitlist';
+export {
+    fetchGitHubInstallationRepositories,
+    getGitHubOAuthAuthorizeLocation,
+    githubAppKeys,
+} from './githubApp';
+export type { GitHubInstallationRepository, GitHubRepoOwner, GitHubRepoPermissions } from '@/types/githubApp';

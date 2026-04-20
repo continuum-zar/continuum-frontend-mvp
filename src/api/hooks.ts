@@ -50,6 +50,11 @@ export { invitationKeys };
 import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
 import { fetchCursorMcpTaskDetail } from './cursorMcp';
+import {
+    fetchGitHubInstallationRepositories,
+    githubAppKeys,
+} from './githubApp';
+export { githubAppKeys };
 
 import {
     fetchTask,
@@ -1116,5 +1121,17 @@ export function useTestIntegration(projectId: number | string | undefined | null
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to send test message'));
         },
+    });
+}
+
+/** GitHub App installation repos for a project (404 = not linked). */
+export function useGithubInstallationRepositories(projectId: number | null, queryEnabled: boolean) {
+    return useQuery({
+        queryKey: projectId != null ? githubAppKeys.repos(projectId) : githubAppKeys.all,
+        queryFn: () => fetchGitHubInstallationRepositories(projectId!),
+        enabled: queryEnabled && projectId != null && projectId > 0,
+        staleTime: STALE_SHORT_MS,
+        retry: false,
+        refetchOnWindowFocus: false,
     });
 }

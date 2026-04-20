@@ -1,10 +1,8 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { useEffect, useState } from "react";
 
-import { useLinkRepository } from "@/api";
-import type { RepositoryProvider } from "@/types/repository";
+import { GitHubInstallationRepoLinker } from "../dashboard-placeholder/GitHubInstallationRepoLinker";
 
 import {
   Dialog,
@@ -16,26 +14,13 @@ import { cn } from "../ui/utils";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 /** Figma playground node 21:9969 / 21:9971 / 21:10007 — asset URLs from design context */
-const imgLucideArrowLeft =
-  mcpAsset("87d62a9b-f825-4e11-bc9a-d08105d1800e");
+const imgLucideArrowLeft = mcpAsset("87d62a9b-f825-4e11-bc9a-d08105d1800e");
 const imgLucideX = mcpAsset("25ba1811-ddb0-4b13-83b1-420f5ba868f2");
-const imgLucideCalendar =
-  mcpAsset("3ce919d3-754a-4f0f-849a-28d0113aa5c0");
-const imgLucideChevronDown =
-  mcpAsset("e4587061-0e2f-4576-85e6-65765188c9d2");
-const imgLucideInfo =
-  mcpAsset("6b39c1ca-6d99-4835-9a9f-23dd7ffc6211");
-
-const primaryButtonGradient =
-  "linear-gradient(166.56145949751235deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)";
-
-const inputClass =
-  "w-full rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76] focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40";
 
 type WelcomeLinkRepositoryModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** When set, “Link repository” calls POST /projects/:id/repositories */
+  /** When set, linking uses POST /projects/:id/repositories for this project */
   projectId?: number;
 };
 
@@ -44,48 +29,7 @@ export function WelcomeLinkRepositoryModal({
   onOpenChange,
   projectId,
 }: WelcomeLinkRepositoryModalProps) {
-  const [repositoryUrl, setRepositoryUrl] = useState("");
-  const [repositoryName, setRepositoryName] = useState("");
-  const [provider, setProvider] = useState<RepositoryProvider>("github");
-  const [webhookSecret, setWebhookSecret] = useState("");
-  const [apiToken, setApiToken] = useState("");
-
-  const linkMutation = useLinkRepository(projectId ?? null);
-
   const canUseApi = projectId != null && Number.isFinite(projectId);
-  const formValid = repositoryUrl.trim().length > 0 && repositoryName.trim().length > 0;
-  const canSubmit =
-    formValid &&
-    (!canUseApi || !linkMutation.isPending);
-
-  useEffect(() => {
-    if (!open) return;
-    setRepositoryUrl("");
-    setRepositoryName("");
-    setProvider("github");
-    setWebhookSecret("");
-    setApiToken("");
-  }, [open]);
-
-  const handleLink = async () => {
-    if (!formValid) return;
-    if (!canUseApi) {
-      onOpenChange(false);
-      return;
-    }
-    try {
-      await linkMutation.mutateAsync({
-        repository_url: repositoryUrl.trim(),
-        repository_name: repositoryName.trim(),
-        provider,
-        webhook_secret: webhookSecret.trim() || undefined,
-        api_token: apiToken.trim() || undefined,
-      });
-      onOpenChange(false);
-    } catch {
-      // Toast handled in hook
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -138,120 +82,17 @@ export function WelcomeLinkRepositoryModal({
                 "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
             }}
           >
-            <div className="flex w-full flex-col gap-6">
-              <div className="flex w-full flex-col gap-4">
-                <div className="flex h-[69px] w-full flex-col gap-1">
-                  <p className="shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
-                    Repository URL
-                  </p>
-                  <div className="relative w-full shrink-0">
-                    <input
-                      type="url"
-                      value={repositoryUrl}
-                      onChange={(e) => setRepositoryUrl(e.target.value)}
-                      placeholder="https://github.com/org/repo"
-                      className={cn(inputClass, "pr-12")}
-                      autoComplete="url"
-                    />
-                    <div
-                      className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2"
-                      aria-hidden
-                    >
-                      <img alt="" className="absolute block size-full max-w-none" src={imgLucideCalendar} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex h-[69px] w-full flex-col gap-1">
-                  <p className="shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
-                    Repository name
-                  </p>
-                  <input
-                    type="text"
-                    value={repositoryName}
-                    onChange={(e) => setRepositoryName(e.target.value)}
-                    placeholder="Org/repo"
-                    className={inputClass}
-                    autoComplete="off"
-                  />
-                </div>
-
-                <div className="flex w-full flex-col gap-1">
-                  <p className="shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
-                    Provider
-                  </p>
-                  <div className="relative w-full">
-                    <select
-                      value={provider}
-                      onChange={(e) => setProvider(e.target.value as RepositoryProvider)}
-                      className={cn(inputClass, "cursor-pointer appearance-none pr-12 text-[#0b191f]")}
-                      aria-label="Provider"
-                    >
-                      <option value="github">GitHub</option>
-                      <option value="gitlab">GitLab</option>
-                      <option value="bitbucket">Bitbucket</option>
-                    </select>
-                    <div className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2" aria-hidden>
-                      <img alt="" className="absolute block size-full max-w-none" src={imgLucideChevronDown} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex h-[69px] w-full flex-col gap-1">
-                  <p className="shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
-                    Web-hook secret (optional)
-                  </p>
-                  <input
-                    type="text"
-                    value={webhookSecret}
-                    onChange={(e) => setWebhookSecret(e.target.value)}
-                    placeholder="Secret from GitHub/GitLab/BitBucket web-hook"
-                    className={inputClass}
-                    autoComplete="off"
-                  />
-                </div>
-
-                <div className="flex h-[69px] w-full flex-col gap-1">
-                  <p className="shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
-                    API token (optional, for private repos/scanning)
-                  </p>
-                  <input
-                    type="text"
-                    value={apiToken}
-                    onChange={(e) => setApiToken(e.target.value)}
-                    placeholder="Personal access token"
-                    className={inputClass}
-                    autoComplete="off"
-                  />
-                </div>
-              </div>
-
-              <div className="flex w-full gap-2">
-                <div className="relative mt-0.5 size-4 shrink-0">
-                  <img alt="" className="absolute block size-full max-w-none" src={imgLucideInfo} />
-                </div>
-                <p className="min-w-0 flex-1 whitespace-pre-wrap font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
-                  {`After  linking, add a webh-hook in your repo settings pointing to this app with the same URL and secret.`}
-                </p>
-              </div>
-
-              <div className="flex h-[39px] w-full items-center justify-end">
-                <button
-                  type="button"
-                  disabled={!canSubmit}
-                  className={cn(
-                    "inline-flex h-full items-center justify-center gap-2 rounded-[8px] border-0 px-4 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-bold outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/50",
-                    canSubmit
-                      ? "cursor-pointer text-white"
-                      : "cursor-not-allowed bg-[rgba(96,109,118,0.15)] text-[#606d76]"
-                  )}
-                  style={canSubmit ? { backgroundImage: primaryButtonGradient } : undefined}
-                  onClick={() => void handleLink()}
-                >
-                  {canUseApi && linkMutation.isPending ? "Linking…" : "Link repository"}
-                </button>
-              </div>
-            </div>
+            {!canUseApi ? (
+              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
+                A project is required before you can link a repository.
+              </p>
+            ) : (
+              <GitHubInstallationRepoLinker
+                projectId={projectId!}
+                queryEnabled={open}
+                onRepoLinked={() => onOpenChange(false)}
+              />
+            )}
           </div>
         </DialogPrimitive.Content>
       </DialogPortal>

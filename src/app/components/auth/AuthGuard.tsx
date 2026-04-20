@@ -9,6 +9,7 @@ import { LEGACY_WORKSPACE_BASE, WORKSPACE_BASE } from '@/lib/workspacePaths';
 import { WorkspaceShellSkeleton } from '@/app/components/dashboard-placeholder/WorkspaceShellSkeleton';
 import { RouteSkeleton } from '@/app/components/ui/RouteSkeleton';
 import { ReleaseNotesSessionHost } from '@/app/components/welcome/ReleaseNotesSessionHost';
+import { GithubOAuthReturnHandler } from '@/app/components/auth/GithubOAuthReturnHandler';
 
 interface AuthGuardProps {
     children: React.ReactNode;
@@ -83,6 +84,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     return (
         <>
             <ReleaseNotesSessionHost />
+            <GithubOAuthReturnHandler />
             {children}
         </>
     );

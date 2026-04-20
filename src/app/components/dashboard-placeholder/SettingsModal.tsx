@@ -14,6 +14,7 @@ import { workspaceJoin } from "@/lib/workspacePaths";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import { FeedbackModal } from "./FeedbackModal";
+import { GithubIntegrationModal } from "./GithubIntegrationModal";
 import {
   Select,
   SelectContent,
@@ -162,6 +163,7 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
   const [invoiceCurrency, setInvoiceCurrency] = useState<(typeof INVOICE_CURRENCIES)[number]>("ZAR");
   const [invoiceHourlyRate, setInvoiceHourlyRate] = useState("200");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [githubIntegrationOpen, setGithubIntegrationOpen] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistSendPending, setWaitlistSendPending] = useState(false);
 
@@ -211,6 +213,7 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
     if (!next) {
       setSection("general");
       setFeedbackOpen(false);
+      setGithubIntegrationOpen(false);
     }
     onOpenChange(next);
   };
@@ -549,6 +552,26 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex min-w-0 flex-col gap-1">
                       <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                        GitHub
+                      </p>
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                        Connect the GitHub App to a project to authorize access and list repositories from your
+                        installation.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setGithubIntegrationOpen(true)}
+                      className={cn(outlineActionClass, "gap-1")}
+                    >
+                      Manage
+                      <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                    </button>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-4 border-t border-[#ebedee] pt-4">
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
                         Cursor MCP
                       </p>
                       <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
@@ -699,6 +722,7 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
       </DialogPortal>
     </Dialog>
     <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+    <GithubIntegrationModal open={githubIntegrationOpen} onOpenChange={setGithubIntegrationOpen} />
     </>
   );
 }
