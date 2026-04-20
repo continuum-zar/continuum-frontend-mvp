@@ -15,21 +15,23 @@ export async function fetchGitHubInstallationRepositories(
 }
 
 /**
- * Start user-to-server OAuth: backend responds with 302 to GitHub. Does not follow redirects
- * so we can read the `Location` header and send the browser there (JWT stays in axios only).
+ * Start user-to-server OAuth: ask the backend for the GitHub authorize URL and navigate
+ * the top-level browser there.
+ *
+ * We cannot use the ``/github/connect`` 302 endpoint from a SPA because browsers
+ * transparently follow redirects for XHR/fetch and never expose the ``Location`` header
+ * to JavaScript (and the cross-origin follow to github.com then fails CORS). Instead we
+ * read the URL from a JSON endpoint so the JWT stays in axios and the browser keeps the
+ * session.
  */
 export async function getGitHubOAuthAuthorizeLocation(projectId: number): Promise<string> {
-  const res = await api.get<void>('/github/connect', {
+  const { data } = await api.get<{ url: string }>('/github/authorize-url', {
     params: { project_id: projectId },
-    maxRedirects: 0,
-    validateStatus: (status) => status === 302,
   });
-  const headers = res.headers as Record<string, string | undefined>;
-  const loc = headers.location ?? headers.Location;
-  if (!loc) {
-    throw new Error('GitHub OAuth redirect did not return a Location header');
+  if (!data?.url) {
+    throw new Error('GitHub OAuth authorize URL was not returned by the server');
   }
-  return loc;
+  return data.url;
 }
 
 export const githubAppKeys = {
