@@ -56,7 +56,10 @@ async function postRefresh(refreshToken: string) {
     return axios.post<{ access_token: string; refresh_token: string; token_type?: string }>(
         `${apiBaseURL}/auth/refresh-token`,
         null,
-        { params: { refresh_token: refreshToken } }
+        {
+            params: { refresh_token: refreshToken },
+            timeout: 30_000,
+        }
     );
 }
 
