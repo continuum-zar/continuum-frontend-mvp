@@ -1,14 +1,62 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
+import { motion } from 'motion/react';
 import api from '@/lib/api';
 import { Alert, AlertDescription, AlertTitle } from '@/app/components/ui/alert';
 import { Button } from '@/app/components/ui/button';
 import { ErrorBoundary } from '@/app/ErrorBoundary';
 import { isAxiosError, isCancel } from 'axios';
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { Check, XCircle } from 'lucide-react';
 
 const MCP_OAUTH_SESSION_KEY = 'continuum-mcp-oauth-completed';
 const REDIRECT_FALLBACK_MS = 10_000;
+
+/** Same gradient wordmark + soft pulse as AI plan generation (`AIProjectPlanner`). */
+const CONTINUUM_WORDMARK_GRADIENT =
+    'linear-gradient(135.275deg, rgb(36, 181, 248) 4.6217%, rgb(85, 33, 254) 148.53%)';
+
+/** Same spring check as project-created success in `AIProjectPlanner`. */
+function PlannerSuccessCheck() {
+    return (
+        <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{
+                type: 'spring',
+                stiffness: 200,
+                damping: 15,
+            }}
+        >
+            <Check className="mx-auto size-16 text-emerald-500" aria-hidden />
+        </motion.div>
+    );
+}
+
+function ContinuumConnectingStatus({
+    subtitle,
+    hint,
+    leading,
+}: {
+    subtitle: string;
+    hint?: string;
+    leading?: ReactNode;
+}) {
+    return (
+        <div className="flex min-h-svh flex-col items-center justify-center gap-5 bg-background px-6 py-16 text-center text-foreground">
+            {leading}
+            <p
+                className="animate-pulse-soft bg-clip-text font-sarina text-[42px] font-normal leading-none tracking-[-0.85px] text-transparent motion-reduce:animate-none motion-reduce:opacity-100"
+                style={{ backgroundImage: CONTINUUM_WORDMARK_GRADIENT }}
+            >
+                Continuum
+            </p>
+            <p className="text-base font-medium text-muted-foreground">{subtitle}</p>
+            {hint ? (
+                <p className="max-w-sm text-[13px] font-medium leading-normal text-muted-foreground">{hint}</p>
+            ) : null}
+        </div>
+    );
+}
 
 function logRedirectUrlSafe(redirectUrl: string) {
     try {
@@ -282,7 +330,7 @@ function McpOAuthInner() {
     if (phase === 'revisit-success') {
         return (
             <div className="min-h-svh bg-background flex flex-col items-center justify-center gap-4 p-6 text-center text-foreground">
-                <CheckCircle2 className="size-10 text-[color:var(--success)]" aria-hidden />
+                <PlannerSuccessCheck />
                 <div className="max-w-md space-y-2">
                     <h1 className="text-lg font-semibold">Already connected</h1>
                     <p className="text-sm text-muted-foreground">
@@ -299,7 +347,7 @@ function McpOAuthInner() {
     if (phase === 'success-stalled' && fallbackRedirectUrl) {
         return (
             <div className="min-h-svh bg-background flex flex-col items-center justify-center gap-6 p-6 text-center text-foreground">
-                <CheckCircle2 className="size-10 text-[color:var(--success)]" aria-hidden />
+                <PlannerSuccessCheck />
                 <div className="max-w-md space-y-2">
                     <h1 className="text-lg font-semibold">Success</h1>
                     <p className="text-sm text-muted-foreground">
@@ -321,28 +369,16 @@ function McpOAuthInner() {
 
     if (phase === 'success-pending-redirect') {
         return (
-            <div className="min-h-svh bg-background flex flex-col items-center justify-center gap-4 text-foreground">
-                <CheckCircle2 className="size-8 text-[color:var(--success)]" aria-hidden />
-                <p className="text-sm font-medium text-foreground">Success — returning to Cursor…</p>
-                <Loader2
-                    className="size-6 animate-spin text-muted-foreground motion-reduce:animate-none"
-                    aria-hidden
-                />
-                <p className="text-xs text-muted-foreground max-w-sm text-center px-4">
-                    If nothing happens in a few seconds, we will show a link to continue manually.
-                </p>
-            </div>
+            <ContinuumConnectingStatus
+                leading={<PlannerSuccessCheck />}
+                subtitle="Success — returning to Cursor…"
+                hint="If nothing happens in a few seconds, we will show a link to continue manually."
+            />
         );
     }
 
     return (
-        <div className="min-h-svh bg-background flex flex-col items-center justify-center gap-4 text-foreground">
-            <Loader2
-                className="size-8 animate-spin text-muted-foreground motion-reduce:animate-none"
-                aria-hidden
-            />
-            <p className="text-sm text-muted-foreground">Connecting Cursor to Continuum…</p>
-        </div>
+        <ContinuumConnectingStatus subtitle="Connecting Cursor to Continuum…" />
     );
 }
 
