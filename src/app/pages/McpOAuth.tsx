@@ -2,7 +2,6 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion } from 'motion/react';
 import api from '@/lib/api';
-import { DashboardLeftRail } from '@/app/components/dashboard-placeholder/DashboardLeftRail';
 import { Alert, AlertDescription, AlertTitle } from '@/app/components/ui/alert';
 import { Button } from '@/app/components/ui/button';
 import { cn } from '@/app/components/ui/utils';
@@ -24,24 +23,22 @@ const phTitle = "font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b
 const phBody = "font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]";
 const phHint = "font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#727d83]";
 
+/** Standalone page: same gradient and card styling as dashboard placeholder, without the left rail. */
 function McpOAuthShell({ children }: { children: React.ReactNode }) {
     return (
         <div
-            className="box-border flex h-screen min-h-0 w-full min-w-0 flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
+            className="box-border flex min-h-screen w-full min-w-0 flex-col font-['Satoshi',sans-serif]"
             style={{ backgroundImage: PLACEHOLDER_PAGE_GRADIENT }}
         >
-            <div className="flex min-h-0 w-full flex-1 flex-col items-end gap-2">
-                <div className="isolate flex min-h-0 w-full min-w-0 flex-1 items-stretch gap-[16px]">
-                    <DashboardLeftRail />
-                    <section
-                        className={cn(
-                            'relative z-[1] isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto rounded-[8px] border border-[#ebedee] border-solid bg-white',
-                            PLACEHOLDER_MAIN_PANEL_SHADOW
-                        )}
-                    >
-                        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-10">{children}</div>
-                    </section>
-                </div>
+            <div className="flex flex-1 flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+                <section
+                    className={cn(
+                        'w-full max-w-[520px] rounded-[8px] border border-[#ebedee] border-solid bg-white px-8 py-12 sm:px-10 sm:py-14',
+                        PLACEHOLDER_MAIN_PANEL_SHADOW
+                    )}
+                >
+                    <div className="flex flex-col items-center justify-center">{children}</div>
+                </section>
             </div>
         </div>
     );
@@ -85,14 +82,17 @@ function PlannerSuccessCheck() {
 function ContinuumConnectingStatus({
     subtitle,
     hint,
+    progressLine,
     leading,
 }: {
     subtitle: string;
+    /** Comma-separated status line while connecting (no hyphen separators). */
+    progressLine?: string;
     hint?: string;
     leading?: ReactNode;
 }) {
     return (
-        <div className="flex w-full max-w-lg flex-col items-center justify-center gap-5 text-center">
+        <div className="flex w-full flex-col items-center justify-center gap-5 text-center">
             {leading}
             <p
                 className="animate-pulse-soft bg-clip-text font-sarina text-[42px] font-normal leading-none tracking-[-0.85px] text-transparent motion-reduce:animate-none motion-reduce:opacity-100"
@@ -101,6 +101,7 @@ function ContinuumConnectingStatus({
                 Continuum
             </p>
             <p className={cn(phBody)}>{subtitle}</p>
+            {progressLine ? <p className={cn('max-w-md', phHint)}>{progressLine}</p> : null}
             {hint ? <p className={cn('max-w-sm', phHint)}>{hint}</p> : null}
         </div>
     );
@@ -432,7 +433,7 @@ function McpOAuthInner() {
             <McpOAuthShell>
                 <ContinuumConnectingStatus
                     leading={<PlannerSuccessCheck />}
-                    subtitle="Success — returning to Cursor…"
+                    subtitle="Success, returning to Cursor…"
                     hint="If nothing happens in a few seconds, we will show a link to continue manually."
                 />
             </McpOAuthShell>
@@ -441,7 +442,10 @@ function McpOAuthInner() {
 
     return (
         <McpOAuthShell>
-            <ContinuumConnectingStatus subtitle="Connecting Cursor to Continuum…" />
+            <ContinuumConnectingStatus
+                subtitle="Connecting Cursor to Continuum…"
+                progressLine="Verifying your account, Completing authorization, Preparing handoff"
+            />
         </McpOAuthShell>
     );
 }
