@@ -4,10 +4,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { githubAppKeys } from "@/api/githubApp";
+import { consumeGithubOAuthReturnPath } from "@/lib/githubOAuthReturn";
 
 /**
- * After GitHub redirects back to the SPA (`?github_oauth=success|error&...`), show feedback and strip params.
- * Must run under an authenticated router tree so query invalidation applies.
+ * After GitHub redirects back to the SPA (`?github_oauth=success|error&...`), show feedback,
+ * clear the stored return-path hint, and strip the marker query params.
+ *
+ * Must run under an authenticated router tree so query invalidation applies. Navigation back
+ * to the originating page is handled by `LandingRoute`, which peeks the stored return path
+ * before this handler consumes it, so by the time this component mounts the user is already
+ * on the right URL — we just clean up state and notify.
  */
 export function GithubOAuthReturnHandler() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,6 +30,8 @@ export function GithubOAuthReturnHandler() {
     const fingerprint = `${status}|${searchParams.get("project_id") ?? ""}|${searchParams.get("reason") ?? ""}`;
     if (processedKey.current === fingerprint) return;
     processedKey.current = fingerprint;
+
+    consumeGithubOAuthReturnPath();
 
     if (status === "success") {
       const pid = searchParams.get("project_id");

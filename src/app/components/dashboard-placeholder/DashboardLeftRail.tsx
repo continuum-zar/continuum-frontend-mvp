@@ -27,7 +27,9 @@ import {
 } from "../../data/dashboardPlaceholderProjects";
 import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
 import { GuidedTourLayer } from "@/app/components/onboarding/GuidedTourLayer";
+import { consumeGithubOAuthReopenSettings } from "@/lib/githubOAuthReturn";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
+import type { SettingsSection } from "./SettingsModal";
 import { cn } from "../ui/utils";
 
 const imgVector = mcpAsset("2470fa31-25cd-47ac-991d-d1c4219bd28d");
@@ -435,6 +437,9 @@ export function DashboardLeftRail() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsSectionOverride, setSettingsSectionOverride] = useState<SettingsSection | null>(
+    null,
+  );
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
   const taskSearchInputRef = useRef<HTMLInputElement>(null);
@@ -532,6 +537,18 @@ export function DashboardLeftRail() {
     setSettingsOpen(tourSettingsModalOpen);
     setTourSettingsModalOpen(null);
   }, [tourSettingsModalOpen, setTourSettingsModalOpen]);
+
+  /**
+   * Reopen Settings → Integrations after a GitHub OAuth round-trip. The flag is set by
+   * GitHubInstallationRepoLinker.handleConnect before leaving the SPA and consumed here
+   * exactly once so navigating away and back doesn't keep re-opening the modal.
+   */
+  useEffect(() => {
+    if (consumeGithubOAuthReopenSettings()) {
+      setSettingsSectionOverride("integrations");
+      setSettingsOpen(true);
+    }
+  }, []);
 
   /** When the tour ends, always dismiss settings so it is not left behind the tour UI. */
   useEffect(() => {
@@ -886,7 +903,14 @@ export function DashboardLeftRail() {
       </div>
       <CreateProjectModal open={createProjectOpen} onOpenChange={setCreateProjectOpen} />
       <InvoiceModal open={invoiceOpen} onOpenChange={setInvoiceOpen} />
-      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} tourSection={settingsTourSection} />
+      <SettingsModal
+        open={settingsOpen}
+        onOpenChange={(next) => {
+          setSettingsOpen(next);
+          if (!next) setSettingsSectionOverride(null);
+        }}
+        tourSection={settingsSectionOverride ?? settingsTourSection}
+      />
       <LogTimeModal
         open={logModalOpen}
         onOpenChange={(o) => {

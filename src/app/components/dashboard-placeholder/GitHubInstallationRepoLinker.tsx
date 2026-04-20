@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useLinkRepository, useProjectRepositories } from "@/api";
 import { getGitHubOAuthAuthorizeLocation } from "@/api/githubApp";
 import { getApiErrorMessage, useGithubInstallationRepositories } from "@/api/hooks";
+import { rememberGithubOAuthReturnPath } from "@/lib/githubOAuthReturn";
 import type { GitHubInstallationRepository } from "@/types/githubApp";
 import type { Repository } from "@/types/repository";
 
@@ -99,6 +100,10 @@ export function GitHubInstallationRepoLinker({
     setConnectBusy(true);
     try {
       const url = await getGitHubOAuthAuthorizeLocation(projectId);
+      rememberGithubOAuthReturnPath(
+        `${window.location.pathname}${window.location.search}`,
+        { reopenSettings: true },
+      );
       window.location.assign(url);
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Could not start GitHub connection"));
