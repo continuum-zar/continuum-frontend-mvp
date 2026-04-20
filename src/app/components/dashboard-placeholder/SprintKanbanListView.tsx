@@ -14,6 +14,8 @@ import { workspaceJoin } from "@/lib/workspacePaths";
 import { cn } from "../ui/utils";
 import { VirtualList } from "@/app/components/ui/VirtualList";
 import type { KanbanColumnConfig } from "./kanbanBoardTypes";
+import { KanbanColumnSearchControls } from "./KanbanColumnSearchControls";
+import { filterKanbanTasksBySearchQueryRespectingDrag } from "./kanbanColumnSearchUtils";
 import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
@@ -78,6 +80,8 @@ export function SprintKanbanListView({
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(columns.map((c) => [c.id, true])),
   );
+  const [columnSearchOpen, setColumnSearchOpen] = useState<Record<string, boolean>>({});
+  const [columnSearchQuery, setColumnSearchQuery] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setExpanded((prev) => {
@@ -219,8 +223,10 @@ export function SprintKanbanListView({
     col: KanbanColumnConfig,
     headerRight: ReactNode,
     emptyMsg: string,
+    displayList: Task[],
+    searchFilterActive: boolean,
   ) => {
-    const list = columnTasks[col.id] ?? [];
+    const list = displayList;
     const isOpen = expanded[col.id] ?? true;
 
     return (
@@ -286,7 +292,9 @@ export function SprintKanbanListView({
                 />
               ) : null}
               {list.length === 0 ? (
-                <p className="px-4 py-6 font-['Satoshi',sans-serif] text-[13px] text-[#727d83]">{emptyMsg}</p>
+                <p className="px-4 py-6 font-['Satoshi',sans-serif] text-[13px] text-[#727d83]">
+                  {searchFilterActive ? "No tasks match your search." : emptyMsg}
+                </p>
               ) : (
                 <VirtualList
                   items={list}
@@ -309,14 +317,20 @@ export function SprintKanbanListView({
   };
 
   const searchAndKebab = (col: KanbanColumnConfig) => (
-    <>
-      <button
-        type="button"
-        className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
-        aria-label="Search tasks"
-      >
-        <img alt="" className="block size-full max-h-full max-w-full object-contain" src={imgLucideSearch1} />
-      </button>
+    <KanbanColumnSearchControls
+      variant="list"
+      open={columnSearchOpen[col.id] ?? false}
+      query={columnSearchQuery[col.id] ?? ""}
+      onQueryChange={(value) =>
+        setColumnSearchQuery((prev) => ({ ...prev, [col.id]: value }))
+      }
+      onOpen={() => setColumnSearchOpen((prev) => ({ ...prev, [col.id]: true }))}
+      onClose={() => {
+        setColumnSearchOpen((prev) => ({ ...prev, [col.id]: false }));
+        setColumnSearchQuery((prev) => ({ ...prev, [col.id]: "" }));
+      }}
+      searchIconSrc={imgLucideSearch1}
+    >
       {columnKebabMenu ? (
         columnKebabMenu(col)
       ) : (
@@ -331,7 +345,7 @@ export function SprintKanbanListView({
           </div>
         </div>
       )}
-    </>
+    </KanbanColumnSearchControls>
   );
 
   const createTaskControl = (
@@ -355,19 +369,21 @@ export function SprintKanbanListView({
   return (
     <div className="scrollbar-none content-stretch relative z-[1] flex w-full min-h-0 flex-1 flex-col items-stretch gap-[24px] overflow-x-auto overflow-y-auto font-['Satoshi',sans-serif]">
       {columns.map((col) => {
-        const headerRight =
-          col.taskStatus === "todo" ? (
-            <>
-              {searchAndKebab(col)}
-              {createTaskControl}
-            </>
-          ) : (
-            searchAndKebab(col)
-          );
+        const rawList = columnTasks[col.id] ?? [];
+        const q = columnSearchQuery[col.id] ?? "";
+        const displayList = filterKanbanTasksBySearchQueryRespectingDrag(rawList, q, draggingId);
+        const searchFilterActive = q.trim().length > 0 && rawList.length > 0 && displayList.length === 0;
+
+        const headerRight = (
+          <>
+            {searchAndKebab(col)}
+            {col.taskStatus === "todo" ? createTaskControl : null}
+          </>
+        );
         const emptyTail =
           col.taskStatus === "todo" && milestoneId ? " for this milestone" : "";
         const emptyMsg = `No tasks in ${col.title}${emptyTail}.`;
-        return section(col, headerRight, emptyMsg);
+        return section(col, headerRight, emptyMsg, displayList, searchFilterActive);
       })}
     </div>
   );

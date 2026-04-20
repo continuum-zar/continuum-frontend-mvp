@@ -9,7 +9,9 @@ import { ArrowLeft, Flag, Plus, Trash2 } from "lucide-react";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
 import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
+import { KanbanBoardColumnHeader } from "./KanbanBoardColumnHeader";
 import { KanbanColumnHeaderKebabMenu } from "./KanbanColumnHeaderKebabMenu";
+import { filterKanbanTasksBySearchQueryRespectingDrag } from "./kanbanColumnSearchUtils";
 import { SprintKanbanListView } from "./SprintKanbanListView";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "@/app/components/ui/dialog";
@@ -188,6 +190,8 @@ export function GetStartedKanbanLive({
   const [addColumnOpen, setAddColumnOpen] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [newColumnStatus, setNewColumnStatus] = useState<TaskStatus>("todo");
+  const [boardColumnSearchOpen, setBoardColumnSearchOpen] = useState<Record<string, boolean>>({});
+  const [boardColumnSearchQuery, setBoardColumnSearchQuery] = useState<Record<string, string>>({});
 
   const handleMoveToColumn = (taskId: string, targetColumnId: string) => {
     const targetCol = columns.find((c) => c.id === targetColumnId);
@@ -528,63 +532,35 @@ export function GetStartedKanbanLive({
   };
 
   const renderBoardColumnHeader = (col: KanbanColumnConfig) => {
-    const showSearchAndCreate = col.taskStatus === "todo";
+    const showCreateTask = col.taskStatus === "todo";
     return (
-      <div
-        className={`content-stretch flex items-center justify-between relative ${showSearchAndCreate ? "isolate z-[2]" : ""} w-full shrink-0`}
-      >
-        <div className="content-stretch flex min-w-0 gap-[8px] items-center relative shrink-0">
-          <div className="relative shrink-0 size-[16px]">
-            <img alt="" className="absolute block max-w-none size-full" src={boardColumnIconSrc(col.kind)} />
-          </div>
-          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 shrink truncate text-[#606d76] text-[14px]">
-            {col.title}
-          </p>
-        </div>
-        <div className="content-stretch flex shrink-0 items-center gap-[12px]">
-          {showSearchAndCreate ? (
-            <>
-              <button
-                type="button"
-                className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
-                aria-hidden
-              >
-                <img alt="" className="block size-full max-h-full max-w-full object-contain" src={imgLucideSearch1} />
-              </button>
-              <KanbanColumnHeaderKebabMenu
-                column={col}
-                onAddList={() => setAddColumnOpen(true)}
-                onRequestDeleteList={
-                  isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
-                }
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCreateTaskOpen(true);
-                }}
-                className="content-stretch flex shrink-0 cursor-pointer items-center overflow-clip border-0 bg-transparent p-[5px] relative rounded-[6px]"
-                aria-label="Create task"
-              >
-                <div className="relative shrink-0 size-[14px]">
-                  <div className="absolute inset-[-5.36%]">
-                    <img alt="" className="block max-w-none size-full" src={imgVector11} />
-                  </div>
-                </div>
-              </button>
-            </>
-          ) : (
-            <KanbanColumnHeaderKebabMenu
-              column={col}
-              onAddList={() => setAddColumnOpen(true)}
-              onRequestDeleteList={
-                isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
-              }
-            />
-          )}
-        </div>
-      </div>
+      <KanbanBoardColumnHeader
+        col={col}
+        columnIconSrc={boardColumnIconSrc(col.kind)}
+        searchOpen={boardColumnSearchOpen[col.id] ?? false}
+        query={boardColumnSearchQuery[col.id] ?? ""}
+        onQueryChange={(value) =>
+          setBoardColumnSearchQuery((prev) => ({ ...prev, [col.id]: value }))
+        }
+        onSearchOpen={() => setBoardColumnSearchOpen((prev) => ({ ...prev, [col.id]: true }))}
+        onSearchClose={() => {
+          setBoardColumnSearchOpen((prev) => ({ ...prev, [col.id]: false }));
+          setBoardColumnSearchQuery((prev) => ({ ...prev, [col.id]: "" }));
+        }}
+        searchIconSrc={imgLucideSearch1}
+        showCreateTask={showCreateTask}
+        onCreateTask={() => setCreateTaskOpen(true)}
+        createIconSrc={imgVector11}
+        kebabMenu={
+          <KanbanColumnHeaderKebabMenu
+            column={col}
+            onAddList={() => setAddColumnOpen(true)}
+            onRequestDeleteList={
+              isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
+            }
+          />
+        }
+      />
     );
   };
 
@@ -641,16 +617,20 @@ export function GetStartedKanbanLive({
         className="content-stretch relative z-[1] flex w-full min-w-0 flex-1 min-h-0 flex-nowrap items-stretch gap-[16px] overflow-x-auto"
       >
         {columns.map((col) => {
-          const list = columnTasks[col.id] ?? [];
+          const rawList = columnTasks[col.id] ?? [];
+          const q = boardColumnSearchQuery[col.id] ?? "";
+          const list = filterKanbanTasksBySearchQueryRespectingDrag(rawList, q, draggingId);
           const emptyTail = col.taskStatus === "todo" && milestoneId ? " for this milestone" : "";
+          const searchFilterActive = q.trim().length > 0 && rawList.length > 0 && list.length === 0;
           return colWrap(
             col.id,
             <>
               {list.map(renderLiveCard)}
               {list.length === 0 && (
                 <p className="text-[13px] text-[#727d83]">
-                  No tasks in {col.title}
-                  {emptyTail}.
+                  {searchFilterActive
+                    ? "No tasks match your search."
+                    : `No tasks in ${col.title}${emptyTail}.`}
                 </p>
               )}
             </>,
