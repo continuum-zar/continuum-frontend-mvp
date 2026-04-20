@@ -101,6 +101,7 @@ export async function generateTasks(
     return data;
 }
 
+/** Persist AI-generated tasks after user confirmation. Creator is set only on the server from the auth session (`POST .../wiki/confirm`). */
 export async function confirmTasks(
     projectId: number | string,
     body: { tasks: WikiConfirmTaskItem[] }
