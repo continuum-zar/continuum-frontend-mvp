@@ -55,6 +55,8 @@ export interface ProjectDetail {
     id: number;
     name: string;
     description: string;
+    /** `yyyy-mm-dd` for date inputs, or null when not set. */
+    dueDateIso: string | null;
     /** Billing / invoice: linked client when set. */
     clientId?: number;
 }

@@ -45,7 +45,7 @@ export async function createProject(body: {
 /** Update a project. PUT /api/v1/projects/{id}. Refetch list after success. */
 export async function updateProject(
     projectId: number | string,
-    body: { name?: string; description?: string; due_date?: string | null; status?: string }
+    body: { name?: string; description?: string | null; due_date?: string | null; status?: string }
 ): Promise<ProjectAPIResponse> {
     const { data } = await api.put<ProjectAPIResponse>(`/projects/${projectId}`, {
         ...(body.name !== undefined && { name: body.name }),

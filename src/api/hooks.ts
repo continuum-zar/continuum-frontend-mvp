@@ -452,7 +452,7 @@ export function useUpdateProject() {
             body,
         }: {
             projectId: number | string;
-            body: { name?: string; description?: string; due_date?: string | null; status?: string };
+            body: { name?: string; description?: string | null; due_date?: string | null; status?: string };
         }) => updateProject(projectId, body),
         onSuccess: (_data, { projectId }) => {
             queryClient.invalidateQueries({ queryKey: projectKeys.list() });

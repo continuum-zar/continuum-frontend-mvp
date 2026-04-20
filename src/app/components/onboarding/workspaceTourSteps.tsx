@@ -110,6 +110,20 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     ]),
   },
   {
+    id: "welcome-edit-project",
+    title: "Edit project",
+    ensureUrl: U.welcome,
+    targetSelector: '[data-tour="welcome-edit-project"]',
+    body: T([
+      { text: "Open ", h: "peach" },
+      { text: "Edit", h: "cyan" },
+      {
+        text: " to change the project name, description, and target date, or delete the project when you’re done.",
+        h: "peach",
+      },
+    ]),
+  },
+  {
     id: "welcome-hero",
     title: "Project progress",
     ensureUrl: U.welcome,
