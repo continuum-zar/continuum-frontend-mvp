@@ -2,14 +2,64 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion } from 'motion/react';
 import api from '@/lib/api';
+import { DashboardLeftRail } from '@/app/components/dashboard-placeholder/DashboardLeftRail';
 import { Alert, AlertDescription, AlertTitle } from '@/app/components/ui/alert';
 import { Button } from '@/app/components/ui/button';
+import { cn } from '@/app/components/ui/utils';
 import { ErrorBoundary } from '@/app/ErrorBoundary';
 import { isAxiosError, isCancel } from 'axios';
 import { Check, XCircle } from 'lucide-react';
 
 const MCP_OAUTH_SESSION_KEY = 'continuum-mcp-oauth-completed';
 const REDIRECT_FALLBACK_MS = 10_000;
+
+/** Matches `DashboardPlaceholderHome` / `WorkspaceShellSkeleton` workspace shell. */
+const PLACEHOLDER_PAGE_GRADIENT =
+    'linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)';
+
+const PLACEHOLDER_MAIN_PANEL_SHADOW =
+    'shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]';
+
+const phTitle = "font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]";
+const phBody = "font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]";
+const phHint = "font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#727d83]";
+
+function McpOAuthShell({ children }: { children: React.ReactNode }) {
+    return (
+        <div
+            className="box-border flex h-screen min-h-0 w-full min-w-0 flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
+            style={{ backgroundImage: PLACEHOLDER_PAGE_GRADIENT }}
+        >
+            <div className="flex min-h-0 w-full flex-1 flex-col items-end gap-2">
+                <div className="isolate flex min-h-0 w-full min-w-0 flex-1 items-stretch gap-[16px]">
+                    <DashboardLeftRail />
+                    <section
+                        className={cn(
+                            'relative z-[1] isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto rounded-[8px] border border-[#ebedee] border-solid bg-white',
+                            PLACEHOLDER_MAIN_PANEL_SHADOW
+                        )}
+                    >
+                        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-10">{children}</div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function PlaceholderGradientButtonLink({ href, children }: { href: string; children: React.ReactNode }) {
+    return (
+        <a
+            href={href}
+            className={cn(
+                "inline-flex h-11 min-w-[200px] items-center justify-center rounded-lg px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white shadow-sm transition-opacity hover:opacity-95",
+                'bg-gradient-to-br from-[#24b5f8] to-[#5521fe]'
+            )}
+        >
+            {children}
+        </a>
+    );
+}
 
 /** Same gradient wordmark + soft pulse as AI plan generation (`AIProjectPlanner`). */
 const CONTINUUM_WORDMARK_GRADIENT =
@@ -42,7 +92,7 @@ function ContinuumConnectingStatus({
     leading?: ReactNode;
 }) {
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-5 bg-background px-6 py-16 text-center text-foreground">
+        <div className="flex w-full max-w-lg flex-col items-center justify-center gap-5 text-center">
             {leading}
             <p
                 className="animate-pulse-soft bg-clip-text font-sarina text-[42px] font-normal leading-none tracking-[-0.85px] text-transparent motion-reduce:animate-none motion-reduce:opacity-100"
@@ -50,10 +100,8 @@ function ContinuumConnectingStatus({
             >
                 Continuum
             </p>
-            <p className="text-base font-medium text-muted-foreground">{subtitle}</p>
-            {hint ? (
-                <p className="max-w-sm text-[13px] font-medium leading-normal text-muted-foreground">{hint}</p>
-            ) : null}
+            <p className={cn(phBody)}>{subtitle}</p>
+            {hint ? <p className={cn('max-w-sm', phHint)}>{hint}</p> : null}
         </div>
     );
 }
@@ -317,68 +365,84 @@ function McpOAuthInner() {
 
     if (error) {
         return (
-            <div className="min-h-svh bg-background flex items-center justify-center p-6">
-                <Alert variant="destructive" className="max-w-md">
+            <McpOAuthShell>
+                <Alert variant="destructive" className="w-full max-w-md font-['Satoshi',sans-serif]">
                     <XCircle className="size-4" aria-hidden />
                     <AlertTitle>{error.title}</AlertTitle>
                     <AlertDescription className="text-destructive-foreground/90">{error.description}</AlertDescription>
                 </Alert>
-            </div>
+            </McpOAuthShell>
         );
     }
 
     if (phase === 'revisit-success') {
         return (
-            <div className="min-h-svh bg-background flex flex-col items-center justify-center gap-4 p-6 text-center text-foreground">
-                <PlannerSuccessCheck />
-                <div className="max-w-md space-y-2">
-                    <h1 className="text-lg font-semibold">Already connected</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Cursor was linked to Continuum in this browser session. You can close this tab.
-                    </p>
+            <McpOAuthShell>
+                <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
+                    <PlannerSuccessCheck />
+                    <div className="space-y-2">
+                        <h1 className={phTitle}>Already connected</h1>
+                        <p className={phBody}>
+                            Cursor was linked to Continuum in this browser session. You can close this tab.
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCloseWindow}
+                        className="h-11 min-w-[200px] border-[#ebedee] bg-white font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] hover:bg-[#f9fafb]"
+                    >
+                        Close this window
+                    </Button>
                 </div>
-                <Button type="button" variant="secondary" onClick={handleCloseWindow}>
-                    Close this window
-                </Button>
-            </div>
+            </McpOAuthShell>
         );
     }
 
     if (phase === 'success-stalled' && fallbackRedirectUrl) {
         return (
-            <div className="min-h-svh bg-background flex flex-col items-center justify-center gap-6 p-6 text-center text-foreground">
-                <PlannerSuccessCheck />
-                <div className="max-w-md space-y-2">
-                    <h1 className="text-lg font-semibold">Success</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Continuum authorized Cursor. If your editor did not open automatically, use the button below to
-                        finish the handoff. You may close this window afterward.
-                    </p>
+            <McpOAuthShell>
+                <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
+                    <PlannerSuccessCheck />
+                    <div className="space-y-2">
+                        <h1 className={phTitle}>Success</h1>
+                        <p className={phBody}>
+                            Continuum authorized Cursor. If your editor did not open automatically, use the button below
+                            to finish the handoff. You may close this window afterward.
+                        </p>
+                    </div>
+                    <div className="flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
+                        <PlaceholderGradientButtonLink href={fallbackRedirectUrl}>Continue to Cursor</PlaceholderGradientButtonLink>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCloseWindow}
+                            className="h-11 min-w-[200px] border-[#ebedee] bg-white font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] hover:bg-[#f9fafb]"
+                        >
+                            Close this window
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <Button asChild variant="default">
-                        <a href={fallbackRedirectUrl}>Continue to Cursor</a>
-                    </Button>
-                    <Button type="button" variant="outline" onClick={handleCloseWindow}>
-                        Close this window
-                    </Button>
-                </div>
-            </div>
+            </McpOAuthShell>
         );
     }
 
     if (phase === 'success-pending-redirect') {
         return (
-            <ContinuumConnectingStatus
-                leading={<PlannerSuccessCheck />}
-                subtitle="Success — returning to Cursor…"
-                hint="If nothing happens in a few seconds, we will show a link to continue manually."
-            />
+            <McpOAuthShell>
+                <ContinuumConnectingStatus
+                    leading={<PlannerSuccessCheck />}
+                    subtitle="Success — returning to Cursor…"
+                    hint="If nothing happens in a few seconds, we will show a link to continue manually."
+                />
+            </McpOAuthShell>
         );
     }
 
     return (
-        <ContinuumConnectingStatus subtitle="Connecting Cursor to Continuum…" />
+        <McpOAuthShell>
+            <ContinuumConnectingStatus subtitle="Connecting Cursor to Continuum…" />
+        </McpOAuthShell>
     );
 }
 
