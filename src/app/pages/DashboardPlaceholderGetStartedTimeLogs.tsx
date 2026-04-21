@@ -22,14 +22,18 @@ import {
   UsersRound,
 } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
-import { Link, useSearchParams } from "react-router";
+import { Link, useLocation, useSearchParams } from "react-router";
 import { STALE_MODERATE_MS } from "@/lib/queryDefaults";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import {
+  DASHBOARD_WELCOME_PROJECT,
+  expandedProjectFromLocation,
   isApiProjectId,
+  projectMainHref,
   projectSprintHref,
   projectTimeLogsHref,
+  sprintBoardContextBreadcrumbLabel,
   WELCOME_PROJECT_ID,
 } from "../data/dashboardPlaceholderProjects";
 import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from "@/lib/workspacePaths";
@@ -39,7 +43,7 @@ import {
   fetchProjectVelocityReport,
   type WeeklyVelocityData,
 } from "@/api/dashboard";
-import { useLoggedHours, useProject } from "@/api/hooks";
+import { useLoggedHours, useProject, useProjectMilestones } from "@/api/hooks";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { useTimeTracking } from "../context/TimeTrackingContext";
@@ -678,6 +682,7 @@ function buildGetStartedSearchParams(populated: boolean, tab: "time-logs" | "act
 
 
 export function DashboardPlaceholderGetStartedTimeLogs() {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { activate: activateTimeTracking } = useTimeTracking();
   useEffect(() => {
@@ -707,6 +712,9 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
   }, [tourActivityView]);
 
   const liveProjectNumericId = apiProjectId != null ? Number(apiProjectId) : null;
+  const milestonesQuery = useProjectMilestones(liveProjectNumericId, {
+    enabled: liveProjectNumericId != null,
+  });
   /** Welcome demo uses `populated`; real API projects always use live data. */
   const activityPopulated = liveProjectNumericId != null || populated;
 
@@ -801,8 +809,20 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
     setPage((p) => Math.min(Math.max(1, p), totalPages));
   }, [totalPages]);
 
+  const expandedProjectId = expandedProjectFromLocation(location.pathname, projectParam);
+  const projectIdForMainHref =
+    expandedProjectId != null && isApiProjectId(expandedProjectId) ? expandedProjectId : WELCOME_PROJECT_ID;
+  const breadcrumbProjectHref = projectMainHref(projectIdForMainHref);
   const breadcrumbProjectLabel =
-    apiProjectId != null ? projectQuery.data?.name ?? (projectQuery.isPending ? "…" : "Project") : "UX Strategy";
+    apiProjectId != null
+      ? projectQuery.data?.name ?? (projectQuery.isPending ? "…" : "Project")
+      : DASHBOARD_WELCOME_PROJECT.name;
+  const milestonePageTitle = sprintBoardContextBreadcrumbLabel(
+    apiProjectId,
+    milestoneParam,
+    milestonesQuery.data,
+    milestonesQuery.isLoading,
+  );
   const sprintBoardLink =
     apiProjectId != null
       ? projectSprintHref(apiProjectId, milestoneParam ?? undefined)
@@ -824,13 +844,25 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
           {/* Top bar — matches Figma 40:7745 / 40:8001 */}
           <div className="flex w-full flex-col gap-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[#606d76]">
-                <FolderOpenDot className="size-4 shrink-0" strokeWidth={1.5} />
-                <span className="text-[16px] font-medium">Continuum</span>
-                <span className="inline-flex size-4 items-center justify-center">
+              <div className="flex min-w-0 max-w-full items-center gap-2 text-[#606d76]">
+                <FolderOpenDot className="size-4 shrink-0" strokeWidth={1.5} aria-hidden />
+                <Link
+                  to={breadcrumbProjectHref}
+                  className="min-w-0 max-w-[min(100%,320px)] truncate text-[16px] font-medium text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                  title={breadcrumbProjectLabel}
+                >
+                  {breadcrumbProjectLabel}
+                </Link>
+                <span className="inline-flex size-4 shrink-0 items-center justify-center" aria-hidden>
                   <span className="text-[14px]">›</span>
                 </span>
-                <span className="text-[16px] font-medium">{breadcrumbProjectLabel}</span>
+                <Link
+                  to={sprintBoardLink}
+                  className="min-w-0 max-w-[min(100%,280px)] truncate text-[16px] font-medium text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                  title={milestonePageTitle}
+                >
+                  {milestonePageTitle}
+                </Link>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex h-8 items-center gap-2 rounded-[999px] bg-[#d7fede] px-4 py-2">
