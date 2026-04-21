@@ -6,7 +6,6 @@ import { TimeTrackingProvider } from './context/TimeTrackingContext';
 import { RoleProvider } from './context/RoleContext';
 
 import { ErrorBoundary } from './ErrorBoundary';
-import { CustomCursorOverlay } from './components/CustomCursorOverlay';
 import { MobileDesktopOnlyGate } from './components/MobileDesktopOnlyGate';
 import { AuthQueryCacheSync } from './components/AuthQueryCacheSync';
 import { AuthSessionBootstrap } from './components/AuthSessionBootstrap';
@@ -43,7 +42,6 @@ function App() {
           <MobileDesktopOnlyGate>
             <RouterProvider router={router} />
           </MobileDesktopOnlyGate>
-          <CustomCursorOverlay />
           <Toaster />
         </TimeTrackingProvider>
       </RoleProvider>

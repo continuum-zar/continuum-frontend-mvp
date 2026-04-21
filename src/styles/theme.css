@@ -64,20 +64,6 @@
   --sidebar-accent-foreground: #1a202c;
   --sidebar-border: #e2e8f0;
   --sidebar-ring: #2563eb;
-
-  /**
-   * Custom cursor SVGs — public/assets/cursors/*.svg (56×56 intrinsic, 32×32 viewBox).
-   * CustomCursorOverlay scales them to CURSOR_OVERLAY_DISPLAY_PX for on-screen size.
-   */
-  --cursor-svg-default: url('/assets/cursors/default.svg');
-  --cursor-svg-pointing: url('/assets/cursors/handpointing.svg');
-  --cursor-svg-open-hand: url('/assets/cursors/handopen.svg');
-  --cursor-svg-text: url('/assets/cursors/textcursor.svg');
-  --cursor-app-default: var(--cursor-svg-default) 7 7, default;
-  --cursor-app-pointer: var(--cursor-svg-pointing) 16 12, pointer;
-  --cursor-app-grab: var(--cursor-svg-open-hand) 19 21, grab;
-  --cursor-app-grabbing: url('/assets/cursors/handgrabbing.svg') 19 23, grabbing;
-  --cursor-app-text: var(--cursor-svg-text) 17 10, text;
 }
 
 .dark {
@@ -198,7 +184,7 @@
 
   html {
     font-size: var(--font-size);
-    cursor: var(--cursor-app-default);
+    cursor: default;
   }
 
   a[href],
@@ -206,7 +192,7 @@
   [role="button"]:not([aria-disabled="true"]),
   label[for],
   summary {
-    cursor: var(--cursor-app-pointer);
+    cursor: pointer;
   }
 
   h1 {
@@ -261,19 +247,19 @@
   input[type="number"],
   textarea,
   [contenteditable="true"] {
-    cursor: var(--cursor-app-text);
+    cursor: text;
   }
 }
 
 /** Hide native scrollbar while keeping scroll (wheel / touch / keyboard). */
 @layer utilities {
-  /** Kanban / draggable cards — handopen.svg hover, handgrabbing.svg while pressed / during drag. */
+  /** Kanban / draggable cards — native grab / grabbing cursors. */
   .cursor-open-hand {
-    cursor: var(--cursor-app-grab);
+    cursor: grab;
   }
 
   .cursor-open-hand:active {
-    cursor: url('/assets/cursors/handgrabbing.svg') 19 23, grabbing;
+    cursor: grabbing;
   }
 
   .scrollbar-none {
@@ -288,23 +274,11 @@
   }
 }
 
-/*
- * CustomCursorOverlay sets data-custom-cursor-active and draws SVGs in a fixed layer.
- * Hide the system cursor only when that overlay is on (not for prefers-reduced-motion).
- */
-@media (prefers-reduced-motion: no-preference) {
-  html[data-custom-cursor-active] *,
-  html[data-custom-cursor-active] *::before,
-  html[data-custom-cursor-active] *::after {
-    cursor: none !important;
-  }
-}
-
-/* Kanban drag grabbing SVG — only when overlay is off (reduced motion / no JS layer) */
-html[data-kanban-dragging]:not([data-custom-cursor-active]) *,
-html[data-kanban-dragging]:not([data-custom-cursor-active]) *::before,
-html[data-kanban-dragging]:not([data-custom-cursor-active]) *::after {
-  cursor: url('/assets/cursors/handgrabbing.svg') 19 23, grabbing !important;
+/* Kanban drag — native grabbing cursor while dragging */
+html[data-kanban-dragging] *,
+html[data-kanban-dragging] *::before,
+html[data-kanban-dragging] *::after {
+  cursor: grabbing !important;
 }
 
 /* Respect user preference for reduced motion (WCAG 2.2.2, vestibular safety) */
