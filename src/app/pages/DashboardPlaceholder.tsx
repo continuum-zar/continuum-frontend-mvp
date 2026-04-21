@@ -44,6 +44,7 @@ import {
   welcomeModalDismissedKeyForUser,
 } from "../components/welcome/welcomeModalAssets";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
 
 function LiveKanbanSuspenseFallback() {
   return (
@@ -731,31 +732,49 @@ export function DashboardPlaceholder() {
           <DashboardLeftRail />
           <div className="relative z-[1] isolate flex min-h-0 min-w-0 flex-1 flex-col items-end gap-[24px] overflow-x-clip overflow-y-hidden rounded-[8px] border border-[#ebedee] border-solid bg-white py-[16px] pl-[24px] pr-[16px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]" data-node-id="7:2850">
             <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full z-[3]" data-node-id="7:2851">
-              <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2852">
-                <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2853">
-                  <Link
-                    to={breadcrumbProjectHref}
-                    className="content-stretch flex min-w-0 max-w-[min(100%,320px)] gap-[8px] items-center relative shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                    title={breadcrumbProjectLabel}
-                  >
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-open-dot" data-node-id="7:2854">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderOpenDot} />
-                    </div>
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 shrink text-[#606d76] text-[16px] truncate" data-node-id="7:2856">
+              <div className="content-stretch relative flex min-w-0 shrink-0 w-full items-center justify-between gap-3" data-node-id="7:2852">
+                <div
+                  className="content-stretch relative flex min-w-0 flex-1 items-center gap-[8px] overflow-hidden"
+                  data-node-id="7:2853"
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={breadcrumbProjectHref}
+                        className="content-stretch relative flex min-w-0 max-w-[min(100%,12.5rem)] shrink items-center gap-[8px] overflow-hidden text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-open-dot" data-node-id="7:2854">
+                          <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderOpenDot} />
+                        </div>
+                        <p
+                          className="font-['Satoshi:Medium',sans-serif] relative min-w-0 flex-1 overflow-hidden text-ellipsis leading-[normal] not-italic whitespace-nowrap text-[#606d76] text-[16px]"
+                          data-node-id="7:2856"
+                        >
+                          {breadcrumbProjectLabel}
+                        </p>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs text-left">
                       {breadcrumbProjectLabel}
-                    </p>
-                  </Link>
+                    </TooltipContent>
+                  </Tooltip>
                   <div className="relative shrink-0 size-[16px]" data-name="lucide/chevron-right" data-node-id="7:2860">
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideChevronRight} />
                   </div>
-                  <Link
-                    to={sprintBoardHref}
-                    className="font-['Satoshi:Medium',sans-serif] min-w-0 max-w-[min(100%,280px)] leading-[normal] not-italic relative shrink truncate text-[#606d76] text-[16px] no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                    data-node-id="7:2862"
-                    title={milestonePageTitle}
-                  >
-                    {milestonePageTitle}
-                  </Link>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={sprintBoardHref}
+                        className="font-['Satoshi:Medium',sans-serif] relative min-w-0 max-w-[min(100%,12.5rem)] shrink overflow-hidden text-ellipsis leading-[normal] not-italic whitespace-nowrap text-[#606d76] text-[16px] no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                        data-node-id="7:2862"
+                      >
+                        {milestonePageTitle}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs text-left">
+                      {milestonePageTitle}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2866">
                   <SprintBoardHeaderHealthPill
