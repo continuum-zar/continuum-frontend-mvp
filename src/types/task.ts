@@ -32,6 +32,14 @@ export function taskPriorityFlagClass(priority?: TaskPriority | null): string {
     return TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.flagColorClass ?? 'text-[#606d76]';
 }
 
+/** One Git repo + branch pair linked to a task (GET/PUT task payloads). */
+export interface TaskLinkedBranch {
+    id?: number;
+    linked_repo: string;
+    linked_branch: string;
+    linked_branch_full_ref?: string | null;
+}
+
 /** Raw task from API (GET /tasks/, GET /tasks/:id, PATCH /tasks/:id/status) */
 export interface TaskAPIResponse {
     id: number;
@@ -53,10 +61,46 @@ export interface TaskAPIResponse {
     comment_count?: number;
     project_name?: string | null;
     closure_summary?: string | null;
+    /** All linked repo/branch pairs (preferred). */
+    linked_branches?: TaskLinkedBranch[] | null;
+    /**
+     * Legacy single link — still returned by some endpoints; use `linked_branches` when present.
+     * When only these are set, `getTaskLinkedBranches` synthesizes one entry.
+     */
     linked_repo?: string | null;
     linked_branch?: string | null;
     linked_branch_full_ref?: string | null;
     labels?: string[];
+}
+
+/**
+ * Normalized list of linked branches for a task: prefers `linked_branches`, otherwise builds
+ * one entry from legacy `linked_repo` / `linked_branch` when both are set.
+ */
+export function getTaskLinkedBranches(task: TaskAPIResponse): TaskLinkedBranch[] {
+    const rows = task.linked_branches;
+    if (Array.isArray(rows) && rows.length > 0) {
+        return rows.filter(
+            (b) =>
+                b != null &&
+                typeof b.linked_repo === 'string' &&
+                b.linked_repo.trim() !== '' &&
+                typeof b.linked_branch === 'string' &&
+                b.linked_branch.trim() !== '',
+        );
+    }
+    const lr = task.linked_repo?.trim();
+    const lb = task.linked_branch?.trim();
+    if (lr && lb) {
+        return [
+            {
+                linked_repo: lr,
+                linked_branch: lb,
+                linked_branch_full_ref: task.linked_branch_full_ref ?? null,
+            },
+        ];
+    }
+    return [];
 }
 
 /** Attachment item for display (from API or after upload) */

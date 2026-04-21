@@ -51,6 +51,7 @@ export {
     addTaskLabel,
     removeTaskLabel,
 } from './tasks';
+export { getTaskLinkedBranches } from './tasks';
 export type { Project, ProjectDetail, ProjectAPIResponse, Milestone, Member } from './projects';
 export type {
     Task,
@@ -62,6 +63,8 @@ export type {
     RelatedTasksResponse,
     RelatedTaskItem,
     CreateTaskBody,
+    TaskLinkedBranch,
+    TaskLinkedBranchesUpdate,
 } from './tasks';
 export {
     fetchRepositories,

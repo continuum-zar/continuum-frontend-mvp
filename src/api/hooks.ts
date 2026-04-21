@@ -86,7 +86,7 @@ import type { CreateLoggedHourBody } from './loggedHours';
 import { submitIssueReport } from './feedback';
 import type { SubmitIssueReportBody } from './feedback';
 import type { KanbanBoardColumnApi } from '@/types/kanban';
-import type { Task, TaskAPIResponse, ScopeWeight, TaskPriority } from '@/types/task';
+import type { Task, TaskAPIResponse, ScopeWeight, TaskPriority, TaskLinkedBranch } from '@/types/task';
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
 import axios from 'axios';
@@ -649,6 +649,7 @@ export function useUpdateTask() {
             priority,
             due_date,
             estimated_hours,
+            linked_branches,
             linked_repo,
             linked_branch,
             checklists,
@@ -661,6 +662,7 @@ export function useUpdateTask() {
             priority?: TaskPriority;
             due_date?: string | null;
             estimated_hours?: number | null;
+            linked_branches?: TaskLinkedBranch[] | null;
             linked_repo?: string | null;
             linked_branch?: string | null;
             checklists?: Array<{ id?: string; text: string; done: boolean }>;
@@ -673,6 +675,7 @@ export function useUpdateTask() {
                 priority,
                 due_date,
                 estimated_hours,
+                linked_branches,
                 linked_repo,
                 linked_branch,
                 checklists,

@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { TaskAPIResponse } from '@/types/task';
+import type { TaskAPIResponse, TaskLinkedBranch } from '@/types/task';
 import type { CommentAPIResponse } from '@/types/comment';
 
 /** Normalized task detail for the Cursor MCP share view. */
@@ -8,6 +8,14 @@ export interface CursorMcpTaskDetail {
     comments: CommentAPIResponse[];
 }
 
+/** Single branch row from `GET /tasks/{id}/cursor-mcp` (legacy `branch` or `branches[]`). */
+export type TaskCursorMcpBranchApi = {
+    linked_repo: string;
+    linked_branch: string;
+    linked_branch_full_ref?: string | null;
+    identifier: string;
+};
+
 /** Shape returned by the backend `GET /tasks/{id}/cursor-mcp` endpoint. */
 export interface TaskCursorMcpApiResponse {
     id: number;
@@ -15,12 +23,10 @@ export interface TaskCursorMcpApiResponse {
     title: string;
     description: string | null;
     checklists: Array<{ id?: string; text: string; done: boolean }> | null;
-    branch: {
-        linked_repo: string;
-        linked_branch: string;
-        linked_branch_full_ref?: string | null;
-        identifier: string;
-    } | null;
+    /** @deprecated Prefer `branches`; kept for older API responses. */
+    branch?: TaskCursorMcpBranchApi | null;
+    /** Multiple linked branches when the backend returns more than one. */
+    branches?: TaskCursorMcpBranchApi[] | null;
     comments: CommentAPIResponse[] | null;
 }
 
@@ -37,19 +43,35 @@ export function isTaskCursorMcpApiResponse(data: unknown): data is TaskCursorMcp
     return 'id' in obj && 'project_id' in obj && 'title' in obj && 'checklists' in obj;
 }
 
+function branchApiToLinked(b: TaskCursorMcpBranchApi): TaskLinkedBranch {
+    return {
+        linked_repo: b.linked_repo,
+        linked_branch: b.linked_branch,
+        linked_branch_full_ref: b.linked_branch_full_ref ?? null,
+    };
+}
+
 /**
  * Map the backend `TaskCursorMcpDetail` payload to the frontend
  * `CursorMcpTaskDetail` by flattening branch fields onto a task-like object.
  */
 export function mapTaskCursorMcpApiToDetail(data: TaskCursorMcpApiResponse): CursorMcpTaskDetail {
-    const { branch, comments, ...rest } = data;
+    const { branch, branches, comments, ...rest } = data;
+    const list: TaskLinkedBranch[] =
+        Array.isArray(branches) && branches.length > 0
+            ? branches.map(branchApiToLinked)
+            : branch
+              ? [branchApiToLinked(branch)]
+              : [];
+    const first = list[0];
     const base: TaskAPIResponse = {
         ...rest,
         status: 'todo' as const,
         checklists: rest.checklists ?? undefined,
-        linked_repo: branch?.linked_repo ?? null,
-        linked_branch: branch?.linked_branch ?? null,
-        linked_branch_full_ref: branch?.linked_branch_full_ref ?? null,
+        linked_branches: list.length > 0 ? list : null,
+        linked_repo: first?.linked_repo ?? null,
+        linked_branch: first?.linked_branch ?? null,
+        linked_branch_full_ref: first?.linked_branch_full_ref ?? null,
     };
     return {
         task: base,

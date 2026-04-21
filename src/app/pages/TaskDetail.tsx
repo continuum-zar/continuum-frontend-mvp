@@ -51,8 +51,10 @@ import {
   TASK_PRIORITY_OPTIONS,
   taskPriorityFlagClass,
   taskPriorityLabel,
+  getTaskLinkedBranches,
   type ScopeWeight,
   type TaskPriority,
+  type TaskAPIResponse,
   type TaskTimelineEntry,
 } from '@/types/task';
 import type { CommentAuthorAPI } from '@/types/comment';
@@ -103,6 +105,17 @@ const SCOPE_OPTIONS: { value: ScopeWeight; label: string }[] = [
 ];
 
 const AVATAR_COLORS = ['#E8A303', '#EE7F84', '#7157E7', '#4A9FF8', '#10b981', '#f17173'];
+
+/** Branch name linked to this task for the given repo (case-insensitive repo match). */
+function linkedBranchForRepo(task: TaskAPIResponse | undefined, repo: Repository | undefined): string | null {
+  if (!task || !repo) return null;
+  const want = repoLinkedName(repo).trim().toLowerCase();
+  if (!want) return null;
+  for (const row of getTaskLinkedBranches(task)) {
+    if (row.linked_repo.trim().toLowerCase() === want) return row.linked_branch;
+  }
+  return null;
+}
 
 /** Provider full name for task.linked_repo / webhooks; fallback from URL or name. */
 function repoLinkedName(r: Repository): string {
@@ -518,13 +531,20 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   }, [task, searchParams, setSearchParams]);
 
 
-  /* When the task has a linked repo from the API, select matching repository row */
+  /* When the task has linked repo(s) from the API, select a matching repository row */
   useEffect(() => {
-    const lr = task?.linked_repo?.trim();
-    if (!lr || projectRepos.length === 0) return;
-    const match = projectRepos.find((r) => repoLinkedName(r).toLowerCase() === lr.toLowerCase());
-    if (match) setSelectedRepoId(match.id);
-  }, [task?.linked_repo, projectRepos]);
+    if (!task || projectRepos.length === 0) return;
+    const links = getTaskLinkedBranches(task);
+    for (const row of links) {
+      const lr = row.linked_repo.trim();
+      if (!lr) continue;
+      const match = projectRepos.find((r) => repoLinkedName(r).toLowerCase() === lr.toLowerCase());
+      if (match) {
+        setSelectedRepoId(match.id);
+        break;
+      }
+    }
+  }, [task, projectRepos]);
 
   /* ─ navigation ─ */
   const handleNavigateBack = () => {
@@ -682,9 +702,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   };
 
   const selectedRepo = selectedRepoId != null ? projectRepos.find((r) => r.id === selectedRepoId) : undefined;
+  const linkedBranchNameForSelectedRepo = selectedRepo ? linkedBranchForRepo(task, selectedRepo) : null;
   const repoButtonLabel = () => {
     if (selectedRepo) return repoLinkedName(selectedRepo) || selectedRepo.repositoryName;
-    const lr = task?.linked_repo?.trim();
+    const links = task ? getTaskLinkedBranches(task) : [];
+    const lr = links[0]?.linked_repo?.trim();
     if (lr) return lr;
     return 'Select repository';
   };
@@ -1243,9 +1265,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       <span className="min-w-0 truncate text-left text-[16px] font-medium text-[#0b191f]">
                         {branchesLoading && branchList.length === 0
                           ? 'Loading branches…'
-                          : task?.linked_branch && selectedRepo && repoLinkedName(selectedRepo).toLowerCase() === (task.linked_repo || '').toLowerCase()
-                            ? task.linked_branch
-                            : 'Select branch'}
+                          : linkedBranchNameForSelectedRepo ?? 'Select branch'}
                       </span>
                       <ChevronDown size={16} className="shrink-0" />
                     </button>
@@ -1264,7 +1284,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                               onClick={() => handleBranchSelect(b.name)}
                               disabled={setLinkedBranchMutation.isPending}
                               className={`flex w-full items-center px-4 py-3 text-left text-[14px] font-medium hover:bg-[#f0f3f5] disabled:opacity-50 ${
-                                task?.linked_branch === b.name ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                                linkedBranchNameForSelectedRepo === b.name
+                                  ? 'bg-[#f0f3f5] text-[#0b191f]'
+                                  : 'text-[#606d76]'
                               }`}
                             >
                               <span className="min-w-0 truncate">{b.name}</span>
