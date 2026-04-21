@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, CalendarPlus } from "lucide-react";
+import { ArrowLeft, CalendarPlus, Trash2 } from "lucide-react";
 
-import { useCreateMilestone, useUpdateMilestone } from "@/api/hooks";
+import { useCreateMilestone, useDeleteMilestone, useUpdateMilestone } from "@/api/hooks";
 import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
@@ -25,6 +25,8 @@ type CreateMilestoneModalProps = {
   projectId: number;
   /** When set, the modal updates this milestone instead of creating */
   editingMilestone?: CreateMilestoneModalEditing | null;
+  /** Called after a milestone is deleted successfully (e.g. navigate away from the removed sprint) */
+  onMilestoneDeleted?: () => void;
 };
 
 function formatDueDateDisplay(iso: string): string {
@@ -45,14 +47,18 @@ export function CreateMilestoneModal({
   onOpenChange,
   projectId,
   editingMilestone = null,
+  onMilestoneDeleted,
 }: CreateMilestoneModalProps) {
   const isEdit = Boolean(editingMilestone);
   const createMilestone = useCreateMilestone(projectId);
   const updateMilestone = useUpdateMilestone(projectId);
+  const deleteMilestone = useDeleteMilestone(projectId);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [isNameFocused, setIsNameFocused] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const dateInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useAutosizeTextarea(description, {
     minPx: 56,
@@ -72,6 +78,26 @@ export function CreateMilestoneModal({
       setDueDate("");
     }
   }, [open, editingMilestone]);
+
+  useEffect(() => {
+    if (deleteConfirmOpen) setDeleteConfirmName("");
+  }, [deleteConfirmOpen]);
+
+  const initialDueSlice =
+    editingMilestone?.dueDateIso && /^\d{4}-\d{2}-\d{2}/.test(editingMilestone.dueDateIso)
+      ? editingMilestone.dueDateIso.slice(0, 10)
+      : "";
+
+  const isEditDirty =
+    isEdit && editingMilestone
+      ? name.trim() !== editingMilestone.name.trim() ||
+        (description.trim() || "") !== (editingMilestone.description?.trim() || "") ||
+        dueDate !== initialDueSlice
+      : false;
+
+  const nameMatchesForDelete =
+    deleteConfirmName.trim() === editingMilestone?.name.trim() &&
+    Boolean(editingMilestone?.name.trim());
 
   const handleSubmit = async () => {
     const n = name.trim();
@@ -101,16 +127,38 @@ export function CreateMilestoneModal({
 
   const pending = isEdit ? updateMilestone.isPending : createMilestone.isPending;
 
+  const saveDisabled =
+    !name.trim() ||
+    !dueDate ||
+    pending ||
+    Boolean(isEdit && editingMilestone && !isEditDirty);
+
+  const handleDelete = async () => {
+    if (!editingMilestone) return;
+    try {
+      await deleteMilestone.mutateAsync(editingMilestone.id);
+      setDeleteConfirmOpen(false);
+      setDeleteConfirmName("");
+      onOpenChange(false);
+      onMilestoneDeleted?.();
+    } catch {
+      // Toast handled in useDeleteMilestone
+    }
+  };
+
   const handleClose = (openFromRadix: boolean) => {
     if (!openFromRadix) {
       setName("");
       setDescription("");
       setDueDate("");
+      setDeleteConfirmOpen(false);
+      setDeleteConfirmName("");
     }
     onOpenChange(openFromRadix);
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogPortal>
         <DialogOverlay className="bg-black/25" />
@@ -235,15 +283,33 @@ export function CreateMilestoneModal({
               </div>
             </div>
 
-            <div className="flex w-full justify-end">
+            <div
+              className={cn(
+                "flex w-full gap-3",
+                isEdit ? "flex-col sm:flex-row sm:items-center sm:justify-between" : "flex-row justify-end",
+              )}
+            >
+              {isEdit ? (
+                <button
+                  type="button"
+                  disabled={deleteMilestone.isPending}
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  className={cn(
+                    "inline-flex h-10 min-w-[140px] items-center justify-center rounded-[8px] bg-[#dc2626] px-4 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30",
+                    deleteMilestone.isPending && "pointer-events-none opacity-50",
+                  )}
+                >
+                  Delete milestone
+                </button>
+              ) : null}
               <div className="min-w-[200px] shrink-0">
                 <button
                   type="button"
-                  disabled={!name.trim() || !dueDate || pending}
+                  disabled={saveDisabled}
                   onClick={() => void handleSubmit()}
                   className={cn(
                     "inline-flex h-10 w-full min-w-0 items-center justify-center whitespace-nowrap rounded-[8px] px-5 text-[14px] font-semibold transition-colors duration-200",
-                    name.trim() && dueDate && !pending
+                    !saveDisabled
                       ? "bg-[#1466ff] text-white hover:bg-[#0051e6]"
                       : "bg-[rgba(96,109,118,0.1)] text-[#606d76]/50"
                   )}
@@ -262,5 +328,100 @@ export function CreateMilestoneModal({
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>
+
+      <Dialog
+        open={deleteConfirmOpen}
+        onOpenChange={(next) => {
+          setDeleteConfirmOpen(next);
+          if (!next) setDeleteConfirmName("");
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="z-[100] bg-black/25" />
+          <DialogPrimitive.Content
+            aria-describedby={undefined}
+            className={cn(
+              "fixed left-1/2 top-1/2 z-[100] flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            )}
+          >
+            <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+              <DialogClose asChild>
+                <button
+                  type="button"
+                  className="inline-flex size-5 items-center justify-center text-[#606d76] transition-colors hover:text-[#0b191f]"
+                  aria-label="Close"
+                >
+                  <ArrowLeft className="size-5" />
+                </button>
+              </DialogClose>
+              <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                Delete milestone
+              </DialogPrimitive.Title>
+              <div className="size-5" />
+            </div>
+
+            <div className="flex w-full flex-col gap-6 px-9 py-6">
+              <div className="flex items-start gap-3">
+                <div className="flex shrink-0 items-start pt-0.5 text-[#dc2626]" aria-hidden>
+                  <Trash2 className="size-5" strokeWidth={1.75} />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <p className="font-['Satoshi',sans-serif] text-[18px] font-medium leading-tight tracking-[-0.18px] text-[#0b191f]">
+                    Delete this milestone?
+                  </p>
+                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-[#606d76]">
+                    {editingMilestone?.name.trim() ? (
+                      <>
+                        <span className="text-[#0b191f]">&ldquo;{editingMilestone.name.trim()}&rdquo;</span> will be
+                        permanently removed. Tasks remain in the project; this milestone will no longer scope the
+                        sprint. This action cannot be undone.
+                      </>
+                    ) : (
+                      "This milestone will be permanently removed. This action cannot be undone."
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex w-full flex-col gap-2">
+                <label htmlFor="create-milestone-delete-confirm-name" className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                  Type the milestone name to confirm
+                </label>
+                <input
+                  id="create-milestone-delete-confirm-name"
+                  type="text"
+                  autoComplete="off"
+                  value={deleteConfirmName}
+                  onChange={(e) => setDeleteConfirmName(e.target.value)}
+                  placeholder={editingMilestone?.name.trim() || "Milestone name"}
+                  className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] placeholder:text-[#606d76]/40 focus:border-[#1466ff] focus:outline-none focus:ring-0"
+                  aria-invalid={deleteConfirmName.length > 0 && !nameMatchesForDelete}
+                />
+              </div>
+
+              <div className="flex w-full items-center justify-end gap-2">
+                <DialogClose asChild>
+                  <button
+                    type="button"
+                    disabled={deleteMilestone.isPending}
+                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] transition-colors duration-150 hover:bg-[#f5f7f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                </DialogClose>
+                <button
+                  type="button"
+                  onClick={() => void handleDelete()}
+                  disabled={deleteMilestone.isPending || !nameMatchesForDelete}
+                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-[#dc2626] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deleteMilestone.isPending ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPortal>
+      </Dialog>
+    </>
   );
 }
