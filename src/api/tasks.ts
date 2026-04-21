@@ -8,11 +8,16 @@ import type {
     ScopeWeight,
     TaskPriority,
     TaskTimelineEntry,
+    TaskLinkedBranch,
 } from '@/types/task';
 import type { CommentAPIResponse } from '@/types/comment';
 import type { AttachmentAPIResponse } from '@/types/attachment';
 
-export type { Task, TaskStatus, TaskAPIResponse, TaskTimelineEntry };
+export type { Task, TaskStatus, TaskAPIResponse, TaskTimelineEntry, TaskLinkedBranch };
+export { getTaskLinkedBranches } from '@/types/task';
+
+/** Payload fragment for replacing a task's linked branches (PUT /tasks/:id). */
+export type TaskLinkedBranchesUpdate = TaskLinkedBranch[];
 
 /** Dropdown task shape for time-tracking / task selector (id as string for Select value). */
 export interface TaskOption {
@@ -71,6 +76,12 @@ export async function updateTask(
         priority?: TaskPriority;
         due_date?: string | null;
         estimated_hours?: number | null;
+        /** Replaces the full list of linked branches when set (including `[]` to clear). */
+        linked_branches?: TaskLinkedBranchesUpdate | null;
+        /**
+         * Legacy: when `linked_branches` is omitted, a single pair is sent as `linked_branches: [{ ... }]`.
+         * Pass both non-null to add/replace one link; pass both `null` to clear links only in legacy mode.
+         */
         linked_repo?: string | null;
         linked_branch?: string | null;
         checklists?: TaskChecklistItemUpdate[];
@@ -78,7 +89,15 @@ export async function updateTask(
 ): Promise<TaskAPIResponse> {
     const payload: Record<
         string,
-        TaskStatus | ScopeWeight | TaskPriority | string | number | null | TaskChecklistItemUpdate[] | undefined
+        | TaskStatus
+        | ScopeWeight
+        | TaskPriority
+        | string
+        | number
+        | null
+        | TaskChecklistItemUpdate[]
+        | TaskLinkedBranchesUpdate
+        | undefined
     > = {};
 
     if (body.title !== undefined) {
@@ -103,11 +122,16 @@ export async function updateTask(
     if (body.estimated_hours !== undefined) {
         payload.estimated_hours = body.estimated_hours;
     }
-    if (body.linked_repo !== undefined) {
-        payload.linked_repo = body.linked_repo;
-    }
-    if (body.linked_branch !== undefined) {
-        payload.linked_branch = body.linked_branch;
+    if (body.linked_branches !== undefined) {
+        payload.linked_branches = body.linked_branches ?? [];
+    } else if (body.linked_repo !== undefined || body.linked_branch !== undefined) {
+        const lr = body.linked_repo;
+        const lb = body.linked_branch;
+        if (lr != null && lb != null && String(lr).trim() !== '' && String(lb).trim() !== '') {
+            payload.linked_branches = [{ linked_repo: lr.trim(), linked_branch: lb.trim() }];
+        } else if (lr === null && lb === null) {
+            payload.linked_branches = [];
+        }
     }
     if (body.checklists !== undefined) {
         payload.checklists = body.checklists;

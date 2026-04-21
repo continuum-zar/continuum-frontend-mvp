@@ -4,6 +4,7 @@ import {
     useQueryClient,
     useInfiniteQuery,
     type QueryClient,
+    type InfiniteData,
 } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -86,7 +87,14 @@ import type { CreateLoggedHourBody } from './loggedHours';
 import { submitIssueReport } from './feedback';
 import type { SubmitIssueReportBody } from './feedback';
 import type { KanbanBoardColumnApi } from '@/types/kanban';
-import type { Task, TaskAPIResponse, ScopeWeight, TaskPriority } from '@/types/task';
+import {
+    getTaskLinkedBranches,
+    type Task,
+    type TaskAPIResponse,
+    type ScopeWeight,
+    type TaskPriority,
+    type TaskLinkedBranch,
+} from '@/types/task';
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
 import axios from 'axios';
@@ -126,6 +134,81 @@ function invalidateTasksForCachedTaskProject(
     if (pid != null) {
         void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(pid) });
     }
+}
+
+/** Merge `linked_branches` and legacy flat fields for cache updates (matches API responses). */
+export function applyLinkedBranchesToTaskResponse(
+    task: TaskAPIResponse,
+    branches: TaskLinkedBranch[],
+): TaskAPIResponse {
+    const first = branches[0];
+    return {
+        ...task,
+        linked_branches: branches,
+        linked_repo: first?.linked_repo ?? null,
+        linked_branch: first?.linked_branch ?? null,
+        linked_branch_full_ref: first?.linked_branch_full_ref ?? null,
+    };
+}
+
+function patchTaskInProjectKanbanCaches(
+    queryClient: QueryClient,
+    taskId: number | string,
+    projectId: number,
+    branches: TaskLinkedBranch[],
+) {
+    const tid = String(taskId);
+    const patch = (t: Task): Task =>
+        t.id === tid ? { ...t, linkedBranches: branches } : t;
+
+    queryClient.setQueryData<Task[]>(projectKeys.tasks(projectId), (old) =>
+        old?.map(patch) ?? old,
+    );
+
+    type TasksPage = { tasks: Task[]; total: number; skip: number; limit: number };
+    queryClient.setQueryData<InfiniteData<TasksPage>>(projectKeys.tasksInfinite(projectId), (old) => {
+        if (!old?.pages?.length) return old;
+        return {
+            ...old,
+            pages: old.pages.map((p) => ({
+                ...p,
+                tasks: p.tasks.map(patch),
+            })),
+        };
+    });
+}
+
+function patchTaskInAssignedCreatedLists(
+    queryClient: QueryClient,
+    taskId: number | string,
+    branches: TaskLinkedBranch[],
+) {
+    const tid = String(taskId);
+    const patchRow = (row: TaskAPIResponse) =>
+        String(row.id) === tid ? applyLinkedBranchesToTaskResponse(row, branches) : row;
+    queryClient.setQueriesData<TaskAPIResponse[]>(
+        { queryKey: [...projectKeys.all, 'assigned-tasks'], exact: false },
+        (old) => old?.map(patchRow) ?? old,
+    );
+    queryClient.setQueriesData<TaskAPIResponse[]>(
+        { queryKey: [...projectKeys.all, 'created-tasks'], exact: false },
+        (old) => old?.map(patchRow) ?? old,
+    );
+}
+
+function optimisticApplyLinkedBranches(
+    queryClient: QueryClient,
+    taskId: number | string,
+    branches: TaskLinkedBranch[],
+) {
+    const prev = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
+    if (!prev) return;
+    queryClient.setQueryData(
+        taskDetailKey(taskId),
+        applyLinkedBranchesToTaskResponse(prev, branches),
+    );
+    patchTaskInProjectKanbanCaches(queryClient, taskId, prev.project_id, branches);
+    patchTaskInAssignedCreatedLists(queryClient, taskId, branches);
 }
 
 /** Normalize FastAPI error detail into a single message. */
@@ -649,6 +732,7 @@ export function useUpdateTask() {
             priority,
             due_date,
             estimated_hours,
+            linked_branches,
             linked_repo,
             linked_branch,
             checklists,
@@ -661,6 +745,7 @@ export function useUpdateTask() {
             priority?: TaskPriority;
             due_date?: string | null;
             estimated_hours?: number | null;
+            linked_branches?: TaskLinkedBranch[] | null;
             linked_repo?: string | null;
             linked_branch?: string | null;
             checklists?: Array<{ id?: string; text: string; done: boolean }>;
@@ -673,10 +758,21 @@ export function useUpdateTask() {
                 priority,
                 due_date,
                 estimated_hours,
+                linked_branches,
                 linked_repo,
                 linked_branch,
                 checklists,
             }),
+        onMutate: async (variables) => {
+            if (variables.linked_branches === undefined) return {};
+            const tid = variables.taskId;
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(tid) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
+            if (!prevDetail) return {};
+            const branches = variables.linked_branches ?? [];
+            optimisticApplyLinkedBranches(queryClient, tid, branches);
+            return { prevDetailLinked: prevDetail as TaskAPIResponse };
+        },
         onSuccess: (data, { taskId }) => {
             toast.success('Task updated successfully');
             if (taskId && data) {
@@ -686,11 +782,133 @@ export function useUpdateTask() {
                 queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             }
         },
-        onError: (err) => {
+        onError: (err, variables, ctx) => {
+            if (variables.linked_branches !== undefined && ctx?.prevDetailLinked != null) {
+                queryClient.setQueryData(taskDetailKey(variables.taskId), ctx.prevDetailLinked);
+            }
             toast.error(getApiErrorMessage(err, 'Failed to update task'));
         },
         onSettled: (_data, _err, variables) => {
             invalidateTasksForCachedTaskProject(queryClient, variables.taskId);
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
+
+/** Replace the full linked-branches list (PUT /tasks/:id). Prefer `useUpdateTask` — this is a focused alias. */
+export function useReplaceTaskLinkedBranches() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            taskId,
+            linked_branches,
+        }: {
+            taskId: string | number;
+            linked_branches: TaskLinkedBranch[];
+        }) => updateTask(taskId, { linked_branches }),
+        onMutate: async (variables) => {
+            const tid = variables.taskId;
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(tid) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
+            if (!prevDetail) return {};
+            optimisticApplyLinkedBranches(queryClient, tid, variables.linked_branches);
+            return { prevDetailLinked: prevDetail };
+        },
+        onSuccess: (data, { taskId }) => {
+            if (taskId && data) queryClient.setQueryData(taskDetailKey(taskId), data);
+            void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            toast.success('Linked branches updated');
+        },
+        onError: (err, variables, ctx) => {
+            if (ctx?.prevDetailLinked != null) {
+                queryClient.setQueryData(taskDetailKey(variables.taskId), ctx.prevDetailLinked);
+            }
+            toast.error(getApiErrorMessage(err, 'Failed to update linked branches'));
+        },
+        onSettled: (_d, _e, v) => {
+            invalidateTasksForCachedTaskProject(queryClient, v.taskId);
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
+
+/** Append one repo/branch link (reads current task from cache or GET). */
+export function useAddTaskLinkedBranch() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({
+            taskId,
+            link,
+        }: {
+            taskId: string | number;
+            link: TaskLinkedBranch;
+        }) => {
+            let detail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
+            if (!detail) detail = await fetchTask(taskId);
+            const next = [...getTaskLinkedBranches(detail), link];
+            return updateTask(taskId, { linked_branches: next });
+        },
+        onMutate: async (variables) => {
+            const tid = variables.taskId;
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(tid) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
+            if (!prevDetail) return {};
+            const next = [...getTaskLinkedBranches(prevDetail), variables.link];
+            optimisticApplyLinkedBranches(queryClient, tid, next);
+            return { prevDetailLinked: prevDetail };
+        },
+        onSuccess: (data, { taskId }) => {
+            if (taskId && data) queryClient.setQueryData(taskDetailKey(taskId), data);
+            void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            toast.success('Branch linked');
+        },
+        onError: (err, variables, ctx) => {
+            if (ctx?.prevDetailLinked != null) {
+                queryClient.setQueryData(taskDetailKey(variables.taskId), ctx.prevDetailLinked);
+            }
+            toast.error(getApiErrorMessage(err, 'Failed to link branch'));
+        },
+        onSettled: (_d, _e, v) => {
+            invalidateTasksForCachedTaskProject(queryClient, v.taskId);
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
+
+/** Remove one link by index in the normalized `getTaskLinkedBranches` list. */
+export function useRemoveTaskLinkedBranchAt() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ taskId, index }: { taskId: string | number; index: number }) => {
+            let detail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
+            if (!detail) detail = await fetchTask(taskId);
+            const cur = getTaskLinkedBranches(detail);
+            const next = cur.filter((_, i) => i !== index);
+            return updateTask(taskId, { linked_branches: next });
+        },
+        onMutate: async (variables) => {
+            const tid = variables.taskId;
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(tid) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
+            if (!prevDetail) return {};
+            const cur = getTaskLinkedBranches(prevDetail);
+            const next = cur.filter((_, i) => i !== variables.index);
+            optimisticApplyLinkedBranches(queryClient, tid, next);
+            return { prevDetailLinked: prevDetail };
+        },
+        onSuccess: (data, { taskId }) => {
+            if (taskId && data) queryClient.setQueryData(taskDetailKey(taskId), data);
+            void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            toast.success('Branch link removed');
+        },
+        onError: (err, variables, ctx) => {
+            if (ctx?.prevDetailLinked != null) {
+                queryClient.setQueryData(taskDetailKey(variables.taskId), ctx.prevDetailLinked);
+            }
+            toast.error(getApiErrorMessage(err, 'Failed to remove branch link'));
+        },
+        onSettled: (_d, _e, v) => {
+            invalidateTasksForCachedTaskProject(queryClient, v.taskId);
             invalidateDerivedTaskLists(queryClient);
         },
     });
@@ -710,14 +928,38 @@ export function useSetTaskLinkedBranch() {
             linked_branch: string;
             linked_branch_full_ref?: string | null;
         }) => setTaskLinkedBranch(taskId, { linked_repo, linked_branch, linked_branch_full_ref }),
-        onSuccess: (_data, { taskId }) => {
+        onMutate: async (variables) => {
+            const tid = variables.taskId;
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(tid) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
+            if (!prevDetail) return {};
+            const single: TaskLinkedBranch[] = [
+                {
+                    linked_repo: variables.linked_repo.trim(),
+                    linked_branch: variables.linked_branch.trim(),
+                    linked_branch_full_ref:
+                        variables.linked_branch_full_ref != null &&
+                        String(variables.linked_branch_full_ref).trim() !== ''
+                            ? String(variables.linked_branch_full_ref).trim()
+                            : `refs/heads/${variables.linked_branch.trim()}`,
+                },
+            ];
+            optimisticApplyLinkedBranches(queryClient, tid, single);
+            return { prevDetailLinked: prevDetail };
+        },
+        onSuccess: (data, { taskId }) => {
             toast.success('Branch linked to task');
+            if (taskId && data) {
+                queryClient.setQueryData(taskDetailKey(taskId), data);
+            }
             if (taskId) {
-                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
-                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
+                void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             }
         },
-        onError: (err) => {
+        onError: (err, variables, ctx) => {
+            if (ctx?.prevDetailLinked != null) {
+                queryClient.setQueryData(taskDetailKey(variables.taskId), ctx.prevDetailLinked);
+            }
             toast.error(getApiErrorMessage(err, 'Failed to link branch'));
         },
         onSettled: (_data, _err, variables) => {

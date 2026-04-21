@@ -29,6 +29,8 @@ describe('mapTaskCursorMcpApiToDetail', () => {
             ],
         };
         const out = mapTaskCursorMcpApiToDetail(api);
+        expect(out.task.linked_branches).toHaveLength(1);
+        expect(out.task.linked_branches?.[0].linked_repo).toBe('org/r');
         expect(out.task.linked_repo).toBe('org/r');
         expect(out.task.linked_branch).toBe('feat');
         expect(out.task.linked_branch_full_ref).toBe('refs/heads/feat');
@@ -48,7 +50,36 @@ describe('mapTaskCursorMcpApiToDetail', () => {
             comments: null,
         });
         expect(out.task.linked_repo).toBeNull();
+        expect(out.task.linked_branches).toBeNull();
         expect(out.comments).toEqual([]);
+    });
+
+    it('maps branches array onto linked_branches and legacy first row', () => {
+        const out = mapTaskCursorMcpApiToDetail({
+            id: 2,
+            project_id: 3,
+            title: 'Multi',
+            description: null,
+            checklists: [],
+            branches: [
+                {
+                    linked_repo: 'x/a',
+                    linked_branch: 'b1',
+                    linked_branch_full_ref: 'refs/heads/b1',
+                    identifier: 'refs/heads/b1',
+                },
+                {
+                    linked_repo: 'x/b',
+                    linked_branch: 'b2',
+                    identifier: 'refs/heads/b2',
+                },
+            ],
+            comments: [],
+        });
+        expect(out.task.linked_branches).toHaveLength(2);
+        expect(out.task.linked_repo).toBe('x/a');
+        expect(out.task.linked_branch).toBe('b1');
+        expect(out.task.linked_branches?.[1].linked_branch).toBe('b2');
     });
 });
 

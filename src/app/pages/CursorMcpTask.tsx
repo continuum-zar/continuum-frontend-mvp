@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/too
 import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
 import { workspaceJoin } from '@/lib/workspacePaths';
 import type { CommentAuthorAPI } from '@/types/comment';
+import { getTaskLinkedBranches } from '@/types/task';
 
 function authorLabel(author: CommentAuthorAPI): string {
     const name = [author.display_name, author.username].filter(Boolean).join(' — ');
@@ -248,36 +249,45 @@ function CursorMcpTaskBody({ data }: { data: CursorMcpTaskDetail }) {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    {data.task.linked_repo || data.task.linked_branch || data.task.linked_branch_full_ref ? (
-                        <dl className="space-y-3 text-sm">
-                            {data.task.linked_repo ? (
-                                <div>
-                                    <dt className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-                                        Repository
-                                    </dt>
-                                    <dd className="font-mono break-all">{data.task.linked_repo}</dd>
-                                </div>
-                            ) : null}
-                            {data.task.linked_branch ? (
-                                <div>
-                                    <dt className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-                                        Branch
-                                    </dt>
-                                    <dd className="font-mono break-all">{data.task.linked_branch}</dd>
-                                </div>
-                            ) : null}
-                            {data.task.linked_branch_full_ref ? (
-                                <div>
-                                    <dt className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-                                        Full ref
-                                    </dt>
-                                    <dd className="font-mono break-all">{data.task.linked_branch_full_ref}</dd>
-                                </div>
-                            ) : null}
-                        </dl>
-                    ) : (
-                        <p className="text-muted-foreground text-sm">No branch linked.</p>
-                    )}
+                    {(() => {
+                        const links = getTaskLinkedBranches(data.task);
+                        if (links.length === 0) {
+                            return <p className="text-muted-foreground text-sm">No branch linked.</p>;
+                        }
+                        return (
+                            <ul className="space-y-4 text-sm">
+                                {links.map((row, idx) => (
+                                    <li
+                                        key={`${row.linked_repo}-${row.linked_branch}-${idx}`}
+                                        className="border-border space-y-3 rounded-md border px-3 py-3"
+                                    >
+                                        <dl className="space-y-3">
+                                            <div>
+                                                <dt className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
+                                                    Repository
+                                                </dt>
+                                                <dd className="font-mono break-all">{row.linked_repo}</dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
+                                                    Branch
+                                                </dt>
+                                                <dd className="font-mono break-all">{row.linked_branch}</dd>
+                                            </div>
+                                            {row.linked_branch_full_ref ? (
+                                                <div>
+                                                    <dt className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
+                                                        Full ref
+                                                    </dt>
+                                                    <dd className="font-mono break-all">{row.linked_branch_full_ref}</dd>
+                                                </div>
+                                            ) : null}
+                                        </dl>
+                                    </li>
+                                ))}
+                            </ul>
+                        );
+                    })()}
                 </CardContent>
             </Card>
 
