@@ -32,6 +32,7 @@ import type { Member } from "@/types/member";
 import type { Milestone } from "@/types/milestone";
 import { taskPriorityFlagClass, type TaskPriority } from "@/types/task";
 import { CreateTaskModal } from "../components/CreateTaskModal";
+import { CreateMilestoneModal } from "../components/dashboard-placeholder/CreateMilestoneModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { DiscordIntegrationModal } from "../components/dashboard-placeholder/DiscordIntegrationModal";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
@@ -393,6 +394,7 @@ const INITIAL_COLUMN_ORDER: Record<ColumnId, number[]> = {
 const LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX = 5;
 
 export function DashboardPlaceholder() {
+  const [editMilestoneModalOpen, setEditMilestoneModalOpen] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
@@ -515,6 +517,12 @@ export function DashboardPlaceholder() {
           (liveMilestonesQuery.isLoading || !secondarySprintMetaReady ? "…" : "Milestone")
         : "Sprint"
       : DASHBOARD_WELCOME_PROJECT.sprintLabel;
+  const milestoneMetaReady = secondarySprintMetaReady && !liveMilestonesQuery.isLoading;
+  const currentMilestone =
+    milestoneParam != null ? liveMilestonesQuery.data?.find((m) => m.id === milestoneParam) : undefined;
+  const canEditMilestone = Boolean(
+    isLiveBoard && milestoneParam && currentMilestone && milestoneMetaReady,
+  );
   const liveHeaderVisibleMembers = liveMembers.slice(0, LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX);
   const liveHeaderMemberOverflow = Math.max(0, liveMembers.length - LIVE_BOARD_HEADER_MEMBER_AVATAR_MAX);
 
@@ -844,14 +852,34 @@ export function DashboardPlaceholder() {
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
                     </div>
                   </button>
-                  <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 6" data-node-id="7:2879">
+                  <button
+                    type="button"
+                    data-tour="sprint-edit-milestone"
+                    disabled={!canEditMilestone}
+                    onClick={() => {
+                      if (canEditMilestone) setEditMilestoneModalOpen(true);
+                    }}
+                    title={
+                      !isLiveBoard || !milestoneParam
+                        ? "Select a milestone sprint to edit"
+                        : !milestoneMetaReady
+                          ? "Loading milestone…"
+                          : !currentMilestone
+                            ? "Milestone not found"
+                            : "Edit milestone"
+                    }
+                    className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+                    data-name="Component 6"
+                    data-node-id="7:2879"
+                    aria-label="Edit milestone"
+                  >
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-cog" data-node-id="7:2880">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderCog} />
                     </div>
                     <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="7:2882">
                       Edit
                     </p>
-                  </div>
+                  </button>
                   <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 8" data-node-id="7:2883">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/share" data-node-id="7:2884">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideShare} />
@@ -1685,6 +1713,32 @@ export function DashboardPlaceholder() {
         </button>
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
+      {isLiveBoard && liveProjectId != null ? (
+        <CreateMilestoneModal
+          open={editMilestoneModalOpen}
+          onOpenChange={setEditMilestoneModalOpen}
+          projectId={liveProjectId}
+          editingMilestone={
+            editMilestoneModalOpen && currentMilestone
+              ? {
+                  id: currentMilestone.id,
+                  name: currentMilestone.name,
+                  description: currentMilestone.desc,
+                  dueDateIso: currentMilestone.dueDateIso,
+                }
+              : null
+          }
+          onMilestoneDeleted={() => {
+            if (projectParam == null || !isApiProjectId(projectParam)) return;
+            const milestoneCount = liveMilestonesQuery.data?.length ?? 0;
+            if (milestoneCount <= 1) {
+              navigate(projectMainHref(projectParam));
+            } else {
+              navigate(projectSprintHref(projectParam));
+            }
+          }}
+        />
+      ) : null}
       <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} projectId={isLiveBoard ? Number(projectParam) : undefined} />
       <DiscordIntegrationModal
         open={discordIntegrationOpen}
