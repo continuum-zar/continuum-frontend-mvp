@@ -2,7 +2,7 @@ import { formatDistanceToNow } from 'date-fns';
 import type { AttachmentAPIResponse, Attachment } from "@/types/attachment";
 import type { ProjectAPIResponse, Project } from '@/types/project';
 import type { ProjectDetailAPIResponse, ProjectDetail } from '@/types/project';
-import type { TaskAPIResponse, Task, TaskPriority, TaskStatus } from '@/types/task';
+import { getTaskLinkedBranches, type TaskAPIResponse, type Task, type TaskPriority, type TaskStatus } from '@/types/task';
 import type { MilestoneAPIResponse, Milestone, MilestoneStatus } from '@/types/milestone';
 import type { MemberAPIResponse, Member } from '@/types/member';
 import type { InvoiceAPIResponse, Invoice } from '@/types/invoice';
@@ -65,6 +65,7 @@ export function mapTask(t: TaskAPIResponse): Task {
         totalChecklists = t.checklists.length;
         completedChecklists = t.checklists.filter((c) => c.done).length;
     }
+    const linkedBranches = getTaskLinkedBranches(t);
     return {
         id: String(t.id),
         title: t.title ?? '',
@@ -78,6 +79,7 @@ export function mapTask(t: TaskAPIResponse): Task {
         checklists: { total: totalChecklists, completed: completedChecklists },
         milestoneId: t.milestone_id != null ? String(t.milestone_id) : '',
         dueDate: t.due_date ?? null,
+        ...(linkedBranches.length > 0 ? { linkedBranches } : {}),
     };
 }
 

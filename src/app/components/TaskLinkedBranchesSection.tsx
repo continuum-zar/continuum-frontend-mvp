@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { ChevronDown, GitBranch, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUpdateTask } from '@/api/hooks';
+import { useReplaceTaskLinkedBranches } from '@/api/hooks';
 import { fetchRepositoryBranches } from '@/api/repositories';
 import { normalizeProjectKeyId } from '@/api/projects';
 import { STALE_MODERATE_MS } from '@/lib/queryDefaults';
@@ -118,7 +118,7 @@ export function TaskLinkedBranchesSection({
   projectRepos,
   reposLoading,
 }: TaskLinkedBranchesSectionProps) {
-  const updateTaskMutation = useUpdateTask();
+  const replaceBranchesMutation = useReplaceTaskLinkedBranches();
   const [entries, setEntries] = useState<EntryRow[]>(() => parseEntriesFromTask(task, projectRepos));
   const [openRepoKey, setOpenRepoKey] = useState<string | null>(null);
   const [openBranchKey, setOpenBranchKey] = useState<string | null>(null);
@@ -177,7 +177,7 @@ export function TaskLinkedBranchesSection({
         return;
       }
       setEntries(next);
-      updateTaskMutation.mutate(
+      replaceBranchesMutation.mutate(
         { taskId, linked_branches: payload },
         {
           onError: () => {
@@ -186,7 +186,7 @@ export function TaskLinkedBranchesSection({
         },
       );
     },
-    [projectRepos, task, taskId, updateTaskMutation],
+    [projectRepos, task, taskId, replaceBranchesMutation],
   );
 
   const addRow = () => {
@@ -329,7 +329,7 @@ export function TaskLinkedBranchesSection({
                                 type="button"
                                 role="option"
                                 onClick={() => selectBranch(row.key, b.name)}
-                                disabled={updateTaskMutation.isPending}
+                                disabled={replaceBranchesMutation.isPending}
                                 className={`flex w-full items-start gap-2 px-3 py-2.5 text-left text-[14px] font-medium hover:bg-[#f0f3f5] disabled:opacity-50 ${
                                   row.branchName === b.name ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
                                 }`}
@@ -353,7 +353,7 @@ export function TaskLinkedBranchesSection({
                 <button
                   type="button"
                   onClick={() => removeRow(row.key)}
-                  disabled={updateTaskMutation.isPending}
+                  disabled={replaceBranchesMutation.isPending}
                   className="inline-flex h-[46px] w-full items-center justify-center rounded-[8px] border border-transparent px-2 text-[#727d83] hover:bg-[#f0f3f5] hover:text-[#0b191f] disabled:opacity-50 sm:w-10"
                   aria-label="Remove branch link"
                 >
@@ -368,10 +368,10 @@ export function TaskLinkedBranchesSection({
       <button
         type="button"
         onClick={addRow}
-        disabled={updateTaskMutation.isPending}
+        disabled={replaceBranchesMutation.isPending}
         className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-dashed border-[#e9e9e9] bg-white py-2.5 text-[14px] font-medium text-[#606d76] hover:border-[#24B5F8]/50 hover:text-[#0b191f] disabled:opacity-50 sm:w-auto sm:justify-start sm:px-3"
       >
-        {updateTaskMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus size={16} />}
+        {replaceBranchesMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus size={16} />}
         Add branch link
       </button>
     </div>

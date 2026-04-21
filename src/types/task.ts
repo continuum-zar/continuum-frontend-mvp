@@ -127,6 +127,8 @@ export interface Task {
     milestoneId: string;
     /** ISO date from API (`due_date`), for list view */
     dueDate?: string | null;
+    /** Repo/branch links for Kanban badges (from `linked_branches` or legacy fields). */
+    linkedBranches?: TaskLinkedBranch[];
 }
 
 export type ActivityType =

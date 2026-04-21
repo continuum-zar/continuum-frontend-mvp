@@ -9,6 +9,7 @@ import { ArrowLeft, Flag, Plus, Trash2 } from "lucide-react";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
 import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
+import { KanbanTaskMetaPills } from "./KanbanTaskMetaPills";
 import { KanbanBoardColumnHeader } from "./KanbanBoardColumnHeader";
 import { KanbanColumnHeaderKebabMenu } from "./KanbanColumnHeaderKebabMenu";
 import { filterKanbanTasksBySearchQueryRespectingDrag } from "./kanbanColumnSearchUtils";
@@ -52,8 +53,6 @@ import {
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgVector13 = mcpAsset("c1ddd3b4-d26b-4a92-b752-d84ba0208f8a");
 const imgFrame308 = mcpAsset("5b22b8e9-bd31-437e-a559-232247be56a0");
-const imgLucidePaperclip = mcpAsset("c4929b2e-a9fc-4fce-913e-ecf4dafe6944");
-const imgLucideMessageCircle = mcpAsset("ff8c6057-7f55-46be-8899-4cb59d2eda1a");
 const imgLucideSearch1 = mcpAsset("c5ee61c3-f628-42e7-b456-58f9c49a5cfe");
 /** Plus icon — To-do column “Create task” (same asset as mock Get started kanban, DashboardPlaceholder). */
 const imgVector11 = mcpAsset("4912f83a-d378-4c38-9bf2-ce38aa20cc19");
@@ -289,7 +288,7 @@ export function GetStartedKanbanLive({
     const desc = task.description?.trim() ?? "";
     const { preview: descPreview, isTruncated: descTruncated } =
       kanbanTaskDescriptionPreview(desc);
-    const showBadges = task.attachments > 0 || task.comments > 0;
+    const branchCount = task.linkedBranches?.length ?? 0;
     const { total: checklistTotal, completed: checklistDone } = task.checklists;
     const checklistPct =
       checklistTotal > 0 ? Math.min(100, Math.round((checklistDone / checklistTotal) * 100)) : 0;
@@ -445,30 +444,11 @@ export function GetStartedKanbanLive({
                   </div>
                 )}
               </div>
-              <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0">
-                <div
-                  className={`bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0${showBadges ? "" : " opacity-0"}`}
-                >
-                  <div className="relative shrink-0 size-[16px]">
-                    <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
-                  </div>
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap">
-                    {task.attachments}
-                  </p>
-                </div>
-                <div
-                  className={`bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0${showBadges ? "" : " opacity-0"}`}
-                >
-                  <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]">
-                    <div className="relative shrink-0 size-[13.33px]">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
-                    </div>
-                  </div>
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap">
-                    {task.comments}
-                  </p>
-                </div>
-              </div>
+              <KanbanTaskMetaPills
+                attachments={task.attachments}
+                comments={task.comments}
+                branchCount={branchCount}
+              />
             </div>
           </div>
         </div>

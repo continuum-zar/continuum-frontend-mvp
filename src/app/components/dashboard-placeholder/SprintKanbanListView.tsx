@@ -16,6 +16,7 @@ import { VirtualList } from "@/app/components/ui/VirtualList";
 import type { KanbanColumnConfig } from "./kanbanBoardTypes";
 import { KanbanColumnSearchControls } from "./KanbanColumnSearchControls";
 import { filterKanbanTasksBySearchQueryRespectingDrag } from "./kanbanColumnSearchUtils";
+import { KanbanTaskMetaPills } from "./KanbanTaskMetaPills";
 import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
@@ -113,6 +114,7 @@ export function SprintKanbanListView({
         ? memberByUserId.get(assigneeUserId)
         : undefined;
     const assigneeMissing = assigneeUserId != null && assignee == null;
+    const branchCount = task.linkedBranches?.length ?? 0;
 
     return (
       <div
@@ -131,11 +133,20 @@ export function SprintKanbanListView({
             isDragging ? "border-2 border-[#24B5F8]" : "border-b border-[#ebedee]",
           )}
         >
-        <div className="content-stretch flex w-[380px] shrink-0 items-center gap-[8px]">
-          <GripVertical className="size-4 shrink-0 text-[#9fa5a8]" aria-hidden />
-          <p className="font-['Satoshi:Medium',sans-serif] relative min-w-0 shrink truncate text-[16px] text-[#131617]">
-            {task.title}
-          </p>
+        <div className="content-stretch flex w-[380px] shrink-0 flex-col gap-1.5">
+          <div className="flex min-w-0 items-center gap-[8px]">
+            <GripVertical className="size-4 shrink-0 text-[#9fa5a8]" aria-hidden />
+            <p className="font-['Satoshi:Medium',sans-serif] relative min-w-0 shrink truncate text-[16px] text-[#131617]">
+              {task.title}
+            </p>
+          </div>
+          <div className="flex min-h-[24px] items-center pl-6">
+            <KanbanTaskMetaPills
+              attachments={task.attachments}
+              comments={task.comments}
+              branchCount={branchCount}
+            />
+          </div>
         </div>
         <p
           className="font-['Satoshi:Medium',sans-serif] relative h-[38px] w-[245px] shrink-0 overflow-hidden text-[14px] leading-[1.35] text-[#727d83]"
@@ -299,7 +310,7 @@ export function SprintKanbanListView({
                 <VirtualList
                   items={list}
                   threshold={16}
-                  estimateSize={54}
+                  estimateSize={72}
                   gap={0}
                   maxHeight="min(70vh, 720px)"
                   fixedHeight
