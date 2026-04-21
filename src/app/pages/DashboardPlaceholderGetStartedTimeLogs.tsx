@@ -48,6 +48,7 @@ import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { useTimeTracking } from "../context/TimeTrackingContext";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
 
 const tabBtn = (active: boolean) =>
   `rounded-[8px] px-4 py-2 text-[14px] font-medium ${
@@ -843,26 +844,38 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
           <section className="scrollbar-hide z-[1] flex min-h-0 min-w-0 max-w-none flex-1 flex-col overflow-x-auto overflow-y-auto rounded-[8px] border border-[#ebedee] bg-white px-6 py-4 pb-8 shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
           {/* Top bar — matches Figma 40:7745 / 40:8001 */}
           <div className="flex w-full flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex min-w-0 max-w-full items-center gap-2 text-[#606d76]">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-[#606d76]">
                 <FolderOpenDot className="size-4 shrink-0" strokeWidth={1.5} aria-hidden />
-                <Link
-                  to={breadcrumbProjectHref}
-                  className="min-w-0 max-w-[min(100%,320px)] truncate text-[16px] font-medium text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                  title={breadcrumbProjectLabel}
-                >
-                  {breadcrumbProjectLabel}
-                </Link>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={breadcrumbProjectHref}
+                      className="min-w-0 max-w-[min(100%,12.5rem)] shrink truncate text-[16px] font-medium text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {breadcrumbProjectLabel}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-left">
+                    {breadcrumbProjectLabel}
+                  </TooltipContent>
+                </Tooltip>
                 <span className="inline-flex size-4 shrink-0 items-center justify-center" aria-hidden>
                   <span className="text-[14px]">›</span>
                 </span>
-                <Link
-                  to={sprintBoardLink}
-                  className="min-w-0 max-w-[min(100%,280px)] truncate text-[16px] font-medium text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                  title={milestonePageTitle}
-                >
-                  {milestonePageTitle}
-                </Link>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={sprintBoardLink}
+                      className="min-w-0 max-w-[min(100%,12.5rem)] shrink truncate text-[16px] font-medium text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {milestonePageTitle}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-left">
+                    {milestonePageTitle}
+                  </TooltipContent>
+                </Tooltip>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex h-8 items-center gap-2 rounded-[999px] bg-[#d7fede] px-4 py-2">
