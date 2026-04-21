@@ -67,6 +67,22 @@ export function projectTimeLogsHref(
 /**
  * Which project is expanded in the rail (sprint child may show when milestones exist). Null = none.
  */
+/**
+ * Second breadcrumb segment on sprint-related surfaces (after project name): milestone title, "Sprint", or welcome demo label.
+ */
+export function sprintBoardContextBreadcrumbLabel(
+  apiProjectId: string | null,
+  milestoneParam: string | null,
+  milestones: readonly { id: string; name: string }[] | undefined,
+  milestonesLoading: boolean,
+): string {
+  if (apiProjectId == null) return DASHBOARD_WELCOME_PROJECT.sprintLabel;
+  if (!milestoneParam) return "Sprint";
+  const hit = milestones?.find((m) => m.id === milestoneParam);
+  if (hit) return hit.name;
+  return milestonesLoading ? "…" : "Milestone";
+}
+
 export function expandedProjectFromLocation(pathname: string, projectParam: string | null): string | null {
   if (pathname.startsWith(`${WORKSPACE_BASE}/welcome`)) return WELCOME_PROJECT_ID;
   if (pathname.startsWith(`${WORKSPACE_BASE}/project/`)) {
