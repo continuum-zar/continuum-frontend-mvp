@@ -121,11 +121,18 @@ function getActivityLabel(entry: TaskTimelineEntry, members?: Member[]) {
   const formatStatus = (status: string) =>
     status === 'in_progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1);
 
+  const statusLineLabel = (raw: unknown, label: unknown): string => {
+    const fromApi = typeof label === 'string' && label.trim() ? label.trim() : '';
+    if (fromApi) return fromApi;
+    const s = typeof raw === 'string' && raw ? raw : 'unknown';
+    return formatStatus(s);
+  };
+
   switch (entry.activity_type) {
     case 'task_created':
       return 'created this task';
     case 'status_changed':
-      return `changed status from ${formatStatus(entry.data?.old_status as string || 'unknown')} to ${formatStatus(entry.data?.new_status as string || 'unknown')}`;
+      return `changed status from ${statusLineLabel(entry.data?.old_status, entry.data?.old_status_label)} to ${statusLineLabel(entry.data?.new_status, entry.data?.new_status_label)}`;
     case 'assignment_changed':
       return `changed assignee from ${resolveAssigneeLabel(entry.data?.old_assignee_id as string | undefined, members)} to ${resolveAssigneeLabel(entry.data?.new_assignee_id as string | undefined, members)}`;
     case 'comment_added': {
