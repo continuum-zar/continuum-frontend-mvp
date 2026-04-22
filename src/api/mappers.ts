@@ -2,7 +2,14 @@ import { formatDistanceToNow } from 'date-fns';
 import type { AttachmentAPIResponse, Attachment } from "@/types/attachment";
 import type { ProjectAPIResponse, Project } from '@/types/project';
 import type { ProjectDetailAPIResponse, ProjectDetail } from '@/types/project';
-import { getTaskLinkedBranches, type TaskAPIResponse, type Task, type TaskPriority, type TaskStatus } from '@/types/task';
+import {
+    getTaskAssigneeUserIds,
+    getTaskLinkedBranches,
+    type TaskAPIResponse,
+    type Task,
+    type TaskPriority,
+    type TaskStatus,
+} from '@/types/task';
 import type { MilestoneAPIResponse, Milestone, MilestoneStatus } from '@/types/milestone';
 import type { MemberAPIResponse, Member } from '@/types/member';
 import type { InvoiceAPIResponse, Invoice } from '@/types/invoice';
@@ -73,7 +80,7 @@ export function mapTask(t: TaskAPIResponse): Task {
         status: mapTaskStatus(t.status ?? 'todo'),
         scope: t.scope_weight ?? 'M',
         priority: (t.priority ?? 'medium') as TaskPriority,
-        assignees: t.assigned_to != null ? [String(t.assigned_to)] : [],
+        assignees: getTaskAssigneeUserIds(t).map(String),
         attachments: t.attachment_count ?? 0,
         comments: t.comment_count ?? 0,
         checklists: { total: totalChecklists, completed: completedChecklists },

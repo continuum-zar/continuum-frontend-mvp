@@ -4,7 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useMemo, useState } from "react";
 import { ArrowLeft, Search, X } from "lucide-react";
 
-import { useProjectMembers, useAssignTask } from "@/api/hooks";
+import { useProjectMembers, useSetTaskAssignees } from "@/api/hooks";
 import type { Member } from "@/types/member";
 
 import {
@@ -13,10 +13,10 @@ import {
   DialogOverlay,
   DialogPortal,
 } from "./ui/dialog";
+import { Checkbox } from "./ui/checkbox";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
-
-const assignButtonGradient =
-  "linear-gradient(151.86872497935377deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)";
 
 const AVATAR_BGS = [
   "bg-[#e19c02]",
@@ -41,7 +41,8 @@ type AssignMemberModalProps = {
   onOpenChange: (open: boolean) => void;
   projectId?: number | string;
   taskId?: string | number;
-  currentAssigneeId?: number | null;
+  /** All user ids currently assigned to the task. */
+  currentAssigneeIds: number[];
 };
 
 export function AssignMemberModal({
@@ -49,18 +50,23 @@ export function AssignMemberModal({
   onOpenChange,
   projectId,
   taskId,
-  currentAssigneeId,
+  currentAssigneeIds,
 }: AssignMemberModalProps) {
   const [search, setSearch] = useState("");
 
   const membersQuery = useProjectMembers(projectId, {
     enabled: !!projectId && open,
   });
-  const assignTaskMutation = useAssignTask();
+  const setAssigneesMutation = useSetTaskAssignees();
 
   const members = useMemo(
     () => membersQuery.data ?? [],
     [membersQuery.data],
+  );
+
+  const assigneeSet = useMemo(
+    () => new Set(currentAssigneeIds.filter((id) => Number.isFinite(id))),
+    [currentAssigneeIds],
   );
 
   const filtered = useMemo(() => {
@@ -73,20 +79,34 @@ export function AssignMemberModal({
     );
   }, [members, search]);
 
-  const handleAssign = (userId: number) => {
+  const sortedFiltered = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const aAs = assigneeSet.has(a.userId) ? 0 : 1;
+      const bAs = assigneeSet.has(b.userId) ? 0 : 1;
+      if (aAs !== bAs) return aAs - bAs;
+      return memberDisplayLines(a).primary.localeCompare(memberDisplayLines(b).primary);
+    });
+  }, [filtered, assigneeSet]);
+
+  const applyUserIds = (next: Set<number>) => {
     if (!taskId) return;
-    assignTaskMutation.mutate(
-      { taskId, userId },
-      { onSuccess: () => onOpenChange(false) }
-    );
+    setAssigneesMutation.mutate({
+      taskId,
+      userIds: [...next].sort((a, b) => a - b),
+    });
   };
 
-  const handleUnassign = () => {
-    if (!taskId) return;
-    assignTaskMutation.mutate(
-      { taskId, userId: null },
-      { onSuccess: () => onOpenChange(false) }
-    );
+  const toggleMember = (userId: number, checked: boolean) => {
+    const next = new Set(assigneeSet);
+    if (checked) next.add(userId);
+    else next.delete(userId);
+    applyUserIds(next);
+  };
+
+  const handleUnassignOne = (userId: number) => {
+    const next = new Set(assigneeSet);
+    next.delete(userId);
+    applyUserIds(next);
   };
 
   return (
@@ -96,28 +116,28 @@ export function AssignMemberModal({
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(92vh,900px)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(92vh,900px)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-background text-foreground shadow-lg duration-200",
           )}
         >
-          <DialogPrimitive.Title className="sr-only">Assign Member</DialogPrimitive.Title>
+          <DialogPrimitive.Title className="sr-only">Assign members</DialogPrimitive.Title>
 
-          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-border bg-muted/40 px-6 py-4 sm:px-9">
             <DialogClose asChild>
               <button
                 type="button"
-                className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[#0b191f]"
+                className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-foreground"
                 aria-label="Back"
               >
                 <ArrowLeft className="size-5" strokeWidth={2} />
               </button>
             </DialogClose>
-            <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
-              Assign Member
+            <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-medium text-base tracking-tight text-muted-foreground">
+              Assign members
             </p>
             <DialogClose asChild>
               <button
                 type="button"
-                className="inline-flex size-[27px] shrink-0 items-center justify-center rounded-md border-0 bg-transparent p-0 text-[#0b191f]"
+                className="inline-flex size-[27px] shrink-0 items-center justify-center rounded-md border-0 bg-transparent p-0 text-foreground"
                 aria-label="Close"
               >
                 <X className="size-4" strokeWidth={2} />
@@ -125,108 +145,110 @@ export function AssignMemberModal({
             </DialogClose>
           </div>
 
-          <div
-            className="z-[2] min-h-0 flex-1 overflow-x-clip overflow-y-auto px-9 py-6"
-            style={{
-              backgroundImage:
-                "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
-            }}
-          >
+          <div className="z-[2] min-h-0 flex-1 overflow-x-clip overflow-y-auto bg-background px-6 py-6 sm:px-9">
             <div className="flex w-full flex-col gap-6 pb-6">
               <div className="relative w-full">
-                <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#606d76]" />
+                <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search members"
-                  className="w-full rounded-[8px] border border-solid border-[#e9e9e9] bg-white py-3 pl-10 pr-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76] focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40"
+                  className="w-full rounded-lg border border-border bg-background py-3 pl-10 pr-4 text-base font-medium text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
                 />
               </div>
 
-              {currentAssigneeId != null && (
-                <button
-                  type="button"
-                  onClick={handleUnassign}
-                  disabled={assignTaskMutation.isPending}
-                  className="w-full rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2.5 text-center font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] hover:bg-[#f0f3f5] disabled:opacity-50"
-                >
-                  Remove assignment
-                </button>
-              )}
-
               <div className="flex w-full flex-col gap-2">
-                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                  Project Members
+                <p className="text-base font-medium text-foreground">
+                  Project members
                 </p>
 
                 {membersQuery.isLoading ? (
                   <div className="flex flex-col gap-4 py-1">
                     {[0, 1, 2].map((i) => (
                       <div key={i} className="flex w-full items-center gap-2 pr-2">
-                        <div className="size-8 shrink-0 animate-pulse rounded-[999px] bg-[#e4eaec]" />
+                        <div className="size-8 shrink-0 animate-pulse rounded-full bg-muted" />
                         <div className="min-w-0 flex-1 space-y-2 py-1">
-                          <div className="h-4 w-40 animate-pulse rounded bg-[#e4eaec]" />
-                          <div className="h-3 w-56 animate-pulse rounded bg-[#e4eaec]" />
+                          <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+                          <div className="h-3 w-56 animate-pulse rounded bg-muted" />
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : membersQuery.isError ? (
-                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#c02626]">
-                    Couldn't load members. Try again.
+                  <p className="text-sm font-medium text-destructive">
+                    Couldn&apos;t load members. Try again.
                   </p>
-                ) : filtered.length === 0 ? (
-                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
+                ) : sortedFiltered.length === 0 ? (
+                  <p className="text-sm font-medium text-muted-foreground">
                     {search.trim() ? "No members match your search." : "No members in this project."}
                   </p>
                 ) : (
-                  <div className="flex w-full flex-col gap-4">
-                    {filtered.map((m) => {
+                  <ul className="flex w-full flex-col gap-3" aria-busy={setAssigneesMutation.isPending}>
+                    {sortedFiltered.map((m) => {
                       const { primary, secondary } = memberDisplayLines(m);
                       const bg = AVATAR_BGS[m.id % AVATAR_BGS.length];
-                      const isAssigned = m.userId === currentAssigneeId;
+                      const isAssigned = assigneeSet.has(m.userId);
+                      const rowId = `assign-member-${m.id}`;
                       return (
-                        <div
+                        <li
                           key={m.id}
-                          className="flex w-full items-center gap-2 overflow-hidden rounded-[8px] pr-2"
+                          className={cn(
+                            "flex w-full flex-wrap items-center gap-3 overflow-hidden rounded-lg border px-3 py-2.5 sm:flex-nowrap",
+                            isAssigned ? "border-primary/30 bg-primary/5" : "border-border bg-card",
+                          )}
                         >
                           <div
                             className={cn(
-                              "flex size-8 shrink-0 items-center justify-center rounded-[999px] border-[1.333px] border-solid border-white text-white",
+                              "flex size-8 shrink-0 items-center justify-center rounded-full border border-background text-xs font-medium text-white",
                               bg,
                             )}
                             aria-hidden
                           >
-                            <span className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-[0.4]">
-                              {m.initials}
-                            </span>
+                            {m.initials}
                           </div>
-                          <div className="flex min-w-0 flex-1 flex-col justify-center px-2 py-1.5">
-                            <p className="w-full truncate font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                              {primary}
-                            </p>
+                          <div className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
+                              <p className="truncate text-base font-medium text-foreground" id={`${rowId}-label`}>
+                                {primary}
+                              </p>
+                              {isAssigned ? (
+                                <Badge variant="secondary" className="shrink-0 text-[10px] uppercase tracking-wide">
+                                  Assigned
+                                </Badge>
+                              ) : null}
+                            </div>
                             {secondary ? (
-                              <p className="w-full truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#727d83]">
+                              <p className="truncate text-xs font-medium text-muted-foreground">
                                 {secondary}
                               </p>
                             ) : null}
                           </div>
-                          <button
-                            type="button"
-                            disabled={isAssigned || assignTaskMutation.isPending}
-                            onClick={() => handleAssign(m.userId)}
-                            className={cn(
-                              "inline-flex min-w-[88px] shrink-0 items-center justify-center gap-2 rounded-[8px] border-0 px-4 py-2 font-['Satoshi',sans-serif] text-[14px] font-bold text-white outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/50 disabled:cursor-not-allowed disabled:opacity-50",
-                            )}
-                            style={{ backgroundImage: assignButtonGradient }}
-                          >
-                            {isAssigned ? "Assigned" : "Assign"}
-                          </button>
-                        </div>
+                          <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
+                            <Checkbox
+                              id={rowId}
+                              checked={isAssigned}
+                              disabled={setAssigneesMutation.isPending || !taskId}
+                              onCheckedChange={(v) => toggleMember(m.userId, v === true)}
+                              aria-labelledby={`${rowId}-label`}
+                            />
+                            {isAssigned ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 shrink-0 px-2 text-muted-foreground hover:text-foreground"
+                                disabled={setAssigneesMutation.isPending || !taskId}
+                                onClick={() => handleUnassignOne(m.userId)}
+                              >
+                                Unassign
+                              </Button>
+                            ) : null}
+                          </div>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 )}
               </div>
             </div>

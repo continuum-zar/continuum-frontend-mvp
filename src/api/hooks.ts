@@ -79,6 +79,7 @@ import {
     deleteAttachment,
     fetchTaskTimeline,
     assignTask,
+    setTaskAssignees,
     addTaskLabel,
     removeTaskLabel,
 } from './tasks';
@@ -1003,6 +1004,28 @@ export function useAssignTask() {
         },
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to update assignee'));
+        },
+        onSettled: (_data, _err, { taskId }) => {
+            invalidateTasksForCachedTaskProject(queryClient, taskId);
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
+
+export function useSetTaskAssignees() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ taskId, userIds }: { taskId: string | number; userIds: number[] }) =>
+            setTaskAssignees(taskId, userIds),
+        onSuccess: (_data, { taskId }) => {
+            toast.success('Assignees updated');
+            if (taskId) {
+                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
+            }
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to update assignees'));
         },
         onSettled: (_data, _err, { taskId }) => {
             invalidateTasksForCachedTaskProject(queryClient, taskId);

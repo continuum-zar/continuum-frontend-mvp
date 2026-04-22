@@ -7,7 +7,6 @@ import { useNavigate, useSearchParams } from "react-router";
 import { ChevronDown, Flag, GripVertical } from "lucide-react";
 
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
-import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 import { taskPriorityFlagClass, taskPriorityLabel, type Task } from "@/types/task";
 import { workspaceJoin } from "@/lib/workspacePaths";
@@ -16,6 +15,7 @@ import { VirtualList } from "@/app/components/ui/VirtualList";
 import type { KanbanColumnConfig } from "./kanbanBoardTypes";
 import { KanbanColumnSearchControls } from "./KanbanColumnSearchControls";
 import { filterKanbanTasksBySearchQueryRespectingDrag } from "./kanbanColumnSearchUtils";
+import { KanbanAssigneeAvatars } from "./KanbanAssigneeAvatars";
 import { KanbanTaskMetaPills } from "./KanbanTaskMetaPills";
 import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
 
@@ -107,13 +107,9 @@ export function SprintKanbanListView({
     const checklistPct =
       checklistTotal > 0 ? Math.min(100, Math.round((checklistDone / checklistTotal) * 100)) : 0;
     const progressFraction = checklistTotal > 0 ? checklistPct / 100 : 0;
-    const assigneeUserId =
-      task.assignees.length > 0 && task.assignees[0] ? Number(task.assignees[0]) : null;
-    const assignee =
-      assigneeUserId != null && Number.isFinite(assigneeUserId)
-        ? memberByUserId.get(assigneeUserId)
-        : undefined;
-    const assigneeMissing = assigneeUserId != null && assignee == null;
+    const assigneeUserIds = task.assignees
+      .map((s) => Number(s))
+      .filter((n) => Number.isFinite(n));
     const branchCount = task.linkedBranches?.length ?? 0;
 
     return (
@@ -160,26 +156,12 @@ export function SprintKanbanListView({
           {descPreview || "—"}
         </p>
         <div className="content-stretch flex w-[72px] shrink-0 items-center justify-start pr-[8px]">
-          {assignee ? (
-            <div
-              className="content-stretch flex size-[24px] shrink-0 items-center justify-center rounded-[999px] border border-solid border-white"
-              style={{ backgroundColor: memberAvatarBackground(assignee.userId) }}
-              title={assignee.name}
-            >
-              <span className="font-['Satoshi:Medium',sans-serif] text-[9px] leading-[0.4] text-white">
-                {assignee.initials}
-              </span>
-            </div>
-          ) : assigneeMissing ? (
-            <div
-              className="flex size-[24px] shrink-0 items-center justify-center rounded-[999px] border border-solid border-[#e4e8eb] bg-[#f5f7f8]"
-              title={`Assignee (user #${assigneeUserId})`}
-            >
-              <span className="font-['Satoshi:Medium',sans-serif] text-[9px] text-[#727d83]">?</span>
-            </div>
-          ) : (
-            <span className="font-['Satoshi:Medium',sans-serif] truncate text-[12px] text-[#727d83]">—</span>
-          )}
+          <KanbanAssigneeAvatars
+            assigneeUserIds={assigneeUserIds}
+            memberByUserId={memberByUserId}
+            sizePx={24}
+            variant="row"
+          />
         </div>
         <p className="font-['Satoshi:Medium',sans-serif] w-[124px] shrink-0 overflow-hidden text-[14px] text-ellipsis whitespace-nowrap text-[#697378]">
           {formatDueLong(task.dueDate)}

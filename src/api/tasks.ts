@@ -382,10 +382,27 @@ export async function fetchTaskTimelinePage(
     return { entries, total, hasMore };
 }
 
-/** Assign a task to a user. PATCH /api/v1/tasks/{id}/assign. */
-export async function assignTask(taskId: number | string, userId: number | null): Promise<TaskAPIResponse> {
-    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { user_id: userId });
+/**
+ * Set task assignees (multi-assign). PATCH /tasks/{id}/assign.
+ * Uses `user_id` when there is at most one assignee (legacy API), otherwise `user_ids`.
+ */
+export async function setTaskAssignees(taskId: number | string, userIds: number[]): Promise<TaskAPIResponse> {
+    const unique = [...new Set(userIds.filter((id) => typeof id === 'number' && Number.isFinite(id)))].sort(
+        (a, b) => a - b,
+    );
+    const body =
+        unique.length === 0
+            ? { user_id: null as number | null }
+            : unique.length === 1
+              ? { user_id: unique[0]! }
+              : { user_ids: unique };
+    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, body);
     return data;
+}
+
+/** Assign a task to a single user (or clear). PATCH /api/v1/tasks/{id}/assign. */
+export async function assignTask(taskId: number | string, userId: number | null): Promise<TaskAPIResponse> {
+    return setTaskAssignees(taskId, userId == null ? [] : [userId]);
 }
 
 /** Task context: top relevant source file paths for this task (RAG). GET /tasks/{id}/context */

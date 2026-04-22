@@ -55,9 +55,13 @@ export type KanbanTaskCardContextMenuProps = {
   onMoveToColumn: (columnId: string) => void;
   /** Project members for the "Assign member" inline picker. Omit/empty to hide the option. */
   members?: Member[];
-  /** Current assignee's user id, or null when unassigned. */
+  /**
+   * Current assignee user ids (multi-assign). Prefer this over `currentAssigneeId`.
+   */
+  currentAssigneeIds?: number[];
+  /** @deprecated Prefer `currentAssigneeIds`. Used when `currentAssigneeIds` is omitted. */
   currentAssigneeId?: number | null;
-  /** Fired from the inline member picker. Pass `null` to unassign. Omit to hide the option. */
+  /** Fired from the inline member picker. Pass `null` to unassign everyone. Omit to hide the option. */
   onAssignMember?: (userId: number | null) => void;
 };
 
@@ -166,9 +170,16 @@ export function KanbanTaskCardContextMenu({
   onDelete,
   onMoveToColumn,
   members,
+  currentAssigneeIds: currentAssigneeIdsProp,
   currentAssigneeId = null,
   onAssignMember,
 }: KanbanTaskCardContextMenuProps) {
+  const assigneeIds =
+    currentAssigneeIdsProp != null
+      ? [...new Set(currentAssigneeIdsProp.filter((id) => Number.isFinite(id)))]
+      : currentAssigneeId != null && Number.isFinite(currentAssigneeId)
+        ? [currentAssigneeId]
+        : [];
   const canAssign = typeof onAssignMember === "function" && (members?.length ?? 0) > 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const [cardHole, setCardHole] = useState<DOMRect | null>(null);
@@ -350,9 +361,9 @@ export function KanbanTaskCardContextMenu({
                 <div className={assignMemberListClassName}>
                   <ContextMenuItem
                     className={optionChipClassName}
-                    disabled={currentAssigneeId == null}
+                    disabled={assigneeIds.length === 0}
                     onSelect={() => {
-                      if (currentAssigneeId != null) onAssignMember?.(null);
+                      if (assigneeIds.length > 0) onAssignMember?.(null);
                     }}
                   >
                     <div
@@ -362,21 +373,22 @@ export function KanbanTaskCardContextMenu({
                       <span className="text-[10px] leading-none text-[#727d83]">—</span>
                     </div>
                     Unassigned
-                    {currentAssigneeId == null ? (
+                    {assigneeIds.length === 0 ? (
                       <span className={cn(satoshi, "ml-auto text-xs font-normal text-[#727d83]")}>
                         Current
                       </span>
                     ) : null}
                   </ContextMenuItem>
                   {members?.map((m) => {
-                    const isCurrent = currentAssigneeId === m.userId;
+                    const isCurrent = assigneeIds.includes(m.userId);
+                    const soleCurrent = isCurrent && assigneeIds.length === 1;
                     return (
                       <ContextMenuItem
                         key={m.userId}
                         className={optionChipClassName}
-                        disabled={isCurrent}
+                        disabled={soleCurrent}
                         onSelect={() => {
-                          if (!isCurrent) onAssignMember?.(m.userId);
+                          if (!soleCurrent) onAssignMember?.(m.userId);
                         }}
                       >
                         <div
