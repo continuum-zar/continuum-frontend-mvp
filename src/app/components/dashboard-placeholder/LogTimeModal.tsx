@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "../ui/utils";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { getApiErrorMessage, useAllTasks, useCreateLoggedHour, useProjectTasks } from "@/api/hooks";
+import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { suggestLogTimeDescription } from "@/api/loggedHours";
 import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
 
@@ -66,6 +67,9 @@ export function LogTimeModal({
     enabled: open && projectId == null,
   });
   const createLoggedHour = useCreateLoggedHour();
+  const pausedTimerTitle = useTimeRecordingStore((s) =>
+    s.isRecording && s.isPaused && s.selectedTask ? s.selectedTask.title : null,
+  );
 
   const tasksLoading = projectId != null ? loadingProjectTasks : loadingAllTasks;
 
@@ -227,6 +231,12 @@ export function LogTimeModal({
             }}
           >
             <div className="flex w-full flex-col gap-6">
+              {open && pausedTimerTitle != null ? (
+                <p className="rounded-[8px] border border-[#f2e5bf] bg-[#fdf9ed] px-3 py-2 font-['Satoshi',sans-serif] text-[13px] font-medium leading-snug text-[#7a6224]">
+                  A paused timer on “{pausedTimerTitle}” is still active in the sidebar. Close this form when you are
+                  done; resume or finish the session from the rail timer.
+                </p>
+              ) : null}
               {/* Task + time spent — Figma I25:10140;2488:110958 */}
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full flex-col gap-1">

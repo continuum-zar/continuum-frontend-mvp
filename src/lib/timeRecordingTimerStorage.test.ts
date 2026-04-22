@@ -9,23 +9,19 @@ const validTask = {
   project_id: 7,
 };
 
+const empty = {
+  selectedTask: null,
+  isRecording: false,
+  isPaused: false,
+  startedAtMs: null,
+  accumulatedMs: 0,
+};
+
 describe("sanitizePersistedTimerSlice", () => {
   it("returns empty fields for non-objects", () => {
-    expect(sanitizePersistedTimerSlice(null)).toEqual({
-      selectedTask: null,
-      isRecording: false,
-      startedAtMs: null,
-    });
-    expect(sanitizePersistedTimerSlice(undefined)).toEqual({
-      selectedTask: null,
-      isRecording: false,
-      startedAtMs: null,
-    });
-    expect(sanitizePersistedTimerSlice("x")).toEqual({
-      selectedTask: null,
-      isRecording: false,
-      startedAtMs: null,
-    });
+    expect(sanitizePersistedTimerSlice(null)).toEqual(empty);
+    expect(sanitizePersistedTimerSlice(undefined)).toEqual(empty);
+    expect(sanitizePersistedTimerSlice("x")).toEqual(empty);
   });
 
   it("restores a valid in-progress recording session", () => {
@@ -38,7 +34,27 @@ describe("sanitizePersistedTimerSlice", () => {
       }),
     ).toEqual({
       isRecording: true,
+      isPaused: false,
       startedAtMs,
+      selectedTask: validTask,
+      accumulatedMs: 0,
+    });
+  });
+
+  it("restores a paused session with accumulated time", () => {
+    expect(
+      sanitizePersistedTimerSlice({
+        isRecording: true,
+        isPaused: true,
+        startedAtMs: null,
+        accumulatedMs: 125_000,
+        selectedTask: validTask,
+      }),
+    ).toEqual({
+      isRecording: true,
+      isPaused: true,
+      startedAtMs: null,
+      accumulatedMs: 125_000,
       selectedTask: validTask,
     });
   });
@@ -51,11 +67,7 @@ describe("sanitizePersistedTimerSlice", () => {
         startedAtMs,
         selectedTask: null,
       }),
-    ).toEqual({
-      isRecording: false,
-      startedAtMs: null,
-      selectedTask: null,
-    });
+    ).toEqual(empty);
     expect(
       sanitizePersistedTimerSlice({
         isRecording: true,
@@ -63,8 +75,7 @@ describe("sanitizePersistedTimerSlice", () => {
         selectedTask: { id: "1" },
       }),
     ).toEqual({
-      isRecording: false,
-      startedAtMs: null,
+      ...empty,
       selectedTask: null,
     });
   });
@@ -78,8 +89,10 @@ describe("sanitizePersistedTimerSlice", () => {
       }),
     ).toEqual({
       isRecording: false,
+      isPaused: false,
       startedAtMs: null,
       selectedTask: validTask,
+      accumulatedMs: 0,
     });
   });
 
@@ -92,8 +105,10 @@ describe("sanitizePersistedTimerSlice", () => {
       }),
     ).toEqual({
       isRecording: false,
+      isPaused: false,
       startedAtMs: null,
       selectedTask: validTask,
+      accumulatedMs: 0,
     });
   });
 
@@ -106,7 +121,27 @@ describe("sanitizePersistedTimerSlice", () => {
       }),
     ).toEqual({
       isRecording: false,
+      isPaused: false,
       startedAtMs: null,
+      selectedTask: validTask,
+      accumulatedMs: 0,
+    });
+  });
+
+  it("coerces running-without-start but positive accumulated into paused", () => {
+    expect(
+      sanitizePersistedTimerSlice({
+        isRecording: true,
+        isPaused: false,
+        startedAtMs: null,
+        accumulatedMs: 5000,
+        selectedTask: validTask,
+      }),
+    ).toEqual({
+      isRecording: true,
+      isPaused: true,
+      startedAtMs: null,
+      accumulatedMs: 5000,
       selectedTask: validTask,
     });
   });
