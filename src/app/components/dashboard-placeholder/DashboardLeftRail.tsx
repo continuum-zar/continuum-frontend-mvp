@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Pause, Play, Search, Square } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 
 import { getApiErrorMessage, useAllTasks, useProjectMilestones, useProjects } from "@/api/hooks";
-import { useTimeRecordingStore } from "@/store/timeRecordingStore";
+import { getRecordingElapsedMs, useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { useAuthStore } from "@/store/authStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
@@ -234,41 +234,55 @@ function formatHms(totalSec: number) {
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
-/** Figma 13:338 Frame 382 — idle: grey ring + red dot. Figma 13:841/13:858 Frame 383 — recording: rgba(235,67,53,0.1) circle + ~18px red square */
-function LeftRailRecordButton({
-  recording,
-  onToggle,
+/** Primary control: play (start) / pause / resume; optional stop opens log modal. */
+function LeftRailTimerControls({
+  phase,
+  onPrimary,
+  onStop,
 }: {
-  recording: boolean;
-  onToggle: () => void;
+  phase: "idle" | "running" | "paused";
+  onPrimary: () => void;
+  onStop: () => void;
 }) {
+  const primaryLabel =
+    phase === "idle" ? "Start recording time" : phase === "running" ? "Pause recording" : "Resume recording";
+  const primaryPressed = phase !== "idle";
+
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`relative box-border flex size-[42px] shrink-0 items-center justify-center rounded-full outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${
-        recording
-          ? "border-0 bg-transparent p-[10.615px]"
-          : "border border-solid border-[#8a8f91] bg-white p-[2.5px]"
-      }`}
-      aria-label={recording ? "Stop recording time" : "Start recording time"}
-      aria-pressed={recording}
-    >
-      {recording ? (
-        <>
-          <span
-            className="absolute left-1/2 top-1/2 size-[42.462px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[rgba(235,67,53,0.1)]"
-            aria-hidden
-          />
-          <span
-            className="relative z-[1] size-[17.692px] shrink-0 rounded-[3px] bg-[#eb4335]"
-            aria-hidden
-          />
-        </>
-      ) : (
-        <span className="relative z-[1] size-[30px] shrink-0 rounded-full bg-[#eb4335]" aria-hidden />
-      )}
-    </button>
+    <div className="flex shrink-0 items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onPrimary}
+        className={`relative box-border flex size-[42px] shrink-0 items-center justify-center rounded-full outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${
+          phase === "running"
+            ? "border-0 bg-[#eb4335] p-[2.5px]"
+            : phase === "paused"
+              ? "border-0 bg-[#24B5F8] p-[2.5px]"
+              : "border border-solid border-[#8a8f91] bg-white p-[2.5px]"
+        }`}
+        aria-label={primaryLabel}
+        aria-pressed={primaryPressed}
+      >
+        {phase === "running" ? (
+          <Pause className="relative z-[1] size-[18px] shrink-0 text-white" strokeWidth={2.2} aria-hidden />
+        ) : phase === "paused" ? (
+          <Play className="relative z-[1] size-[20px] shrink-0 fill-white text-white" aria-hidden />
+        ) : (
+          /* Idle — Figma 13:338: large red record disc inside grey ring (not a play glyph). */
+          <span className="relative z-[1] size-[30px] shrink-0 rounded-full bg-[#eb4335]" aria-hidden />
+        )}
+      </button>
+      {phase !== "idle" ? (
+        <button
+          type="button"
+          onClick={onStop}
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-solid border-[#ebedee] bg-white text-[#606d76] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Finish and log time"
+        >
+          <Square className="size-3.5 fill-current" strokeWidth={0} aria-hidden />
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -451,8 +465,12 @@ export function DashboardLeftRail() {
   const selectedTask = useTimeRecordingStore((s) => s.selectedTask);
   const setSelectedTask = useTimeRecordingStore((s) => s.setSelectedTask);
   const isRecording = useTimeRecordingStore((s) => s.isRecording);
+  const isPaused = useTimeRecordingStore((s) => s.isPaused);
   const startedAtMs = useTimeRecordingStore((s) => s.startedAtMs);
+  const accumulatedMs = useTimeRecordingStore((s) => s.accumulatedMs);
   const startRecording = useTimeRecordingStore((s) => s.startRecording);
+  const pauseRecording = useTimeRecordingStore((s) => s.pauseRecording);
+  const resumeRecording = useTimeRecordingStore((s) => s.resumeRecording);
   const stopRecordingOpenLogModal = useTimeRecordingStore((s) => s.stopRecordingOpenLogModal);
   const logModalOpen = useTimeRecordingStore((s) => s.logModalOpen);
   const timerPrefill = useTimeRecordingStore((s) => s.timerPrefill);
@@ -461,15 +479,25 @@ export function DashboardLeftRail() {
 
   const [, setTick] = useState(0);
   useEffect(() => {
-    if (!isRecording || startedAtMs == null) return;
+    if (!isRecording || isPaused || startedAtMs == null) return;
     const id = window.setInterval(() => setTick((n) => n + 1), 1000);
     return () => window.clearInterval(id);
-  }, [isRecording, startedAtMs]);
+  }, [isRecording, isPaused, startedAtMs]);
 
-  const elapsedSec =
-    isRecording && startedAtMs != null
-      ? Math.floor((Date.now() - startedAtMs) / 1000)
-      : 0;
+  const timerPhase: "idle" | "running" | "paused" = !isRecording
+    ? "idle"
+    : isPaused
+      ? "paused"
+      : "running";
+
+  const elapsedSec = Math.floor(
+    getRecordingElapsedMs({
+      isRecording,
+      isPaused,
+      startedAtMs,
+      accumulatedMs,
+    }) / 1000,
+  );
 
   /**
    * Only fetch when the user actually opens the task picker (or is recording, so the picker is armed).
@@ -741,9 +769,18 @@ export function DashboardLeftRail() {
             data-name="Component 144"
           >
               <div className="flex min-w-0 flex-1 flex-col justify-center gap-0 leading-none">
-                <p className="whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                <p
+                  className={`whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium ${
+                    timerPhase === "paused" ? "text-[#9a7b18]" : "text-[#0b191f]"
+                  }`}
+                >
                   {formatHms(elapsedSec)}
                 </p>
+                {timerPhase === "paused" ? (
+                  <p className="mt-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium uppercase tracking-wide text-[#9a7b18]">
+                    Paused
+                  </p>
+                ) : null}
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -758,20 +795,25 @@ export function DashboardLeftRail() {
                     </button>
                   </PopoverTrigger>
               </div>
-              <LeftRailRecordButton
-                recording={isRecording}
-                onToggle={() => {
-                  if (isRecording) {
-                    stopRecordingOpenLogModal();
-                  } else {
-                    if (!selectedTask) {
-                      toast.error("Select a task first");
-                      return;
-                    }
-                    const ok = startRecording();
-                    if (!ok) toast.error("Select a task first");
+              <LeftRailTimerControls
+                phase={timerPhase}
+                onPrimary={() => {
+                  if (timerPhase === "running") {
+                    pauseRecording();
+                    return;
                   }
+                  if (timerPhase === "paused") {
+                    resumeRecording();
+                    return;
+                  }
+                  if (!selectedTask) {
+                    toast.error("Select a task first");
+                    return;
+                  }
+                  const ok = startRecording();
+                  if (!ok) toast.error("Select a task first");
                 }}
+                onStop={() => stopRecordingOpenLogModal()}
               />
           </div>
                   <PopoverContent

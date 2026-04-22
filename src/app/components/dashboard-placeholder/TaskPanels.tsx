@@ -1,11 +1,31 @@
 "use client";
 
-import { Activity, ArrowLeft, CalendarPlus, Check, ChevronDown, FileText, Flag, Link2, Loader2, Plus, Tag, UserRoundPlus, X } from "lucide-react";
+import {
+  Activity,
+  ArrowLeft,
+  CalendarPlus,
+  Check,
+  ChevronDown,
+  FileText,
+  Flag,
+  Link2,
+  Loader2,
+  Pause,
+  Play,
+  Plus,
+  Square,
+  Tag,
+  UserRoundPlus,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { TASK_PRIORITY_OPTIONS, taskPriorityFlagClass, taskPriorityLabel, type TaskPriority } from "@/types/task";
 
+import type { TaskOption } from "@/api/tasks";
 import { useTaskLoggedHoursTotal, useTask, useUpdateTask } from "@/api/hooks";
+import { getRecordingElapsedMs, useTimeRecordingStore } from "@/store/timeRecordingStore";
+import { toast } from "sonner";
 import { isApiProjectId } from "@/app/data/dashboardPlaceholderProjects";
 import { welcomeResourcesMock } from "@/app/data/welcomeDashboardMock";
 
@@ -76,6 +96,83 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
 
   const { data: apiTask } = useTask(canSyncTaskFields && deferTaskPanelApi ? taskId : undefined);
   const updateTaskMutation = useUpdateTask();
+
+  const taskOptionForTimer = useMemo((): TaskOption | null => {
+    if (!canSyncTaskFields || !apiTask || taskId == null) return null;
+    return {
+      id: String(apiTask.id),
+      title: apiTask.title ?? "",
+      project: apiTask.project_name ?? "",
+      project_id: apiTask.project_id,
+    };
+  }, [canSyncTaskFields, apiTask, taskId]);
+
+  const selectedTask = useTimeRecordingStore((s) => s.selectedTask);
+  const isRecording = useTimeRecordingStore((s) => s.isRecording);
+  const isPaused = useTimeRecordingStore((s) => s.isPaused);
+  const startedAtMs = useTimeRecordingStore((s) => s.startedAtMs);
+  const accumulatedMs = useTimeRecordingStore((s) => s.accumulatedMs);
+  const setSelectedTask = useTimeRecordingStore((s) => s.setSelectedTask);
+  const startRecording = useTimeRecordingStore((s) => s.startRecording);
+  const pauseRecording = useTimeRecordingStore((s) => s.pauseRecording);
+  const resumeRecording = useTimeRecordingStore((s) => s.resumeRecording);
+  const stopRecordingOpenLogModal = useTimeRecordingStore((s) => s.stopRecordingOpenLogModal);
+
+  const [, setTimerTick] = useState(0);
+  useEffect(() => {
+    if (!isRecording || isPaused || startedAtMs == null) return;
+    const id = window.setInterval(() => setTimerTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [isRecording, isPaused, startedAtMs]);
+
+  const sessionTaskId = taskId != null ? String(taskId).trim() : "";
+  const timerForThisTask =
+    isRecording &&
+    selectedTask != null &&
+    sessionTaskId !== "" &&
+    selectedTask.id === sessionTaskId;
+  const timerPhase: "idle" | "running" | "paused" = !timerForThisTask
+    ? "idle"
+    : isPaused
+      ? "paused"
+      : "running";
+
+  const panelElapsedSec = timerForThisTask
+    ? Math.floor(
+        getRecordingElapsedMs({
+          isRecording,
+          isPaused,
+          startedAtMs,
+          accumulatedMs,
+        }) / 1000,
+      )
+    : 0;
+
+  const formatHmsShort = (totalSec: number) => {
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
+  };
+
+  const handlePanelTimerPrimary = () => {
+    if (timerPhase === "running") {
+      pauseRecording();
+      return;
+    }
+    if (timerPhase === "paused") {
+      resumeRecording();
+      return;
+    }
+    if (!taskOptionForTimer) return;
+    if (isRecording && selectedTask != null && selectedTask.id !== taskOptionForTimer.id) {
+      toast.error("Another task has an active timer. Finish or pause it in the sidebar first.");
+      return;
+    }
+    setSelectedTask(taskOptionForTimer);
+    const ok = startRecording();
+    if (!ok) toast.error("Could not start the timer.");
+  };
 
   useEffect(() => {
     const p = apiTask?.priority;
@@ -337,16 +434,69 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
             <div className="flex justify-between"><span className="text-[#727d83]">Last update</span><span className="text-[#0b191f]">10 March 2026</span></div>
           </div>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <p className="text-[16px] font-medium text-[#0b191f]">Time tracked</p>
-              <button
-                type="button"
-                onClick={() => setLogTimeOpen(true)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white"
-              >
-                <Plus size={16} />
-                Log Time
-              </button>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {timerForThisTask ? (
+                  <>
+                    <span
+                      className={`font-['Satoshi',sans-serif] text-[13px] font-medium tabular-nums ${
+                        timerPhase === "paused" ? "text-[#9a7b18]" : "text-[#0b191f]"
+                      }`}
+                    >
+                      {formatHmsShort(panelElapsedSec)}
+                      {timerPhase === "paused" ? " · paused" : ""}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handlePanelTimerPrimary}
+                      className={`inline-flex size-8 items-center justify-center rounded-[8px] border outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40 ${
+                        timerPhase === "running"
+                          ? "border-[#eb4335] bg-[#eb4335] text-white"
+                          : "border-[#24B5F8] bg-[#24B5F8] text-white"
+                      }`}
+                      aria-label={timerPhase === "running" ? "Pause timer" : "Resume timer"}
+                    >
+                      {timerPhase === "running" ? (
+                        <Pause className="size-4 text-white" strokeWidth={2.25} aria-hidden />
+                      ) : (
+                        <Play className="size-4 fill-white text-white" aria-hidden />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => stopRecordingOpenLogModal()}
+                      className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white text-[#606d76] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40"
+                      aria-label="Finish and log time"
+                    >
+                      <Square className="size-3.5 fill-current" strokeWidth={0} aria-hidden />
+                    </button>
+                  </>
+                ) : taskOptionForTimer ? (
+                  <button
+                    type="button"
+                    onClick={handlePanelTimerPrimary}
+                    disabled={Boolean(isRecording && selectedTask != null && selectedTask.id !== taskOptionForTimer.id)}
+                    title={
+                      isRecording && selectedTask != null && selectedTask.id !== taskOptionForTimer.id
+                        ? "Another task is being timed in the sidebar"
+                        : undefined
+                    }
+                    className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#e9e9e9] bg-white px-3 text-[14px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Play className="size-3.5 fill-[#0b191f] text-[#0b191f]" aria-hidden />
+                    Start timer
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setLogTimeOpen(true)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white"
+                >
+                  <Plus size={16} />
+                  Log Time
+                </button>
+              </div>
             </div>
             <div className="flex justify-between text-[16px]">
               <span className="text-[#727d83]">Logged</span>
