@@ -49,7 +49,7 @@ export function sanitizePersistedTimerSlice(raw: unknown): PersistedTimerFields 
 
   const isRecording = o.isRecording === true;
   const isPaused = o.isPaused === true;
-  let accumulatedMs =
+  const accumulatedMs =
     typeof o.accumulatedMs === "number" && Number.isFinite(o.accumulatedMs)
       ? Math.max(0, Math.floor(o.accumulatedMs))
       : 0;
