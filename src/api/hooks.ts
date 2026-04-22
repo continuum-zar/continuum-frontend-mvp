@@ -79,6 +79,7 @@ import {
     deleteAttachment,
     fetchTaskTimeline,
     assignTask,
+    removeTaskAssignee,
     setTaskAssignees,
     addTaskLabel,
     removeTaskLabel,
@@ -1103,6 +1104,53 @@ export function useAssignTask() {
                 );
             }
             toast.error(getApiErrorMessage(err, 'Failed to update assignee'));
+        },
+        onSettled: (_data, _err, { taskId }) => {
+            invalidateTasksForCachedTaskProject(queryClient, taskId);
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
+
+export function useRemoveTaskAssignee() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ taskId, userId }: { taskId: string | number; userId: number }) =>
+            removeTaskAssignee(taskId, userId),
+        onMutate: async ({ taskId, userId }) => {
+            const tid = taskId;
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(tid) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
+            if (!prevDetail) return {};
+            const nextIds = getTaskAssigneeUserIds(prevDetail)
+                .filter((id) => id !== userId)
+                .sort((a, b) => a - b);
+            optimisticApplyAssignees(queryClient, tid, nextIds);
+            return { prevDetail };
+        },
+        onSuccess: (data, { taskId }) => {
+            toast.success('Assignee removed');
+            if (taskId && data) {
+                queryClient.setQueryData(taskDetailKey(taskId), data);
+                void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            }
+        },
+        onError: (err, variables, ctx) => {
+            if (ctx?.prevDetail != null) {
+                queryClient.setQueryData(taskDetailKey(variables.taskId), ctx.prevDetail);
+                patchTaskAssigneesInProjectKanbanCaches(
+                    queryClient,
+                    variables.taskId,
+                    ctx.prevDetail.project_id,
+                    getTaskAssigneeUserIds(ctx.prevDetail),
+                );
+                patchTaskAssigneesInAssignedCreatedLists(
+                    queryClient,
+                    variables.taskId,
+                    getTaskAssigneeUserIds(ctx.prevDetail),
+                );
+            }
+            toast.error(getApiErrorMessage(err, 'Failed to remove assignee'));
         },
         onSettled: (_data, _err, { taskId }) => {
             invalidateTasksForCachedTaskProject(queryClient, taskId);

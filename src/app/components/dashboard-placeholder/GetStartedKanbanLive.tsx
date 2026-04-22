@@ -24,6 +24,7 @@ import {
 import { cn } from "@/app/components/ui/utils";
 import {
   useAssignTask,
+  useRemoveTaskAssignee,
   useDeleteProjectKanbanColumn,
   useDeleteTask,
   useProjectKanbanBoard,
@@ -89,6 +90,7 @@ export function GetStartedKanbanLive({
   const updateStatusMutation = useUpdateTaskStatus(projectId);
   const deleteTaskMutation = useDeleteTask(projectId);
   const assignTaskMutation = useAssignTask();
+  const removeTaskAssigneeMutation = useRemoveTaskAssignee();
   const pendingMoveRef = useRef(new Set<string>());
   const kanbanInitializedRef = useRef(false);
   const kanbanLastSavedSerializedRef = useRef<string | null>(null);
@@ -347,11 +349,10 @@ export function GetStartedKanbanLive({
         members={members}
         currentAssigneeIds={assigneeUserIds}
         onAssignMember={(userId) => {
-          if (userId !== null) {
-            const sole = assigneeUserIds.length === 1 && assigneeUserIds[0] === userId;
-            if (sole) return;
-          }
           assignTaskMutation.mutate({ taskId: task.id, userId });
+        }}
+        onUnassignMember={(userId) => {
+          removeTaskAssigneeMutation.mutate({ taskId: task.id, userId });
         }}
         onOpenTask={() => navigate(taskHref)}
         onEditTask={() => {

@@ -140,6 +140,7 @@ export {
     useTaskTimeline,
     useTaskTimelineInfinite,
     useAssignTask,
+    useRemoveTaskAssignee,
     useSetTaskAssignees,
     useDeleteTask,
     useAddTaskLabel,

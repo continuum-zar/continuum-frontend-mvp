@@ -2,9 +2,9 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Search, X } from "lucide-react";
+import { ArrowLeft, Check, Search, X } from "lucide-react";
 
-import { useProjectMembers, useSetTaskAssignees } from "@/api/hooks";
+import { useProjectMembers, useRemoveTaskAssignee, useSetTaskAssignees } from "@/api/hooks";
 import type { Member } from "@/types/member";
 
 import {
@@ -13,9 +13,6 @@ import {
   DialogOverlay,
   DialogPortal,
 } from "./ui/dialog";
-import { Checkbox } from "./ui/checkbox";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 
 const AVATAR_BGS = [
@@ -58,6 +55,7 @@ export function AssignMemberModal({
     enabled: !!projectId && open,
   });
   const setAssigneesMutation = useSetTaskAssignees();
+  const removeAssigneeMutation = useRemoveTaskAssignee();
 
   const members = useMemo(
     () => membersQuery.data ?? [],
@@ -104,9 +102,8 @@ export function AssignMemberModal({
   };
 
   const handleUnassignOne = (userId: number) => {
-    const next = new Set(assigneeSet);
-    next.delete(userId);
-    applyUserIds(next);
+    if (!taskId) return;
+    removeAssigneeMutation.mutate({ taskId, userId });
   };
 
   return (
@@ -164,14 +161,15 @@ export function AssignMemberModal({
                 </p>
 
                 {membersQuery.isLoading ? (
-                  <div className="flex flex-col gap-4 py-1">
+                  <div className="flex flex-col gap-2 py-1">
                     {[0, 1, 2].map((i) => (
-                      <div key={i} className="flex w-full items-center gap-2 pr-2">
+                      <div key={i} className="flex w-full items-center gap-4">
                         <div className="size-8 shrink-0 animate-pulse rounded-full bg-muted" />
-                        <div className="min-w-0 flex-1 space-y-2 py-1">
-                          <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+                        <div className="min-w-0 flex-1 space-y-2 py-0.5">
+                          <div className="h-3.5 w-40 animate-pulse rounded bg-muted" />
                           <div className="h-3 w-56 animate-pulse rounded bg-muted" />
                         </div>
+                        <div className="size-5 shrink-0 animate-pulse rounded-[4px] bg-muted" />
                       </div>
                     ))}
                   </div>
@@ -184,19 +182,23 @@ export function AssignMemberModal({
                     {search.trim() ? "No members match your search." : "No members in this project."}
                   </p>
                 ) : (
-                  <ul className="flex w-full flex-col gap-3" aria-busy={setAssigneesMutation.isPending}>
+                  <ul
+                    className="flex w-full flex-col gap-2"
+                    aria-busy={setAssigneesMutation.isPending || removeAssigneeMutation.isPending}
+                  >
                     {sortedFiltered.map((m) => {
                       const { primary, secondary } = memberDisplayLines(m);
                       const bg = AVATAR_BGS[m.id % AVATAR_BGS.length];
                       const isAssigned = assigneeSet.has(m.userId);
                       const rowId = `assign-member-${m.id}`;
+                      const assignBusy =
+                        setAssigneesMutation.isPending ||
+                        removeAssigneeMutation.isPending ||
+                        !taskId;
                       return (
                         <li
                           key={m.id}
-                          className={cn(
-                            "flex w-full flex-wrap items-center gap-3 overflow-hidden rounded-lg border px-3 py-2.5 sm:flex-nowrap",
-                            isAssigned ? "border-primary/30 bg-primary/5" : "border-border bg-card",
-                          )}
+                          className="flex w-full flex-wrap items-center gap-4 sm:flex-nowrap"
                         >
                           <div
                             className={cn(
@@ -207,42 +209,48 @@ export function AssignMemberModal({
                           >
                             {m.initials}
                           </div>
-                          <div className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
-                            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                              <p className="truncate text-base font-medium text-foreground" id={`${rowId}-label`}>
-                                {primary}
-                              </p>
-                              {isAssigned ? (
-                                <Badge variant="secondary" className="shrink-0 text-[10px] uppercase tracking-wide">
-                                  Assigned
-                                </Badge>
-                              ) : null}
-                            </div>
+                          <div className="flex min-w-0 flex-1 flex-col justify-center">
+                            <p
+                              className="truncate font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f]"
+                              id={`${rowId}-label`}
+                            >
+                              {primary}
+                            </p>
                             {secondary ? (
-                              <p className="truncate text-xs font-medium text-muted-foreground">
+                              <p className="truncate font-['Inter',sans-serif] text-[12px] font-normal leading-[18px] text-[#727d83]">
                                 {secondary}
                               </p>
                             ) : null}
                           </div>
-                          <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
-                            <Checkbox
-                              id={rowId}
-                              checked={isAssigned}
-                              disabled={setAssigneesMutation.isPending || !taskId}
-                              onCheckedChange={(v) => toggleMember(m.userId, v === true)}
+                          <div className="flex shrink-0 items-center gap-3 sm:ml-auto">
+                            <button
+                              type="button"
+                              role="checkbox"
+                              aria-checked={isAssigned}
                               aria-labelledby={`${rowId}-label`}
-                            />
+                              disabled={assignBusy}
+                              onClick={() => toggleMember(m.userId, !isAssigned)}
+                              className={cn(
+                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40",
+                                isAssigned
+                                  ? "bg-[#24B5F8]"
+                                  : "border border-[#ebedee] bg-[#f9f9f9]",
+                                assignBusy && "cursor-not-allowed opacity-50",
+                              )}
+                            >
+                              {isAssigned ? (
+                                <Check size={13} className="text-white" aria-hidden />
+                              ) : null}
+                            </button>
                             {isAssigned ? (
-                              <Button
+                              <button
                                 type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 shrink-0 px-2 text-muted-foreground hover:text-foreground"
-                                disabled={setAssigneesMutation.isPending || !taskId}
+                                className="shrink-0 font-['Inter',sans-serif] text-[13px] font-medium text-[#727d83] transition-colors hover:text-[#0b191f] disabled:pointer-events-none disabled:opacity-50"
+                                disabled={assignBusy}
                                 onClick={() => handleUnassignOne(m.userId)}
                               >
                                 Unassign
-                              </Button>
+                              </button>
                             ) : null}
                           </div>
                         </li>

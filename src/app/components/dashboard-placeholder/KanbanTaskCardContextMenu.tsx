@@ -61,8 +61,10 @@ export type KanbanTaskCardContextMenuProps = {
   currentAssigneeIds?: number[];
   /** @deprecated Prefer `currentAssigneeIds`. Used when `currentAssigneeIds` is omitted. */
   currentAssigneeId?: number | null;
-  /** Fired from the inline member picker. Pass `null` to unassign everyone. Omit to hide the option. */
-  onAssignMember?: (userId: number | null) => void;
+  /** Fired from the inline member picker to add this user to assignees. */
+  onAssignMember?: (userId: number) => void;
+  /** Remove a single assignee without affecting others. */
+  onUnassignMember?: (userId: number) => void;
 };
 
 /** Radix positions context UI with `side: right` from the cursor; we shift the stack for completed tasks. */
@@ -173,6 +175,7 @@ export function KanbanTaskCardContextMenu({
   currentAssigneeIds: currentAssigneeIdsProp,
   currentAssigneeId = null,
   onAssignMember,
+  onUnassignMember,
 }: KanbanTaskCardContextMenuProps) {
   const assigneeIds =
     currentAssigneeIdsProp != null
@@ -180,7 +183,10 @@ export function KanbanTaskCardContextMenu({
       : currentAssigneeId != null && Number.isFinite(currentAssigneeId)
         ? [currentAssigneeId]
         : [];
-  const canAssign = typeof onAssignMember === "function" && (members?.length ?? 0) > 0;
+  const canAssign =
+    typeof onAssignMember === "function" &&
+    typeof onUnassignMember === "function" &&
+    (members?.length ?? 0) > 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const [cardHole, setCardHole] = useState<DOMRect | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -359,37 +365,32 @@ export function KanbanTaskCardContextMenu({
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className={subShellClassName} sideOffset={8}>
                 <div className={assignMemberListClassName}>
-                  <ContextMenuItem
-                    className={optionChipClassName}
-                    disabled={assigneeIds.length === 0}
-                    onSelect={() => {
-                      if (assigneeIds.length > 0) onAssignMember?.(null);
-                    }}
-                  >
-                    <div
-                      className="flex size-5 shrink-0 items-center justify-center rounded-full border border-dashed border-[#cdd2d5] bg-[#fafbfc]"
-                      aria-hidden
-                    >
-                      <span className="text-[10px] leading-none text-[#727d83]">—</span>
-                    </div>
-                    Unassigned
-                    {assigneeIds.length === 0 ? (
-                      <span className={cn(satoshi, "ml-auto text-xs font-normal text-[#727d83]")}>
-                        Current
-                      </span>
-                    ) : null}
-                  </ContextMenuItem>
+                  {assigneeIds.length === 0 ? (
+                    <ContextMenuItem className={optionChipClassName} disabled aria-disabled>
+                      <div
+                        className="flex size-5 shrink-0 items-center justify-center rounded-full border border-dashed border-[#cdd2d5] bg-[#fafbfc]"
+                        aria-hidden
+                      >
+                        <span className="text-[10px] leading-none text-[#727d83]">—</span>
+                      </div>
+                      Unassigned
+                      <span className={cn(satoshi, "ml-auto text-xs font-normal text-[#727d83]")}>Current</span>
+                    </ContextMenuItem>
+                  ) : null}
                   {members?.map((m) => {
                     const isCurrent = assigneeIds.includes(m.userId);
-                    const soleCurrent = isCurrent && assigneeIds.length === 1;
                     return (
                       <ContextMenuItem
                         key={m.userId}
                         className={optionChipClassName}
-                        disabled={soleCurrent}
-                        onSelect={() => {
-                          if (!soleCurrent) onAssignMember?.(m.userId);
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          if (isCurrent) onUnassignMember?.(m.userId);
+                          else onAssignMember?.(m.userId);
                         }}
+                        aria-label={
+                          isCurrent ? `Unassign ${m.name}` : `Assign ${m.name}`
+                        }
                       >
                         <div
                           className="flex size-5 shrink-0 items-center justify-center rounded-full border border-solid border-white"
@@ -403,7 +404,7 @@ export function KanbanTaskCardContextMenu({
                         <span className="truncate">{m.name}</span>
                         {isCurrent ? (
                           <span className={cn(satoshi, "ml-auto text-xs font-normal text-[#727d83]")}>
-                            Current
+                            Unassign
                           </span>
                         ) : null}
                       </ContextMenuItem>
