@@ -1,11 +1,11 @@
 "use client";
 
 import type { ReactNode, RefObject } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, Flag, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Flag, GripVertical, Plus, Trash2 } from "lucide-react";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
 import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
@@ -31,6 +31,8 @@ import {
   useUpdateTaskStatus,
 } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
+import { reorderKanbanColumns } from "@/lib/kanbanColumnReorder";
+import { useKanbanColumnPointerDrag } from "@/lib/useKanbanColumnPointerDrag";
 import { useKanbanPointerDrag } from "@/lib/useKanbanPointerDrag";
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
@@ -283,6 +285,27 @@ export function GetStartedKanbanLive({
     },
   });
 
+  const kanbanBoardRowRef = useRef<HTMLDivElement | null>(null);
+  const setKanbanBoardRowRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      kanbanBoardRowRef.current = el;
+      if (boardScrollRef) {
+        boardScrollRef.current = el;
+      }
+    },
+    [boardScrollRef],
+  );
+
+  const columnIds = useMemo(() => columns.map((c) => c.id), [columns]);
+
+  const columnDrag = useKanbanColumnPointerDrag({
+    boardRef: kanbanBoardRowRef,
+    columnIds,
+    onReorder: (from, to) => {
+      setColumns((prev) => reorderKanbanColumns(prev, from, to));
+    },
+  });
+
   const renderLiveCard = (task: Task) => {
     const isDragging = draggingId === task.id;
     const desc = task.description?.trim() ?? "";
@@ -477,11 +500,19 @@ export function GetStartedKanbanLive({
     </div>
   );
 
-  const colWrap = (columnId: string, children: ReactNode, header: ReactNode) => (
+  const colWrap = (
+    columnId: string,
+    children: ReactNode,
+    header: ReactNode,
+    isColumnDragSource = false,
+  ) => (
     <div
-      key={columnId}
       data-kanban-col={columnId}
-      className={`content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === columnId ? "border-2 border-dashed border-[#cdd2d5]" : ""}`}
+      className={cn(
+        "content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200",
+        dragOverCol === columnId ? "border-2 border-dashed border-[#cdd2d5]" : "",
+        isColumnDragSource && "opacity-0",
+      )}
       style={{
         flexGrow: 1,
         flexShrink: 0,
@@ -513,9 +544,24 @@ export function GetStartedKanbanLive({
 
   const renderBoardColumnHeader = (col: KanbanColumnConfig) => {
     const showCreateTask = col.taskStatus === "todo";
+    const reorderHandle = (
+      <button
+        type="button"
+        className="inline-flex size-[24px] shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent p-0 text-[#727d83] active:cursor-grabbing hover:text-[#0b191f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/15 motion-reduce:transition-none"
+        aria-label={`Reorder column: ${col.title}`}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          columnDrag.columnDragHandlePointerDown(col.id)(e);
+        }}
+      >
+        <GripVertical className="size-[18px]" strokeWidth={2} aria-hidden />
+      </button>
+    );
     return (
       <KanbanBoardColumnHeader
         col={col}
+        reorderHandle={reorderHandle}
         columnIconSrc={boardColumnIconSrc(col.kind)}
         searchOpen={boardColumnSearchOpen[col.id] ?? false}
         query={boardColumnSearchQuery[col.id] ?? ""}
@@ -592,31 +638,53 @@ export function GetStartedKanbanLive({
         }
       `}</style>
       <div
-        ref={boardScrollRef}
+        ref={setKanbanBoardRowRef}
         data-kanban-board-row
         className="content-stretch relative z-[1] flex w-full min-w-0 flex-1 min-h-0 flex-nowrap items-stretch gap-[16px] overflow-x-auto"
       >
-        {columns.map((col) => {
+        {columns.map((col, index) => {
           const rawList = columnTasks[col.id] ?? [];
           const q = boardColumnSearchQuery[col.id] ?? "";
           const list = filterKanbanTasksBySearchQueryRespectingDrag(rawList, q, draggingId);
           const emptyTail = col.taskStatus === "todo" && milestoneId ? " for this milestone" : "";
           const searchFilterActive = q.trim().length > 0 && rawList.length > 0 && list.length === 0;
-          return colWrap(
-            col.id,
-            <>
-              {list.map(renderLiveCard)}
-              {list.length === 0 && (
-                <p className="text-[13px] text-[#727d83]">
-                  {searchFilterActive
-                    ? "No tasks match your search."
-                    : `No tasks in ${col.title}${emptyTail}.`}
-                </p>
+          const showDropBar =
+            columnDrag.draggingColumnId != null &&
+            columnDrag.dropInsertSlot != null &&
+            columnDrag.dropInsertSlot === index;
+          return (
+            <Fragment key={col.id}>
+              {showDropBar ? (
+                <div
+                  className="pointer-events-none shrink-0 self-stretch rounded-full bg-primary w-1 min-h-[120px] shadow-[0_0_12px_color-mix(in_srgb,var(--primary)_35%,transparent)]"
+                  aria-hidden
+                />
+              ) : null}
+              {colWrap(
+                col.id,
+                <>
+                  {list.map(renderLiveCard)}
+                  {list.length === 0 && (
+                    <p className="text-[13px] text-[#727d83]">
+                      {searchFilterActive
+                        ? "No tasks match your search."
+                        : `No tasks in ${col.title}${emptyTail}.`}
+                    </p>
+                  )}
+                </>,
+                renderBoardColumnHeader(col),
+                columnDrag.draggingColumnId === col.id,
               )}
-            </>,
-            renderBoardColumnHeader(col),
+            </Fragment>
           );
         })}
+        {columnDrag.draggingColumnId != null &&
+        columnDrag.dropInsertSlot === columns.length ? (
+          <div
+            className="pointer-events-none shrink-0 self-stretch rounded-full bg-primary w-1 min-h-[120px] shadow-[0_0_12px_color-mix(in_srgb,var(--primary)_35%,transparent)]"
+            aria-hidden
+          />
+        ) : null}
         <div className="flex shrink-0 flex-col items-stretch justify-start pt-[16px]">
           <button
             type="button"

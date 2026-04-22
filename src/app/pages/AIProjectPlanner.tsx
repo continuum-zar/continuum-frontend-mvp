@@ -20,7 +20,7 @@ import {
     CollapsibleTrigger,
 } from '../components/ui/collapsible';
 import { projectMainHref } from '@/app/data/dashboardPlaceholderProjects';
-import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from '@/lib/workspacePaths';
+import { WORKSPACE_BASE, WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from '@/lib/workspacePaths';
 import {
     usePlannerChat,
     useUploadPlannerFile,
@@ -328,7 +328,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     // -----------------------------------------------------------------------
     const totalPlannedTasks = plan?.milestones.reduce((s, m) => s + m.tasks.length, 0) ?? 0;
 
-    const backHref = embedded ? workspaceJoin(WORKSPACE_SPRINT_SEGMENT) : workspaceJoin('entry');
+    const backHref = embedded ? workspaceJoin(WORKSPACE_SPRINT_SEGMENT) : WORKSPACE_BASE;
 
     const displayMissingAreas =
         missingAreas.length > 0 ? missingAreas : [...DEFAULT_MISSING_HINTS];

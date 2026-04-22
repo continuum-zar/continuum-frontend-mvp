@@ -10,6 +10,8 @@ import { useKanbanColumnSearchDismiss } from "./KanbanColumnSearchControls";
 
 export type KanbanBoardColumnHeaderProps = {
   col: KanbanColumnConfig;
+  /** Optional control shown before the column icon (e.g. reorder grip). */
+  reorderHandle?: ReactNode;
   columnIconSrc: string;
   searchOpen: boolean;
   query: string;
@@ -31,6 +33,7 @@ export type KanbanBoardColumnHeaderProps = {
  */
 export function KanbanBoardColumnHeader({
   col,
+  reorderHandle,
   columnIconSrc,
   searchOpen,
   query,
@@ -61,6 +64,9 @@ export function KanbanBoardColumnHeader({
     >
       <div className="content-stretch flex min-w-0 items-center justify-between gap-2">
         <div className="content-stretch flex min-w-0 flex-1 gap-[8px] items-center">
+          {reorderHandle != null ? (
+            <span className="flex shrink-0 items-center">{reorderHandle}</span>
+          ) : null}
           <div className="relative shrink-0 size-[16px]">
             <img alt="" className="absolute block max-w-none size-full" src={columnIconSrc} />
           </div>

@@ -202,11 +202,12 @@ const appRoutes = [
       </AuthGuard>
     ),
   },
+  /** Bookmarks / old links: skip async board resolver (was prone to hanging on skeleton). */
   {
     path: `${WORKSPACE_BASE}/entry`,
     element: (
       <AuthGuard>
-        <PostAuthBoardRedirect />
+        <LegacyWorkspacePathRedirect targetPathname={WORKSPACE_BASE} />
       </AuthGuard>
     ),
   },
@@ -371,7 +372,7 @@ const appRoutes = [
   },
   {
     path: `${LEGACY_WORKSPACE_BASE}/entry`,
-    element: <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/entry`} />,
+    element: <LegacyWorkspacePathRedirect targetPathname={WORKSPACE_BASE} />,
   },
   {
     path: `${LEGACY_WORKSPACE_BASE}/${LEGACY_WORKSPACE_GET_STARTED_SEGMENT}`,

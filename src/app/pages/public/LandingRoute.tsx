@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router";
 import "@/styles/load-decorative-fonts";
 import { peekGithubOAuthReturnPath } from "@/lib/githubOAuthReturn";
-import { workspaceJoin } from "@/lib/workspacePaths";
+import { WORKSPACE_BASE } from "@/lib/workspacePaths";
 import { useAuthStore } from "@/store/authStore";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import LandingPage from "./LandingPage";
@@ -49,7 +49,7 @@ export function LandingRoute() {
 
     return (
       <Navigate
-        to={{ pathname: workspaceJoin("entry"), search: location.search }}
+        to={{ pathname: WORKSPACE_BASE, search: location.search }}
         replace
       />
     );
