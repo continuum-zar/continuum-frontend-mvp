@@ -49,6 +49,10 @@ export interface TaskAPIResponse {
     project_id: number;
     milestone_id?: number | null;
     assigned_to?: number | null;
+    /** Canonical multi-assign list from the API (`GET`/`PATCH` task payloads). */
+    assignee_ids?: number[] | null;
+    /** When the API supports multi-assign, all assignee user ids (preferred over `assigned_to` alone). */
+    assigned_user_ids?: number[] | null;
     due_date?: string | null;
     /** Estimated effort in hours (time tracking). */
     estimated_hours?: number | null;
@@ -99,6 +103,26 @@ export function getTaskLinkedBranches(task: TaskAPIResponse): TaskLinkedBranch[]
                 linked_branch_full_ref: task.linked_branch_full_ref ?? null,
             },
         ];
+    }
+    return [];
+}
+
+/** Resolved assignee user ids for a task (multi-assign from `assignee_ids` / `assigned_user_ids`). */
+export function getTaskAssigneeUserIds(
+    task: Pick<TaskAPIResponse, 'assignee_ids' | 'assigned_to' | 'assigned_user_ids'>,
+): number[] {
+    const fromApi = task.assignee_ids;
+    if (Array.isArray(fromApi) && fromApi.length > 0) {
+        const deduped = [...new Set(fromApi.filter((id) => typeof id === 'number' && Number.isFinite(id)))];
+        return deduped.sort((a, b) => a - b);
+    }
+    const raw = task.assigned_user_ids;
+    if (Array.isArray(raw) && raw.length > 0) {
+        const deduped = [...new Set(raw.filter((id) => typeof id === 'number' && Number.isFinite(id)))];
+        return deduped.sort((a, b) => a - b);
+    }
+    if (task.assigned_to != null && Number.isFinite(task.assigned_to)) {
+        return [task.assigned_to];
     }
     return [];
 }

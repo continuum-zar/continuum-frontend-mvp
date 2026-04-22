@@ -79,6 +79,8 @@ import {
     deleteAttachment,
     fetchTaskTimeline,
     assignTask,
+    removeTaskAssignee,
+    setTaskAssignees,
     addTaskLabel,
     removeTaskLabel,
 } from './tasks';
@@ -89,6 +91,7 @@ import type { SubmitIssueReportBody } from './feedback';
 import type { KanbanBoardColumnApi } from '@/types/kanban';
 import {
     getTaskLinkedBranches,
+    getTaskAssigneeUserIds,
     type Task,
     type TaskAPIResponse,
     type ScopeWeight,
@@ -137,6 +140,19 @@ function invalidateTasksForCachedTaskProject(
 }
 
 /** Merge `linked_branches` and legacy flat fields for cache updates (matches API responses). */
+/** Keep `assignee_ids`, `assigned_user_ids`, and legacy `assigned_to` aligned after a cache patch. */
+export function applyAssigneeIdsToTaskResponse(task: TaskAPIResponse, ids: number[]): TaskAPIResponse {
+    const sorted = [...new Set(ids.filter((id) => typeof id === 'number' && Number.isFinite(id)))].sort(
+        (a, b) => a - b,
+    );
+    return {
+        ...task,
+        assignee_ids: sorted,
+        assigned_user_ids: sorted,
+        assigned_to: sorted.length > 0 ? sorted[0]! : null,
+    };
+}
+
 export function applyLinkedBranchesToTaskResponse(
     task: TaskAPIResponse,
     branches: TaskLinkedBranch[],
@@ -194,6 +210,65 @@ function patchTaskInAssignedCreatedLists(
         { queryKey: [...projectKeys.all, 'created-tasks'], exact: false },
         (old) => old?.map(patchRow) ?? old,
     );
+}
+
+function patchTaskAssigneesInProjectKanbanCaches(
+    queryClient: QueryClient,
+    taskId: number | string,
+    projectId: number,
+    assigneeUserIds: number[],
+) {
+    const tid = String(taskId);
+    const nextAssignees = assigneeUserIds.map(String);
+    const patch = (t: Task): Task =>
+        t.id === tid ? { ...t, assignees: nextAssignees } : t;
+
+    queryClient.setQueryData<Task[]>(projectKeys.tasks(projectId), (old) => old?.map(patch) ?? old);
+
+    type TasksPage = { tasks: Task[]; total: number; skip: number; limit: number };
+    queryClient.setQueryData<InfiniteData<TasksPage>>(projectKeys.tasksInfinite(projectId), (old) => {
+        if (!old?.pages?.length) return old;
+        return {
+            ...old,
+            pages: old.pages.map((p) => ({
+                ...p,
+                tasks: p.tasks.map(patch),
+            })),
+        };
+    });
+}
+
+function patchTaskAssigneesInAssignedCreatedLists(
+    queryClient: QueryClient,
+    taskId: number | string,
+    assigneeUserIds: number[],
+) {
+    const tid = String(taskId);
+    const patchRow = (row: TaskAPIResponse) =>
+        String(row.id) === tid ? applyAssigneeIdsToTaskResponse(row, assigneeUserIds) : row;
+    queryClient.setQueriesData<TaskAPIResponse[]>(
+        { queryKey: [...projectKeys.all, 'assigned-tasks'], exact: false },
+        (old) => old?.map(patchRow) ?? old,
+    );
+    queryClient.setQueriesData<TaskAPIResponse[]>(
+        { queryKey: [...projectKeys.all, 'created-tasks'], exact: false },
+        (old) => old?.map(patchRow) ?? old,
+    );
+}
+
+export function optimisticApplyAssignees(
+    queryClient: QueryClient,
+    taskId: number | string,
+    assigneeUserIds: number[],
+) {
+    const prev = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
+    if (!prev) return;
+    queryClient.setQueryData(
+        taskDetailKey(taskId),
+        applyAssigneeIdsToTaskResponse(prev, assigneeUserIds),
+    );
+    patchTaskAssigneesInProjectKanbanCaches(queryClient, taskId, prev.project_id, assigneeUserIds);
+    patchTaskAssigneesInAssignedCreatedLists(queryClient, taskId, assigneeUserIds);
 }
 
 function optimisticApplyLinkedBranches(
@@ -994,15 +1069,135 @@ export function useAssignTask() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: ({ taskId, userId }: { taskId: string | number; userId: number | null }) => assignTask(taskId, userId),
-        onSuccess: (_data, { taskId }) => {
+        onMutate: async ({ taskId, userId }) => {
+            const tid = taskId;
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(tid) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
+            if (!prevDetail) return {};
+            const nextIds =
+                userId == null
+                    ? []
+                    : [...new Set([...getTaskAssigneeUserIds(prevDetail), userId])].sort((a, b) => a - b);
+            optimisticApplyAssignees(queryClient, tid, nextIds);
+            return { prevDetail };
+        },
+        onSuccess: (data, { taskId }) => {
             toast.success('Assignee updated');
-            if (taskId) {
-                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
-                queryClient.invalidateQueries({ queryKey: taskDetailKey(taskId) });
+            if (taskId && data) {
+                queryClient.setQueryData(taskDetailKey(taskId), data);
+                void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             }
         },
-        onError: (err) => {
+        onError: (err, variables, ctx) => {
+            if (ctx?.prevDetail != null) {
+                queryClient.setQueryData(taskDetailKey(variables.taskId), ctx.prevDetail);
+                patchTaskAssigneesInProjectKanbanCaches(
+                    queryClient,
+                    variables.taskId,
+                    ctx.prevDetail.project_id,
+                    getTaskAssigneeUserIds(ctx.prevDetail),
+                );
+                patchTaskAssigneesInAssignedCreatedLists(
+                    queryClient,
+                    variables.taskId,
+                    getTaskAssigneeUserIds(ctx.prevDetail),
+                );
+            }
             toast.error(getApiErrorMessage(err, 'Failed to update assignee'));
+        },
+        onSettled: (_data, _err, { taskId }) => {
+            invalidateTasksForCachedTaskProject(queryClient, taskId);
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
+
+export function useRemoveTaskAssignee() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ taskId, userId }: { taskId: string | number; userId: number }) =>
+            removeTaskAssignee(taskId, userId),
+        onMutate: async ({ taskId, userId }) => {
+            const tid = taskId;
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(tid) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
+            if (!prevDetail) return {};
+            const nextIds = getTaskAssigneeUserIds(prevDetail)
+                .filter((id) => id !== userId)
+                .sort((a, b) => a - b);
+            optimisticApplyAssignees(queryClient, tid, nextIds);
+            return { prevDetail };
+        },
+        onSuccess: (data, { taskId }) => {
+            toast.success('Assignee removed');
+            if (taskId && data) {
+                queryClient.setQueryData(taskDetailKey(taskId), data);
+                void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            }
+        },
+        onError: (err, variables, ctx) => {
+            if (ctx?.prevDetail != null) {
+                queryClient.setQueryData(taskDetailKey(variables.taskId), ctx.prevDetail);
+                patchTaskAssigneesInProjectKanbanCaches(
+                    queryClient,
+                    variables.taskId,
+                    ctx.prevDetail.project_id,
+                    getTaskAssigneeUserIds(ctx.prevDetail),
+                );
+                patchTaskAssigneesInAssignedCreatedLists(
+                    queryClient,
+                    variables.taskId,
+                    getTaskAssigneeUserIds(ctx.prevDetail),
+                );
+            }
+            toast.error(getApiErrorMessage(err, 'Failed to remove assignee'));
+        },
+        onSettled: (_data, _err, { taskId }) => {
+            invalidateTasksForCachedTaskProject(queryClient, taskId);
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
+
+export function useSetTaskAssignees() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ taskId, userIds }: { taskId: string | number; userIds: number[] }) =>
+            setTaskAssignees(taskId, userIds),
+        onMutate: async ({ taskId, userIds }) => {
+            const tid = taskId;
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(tid) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
+            if (!prevDetail) return {};
+            const nextIds = [...new Set(userIds.filter((id) => typeof id === 'number' && Number.isFinite(id)))].sort(
+                (a, b) => a - b,
+            );
+            optimisticApplyAssignees(queryClient, tid, nextIds);
+            return { prevDetail };
+        },
+        onSuccess: (data, { taskId }) => {
+            toast.success('Assignees updated');
+            if (taskId && data) {
+                queryClient.setQueryData(taskDetailKey(taskId), data);
+                void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            }
+        },
+        onError: (err, variables, ctx) => {
+            if (ctx?.prevDetail != null) {
+                queryClient.setQueryData(taskDetailKey(variables.taskId), ctx.prevDetail);
+                patchTaskAssigneesInProjectKanbanCaches(
+                    queryClient,
+                    variables.taskId,
+                    ctx.prevDetail.project_id,
+                    getTaskAssigneeUserIds(ctx.prevDetail),
+                );
+                patchTaskAssigneesInAssignedCreatedLists(
+                    queryClient,
+                    variables.taskId,
+                    getTaskAssigneeUserIds(ctx.prevDetail),
+                );
+            }
+            toast.error(getApiErrorMessage(err, 'Failed to update assignees'));
         },
         onSettled: (_data, _err, { taskId }) => {
             invalidateTasksForCachedTaskProject(queryClient, taskId);

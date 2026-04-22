@@ -9,6 +9,7 @@ import { ArrowLeft, Flag, GripVertical, Plus, Trash2 } from "lucide-react";
 import { CreateTaskLiveModal } from "../CreateTaskLiveModal";
 import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
 import { kanbanTaskDescriptionPreview } from "./kanbanTaskDescriptionPreview";
+import { KanbanAssigneeAvatars } from "./KanbanAssigneeAvatars";
 import { KanbanTaskMetaPills } from "./KanbanTaskMetaPills";
 import { KanbanBoardColumnHeader } from "./KanbanBoardColumnHeader";
 import { KanbanColumnHeaderKebabMenu } from "./KanbanColumnHeaderKebabMenu";
@@ -23,6 +24,7 @@ import {
 import { cn } from "@/app/components/ui/utils";
 import {
   useAssignTask,
+  useRemoveTaskAssignee,
   useDeleteProjectKanbanColumn,
   useDeleteTask,
   useProjectKanbanBoard,
@@ -35,7 +37,6 @@ import { reorderKanbanColumns } from "@/lib/kanbanColumnReorder";
 import { useKanbanColumnPointerDrag } from "@/lib/useKanbanColumnPointerDrag";
 import { useKanbanPointerDrag } from "@/lib/useKanbanPointerDrag";
 import { workspaceJoin } from "@/lib/workspacePaths";
-import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 import { taskPriorityFlagClass, taskPriorityLabel, type Task, type TaskStatus } from "@/types/task";
 
@@ -89,6 +90,7 @@ export function GetStartedKanbanLive({
   const updateStatusMutation = useUpdateTaskStatus(projectId);
   const deleteTaskMutation = useDeleteTask(projectId);
   const assignTaskMutation = useAssignTask();
+  const removeTaskAssigneeMutation = useRemoveTaskAssignee();
   const pendingMoveRef = useRef(new Set<string>());
   const kanbanInitializedRef = useRef(false);
   const kanbanLastSavedSerializedRef = useRef<string | null>(null);
@@ -316,13 +318,9 @@ export function GetStartedKanbanLive({
     const checklistPct =
       checklistTotal > 0 ? Math.min(100, Math.round((checklistDone / checklistTotal) * 100)) : 0;
     const progressFraction = checklistTotal > 0 ? checklistPct / 100 : 0;
-    const assigneeUserId =
-      task.assignees.length > 0 && task.assignees[0] ? Number(task.assignees[0]) : null;
-    const assignee =
-      assigneeUserId != null && Number.isFinite(assigneeUserId)
-        ? memberByUserId.get(assigneeUserId)
-        : undefined;
-    const assigneeMissing = assigneeUserId != null && assignee == null;
+    const assigneeUserIds = task.assignees
+      .map((s) => Number(s))
+      .filter((n) => Number.isFinite(n));
 
     const taskPath = workspaceJoin("task", String(task.id));
     const taskSearch = searchParams.toString();
@@ -349,10 +347,12 @@ export function GetStartedKanbanLive({
         currentColumnKind={resolvedCol?.kind ?? "todo"}
         moveColumnOptions={columns.map((c) => ({ id: c.id, label: c.title }))}
         members={members}
-        currentAssigneeId={assigneeUserId}
+        currentAssigneeIds={assigneeUserIds}
         onAssignMember={(userId) => {
-          if (userId === assigneeUserId) return;
           assignTaskMutation.mutate({ taskId: task.id, userId });
+        }}
+        onUnassignMember={(userId) => {
+          removeTaskAssigneeMutation.mutate({ taskId: task.id, userId });
         }}
         onOpenTask={() => navigate(taskHref)}
         onEditTask={() => {
@@ -435,37 +435,13 @@ export function GetStartedKanbanLive({
               </div>
             </div>
             <div className="content-stretch flex items-center justify-between relative shrink-0 w-full">
-              <div className="content-stretch flex min-w-0 items-center relative shrink-0">
-                {assignee ? (
-                  <div
-                    className="content-stretch flex shrink-0 items-center justify-center rounded-[999px] border border-solid border-white size-[24px]"
-                    style={{ backgroundColor: memberAvatarBackground(assignee.userId) }}
-                    title={assignee.name}
-                  >
-                    <span className="font-['Satoshi:Medium',sans-serif] text-[9px] leading-[0.4] text-white">
-                      {assignee.initials}
-                    </span>
-                  </div>
-                ) : assigneeMissing ? (
-                  <div
-                    className="flex size-[24px] shrink-0 items-center justify-center rounded-[999px] border border-solid border-[#e4e8eb] bg-[#f5f7f8]"
-                    title={`Assignee (user #${assigneeUserId})`}
-                  >
-                    <span className="font-['Satoshi:Medium',sans-serif] text-[9px] text-[#727d83]">?</span>
-                  </div>
-                ) : (
-                  <div className="flex min-w-0 max-w-full items-center gap-1.5">
-                    <div
-                      className="flex size-[24px] shrink-0 items-center justify-center rounded-[999px] border border-dashed border-[#cdd2d5] bg-[#fafbfc]"
-                      title="Unassigned"
-                    >
-                      <span className="text-[10px] text-[#727d83]">—</span>
-                    </div>
-                    <span className="truncate font-['Satoshi:Medium',sans-serif] text-[11px] text-[#727d83]">
-                      Unassigned
-                    </span>
-                  </div>
-                )}
+              <div className="content-stretch relative flex min-w-0 shrink-0 items-center">
+                <KanbanAssigneeAvatars
+                  assigneeUserIds={assigneeUserIds}
+                  memberByUserId={memberByUserId}
+                  sizePx={24}
+                  variant="card"
+                />
               </div>
               <KanbanTaskMetaPills
                 attachments={task.attachments}

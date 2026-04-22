@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getTaskLinkedBranches, type TaskAPIResponse } from './task';
+import { getTaskAssigneeUserIds, getTaskLinkedBranches, type TaskAPIResponse } from './task';
 
 const base: TaskAPIResponse = {
     id: 1,
@@ -44,5 +44,34 @@ describe('getTaskLinkedBranches', () => {
     it('returns empty when nothing is linked', () => {
         expect(getTaskLinkedBranches({ ...base })).toEqual([]);
         expect(getTaskLinkedBranches({ ...base, linked_branches: [] })).toEqual([]);
+    });
+});
+
+describe('getTaskAssigneeUserIds', () => {
+    it('prefers assignee_ids when non-empty', () => {
+        expect(
+            getTaskAssigneeUserIds({
+                ...base,
+                assigned_to: 9,
+                assignee_ids: [2, 7],
+                assigned_user_ids: [5, 12],
+            }),
+        ).toEqual([2, 7]);
+    });
+
+    it('prefers assigned_user_ids when assignee_ids absent and list is non-empty', () => {
+        expect(
+            getTaskAssigneeUserIds({
+                ...base,
+                assigned_to: 9,
+                assigned_user_ids: [5, 12, 5],
+            }),
+        ).toEqual([5, 12]);
+    });
+
+    it('falls back to assigned_to when assignee_ids and assigned_user_ids are absent or empty', () => {
+        expect(getTaskAssigneeUserIds({ ...base, assigned_to: 3 })).toEqual([3]);
+        expect(getTaskAssigneeUserIds({ ...base, assigned_to: 3, assigned_user_ids: [] })).toEqual([3]);
+        expect(getTaskAssigneeUserIds({ ...base })).toEqual([]);
     });
 });

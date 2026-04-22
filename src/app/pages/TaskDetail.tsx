@@ -47,6 +47,7 @@ import type { Attachment } from '@/types/attachment';
 import { formatDistanceToNow } from 'date-fns';
 import {
   TASK_PRIORITY_OPTIONS,
+  getTaskAssigneeUserIds,
   taskPriorityFlagClass,
   taskPriorityLabel,
   type ScopeWeight,
@@ -683,7 +684,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   if (loading) return <TaskDetailSkeleton />;
   if (taskError || !task) return <TaskNotFound />;
 
-  const assignedMember = members?.find(m => m.userId === task.assigned_to);
+  const assigneeUserIds = getTaskAssigneeUserIds(task);
   const mappedAttachments = (attachments ?? []).map(mapAttachment);
   const sortedComments = [...(comments ?? [])].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
@@ -939,30 +940,39 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   <UserRoundPlus size={16} />
                 </button>
               </div>
-              <div className="flex items-center gap-3">
-                {assignedMember ? (
-                  <div className="relative">
-                    <div
-                      className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
-                      style={{ backgroundColor: AVATAR_COLORS[assignedMember.id % AVATAR_COLORS.length] }}
-                    >
-                      {assignedMember.initials}
-                    </div>
-                    <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-white bg-black">
-                      <Check size={10} className="text-white" />
-                    </div>
-                  </div>
-                ) : task.assigned_to ? (
-                  <div className="relative">
-                    <div
-                      className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
-                      style={{ backgroundColor: AVATAR_COLORS[0] }}
-                    >
-                      U{task.assigned_to}
-                    </div>
-                  </div>
-                ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                {assigneeUserIds.length === 0 ? (
                   <p className="text-[13px] text-[#727d83]">No one assigned</p>
+                ) : (
+                  assigneeUserIds.map((uid) => {
+                    const m = members?.find((mem) => mem.userId === uid);
+                    return (
+                      <div key={uid} className="flex items-center gap-2">
+                        {m ? (
+                          <div className="relative">
+                            <div
+                              className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
+                              style={{ backgroundColor: AVATAR_COLORS[m.id % AVATAR_COLORS.length] }}
+                              title={m.name}
+                            >
+                              {m.initials}
+                            </div>
+                            <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-white bg-black">
+                              <Check size={10} className="text-white" aria-hidden />
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
+                            style={{ backgroundColor: AVATAR_COLORS[0] }}
+                            title={`User #${uid}`}
+                          >
+                            U{uid}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </section>
@@ -1336,7 +1346,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         onOpenChange={setAssignModalOpen}
         projectId={task.project_id}
         taskId={taskId}
-        currentAssigneeId={task.assigned_to ?? null}
+        currentAssigneeIds={assigneeUserIds}
       />
       <LogTimeModal
         open={logTimeOpen}

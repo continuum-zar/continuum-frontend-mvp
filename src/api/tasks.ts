@@ -382,10 +382,38 @@ export async function fetchTaskTimelinePage(
     return { entries, total, hasMore };
 }
 
-/** Assign a task to a user. PATCH /api/v1/tasks/{id}/assign. */
-export async function assignTask(taskId: number | string, userId: number | null): Promise<TaskAPIResponse> {
-    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { user_id: userId });
+/**
+ * Set task assignees (full replace). PATCH /tasks/{id}/assign with `user_ids`.
+ */
+export async function setTaskAssignees(taskId: number | string, userIds: number[]): Promise<TaskAPIResponse> {
+    const unique = [...new Set(userIds.filter((id) => typeof id === 'number' && Number.isFinite(id)))].sort(
+        (a, b) => a - b,
+    );
+    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { user_ids: unique });
     return data;
+}
+
+/** Add one assignee without replacing the rest. PATCH /tasks/{id}/assign with `add_user_id`. */
+export async function addTaskAssignee(taskId: number | string, userId: number): Promise<TaskAPIResponse> {
+    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { add_user_id: userId });
+    return data;
+}
+
+/** Remove one assignee without affecting others. PATCH /tasks/{id}/assign with `remove_user_id`. */
+export async function removeTaskAssignee(taskId: number | string, userId: number): Promise<TaskAPIResponse> {
+    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { remove_user_id: userId });
+    return data;
+}
+
+/**
+ * Kanban-style assign: add `userId` to the current assignee set, or clear all when `userId` is null.
+ * PATCH /tasks/{id}/assign (`add_user_id` or `user_ids: []`).
+ */
+export async function assignTask(taskId: number | string, userId: number | null): Promise<TaskAPIResponse> {
+    if (userId == null) {
+        return setTaskAssignees(taskId, []);
+    }
+    return addTaskAssignee(taskId, userId);
 }
 
 /** Task context: top relevant source file paths for this task (RAG). GET /tasks/{id}/context */
