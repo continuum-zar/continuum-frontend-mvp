@@ -383,26 +383,37 @@ export async function fetchTaskTimelinePage(
 }
 
 /**
- * Set task assignees (multi-assign). PATCH /tasks/{id}/assign.
- * Uses `user_id` when there is at most one assignee (legacy API), otherwise `user_ids`.
+ * Set task assignees (full replace). PATCH /tasks/{id}/assign with `user_ids`.
  */
 export async function setTaskAssignees(taskId: number | string, userIds: number[]): Promise<TaskAPIResponse> {
     const unique = [...new Set(userIds.filter((id) => typeof id === 'number' && Number.isFinite(id)))].sort(
         (a, b) => a - b,
     );
-    const body =
-        unique.length === 0
-            ? { user_id: null as number | null }
-            : unique.length === 1
-              ? { user_id: unique[0]! }
-              : { user_ids: unique };
-    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, body);
+    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { user_ids: unique });
     return data;
 }
 
-/** Assign a task to a single user (or clear). PATCH /api/v1/tasks/{id}/assign. */
+/** Add one assignee without replacing the rest. PATCH /tasks/{id}/assign with `add_user_id`. */
+export async function addTaskAssignee(taskId: number | string, userId: number): Promise<TaskAPIResponse> {
+    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { add_user_id: userId });
+    return data;
+}
+
+/** Remove one assignee without affecting others. PATCH /tasks/{id}/assign with `remove_user_id`. */
+export async function removeTaskAssignee(taskId: number | string, userId: number): Promise<TaskAPIResponse> {
+    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/assign`, { remove_user_id: userId });
+    return data;
+}
+
+/**
+ * Kanban-style assign: add `userId` to the current assignee set, or clear all when `userId` is null.
+ * PATCH /tasks/{id}/assign (`add_user_id` or `user_ids: []`).
+ */
 export async function assignTask(taskId: number | string, userId: number | null): Promise<TaskAPIResponse> {
-    return setTaskAssignees(taskId, userId == null ? [] : [userId]);
+    if (userId == null) {
+        return setTaskAssignees(taskId, []);
+    }
+    return addTaskAssignee(taskId, userId);
 }
 
 /** Task context: top relevant source file paths for this task (RAG). GET /tasks/{id}/context */

@@ -45,6 +45,8 @@ export {
     downloadTaskAttachment,
     fetchTaskTimeline,
     assignTask,
+    addTaskAssignee,
+    removeTaskAssignee,
     setTaskAssignees,
     getTaskContext,
     getRelatedTasks,
