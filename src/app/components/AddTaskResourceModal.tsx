@@ -1,11 +1,13 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Upload, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { ArrowLeft, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { useUploadAttachment, useAddAttachmentLink } from "@/api/hooks";
+import { getApiErrorMessage, useAddAttachmentLink } from "@/api/hooks";
+import { uploadTaskAttachment } from "@/api/tasks";
 
 import {
   Dialog,
@@ -21,58 +23,113 @@ const uploadGradient =
 /** Matches copy shown in the modal (50mb). */
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 
+export type TaskResourcePendingUploadRow = {
+  clientId: string;
+  filename: string;
+  status: "uploading" | "error";
+  errorMessage?: string;
+};
+
+type PendingFileEntry = { clientId: string; file: File };
+
 type AddTaskResourceModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   taskId?: string | number;
+  /** Syncs optimistic / in-progress rows shown on the task detail resource list. */
+  setPendingUploadRows?: Dispatch<SetStateAction<TaskResourcePendingUploadRow[]>>;
 };
 
-export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskResourceModalProps) {
+function newClientId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function formatShortFileSize(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"] as const;
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+function invalidateTaskAttachmentQueries(queryClient: ReturnType<typeof useQueryClient>, taskId: string | number) {
+  void queryClient.invalidateQueries({ queryKey: ["taskAttachments", taskId] });
+  void queryClient.invalidateQueries({ queryKey: ["taskTimeline", taskId] });
+}
+
+export function AddTaskResourceModal({
+  open,
+  onOpenChange,
+  taskId,
+  setPendingUploadRows,
+}: AddTaskResourceModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
+  const queryClient = useQueryClient();
   const [linkUrl, setLinkUrl] = useState("");
   const [displayText, setDisplayText] = useState("");
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<PendingFileEntry[]>([]);
   const [isFileDragActive, setIsFileDragActive] = useState(false);
+  const [batchUploading, setBatchUploading] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+  const [perFileErrors, setPerFileErrors] = useState<Record<string, string>>({});
 
-  const uploadMutation = useUploadAttachment(taskId ?? null);
   const addLinkMutation = useAddAttachmentLink(taskId ?? null);
 
   const canUseApi = taskId != null && taskId !== "";
-  const pending = uploadMutation.isPending || addLinkMutation.isPending;
+  const pending = batchUploading || addLinkMutation.isPending;
   const canSubmit =
     canUseApi &&
     !pending &&
-    (pendingFile != null || linkUrl.trim().length > 0);
+    (pendingFiles.length > 0 || linkUrl.trim().length > 0);
 
   useEffect(() => {
     if (!open) return;
     setLinkUrl("");
     setDisplayText("");
-    setPendingFile(null);
+    setPendingFiles([]);
+    setBatchUploading(false);
+    setBatchProgress(null);
+    setPerFileErrors({});
     dragDepthRef.current = 0;
     setIsFileDragActive(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [open]);
 
-  const applySelectedFile = useCallback((file: File | null) => {
-    if (file && file.size > MAX_FILE_SIZE_BYTES) {
-      toast.error("File is too large. Maximum size is 50 MB.");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
+  const addValidatedFiles = useCallback((files: File[]) => {
+    if (files.length === 0) return;
+    const accepted: PendingFileEntry[] = [];
+    for (const file of files) {
+      const id = newClientId();
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        toast.error(`"${file.name}" is too large. Maximum size is 50 MB.`);
+        continue;
+      }
+      accepted.push({ clientId: id, file });
     }
-    setPendingFile(file);
-    if (file) setLinkUrl("");
+    if (accepted.length === 0) return;
+    setPendingFiles((prev) => [...prev, ...accepted]);
+    setLinkUrl("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
+  const removePendingFile = useCallback((clientId: string) => {
+    setPendingFiles((prev) => prev.filter((p) => p.clientId !== clientId));
+    setPerFileErrors((prev) => {
+      const next = { ...prev };
+      delete next[clientId];
+      return next;
+    });
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    applySelectedFile(file);
+    const list = e.target.files;
+    if (!list?.length) return;
+    addValidatedFiles(Array.from(list));
   };
 
-  const dataTransferHasFiles = (dt: DataTransfer) =>
-    [...dt.types].includes("Files");
+  const dataTransferHasFiles = (dt: DataTransfer) => [...dt.types].includes("Files");
 
   const handleDropZoneDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -102,15 +159,65 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
     e.stopPropagation();
     dragDepthRef.current = 0;
     setIsFileDragActive(false);
-    const file = e.dataTransfer.files?.[0] ?? null;
-    applySelectedFile(file);
+    const list = e.dataTransfer.files;
+    if (!list?.length) return;
+    addValidatedFiles(Array.from(list));
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit || !canUseApi) return;
+    if (!canSubmit || !canUseApi || taskId == null || taskId === "") return;
     try {
-      if (pendingFile) {
-        await uploadMutation.mutateAsync(pendingFile);
+      if (pendingFiles.length > 0) {
+        const queue = [...pendingFiles];
+        const total = queue.length;
+        setBatchUploading(true);
+        setBatchProgress({ current: 0, total });
+        setPerFileErrors({});
+
+        setPendingUploadRows?.(() =>
+          queue.map(({ clientId, file }) => ({
+            clientId,
+            filename: file.name,
+            status: "uploading" as const,
+          })),
+        );
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < queue.length; i += 1) {
+          const { clientId, file } = queue[i];
+          setBatchProgress({ current: i + 1, total });
+          try {
+            await uploadTaskAttachment(taskId, file);
+            successCount += 1;
+            invalidateTaskAttachmentQueries(queryClient, taskId);
+            setPendingUploadRows?.((prev) => prev.filter((r) => r.clientId !== clientId));
+            setPendingFiles((prev) => prev.filter((p) => p.clientId !== clientId));
+          } catch (err) {
+            failCount += 1;
+            const msg = getApiErrorMessage(err, "Upload failed");
+            setPerFileErrors((prev) => ({ ...prev, [clientId]: msg }));
+            setPendingUploadRows?.((prev) =>
+              prev.map((r) =>
+                r.clientId === clientId ? { ...r, status: "error" as const, errorMessage: msg } : r,
+              ),
+            );
+          }
+        }
+
+        if (successCount > 0 && failCount === 0) {
+          toast.success(successCount === 1 ? "Attachment uploaded successfully" : `${successCount} attachments uploaded`);
+        } else if (successCount > 0 && failCount > 0) {
+          toast.message(`${successCount} uploaded, ${failCount} failed`, {
+            description: "See the resource list or modal for details.",
+          });
+        } else if (failCount > 0) {
+          toast.error("Could not upload attachments");
+        }
+
+        setBatchUploading(false);
+        setBatchProgress(null);
         onOpenChange(false);
       } else if (linkUrl.trim()) {
         await addLinkMutation.mutateAsync({
@@ -120,9 +227,17 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
         onOpenChange(false);
       }
     } catch {
-      // Toasts handled in hooks
+      setBatchUploading(false);
+      setBatchProgress(null);
     }
   };
+
+  const dropHint =
+    pendingFiles.length === 0 ? (
+      <span>Drop files here, or use Upload</span>
+    ) : (
+      <span className="text-[#606d76]">Add more files below, or drop to append</span>
+    );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -186,7 +301,7 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
                     "relative flex min-h-[235px] w-full flex-col items-center justify-center gap-3 rounded-[12px] border-2 border-dashed px-4 py-6 transition-[border-color,background-color] duration-200 motion-reduce:transition-none",
                     isFileDragActive
                       ? "border-[var(--primary)] bg-[var(--muted)]"
-                      : "border-[var(--border)] bg-transparent"
+                      : "border-[var(--border)] bg-transparent",
                   )}
                 >
                   {isFileDragActive ? (
@@ -199,28 +314,26 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
                     id="add-task-resource-file-input"
                     ref={fileInputRef}
                     type="file"
+                    multiple
                     accept="*/*"
                     className="sr-only"
                     tabIndex={-1}
-                    aria-label="Choose file to upload"
+                    aria-label="Choose files to upload"
                     onChange={handleFileChange}
                   />
                   <button
                     type="button"
                     aria-controls="add-task-resource-file-input"
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-bold text-white"
+                    disabled={batchUploading}
+                    className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                     style={{ backgroundImage: uploadGradient }}
                   >
                     Upload
                     <Upload className="size-4" strokeWidth={2} />
                   </button>
                   <p className="max-w-full text-center font-['Satoshi',sans-serif] text-[13px] font-medium text-[#606d76]">
-                    {pendingFile ? (
-                      <span className="block truncate">{pendingFile.name}</span>
-                    ) : (
-                      <span>Drop a file here, or use Upload</span>
-                    )}
+                    {dropHint}
                   </p>
                 </div>
                 <div
@@ -228,8 +341,35 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
                   id="add-task-resource-file-constraints"
                 >
                   <p>Accepted formats: any</p>
-                  <p>Maximum file size: 50mb</p>
+                  <p>Maximum file size: 50mb (per file)</p>
                 </div>
+                {pendingFiles.length > 0 ? (
+                  <ul className="flex w-full flex-col gap-2 rounded-[10px] border border-[#e9e9e9] bg-white p-2" aria-label="Selected files">
+                    {pendingFiles.map(({ clientId, file }) => (
+                      <li
+                        key={clientId}
+                        className="flex items-start gap-2 rounded-[8px] bg-[#f9f9f9] px-3 py-2 font-['Satoshi',sans-serif] text-[13px] text-[#0b191f]"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{file.name}</p>
+                          <p className="text-[12px] text-[#727d83]">{formatShortFileSize(file.size)}</p>
+                          {perFileErrors[clientId] ? (
+                            <p className="mt-1 text-[12px] font-medium text-[#b42318]">{perFileErrors[clientId]}</p>
+                          ) : null}
+                        </div>
+                        <button
+                          type="button"
+                          className="inline-flex shrink-0 rounded-md p-1 text-[#606d76] hover:bg-[#edf0f3] hover:text-[#0b191f] disabled:opacity-40"
+                          aria-label={`Remove ${file.name}`}
+                          disabled={batchUploading}
+                          onClick={() => removePendingFile(clientId)}
+                        >
+                          <X className="size-4" strokeWidth={2} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
 
               <div className="flex w-full items-center gap-4">
@@ -245,11 +385,12 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
                     type="url"
                     placeholder="Paste a new link"
                     value={linkUrl}
+                    disabled={batchUploading}
                     onChange={(e) => {
                       setLinkUrl(e.target.value);
-                      if (e.target.value.trim()) setPendingFile(null);
+                      if (e.target.value.trim()) setPendingFiles([]);
                     }}
-                    className="w-full min-w-0 border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                    className="w-full min-w-0 border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -263,8 +404,9 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
                     type="text"
                     placeholder="Text to display"
                     value={displayText}
+                    disabled={batchUploading}
                     onChange={(e) => setDisplayText(e.target.value)}
-                    className="w-full min-w-0 border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                    className="w-full min-w-0 border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -277,14 +419,25 @@ export function AddTaskResourceModal({ open, onOpenChange, taskId }: AddTaskReso
               disabled={!canSubmit}
               onClick={handleSubmit}
               className={cn(
-                "inline-flex h-10 items-center justify-center rounded-[8px] px-4 py-2 font-['Inter',sans-serif] text-[14px] font-semibold",
+                "inline-flex h-10 min-w-[140px] items-center justify-center gap-2 rounded-[8px] px-4 py-2 font-['Inter',sans-serif] text-[14px] font-semibold",
                 canSubmit
                   ? "cursor-pointer font-bold text-white"
-                  : "cursor-not-allowed bg-[rgba(96,109,118,0.1)] text-[#606d76] opacity-50"
+                  : "cursor-not-allowed bg-[rgba(96,109,118,0.1)] text-[#606d76] opacity-50",
               )}
               style={canSubmit ? { backgroundImage: uploadGradient } : undefined}
             >
-              {pending ? "Adding…" : "Add Resource"}
+              {batchUploading && batchProgress ? (
+                <>
+                  <Loader2 className="size-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden />
+                  <span>
+                    Uploading {batchProgress.current}/{batchProgress.total}…
+                  </span>
+                </>
+              ) : addLinkMutation.isPending ? (
+                "Adding…"
+              ) : (
+                "Add Resource"
+              )}
             </button>
           </div>
         </DialogPrimitive.Content>

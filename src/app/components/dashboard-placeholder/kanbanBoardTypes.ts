@@ -1,5 +1,66 @@
 import type { KanbanBoardColumnApi } from "@/types/kanban";
-import type { Task, TaskStatus, TaskStatusAPI } from "@/types/task";
+import type { Task, TaskPriority, TaskStatus, TaskStatusAPI } from "@/types/task";
+
+/** Higher rank sorts first (top of column). Unknown / missing priority sorts last. */
+const PRIORITY_SORT_RANK: Record<TaskPriority, number> = {
+  high: 4,
+  medium: 3,
+  low: 2,
+  info: 1,
+};
+
+function prioritySortRank(priority: Task["priority"]): number {
+  if (priority == null) return 0;
+  return PRIORITY_SORT_RANK[priority] ?? 0;
+}
+
+/** To-Do columns: highest priority first. Stable for ties. */
+export function sortKanbanTasksByPriorityDescending(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) => prioritySortRank(b.priority) - prioritySortRank(a.priority));
+}
+
+/** 0–1 completion ratio; 0 when there are no checklist items. */
+export function taskChecklistCompletionRatio(task: Task): number {
+  const { total, completed } = task.checklists;
+  if (total <= 0) return 0;
+  return completed / total;
+}
+
+/** In-Progress columns: highest checklist completion first. Stable for ties. */
+export function sortKanbanTasksByChecklistCompletionDescending(tasks: Task[]): Task[] {
+  return [...tasks].sort(
+    (a, b) => taskChecklistCompletionRatio(b) - taskChecklistCompletionRatio(a),
+  );
+}
+
+/** Apply column-specific default ordering before rendering (To-Do / In-Progress only). */
+export function orderKanbanColumnTasksForDisplay(column: KanbanColumnConfig, tasks: Task[]): Task[] {
+  if (column.kind === "todo") return sortKanbanTasksByPriorityDescending(tasks);
+  if (column.kind === "in-progress") return sortKanbanTasksByChecklistCompletionDescending(tasks);
+  return [...tasks];
+}
+
+/** Tooltip / aria copy for column headers: matches {@link orderKanbanColumnTasksForDisplay} behavior. */
+export type KanbanColumnAutoSortInfo = {
+  description: string;
+};
+
+/** When non-null, tasks in this column are auto-sorted; show sort icon next to the title. */
+export function kanbanColumnAutoSortInfo(column: KanbanColumnConfig): KanbanColumnAutoSortInfo | null {
+  if (column.kind === "todo") {
+    return {
+      description:
+        "Sorted by priority: highest priority at the top. Same priority keeps a stable order.",
+    };
+  }
+  if (column.kind === "in-progress") {
+    return {
+      description:
+        "Sorted by checklist completion: most complete at the top. Same completion keeps a stable order.",
+    };
+  }
+  return null;
+}
 
 export type KanbanColumnKind = "todo" | "in-progress" | "done";
 

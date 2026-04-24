@@ -12,7 +12,8 @@ import { taskPriorityFlagClass, taskPriorityLabel, type Task } from "@/types/tas
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { cn } from "../ui/utils";
 import { VirtualList } from "@/app/components/ui/VirtualList";
-import type { KanbanColumnConfig } from "./kanbanBoardTypes";
+import { kanbanColumnAutoSortInfo, type KanbanColumnConfig } from "./kanbanBoardTypes";
+import { KanbanColumnAutoSortHint } from "./KanbanColumnAutoSortHint";
 import { KanbanColumnSearchControls } from "./KanbanColumnSearchControls";
 import { filterKanbanTasksBySearchQueryRespectingDrag } from "./kanbanColumnSearchUtils";
 import { KanbanAssigneeAvatars } from "./KanbanAssigneeAvatars";
@@ -115,19 +116,24 @@ export function SprintKanbanListView({
     return (
       <div
         onPointerDown={cardPointerDown(task.id)}
-        onClick={() =>
-          navigate(`${workspaceJoin("task", String(task.id))}?${searchParams.toString()}`)
-        }
+        onClick={() => {
+          if (!isDragging) {
+            navigate(`${workspaceJoin("task", String(task.id))}?${searchParams.toString()}`);
+          }
+        }}
         className={cn(
           "w-full select-none transition-opacity duration-100",
-          isDragging ? "opacity-0" : "cursor-open-hand",
+          isDragging ? "pointer-events-none" : "cursor-open-hand",
         )}
       >
+        {isDragging ? (
+          <div
+            className="list-kanban-drag-surface flex h-[52px] w-full shrink-0 items-center justify-center rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.55)] px-4"
+            aria-label="Original column — drop here to keep this task in this list"
+          />
+        ) : (
         <div
-          className={cn(
-            "list-kanban-drag-surface bg-white content-stretch flex w-full gap-[24px] border-solid px-[16px] py-[6px] text-left transition-colors hover:bg-[#fafbfc]",
-            isDragging ? "border-2 border-[#24B5F8]" : "border-b border-[#ebedee]",
-          )}
+          className="list-kanban-drag-surface bg-white content-stretch flex w-full gap-[24px] border-b border-[#ebedee] border-solid px-[16px] py-[6px] text-left transition-colors hover:bg-[#fafbfc]"
         >
         <div className="content-stretch flex w-[380px] shrink-0 flex-col gap-1.5">
           <div className="flex min-w-0 items-center gap-[8px]">
@@ -208,6 +214,7 @@ export function SprintKanbanListView({
           </div>
         </div>
         </div>
+        )}
       </div>
     );
   };
@@ -221,6 +228,7 @@ export function SprintKanbanListView({
   ) => {
     const list = displayList;
     const isOpen = expanded[col.id] ?? true;
+    const sortInfo = kanbanColumnAutoSortInfo(col);
 
     return (
       <div
@@ -228,22 +236,25 @@ export function SprintKanbanListView({
         className="content-stretch flex w-full flex-col items-start overflow-clip rounded-tl-[8px] rounded-tr-[8px]"
       >
         <div className="flex w-full min-w-0 shrink-0 items-center justify-between gap-3 py-[8px]">
-          <button
-            type="button"
-            onClick={() => toggle(col.id)}
-            className="flex min-w-0 max-w-[min(100%,520px)] cursor-pointer items-center gap-[8px] border-0 bg-transparent p-0 text-left"
-          >
-            <div className="relative size-[16px] shrink-0">
-              <img alt="" className="absolute block max-w-none size-full" src={iconSrcForKanbanColumnKind(col.kind)} />
-            </div>
-            <p className="font-['Satoshi:Medium',sans-serif] min-w-0 shrink truncate text-[14px] leading-[normal] not-italic text-[#606d76]">
-              {col.title}
-            </p>
-            <ChevronDown
-              className={cn("size-4 shrink-0 text-[#606d76] transition-transform", isOpen && "-rotate-180")}
-              aria-hidden
-            />
-          </button>
+          <div className="flex min-w-0 max-w-[min(100%,560px)] flex-1 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => toggle(col.id)}
+              className="flex min-w-0 flex-1 cursor-pointer items-center gap-[8px] border-0 bg-transparent p-0 text-left"
+            >
+              <div className="relative size-[16px] shrink-0">
+                <img alt="" className="absolute block max-w-none size-full" src={iconSrcForKanbanColumnKind(col.kind)} />
+              </div>
+              <p className="font-['Satoshi:Medium',sans-serif] min-w-0 flex-1 truncate text-[14px] leading-[normal] not-italic text-[#606d76]">
+                {col.title}
+              </p>
+              <ChevronDown
+                className={cn("size-4 shrink-0 text-[#606d76] transition-transform", isOpen && "-rotate-180")}
+                aria-hidden
+              />
+            </button>
+            {sortInfo != null ? <KanbanColumnAutoSortHint info={sortInfo} /> : null}
+          </div>
           <div className="flex shrink-0 flex-nowrap items-center justify-end gap-[12px]">{headerRight}</div>
         </div>
 
