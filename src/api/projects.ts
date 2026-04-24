@@ -31,12 +31,14 @@ export async function fetchProjects(): Promise<Project[]> {
 export async function createProject(body: {
     name: string;
     description?: string;
+    start_date?: string | null;
     due_date?: string | null;
     status?: string;
 }): Promise<ProjectAPIResponse> {
     const { data } = await api.post<ProjectAPIResponse>('/projects/', {
         name: body.name,
         description: body.description ?? null,
+        start_date: body.start_date ?? null,
         due_date: body.due_date ?? null,
         status: body.status ?? 'active',
     });
@@ -46,11 +48,18 @@ export async function createProject(body: {
 /** Update a project. PUT /api/v1/projects/{id}. Refetch list after success. */
 export async function updateProject(
     projectId: number | string,
-    body: { name?: string; description?: string | null; due_date?: string | null; status?: string }
+    body: {
+        name?: string;
+        description?: string | null;
+        start_date?: string | null;
+        due_date?: string | null;
+        status?: string;
+    }
 ): Promise<ProjectAPIResponse> {
     const { data } = await api.put<ProjectAPIResponse>(`/projects/${projectId}`, {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.description !== undefined && { description: body.description ?? null }),
+        ...(body.start_date !== undefined && { start_date: body.start_date ?? null }),
         ...(body.due_date !== undefined && { due_date: body.due_date ?? null }),
         ...(body.status !== undefined && { status: body.status }),
     });

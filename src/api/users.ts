@@ -9,6 +9,12 @@ export type UpdateCurrentUserBody = {
     skills?: string[];
     /** Email used on Git commits when it differs from your Continuum login; omit or null to clear. */
     git_commit_email?: string | null;
+    invoice_currency?: string;
+    bank_account_name?: string | null;
+    bank_account_number?: string | null;
+    bank_name?: string | null;
+    bank_iban?: string | null;
+    bank_swift_bic?: string | null;
 };
 
 export type CurrentUserResponse = {
@@ -23,6 +29,12 @@ export type CurrentUserResponse = {
     skills: string[];
     git_commit_email?: string | null;
     created_at?: string;
+    invoice_currency?: string;
+    bank_account_name?: string | null;
+    bank_account_number?: string | null;
+    bank_name?: string | null;
+    bank_iban?: string | null;
+    bank_swift_bic?: string | null;
 };
 
 export async function updateCurrentUserProfile(body: UpdateCurrentUserBody): Promise<CurrentUserResponse> {

@@ -136,6 +136,7 @@ function invalidateTasksForCachedTaskProject(
     const pid = task?.project_id;
     if (pid != null) {
         void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(pid) });
+        void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(pid) });
     }
 }
 
@@ -446,6 +447,7 @@ export function useCreateTask() {
         mutationFn: (body: CreateTaskBody) => createTask(body),
         onSuccess: (_data, body) => {
             queryClient.invalidateQueries({ queryKey: projectKeys.tasks(body.project_id) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(body.project_id) });
             queryClient.invalidateQueries({ queryKey: projectKeys.allTasks() });
             queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
             queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
@@ -591,7 +593,12 @@ export function useDeleteProjectKanbanColumn(projectId: number | string | undefi
 export function useCreateProject() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (body: { name: string; description?: string; due_date?: string | null }) => createProject(body),
+        mutationFn: (body: {
+            name: string;
+            description?: string;
+            start_date?: string | null;
+            due_date?: string | null;
+        }) => createProject(body),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: projectKeys.list() });
             toast.success('Project created successfully');
@@ -610,7 +617,13 @@ export function useUpdateProject() {
             body,
         }: {
             projectId: number | string;
-            body: { name?: string; description?: string | null; due_date?: string | null; status?: string };
+            body: {
+                name?: string;
+                description?: string | null;
+                start_date?: string | null;
+                due_date?: string | null;
+                status?: string;
+            };
         }) => updateProject(projectId, body),
         onSuccess: (_data, { projectId }) => {
             queryClient.invalidateQueries({ queryKey: projectKeys.list() });
@@ -670,6 +683,9 @@ export function useUpdateTaskStatus(projectId: number | string | undefined | nul
         },
         onSettled: () => {
             if (key) queryClient.invalidateQueries({ queryKey: key });
+            if (projectId != null && projectId !== '') {
+                void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(projectId) });
+            }
             queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
             queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
         },
@@ -1213,6 +1229,7 @@ export function useDeleteTask(projectId: number | string | undefined | null) {
         onSuccess: (_data, taskId) => {
             if (projectId != null && projectId !== '') {
                 void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+                void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(projectId) });
             } else {
                 invalidateTasksForCachedTaskProject(queryClient, taskId);
             }

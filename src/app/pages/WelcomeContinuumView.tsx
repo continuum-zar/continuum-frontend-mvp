@@ -344,6 +344,7 @@ export function WelcomeContinuumView() {
           projectId={Number(routeProjectId)}
           initialName={projectQuery.data!.name}
           initialDescription={projectQuery.data!.description}
+          initialStartDateIso={projectQuery.data!.startDateIso}
           initialDueDateIso={projectQuery.data!.dueDateIso}
         />
       )}

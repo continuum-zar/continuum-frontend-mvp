@@ -45,7 +45,16 @@ export const welcomeRepoMock = [
 ] as const;
 
 /** Milestone timeline — Figma playground nodes 35:11664–35:11707 */
-export const welcomeMilestoneTimelineMock = [
+export type WelcomeMilestoneTimelineMockRow = {
+  id: string;
+  dateLabel: string;
+  title: string;
+  description: string;
+  /** Demo: all milestone tasks in Completed — shows green tick in timeline */
+  allTasksCompleted?: boolean;
+};
+
+export const welcomeMilestoneTimelineMock: WelcomeMilestoneTimelineMockRow[] = [
   {
     id: "ms1",
     dateLabel: "20-06-2026",
@@ -81,5 +90,6 @@ export const welcomeMilestoneTimelineMock = [
     dateLabel: "20-01-2026",
     title: "Alpha Release",
     description: "Released the first alpha version for internal testing.",
+    allTasksCompleted: true,
   },
-] as const;
+];

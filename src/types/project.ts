@@ -8,6 +8,7 @@ export interface ProjectAPIResponse {
     /** Backend list endpoint returns progress (float); some endpoints may use progress_percentage */
     progress?: number;
     progress_percentage?: number;
+    start_date?: string;
     due_date?: string;
     team_size?: number;
     member_count?: number;
@@ -25,6 +26,8 @@ export interface Project {
     description: string;
     status: 'active' | 'completed' | 'on_hold' | string;
     progress: number;
+    /** `yyyy-mm-dd` from API when set. */
+    startDateIso?: string | null;
     dueDate: string;
     teamSize: number;
     lastActive: string;
@@ -39,6 +42,7 @@ export interface ProjectDetailAPIResponse {
     name: string;
     description?: string | null;
     status: string;
+    start_date?: string | null;
     due_date?: string | null;
     created_at?: string;
     updated_at?: string | null;
@@ -55,6 +59,8 @@ export interface ProjectDetail {
     id: number;
     name: string;
     description: string;
+    /** `yyyy-mm-dd` for date inputs, or null when not set. */
+    startDateIso: string | null;
     /** `yyyy-mm-dd` for date inputs, or null when not set. */
     dueDateIso: string | null;
     /** Billing / invoice: linked client when set. */

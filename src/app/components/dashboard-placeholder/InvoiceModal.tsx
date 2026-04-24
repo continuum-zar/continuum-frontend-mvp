@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { exportInvoicePreviewPdf, getApiErrorMessage } from "@/api";
 import { useProjects, useClientDetail, useProject } from "@/api/hooks";
 import { aggregateLoggedHoursByTaskForProject } from "@/api/loggedHours";
 import { useAuthStore } from "@/store/authStore";
@@ -24,6 +25,7 @@ import type { Project } from "@/types/project";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "../ui/utils";
 import { STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
+import { toast } from "sonner";
 
 type InvoiceModalProps = {
   open: boolean;
@@ -36,8 +38,6 @@ type LineRow = {
   qty: number;
   rate: number;
 };
-
-const DEFAULT_RATE = 200;
 
 /** Hide native number spinners so decimals aren’t clipped in narrow cells (Chrome/Safari/Firefox). */
 const noNumberSpinner =
@@ -60,18 +60,25 @@ function todayIsoDate(): string {
   return `${y}-${m}-${day}`;
 }
 
-function newRow(overrides?: Partial<LineRow>): LineRow {
-  return {
-    id: crypto.randomUUID(),
-    description: "",
-    qty: 0,
-    rate: DEFAULT_RATE,
-    ...overrides,
-  };
-}
-
 export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
   const user = useAuthStore((s) => s.user);
+  const defaultHourlyRate = useMemo(() => {
+    const raw = user?.hourly_rate;
+    if (raw === undefined || raw === null || raw === "") return 200;
+    const n = typeof raw === "number" ? raw : parseFloat(String(raw).replace(",", "."));
+    return Number.isFinite(n) && n >= 0 ? n : 200;
+  }, [user]);
+
+  const mkRow = useCallback(
+    (overrides?: Partial<LineRow>): LineRow => ({
+      id: crypto.randomUUID(),
+      description: "",
+      qty: 0,
+      rate: defaultHourlyRate,
+      ...overrides,
+    }),
+    [defaultHourlyRate],
+  );
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get("project");
@@ -85,7 +92,10 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
   const [invoiceNumber, setInvoiceNumber] = useState(() => formatInvoiceDefaultNumber(new Date()));
   const [issuedOn, setIssuedOn] = useState(todayIsoDate);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [lineItems, setLineItems] = useState<LineRow[]>(() => [newRow()]);
+  const [lineItems, setLineItems] = useState<LineRow[]>(() => [
+    { id: crypto.randomUUID(), description: "", qty: 0, rate: 200 },
+  ]);
+  const [exportPending, setExportPending] = useState(false);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [projectSearch, setProjectSearch] = useState("");
   const projectSearchInputRef = useRef<HTMLInputElement>(null);
@@ -153,14 +163,14 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
     const routeProject =
       expandedId && isApiProjectId(expandedId) ? expandedId : null;
     setSelectedProjectId(routeProject);
-    setLineItems([newRow()]);
-  }, [open, expandedId]);
+    setLineItems([mkRow()]);
+  }, [open, expandedId, mkRow]);
 
   /** Clear lines when switching project so we don’t show the previous project’s tasks while loading. */
   useEffect(() => {
     if (!open || !selectedProjectId) return;
-    setLineItems([newRow()]);
-  }, [open, selectedProjectId]);
+    setLineItems([mkRow()]);
+  }, [open, selectedProjectId, mkRow]);
 
   /** Prefill line items from all logged hours on the selected project (by task). */
   useEffect(() => {
@@ -168,19 +178,19 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
     const data = projectHoursQuery.data;
     if (data === undefined) return;
     if (projectHoursQuery.isError) {
-      setLineItems([newRow()]);
+      setLineItems([mkRow()]);
       return;
     }
     if (data.length === 0) {
-      setLineItems([newRow()]);
+      setLineItems([mkRow()]);
       return;
     }
     setLineItems(
       data.map((r) =>
-        newRow({
+        mkRow({
           description: r.title,
           qty: r.hours,
-          rate: DEFAULT_RATE,
+          rate: defaultHourlyRate,
         }),
       ),
     );
@@ -191,6 +201,8 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
     selectedProject?.apiId,
     projectHoursQuery.data,
     projectHoursQuery.isError,
+    mkRow,
+    defaultHourlyRate,
   ]);
 
   const total = useMemo(
@@ -205,15 +217,62 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
   const removeRow = useCallback((id: string) => {
     setLineItems((rows) => {
       if (rows.length <= 1) {
-        return [newRow()];
+        return [mkRow()];
       }
       return rows.filter((r) => r.id !== id);
     });
-  }, []);
+  }, [mkRow]);
 
   const addRow = useCallback(() => {
-    setLineItems((rows) => [...rows, newRow()]);
-  }, []);
+    setLineItems((rows) => [...rows, mkRow()]);
+  }, [mkRow]);
+
+  const handleExportPdf = useCallback(async () => {
+    if (!selectedProject?.apiId) {
+      toast.error("Select a project to export.");
+      return;
+    }
+    const lines = lineItems.filter((row) => row.qty * row.rate !== 0 || row.description.trim());
+    if (lines.length === 0) {
+      toast.error("Add at least one line item with hours or an amount.");
+      return;
+    }
+    setExportPending(true);
+    try {
+      const { blob, filename } = await exportInvoicePreviewPdf({
+        invoice_number: invoiceNumber.trim() || formatInvoiceDefaultNumber(new Date()),
+        issued_on: issuedOn,
+        project_id: selectedProject.apiId,
+        line_items: lines.map((row) => ({
+          description: row.description.trim() || "Line item",
+          quantity: row.qty,
+          rate: row.rate,
+        })),
+        tax_rate: 0,
+        currency: user?.invoice_currency ?? undefined,
+        due_terms: "Upon Receipt",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Invoice PDF downloaded");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Could not export PDF. Try again or check invoice settings."));
+    } finally {
+      setExportPending(false);
+    }
+  }, [
+    issuedOn,
+    invoiceNumber,
+    lineItems,
+    selectedProject,
+    user?.invoice_currency,
+  ]);
 
   const onPickProject = useCallback((p: Project) => {
     setSelectedProjectId(p.id);
@@ -263,10 +322,16 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
             </p>
             <button
               type="button"
-              disabled
-              className="h-10 rounded-lg bg-[rgba(96,109,118,0.1)] px-4 text-sm font-semibold text-[#606d76]/50"
+              disabled={
+                exportPending ||
+                !selectedProject?.apiId ||
+                waitingForProjectDetail ||
+                billClientLoading
+              }
+              onClick={() => void handleExportPdf()}
+              className="h-10 rounded-lg bg-[#0b191f] px-4 text-sm font-semibold text-white outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-[rgba(96,109,118,0.2)] disabled:text-[#606d76]/70"
             >
-              Generate invoice
+              {exportPending ? "Exporting…" : "Export PDF"}
             </button>
           </div>
 

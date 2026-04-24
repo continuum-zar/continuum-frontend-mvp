@@ -18,6 +18,7 @@ type EditProjectModalProps = {
   projectId: number;
   initialName: string;
   initialDescription: string;
+  initialStartDateIso: string | null;
   initialDueDateIso: string | null;
 };
 
@@ -37,6 +38,7 @@ export function EditProjectModal({
   projectId,
   initialName,
   initialDescription,
+  initialStartDateIso,
   initialDueDateIso,
 }: EditProjectModalProps) {
   const navigate = useNavigate();
@@ -44,11 +46,13 @@ export function EditProjectModal({
   const deleteProject = useDeleteProject();
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [isNameFocused, setIsNameFocused] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
-  const dateInputRef = useRef<HTMLInputElement>(null);
+  const startDateInputRef = useRef<HTMLInputElement>(null);
+  const dueDateInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useAutosizeTextarea(description, {
     minPx: 56,
     maxPx: 200,
@@ -58,8 +62,9 @@ export function EditProjectModal({
     if (!open) return;
     setProjectName(initialName);
     setDescription(initialDescription);
+    setStartDate(initialStartDateIso ?? "");
     setDueDate(initialDueDateIso ?? "");
-  }, [open, initialName, initialDescription, initialDueDateIso]);
+  }, [open, initialName, initialDescription, initialStartDateIso, initialDueDateIso]);
 
   useEffect(() => {
     if (deleteConfirmOpen) setDeleteConfirmName("");
@@ -68,10 +73,12 @@ export function EditProjectModal({
   const nameMatchesForDelete =
     deleteConfirmName.trim() === initialName.trim() && initialName.trim().length > 0;
 
+  const startInitial = initialStartDateIso ?? "";
   const dueInitial = initialDueDateIso ?? "";
   const isDirty =
     projectName.trim() !== initialName.trim() ||
     description !== initialDescription ||
+    startDate !== startInitial ||
     dueDate !== dueInitial;
 
   const handleSave = async () => {
@@ -83,6 +90,7 @@ export function EditProjectModal({
         body: {
           name,
           description: description.trim() || null,
+          start_date: startDate || null,
           due_date: dueDate || null,
         },
       });
@@ -108,6 +116,7 @@ export function EditProjectModal({
     if (!openFromRadix) {
       setProjectName("");
       setDescription("");
+      setStartDate("");
       setDueDate("");
       setDeleteConfirmOpen(false);
       setDeleteConfirmName("");
@@ -196,10 +205,54 @@ export function EditProjectModal({
               </div>
 
               <div className="flex w-full flex-col gap-1">
+                <p className="text-[14px] font-medium text-[#606d76]">Start date</p>
+                <div className="relative w-full">
+                  <input
+                    ref={startDateInputRef}
+                    type="date"
+                    tabIndex={-1}
+                    className="pointer-events-none absolute right-4 top-1/2 z-0 h-px w-px -translate-y-1/2 opacity-0"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    aria-hidden="true"
+                  />
+                  <button
+                    type="button"
+                    className="relative z-10 flex h-10 w-full items-center justify-between gap-2 rounded-[8px] border border-[#e9e9e9] bg-white px-4 text-left focus:outline-none focus-visible:border-[#1466ff]"
+                    aria-label={
+                      startDate
+                        ? `Start date ${formatDueDateDisplay(startDate)}`
+                        : "Choose start date"
+                    }
+                    onClick={() => {
+                      const el = startDateInputRef.current;
+                      if (!el) return;
+                      if (typeof el.showPicker === "function") {
+                        void el.showPicker();
+                      } else {
+                        el.focus();
+                        el.click();
+                      }
+                    }}
+                  >
+                    <span
+                      className={cn(
+                        "min-w-0 flex-1 text-[16px] font-medium",
+                        startDate ? "text-[#0b191f]" : "text-[#606d76]/40",
+                      )}
+                    >
+                      {startDate ? formatDueDateDisplay(startDate) : "mm / dd / yyyy"}
+                    </span>
+                    <CalendarPlus className="size-4 shrink-0 text-[#0b191f]" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex w-full flex-col gap-1">
                 <p className="text-[14px] font-medium text-[#606d76]">Target delivery date</p>
                 <div className="relative w-full">
                   <input
-                    ref={dateInputRef}
+                    ref={dueDateInputRef}
                     type="date"
                     tabIndex={-1}
                     className="pointer-events-none absolute right-4 top-1/2 z-0 h-px w-px -translate-y-1/2 opacity-0"
@@ -216,7 +269,7 @@ export function EditProjectModal({
                         : "Choose target delivery date"
                     }
                     onClick={() => {
-                      const el = dateInputRef.current;
+                      const el = dueDateInputRef.current;
                       if (!el) return;
                       if (typeof el.showPicker === "function") {
                         void el.showPicker();

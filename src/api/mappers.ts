@@ -26,6 +26,7 @@ export function normalizeProjectStatus(raw: string | undefined | null): Project[
 
 export function mapProjectListItem(p: ProjectAPIResponse): Project {
     const lastActiveRaw = p.last_active ?? p.updated_at;
+    const startIso = normalizeProjectDueDateIso(p.start_date ?? null);
     return {
         id: String(p.id),
         apiId: p.id,
@@ -33,6 +34,7 @@ export function mapProjectListItem(p: ProjectAPIResponse): Project {
         description: p.description ?? 'No description provided.',
         status: normalizeProjectStatus(p.status),
         progress: p.progress ?? p.progress_percentage ?? 0,
+        ...(startIso != null ? { startDateIso: startIso } : {}),
         dueDate: p.due_date ?? 'No Date',
         teamSize: p.team_size ?? p.member_count ?? 1,
         lastActive: lastActiveRaw
@@ -54,6 +56,7 @@ export function mapProjectDetail(res: ProjectDetailAPIResponse): ProjectDetail {
         id: res.id,
         name: res.name ?? `Project ${res.id}`,
         description: res.description ?? '',
+        startDateIso: normalizeProjectDueDateIso(res.start_date ?? null),
         dueDateIso: normalizeProjectDueDateIso(res.due_date ?? null),
         ...(res.client_id != null ? { clientId: res.client_id } : {}),
     };
