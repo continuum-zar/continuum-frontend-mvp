@@ -56,7 +56,10 @@ import {
 } from '@/types/task';
 import type { CommentAuthorAPI } from '@/types/comment';
 import type { Member } from '@/types/member';
-import { AddTaskResourceModal } from '../components/AddTaskResourceModal';
+import {
+  AddTaskResourceModal,
+  type TaskResourcePendingUploadRow,
+} from '../components/AddTaskResourceModal';
 import { TaskLinkedBranchesSection } from '../components/TaskLinkedBranchesSection';
 import { AssignMemberModal } from '../components/AssignMemberModal';
 import { LogTimeModal } from '../components/dashboard-placeholder/LogTimeModal';
@@ -328,6 +331,47 @@ function TaskResourceRow({
   );
 }
 
+function TaskPendingUploadRow({
+  row,
+  onDismiss,
+}: {
+  row: TaskResourcePendingUploadRow;
+  onDismiss: () => void;
+}) {
+  const uploading = row.status === 'uploading';
+  return (
+    <div className="flex w-full items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
+        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
+          {uploading ? (
+            <Loader2 className="size-4 animate-spin text-[#606d76] motion-reduce:animate-none" aria-hidden />
+          ) : (
+            <FileText className="size-4 text-[#b42318]" strokeWidth={1.75} />
+          )}
+        </div>
+        <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
+          <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+            {row.filename}
+          </p>
+          <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">
+            {uploading ? 'Uploading…' : row.errorMessage ?? 'Upload failed'}
+          </p>
+        </div>
+      </div>
+      {!uploading ? (
+        <button
+          type="button"
+          className="inline-flex shrink-0 self-center rounded-md p-1.5 text-[#606d76] hover:bg-[#edf0f3] hover:text-[#0b191f]"
+          aria-label="Dismiss"
+          onClick={onDismiss}
+        >
+          <X className="size-4" strokeWidth={1.75} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function TaskNotFound() {
   const navigate = useNavigate();
   return (
@@ -413,6 +457,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [addingEffort, setAddingEffort] = useState(false);
   const [effortDraft, setEffortDraft] = useState('');
   const [resourceModalOpen, setResourceModalOpen] = useState(false);
+  const [pendingUploadRows, setPendingUploadRows] = useState<TaskResourcePendingUploadRow[]>([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [logTimeOpen, setLogTimeOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -912,10 +957,19 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   Add <Plus size={16} />
                 </button>
               </div>
-              {mappedAttachments.length === 0 ? (
+              {mappedAttachments.length === 0 && pendingUploadRows.length === 0 ? (
                 <p className="text-[13px] text-[#727d83]">No attachments yet</p>
               ) : (
                 <div className="space-y-3">
+                  {pendingUploadRows.map((row) => (
+                    <TaskPendingUploadRow
+                      key={row.clientId}
+                      row={row}
+                      onDismiss={() =>
+                        setPendingUploadRows((prev) => prev.filter((r) => r.clientId !== row.clientId))
+                      }
+                    />
+                  ))}
                   {mappedAttachments.map((attachment) => (
                     <TaskResourceRow
                       key={attachment.id}
@@ -1340,6 +1394,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         open={resourceModalOpen}
         onOpenChange={setResourceModalOpen}
         taskId={taskId}
+        setPendingUploadRows={setPendingUploadRows}
       />
       <AssignMemberModal
         open={assignModalOpen}
