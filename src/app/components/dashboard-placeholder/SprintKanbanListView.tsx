@@ -115,19 +115,24 @@ export function SprintKanbanListView({
     return (
       <div
         onPointerDown={cardPointerDown(task.id)}
-        onClick={() =>
-          navigate(`${workspaceJoin("task", String(task.id))}?${searchParams.toString()}`)
-        }
+        onClick={() => {
+          if (!isDragging) {
+            navigate(`${workspaceJoin("task", String(task.id))}?${searchParams.toString()}`);
+          }
+        }}
         className={cn(
           "w-full select-none transition-opacity duration-100",
-          isDragging ? "opacity-0" : "cursor-open-hand",
+          isDragging ? "pointer-events-none" : "cursor-open-hand",
         )}
       >
+        {isDragging ? (
+          <div
+            className="list-kanban-drag-surface flex h-[52px] w-full shrink-0 items-center justify-center rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.55)] px-4"
+            aria-label="Original column — drop here to keep this task in this list"
+          />
+        ) : (
         <div
-          className={cn(
-            "list-kanban-drag-surface bg-white content-stretch flex w-full gap-[24px] border-solid px-[16px] py-[6px] text-left transition-colors hover:bg-[#fafbfc]",
-            isDragging ? "border-2 border-[#24B5F8]" : "border-b border-[#ebedee]",
-          )}
+          className="list-kanban-drag-surface bg-white content-stretch flex w-full gap-[24px] border-b border-[#ebedee] border-solid px-[16px] py-[6px] text-left transition-colors hover:bg-[#fafbfc]"
         >
         <div className="content-stretch flex w-[380px] shrink-0 flex-col gap-1.5">
           <div className="flex min-w-0 items-center gap-[8px]">
@@ -208,6 +213,7 @@ export function SprintKanbanListView({
           </div>
         </div>
         </div>
+        )}
       </div>
     );
   };
