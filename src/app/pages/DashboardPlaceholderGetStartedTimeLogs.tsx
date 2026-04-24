@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import {
   Activity,
   Bell,
@@ -37,7 +37,12 @@ import {
   WELCOME_PROJECT_ID,
 } from "../data/dashboardPlaceholderProjects";
 import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from "@/lib/workspacePaths";
-import type { LoggedHourEntry } from "@/api/loggedHours";
+import { getApiErrorMessage } from "@/api";
+import {
+  downloadLoggedHoursCsv,
+  downloadLoggedHoursPdf,
+  type LoggedHourEntry,
+} from "@/api/loggedHours";
 import {
   fetchMemberContributions,
   fetchProjectVelocityReport,
@@ -48,7 +53,14 @@ import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { useTimeTracking } from "../context/TimeTrackingContext";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/app/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
+import { toast } from "sonner";
 
 const tabBtn = (active: boolean) =>
   `rounded-[8px] px-4 py-2 text-[14px] font-medium ${
@@ -698,6 +710,40 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
   const milestoneParam = searchParams.get("milestone");
   const apiProjectId = projectParam != null && isApiProjectId(projectParam) ? projectParam : null;
 
+  const [exportActionPending, setExportActionPending] = useState(false);
+
+  const runExportPdf = useCallback(async () => {
+    if (apiProjectId == null) {
+      toast.error("Select a project to export time logs.");
+      return;
+    }
+    setExportActionPending(true);
+    try {
+      await downloadLoggedHoursPdf({ project_id: apiProjectId });
+      toast.success("PDF download started.");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Could not export PDF."));
+    } finally {
+      setExportActionPending(false);
+    }
+  }, [apiProjectId]);
+
+  const runExportCsv = useCallback(async () => {
+    if (apiProjectId == null) {
+      toast.error("Select a project to export time logs.");
+      return;
+    }
+    setExportActionPending(true);
+    try {
+      await downloadLoggedHoursCsv({ project_id: apiProjectId });
+      toast.success("CSV download started.");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Could not export CSV."));
+    } finally {
+      setExportActionPending(false);
+    }
+  }, [apiProjectId]);
+
   const { data: loggedEntries = [], isPending: logsLoading, isError: logsError } = useLoggedHours(
     apiProjectId,
     { limit: 200, enabled: apiProjectId != null },
@@ -918,13 +964,36 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                   <Share className="size-4" />
                   Share
                 </button>
-                <button
-                  type="button"
-                  className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white"
-                >
-                  Export
-                  <ChevronDown className="size-4" />
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={exportActionPending}
+                      className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white disabled:opacity-60"
+                    >
+                      {exportActionPending ? "Exporting…" : "Export"}
+                      <ChevronDown className="size-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-[10rem]">
+                    <DropdownMenuItem
+                      disabled={exportActionPending}
+                      onSelect={() => {
+                        void runExportPdf();
+                      }}
+                    >
+                      Export PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={exportActionPending}
+                      onSelect={() => {
+                        void runExportCsv();
+                      }}
+                    >
+                      Export CSV
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
             <div className="h-px w-full bg-[#ebedee]" />

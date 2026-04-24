@@ -182,6 +182,7 @@ export {
     fetchLoggedHours,
     createLoggedHour,
     downloadLoggedHoursCsv,
+    downloadLoggedHoursPdf,
     fetchTasksForTimeLog,
     suggestLogTimeDescription,
 } from './loggedHours';
