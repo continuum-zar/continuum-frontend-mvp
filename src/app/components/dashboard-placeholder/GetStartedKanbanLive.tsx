@@ -48,6 +48,7 @@ import {
   mapKanbanBoardFromApi,
   mapKanbanBoardToApi,
   newKanbanColumnId,
+  orderKanbanColumnTasksForDisplay,
   resolveTaskColumnId,
   tasksForKanbanColumn,
   type KanbanColumnConfig,
@@ -182,7 +183,8 @@ export function GetStartedKanbanLive({
   const columnTasks = useMemo(() => {
     const m: Record<string, Task[]> = {};
     for (const c of columns) {
-      m[c.id] = tasksForKanbanColumn(filtered, c, columns, taskColumnPreference);
+      const forCol = tasksForKanbanColumn(filtered, c, columns, taskColumnPreference);
+      m[c.id] = orderKanbanColumnTasksForDisplay(c, forCol);
     }
     return m;
   }, [filtered, columns, taskColumnPreference]);

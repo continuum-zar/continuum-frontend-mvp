@@ -1,5 +1,44 @@
 import type { KanbanBoardColumnApi } from "@/types/kanban";
-import type { Task, TaskStatus, TaskStatusAPI } from "@/types/task";
+import type { Task, TaskPriority, TaskStatus, TaskStatusAPI } from "@/types/task";
+
+/** Higher rank sorts first (top of column). Unknown / missing priority sorts last. */
+const PRIORITY_SORT_RANK: Record<TaskPriority, number> = {
+  high: 4,
+  medium: 3,
+  low: 2,
+  info: 1,
+};
+
+function prioritySortRank(priority: Task["priority"]): number {
+  if (priority == null) return 0;
+  return PRIORITY_SORT_RANK[priority] ?? 0;
+}
+
+/** To-Do columns: highest priority first. Stable for ties. */
+export function sortKanbanTasksByPriorityDescending(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) => prioritySortRank(b.priority) - prioritySortRank(a.priority));
+}
+
+/** 0–1 completion ratio; 0 when there are no checklist items. */
+export function taskChecklistCompletionRatio(task: Task): number {
+  const { total, completed } = task.checklists;
+  if (total <= 0) return 0;
+  return completed / total;
+}
+
+/** In-Progress columns: highest checklist completion first. Stable for ties. */
+export function sortKanbanTasksByChecklistCompletionDescending(tasks: Task[]): Task[] {
+  return [...tasks].sort(
+    (a, b) => taskChecklistCompletionRatio(b) - taskChecklistCompletionRatio(a),
+  );
+}
+
+/** Apply column-specific default ordering before rendering (To-Do / In-Progress only). */
+export function orderKanbanColumnTasksForDisplay(column: KanbanColumnConfig, tasks: Task[]): Task[] {
+  if (column.kind === "todo") return sortKanbanTasksByPriorityDescending(tasks);
+  if (column.kind === "in-progress") return sortKanbanTasksByChecklistCompletionDescending(tasks);
+  return [...tasks];
+}
 
 export type KanbanColumnKind = "todo" | "in-progress" | "done";
 
