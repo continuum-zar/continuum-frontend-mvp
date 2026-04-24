@@ -217,6 +217,39 @@ export async function downloadLoggedHoursCsv(params?: FetchLoggedHoursParams): P
     URL.revokeObjectURL(url);
 }
 
+/**
+ * GET /api/v1/logged-hours/export/pdf — time log PDF (hours + descriptions + commit-type pie).
+ * Requires project_id. Uses same optional date filters as CSV when provided.
+ */
+export async function downloadLoggedHoursPdf(params: { project_id: number | string } & Omit<FetchLoggedHoursParams, 'project_id' | 'limit'>): Promise<void> {
+    if (params.project_id == null || params.project_id === '') {
+        throw new Error('project_id is required for PDF export.');
+    }
+    const { data: blob, headers } = await api.get<Blob>('/logged-hours/export/pdf', {
+        params: {
+            project_id: typeof params.project_id === 'string' ? Number(params.project_id) : params.project_id,
+            ...(params.start_date && { start_date: params.start_date }),
+            ...(params.end_date && { end_date: params.end_date }),
+        },
+        responseType: 'blob',
+    });
+
+    const contentDisposition = headers?.['content-disposition'];
+    let filename = 'timelog-export.pdf';
+    if (typeof contentDisposition === 'string') {
+        const match = contentDisposition.match(/filename\*?=(?:UTF-8'')?["']?([^"'\s;]+)["']?/i)
+            ?? contentDisposition.match(/filename=["']?([^"'\s;]+)["']?/i);
+        if (match?.[1]) filename = decodeURIComponent(match[1].trim());
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 /** Tasks for time log dropdown (reuses GET /api/v1/tasks/ list). */
 export async function fetchTasksForTimeLog() {
     return fetchAllTasks();
