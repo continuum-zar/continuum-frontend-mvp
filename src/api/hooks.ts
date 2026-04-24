@@ -593,7 +593,12 @@ export function useDeleteProjectKanbanColumn(projectId: number | string | undefi
 export function useCreateProject() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (body: { name: string; description?: string; due_date?: string | null }) => createProject(body),
+        mutationFn: (body: {
+            name: string;
+            description?: string;
+            start_date?: string | null;
+            due_date?: string | null;
+        }) => createProject(body),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: projectKeys.list() });
             toast.success('Project created successfully');
@@ -612,7 +617,13 @@ export function useUpdateProject() {
             body,
         }: {
             projectId: number | string;
-            body: { name?: string; description?: string | null; due_date?: string | null; status?: string };
+            body: {
+                name?: string;
+                description?: string | null;
+                start_date?: string | null;
+                due_date?: string | null;
+                status?: string;
+            };
         }) => updateProject(projectId, body),
         onSuccess: (_data, { projectId }) => {
             queryClient.invalidateQueries({ queryKey: projectKeys.list() });
