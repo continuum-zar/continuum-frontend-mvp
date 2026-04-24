@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_KANBAN_COLUMNS,
   firstColumnIdForStatus,
+  kanbanColumnAutoSortInfo,
   newKanbanColumnId,
   orderKanbanColumnTasksForDisplay,
   resolveTaskColumnId,
@@ -99,5 +100,11 @@ describe("kanbanBoardTypes", () => {
     const d1 = task({ id: "d1", status: "done" });
     const d2 = task({ id: "d2", status: "done" });
     expect(orderKanbanColumnTasksForDisplay(doneCol, [d1, d2]).map((x) => x.id)).toEqual(["d1", "d2"]);
+  });
+
+  it("kanbanColumnAutoSortInfo matches columns that use auto-sort in orderKanbanColumnTasksForDisplay", () => {
+    expect(kanbanColumnAutoSortInfo(DEFAULT_KANBAN_COLUMNS[0]!)?.description).toMatch(/priority/i);
+    expect(kanbanColumnAutoSortInfo(DEFAULT_KANBAN_COLUMNS[1]!)?.description).toMatch(/checklist/i);
+    expect(kanbanColumnAutoSortInfo(DEFAULT_KANBAN_COLUMNS[2]!)).toBeNull();
   });
 });

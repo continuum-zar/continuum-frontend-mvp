@@ -5,7 +5,8 @@ import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 
 import { cn } from "@/app/components/ui/utils";
-import type { KanbanColumnConfig } from "./kanbanBoardTypes";
+import { kanbanColumnAutoSortInfo, type KanbanColumnConfig } from "./kanbanBoardTypes";
+import { KanbanColumnAutoSortHint } from "./KanbanColumnAutoSortHint";
 import { useKanbanColumnSearchDismiss } from "./KanbanColumnSearchControls";
 
 export type KanbanBoardColumnHeaderProps = {
@@ -48,6 +49,7 @@ export function KanbanBoardColumnHeader({
 }: KanbanBoardColumnHeaderProps) {
   const containerRef = useKanbanColumnSearchDismiss(searchOpen, onSearchClose);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sortInfo = kanbanColumnAutoSortInfo(col);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -70,9 +72,12 @@ export function KanbanBoardColumnHeader({
           <div className="relative shrink-0 size-[16px]">
             <img alt="" className="absolute block max-w-none size-full" src={columnIconSrc} />
           </div>
-          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 shrink truncate text-[#606d76] text-[14px]">
-            {col.title}
-          </p>
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 shrink truncate text-[#606d76] text-[14px]">
+              {col.title}
+            </p>
+            {sortInfo != null ? <KanbanColumnAutoSortHint info={sortInfo} /> : null}
+          </div>
         </div>
         <div className="content-stretch flex shrink-0 items-center gap-[6px] sm:gap-[8px]">
           {!searchOpen ? (

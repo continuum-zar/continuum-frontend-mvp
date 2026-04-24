@@ -12,7 +12,8 @@ import { taskPriorityFlagClass, taskPriorityLabel, type Task } from "@/types/tas
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { cn } from "../ui/utils";
 import { VirtualList } from "@/app/components/ui/VirtualList";
-import type { KanbanColumnConfig } from "./kanbanBoardTypes";
+import { kanbanColumnAutoSortInfo, type KanbanColumnConfig } from "./kanbanBoardTypes";
+import { KanbanColumnAutoSortHint } from "./KanbanColumnAutoSortHint";
 import { KanbanColumnSearchControls } from "./KanbanColumnSearchControls";
 import { filterKanbanTasksBySearchQueryRespectingDrag } from "./kanbanColumnSearchUtils";
 import { KanbanAssigneeAvatars } from "./KanbanAssigneeAvatars";
@@ -221,6 +222,7 @@ export function SprintKanbanListView({
   ) => {
     const list = displayList;
     const isOpen = expanded[col.id] ?? true;
+    const sortInfo = kanbanColumnAutoSortInfo(col);
 
     return (
       <div
@@ -228,22 +230,25 @@ export function SprintKanbanListView({
         className="content-stretch flex w-full flex-col items-start overflow-clip rounded-tl-[8px] rounded-tr-[8px]"
       >
         <div className="flex w-full min-w-0 shrink-0 items-center justify-between gap-3 py-[8px]">
-          <button
-            type="button"
-            onClick={() => toggle(col.id)}
-            className="flex min-w-0 max-w-[min(100%,520px)] cursor-pointer items-center gap-[8px] border-0 bg-transparent p-0 text-left"
-          >
-            <div className="relative size-[16px] shrink-0">
-              <img alt="" className="absolute block max-w-none size-full" src={iconSrcForKanbanColumnKind(col.kind)} />
-            </div>
-            <p className="font-['Satoshi:Medium',sans-serif] min-w-0 shrink truncate text-[14px] leading-[normal] not-italic text-[#606d76]">
-              {col.title}
-            </p>
-            <ChevronDown
-              className={cn("size-4 shrink-0 text-[#606d76] transition-transform", isOpen && "-rotate-180")}
-              aria-hidden
-            />
-          </button>
+          <div className="flex min-w-0 max-w-[min(100%,560px)] flex-1 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => toggle(col.id)}
+              className="flex min-w-0 flex-1 cursor-pointer items-center gap-[8px] border-0 bg-transparent p-0 text-left"
+            >
+              <div className="relative size-[16px] shrink-0">
+                <img alt="" className="absolute block max-w-none size-full" src={iconSrcForKanbanColumnKind(col.kind)} />
+              </div>
+              <p className="font-['Satoshi:Medium',sans-serif] min-w-0 flex-1 truncate text-[14px] leading-[normal] not-italic text-[#606d76]">
+                {col.title}
+              </p>
+              <ChevronDown
+                className={cn("size-4 shrink-0 text-[#606d76] transition-transform", isOpen && "-rotate-180")}
+                aria-hidden
+              />
+            </button>
+            {sortInfo != null ? <KanbanColumnAutoSortHint info={sortInfo} /> : null}
+          </div>
           <div className="flex shrink-0 flex-nowrap items-center justify-end gap-[12px]">{headerRight}</div>
         </div>
 

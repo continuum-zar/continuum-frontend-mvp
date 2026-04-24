@@ -40,6 +40,28 @@ export function orderKanbanColumnTasksForDisplay(column: KanbanColumnConfig, tas
   return [...tasks];
 }
 
+/** Tooltip / aria copy for column headers: matches {@link orderKanbanColumnTasksForDisplay} behavior. */
+export type KanbanColumnAutoSortInfo = {
+  description: string;
+};
+
+/** When non-null, tasks in this column are auto-sorted; show sort icon next to the title. */
+export function kanbanColumnAutoSortInfo(column: KanbanColumnConfig): KanbanColumnAutoSortInfo | null {
+  if (column.kind === "todo") {
+    return {
+      description:
+        "Sorted by priority: highest priority at the top. Same priority keeps a stable order.",
+    };
+  }
+  if (column.kind === "in-progress") {
+    return {
+      description:
+        "Sorted by checklist completion: most complete at the top. Same completion keeps a stable order.",
+    };
+  }
+  return null;
+}
+
 export type KanbanColumnKind = "todo" | "in-progress" | "done";
 
 /** One swimlane column on the board; `taskStatus` is what the API accepts on drop. */
