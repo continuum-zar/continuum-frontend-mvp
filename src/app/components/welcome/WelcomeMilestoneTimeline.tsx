@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { CircleCheckBig, Plus } from "lucide-react";
 
 import { useProjectMilestones } from "@/api/hooks";
 import type { Milestone } from "@/types/milestone";
@@ -12,6 +12,7 @@ import {
   type CreateMilestoneModalEditing,
 } from "@/app/components/dashboard-placeholder/CreateMilestoneModal";
 import { welcomeMilestoneTimelineMock } from "@/app/data/welcomeDashboardMock";
+import { milestoneTimelineShowsCompletedIcon } from "@/lib/milestoneCompletion";
 import { cn } from "../ui/utils";
 
 /** Figma node 35:11709 — lucide/goal */
@@ -80,6 +81,7 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
         dateLabel: m.dateLabel,
         title: m.title,
         description: m.description,
+        allTasksCompleted: Boolean(m.allTasksCompleted),
       }));
     }
     return sortMilestonesForTimeline(milestones).map((m) => ({
@@ -87,6 +89,7 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
       dateLabel: formatTimelineDateLabel(m.dueDateIso),
       title: m.name,
       description: m.desc?.trim() || "—",
+      allTasksCompleted: milestoneTimelineShowsCompletedIcon(m.progress, m.status),
     }));
   }, [isLive, milestones]);
 
@@ -163,21 +166,37 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
                         setMilestoneModalOpen(true);
                       }}
                     >
-                      <img
-                        alt=""
-                        className="pointer-events-none block size-4 max-w-none shrink-0"
-                        src={imgLucideGoal}
-                        aria-hidden
-                      />
+                      {m.allTasksCompleted ? (
+                        <CircleCheckBig
+                          className="pointer-events-none size-4 shrink-0 text-[#0b191f]"
+                          strokeWidth={2}
+                          aria-hidden
+                        />
+                      ) : (
+                        <img
+                          alt=""
+                          className="pointer-events-none block size-4 max-w-none shrink-0"
+                          src={imgLucideGoal}
+                          aria-hidden
+                        />
+                      )}
                     </button>
                   ) : (
                     <div className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
-                      <img
-                        alt=""
-                        className="block size-4 max-w-none shrink-0"
-                        src={imgLucideGoal}
-                        aria-hidden
-                      />
+                      {m.allTasksCompleted ? (
+                        <CircleCheckBig
+                          className="size-4 shrink-0 text-[#0b191f]"
+                          strokeWidth={2}
+                          aria-hidden
+                        />
+                      ) : (
+                        <img
+                          alt=""
+                          className="block size-4 max-w-none shrink-0"
+                          src={imgLucideGoal}
+                          aria-hidden
+                        />
+                      )}
                     </div>
                   )}
                 </div>
