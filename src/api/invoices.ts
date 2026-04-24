@@ -45,6 +45,25 @@ export async function generateInvoicePdf(invoiceId: number | string): Promise<vo
     await api.post(`/invoices/${invoiceId}/generate-pdf`);
 }
 
+export type InvoiceExportPdfBody = {
+    invoice_number: string;
+    issued_on: string;
+    project_id?: number;
+    line_items: { description: string; quantity: number; rate: number }[];
+    tax_rate?: number;
+    currency?: string | null;
+    due_terms?: string | null;
+};
+
+/** POST /invoices/export-pdf — HTML template PDF (preview / modal export). */
+export async function exportInvoicePreviewPdf(body: InvoiceExportPdfBody): Promise<DownloadInvoiceResult> {
+    const res = await api.post<Blob>('/invoices/export-pdf', body, {
+        responseType: 'blob',
+    });
+    const filename = parseContentDispositionFilename(res.headers as Record<string, unknown>);
+    return { blob: res.data, filename };
+}
+
 export interface InvoiceGenerate {
     project_id: number | string;
     billing_period_start: string;
