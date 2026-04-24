@@ -248,12 +248,13 @@ export {
     fetchInvoice,
     downloadInvoice,
     generateInvoicePdf,
+    exportInvoicePreviewPdf,
     generateInvoice,
     updateInvoiceStatus,
     useInvoices,
     invoiceKeys,
 } from './invoices';
-export type { InvoiceGenerate } from './invoices';
+export type { InvoiceGenerate, InvoiceExportPdfBody } from './invoices';
 export {
     fetchClients,
     createClient,

@@ -162,6 +162,11 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
   const [notificationPrefs, setNotificationPrefs] = useState(defaultNotificationPrefs);
   const [invoiceCurrency, setInvoiceCurrency] = useState<(typeof INVOICE_CURRENCIES)[number]>("ZAR");
   const [invoiceHourlyRate, setInvoiceHourlyRate] = useState("200");
+  const [bankAccountName, setBankAccountName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankIban, setBankIban] = useState("");
+  const [bankSwiftBic, setBankSwiftBic] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [githubIntegrationOpen, setGithubIntegrationOpen] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
@@ -180,17 +185,39 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
   useEffect(() => {
     if (!open) return;
     setNotificationPrefs(defaultNotificationPrefs());
-    setInvoiceCurrency("ZAR");
-    setInvoiceHourlyRate("200");
     setWaitlistEmail("");
     if (user) {
       setFirstName(user.first_name ?? "");
       setLastName(user.last_name ?? "");
       setGitCommitEmail(user.git_commit_email?.trim() ?? "");
+      const cur = (user.invoice_currency ?? "ZAR").toUpperCase();
+      setInvoiceCurrency(
+        (INVOICE_CURRENCIES as readonly string[]).includes(cur)
+          ? (cur as (typeof INVOICE_CURRENCIES)[number])
+          : "ZAR",
+      );
+      const rawRate = user.hourly_rate;
+      const rateStr =
+        rawRate !== undefined && rawRate !== null && String(rawRate).trim() !== ""
+          ? String(rawRate)
+          : "200";
+      setInvoiceHourlyRate(rateStr);
+      setBankAccountName(user.bank_account_name?.trim() ?? "");
+      setBankAccountNumber(user.bank_account_number?.trim() ?? "");
+      setBankName(user.bank_name?.trim() ?? "");
+      setBankIban(user.bank_iban?.trim() ?? "");
+      setBankSwiftBic(user.bank_swift_bic?.trim() ?? "");
     } else {
       setFirstName("");
       setLastName("");
       setGitCommitEmail("");
+      setInvoiceCurrency("ZAR");
+      setInvoiceHourlyRate("200");
+      setBankAccountName("");
+      setBankAccountNumber("");
+      setBankName("");
+      setBankIban("");
+      setBankSwiftBic("");
     }
   }, [open, user]);
 
@@ -254,6 +281,33 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
         handleOpenChange(false);
       } catch (err) {
         toast.error(getApiErrorMessage(err, "Could not save settings"));
+      } finally {
+        setSavePending(false);
+      }
+      return;
+    }
+    if (section === "invoice") {
+      const rateNum = parseFloat(invoiceHourlyRate.replace(",", "."));
+      if (!Number.isFinite(rateNum) || rateNum < 0) {
+        toast.error("Enter a valid default hourly rate");
+        return;
+      }
+      setSavePending(true);
+      try {
+        await updateCurrentUserProfile({
+          hourly_rate: rateNum,
+          invoice_currency: invoiceCurrency,
+          bank_account_name: bankAccountName.trim() ? bankAccountName.trim() : null,
+          bank_account_number: bankAccountNumber.trim() ? bankAccountNumber.trim() : null,
+          bank_name: bankName.trim() ? bankName.trim() : null,
+          bank_iban: bankIban.trim() ? bankIban.trim() : null,
+          bank_swift_bic: bankSwiftBic.trim() ? bankSwiftBic.trim() : null,
+        });
+        await checkAuth(true);
+        toast.success("Settings saved");
+        handleOpenChange(false);
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, "Could not save invoice settings"));
       } finally {
         setSavePending(false);
       }
@@ -542,6 +596,79 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
                         className="min-w-0 flex-1 border-0 bg-transparent font-medium text-[#0b191f] outline-none"
                         aria-label="Default hourly rate"
                       />
+                    </div>
+                    <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-[#727d83]">
+                      Used as the default rate when generating invoices unless you override it per invoice.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-[#ebedee] pt-2">
+                    <p className="mb-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                      Bank details
+                    </p>
+                    <p className="mb-4 font-['Satoshi',sans-serif] text-[13px] leading-normal text-[#727d83]">
+                      Shown on PDF invoices so clients can pay you. All fields are optional.
+                    </p>
+                    <div className="flex flex-col gap-4">
+                      <label className="flex flex-col gap-2">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                          Account name (as on bank account)
+                        </span>
+                        <input
+                          type="text"
+                          value={bankAccountName}
+                          onChange={(e) => setBankAccountName(e.target.value)}
+                          autoComplete="name"
+                          className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                          Bank name
+                        </span>
+                        <input
+                          type="text"
+                          value={bankName}
+                          onChange={(e) => setBankName(e.target.value)}
+                          className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                          Account number
+                        </span>
+                        <input
+                          type="text"
+                          value={bankAccountNumber}
+                          onChange={(e) => setBankAccountNumber(e.target.value)}
+                          autoComplete="off"
+                          className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                          IBAN
+                        </span>
+                        <input
+                          type="text"
+                          value={bankIban}
+                          onChange={(e) => setBankIban(e.target.value.replace(/\s+/g, " "))}
+                          autoComplete="off"
+                          className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                          SWIFT / BIC
+                        </span>
+                        <input
+                          type="text"
+                          value={bankSwiftBic}
+                          onChange={(e) => setBankSwiftBic(e.target.value.replace(/\s+/g, "").toUpperCase())}
+                          autoComplete="off"
+                          className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                      </label>
                     </div>
                   </div>
                 </div>
