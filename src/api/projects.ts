@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import type { WelcomeRecentActivityFeedResponse } from '@/lib/welcomeRecentActivityFeed';
 import type { PaginatedResponse } from '@/types/api';
 import type { ProjectAPIResponse, ProjectDetailAPIResponse } from '@/types/project';
 import type { MilestoneAPIResponse } from '@/types/milestone';
@@ -269,4 +270,17 @@ export async function downloadProjectAttachment(
     });
     const filename = parseContentDispositionFilename(res.headers as Record<string, unknown>);
     return { blob: res.data, filename };
+}
+
+/** Merged welcome-dashboard activity (commits + Kanban moves, newest first). */
+export async function fetchWelcomeRecentActivityFeed(
+    projectId: number | string,
+    options?: { limit?: number },
+): Promise<WelcomeRecentActivityFeedResponse> {
+    const limit = options?.limit ?? 100;
+    const { data } = await api.get<WelcomeRecentActivityFeedResponse>(
+        `/projects/${projectId}/welcome-recent-activity`,
+        { params: { limit } },
+    );
+    return data;
 }

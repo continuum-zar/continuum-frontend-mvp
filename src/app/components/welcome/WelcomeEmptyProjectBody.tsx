@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { formatDistanceToNow } from "date-fns";
 import { parseApiUtcDateTime } from "@/lib/parseApiUtcDateTime";
 import { playRepoIndexingCompleteSound } from "@/lib/playRepoIndexingCompleteSound";
-import { Download, ExternalLink, FileText, GitCommit, Link2, Loader2, RefreshCw, X } from "lucide-react";
+import { ArrowRightLeft, Download, ExternalLink, FileText, GitCommit, Link2, Loader2, RefreshCw, X } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
 import { STALE_SHORT_MS, STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
@@ -16,7 +16,6 @@ import {
   downloadProjectAttachment,
   fetchClassificationBreakdown,
   fetchMemberContributions,
-  fetchProjectGitContributions,
   fetchProjectHealth,
   fetchProjectStats,
   getApiErrorMessage,
@@ -30,6 +29,7 @@ import {
   useScanRepository,
   useUnlinkRepository,
   useWikiScanStatus,
+  fetchWelcomeRecentActivityFeed,
 } from "@/api";
 import type { GitContributionClassification, GitContributionRead, ScanStatusResponse } from "@/api";
 import { toast } from "sonner";
@@ -48,6 +48,7 @@ import {
   LiveMetricsRow,
 } from "./LiveProjectGauges";
 import { WelcomeMilestoneTimeline } from "./WelcomeMilestoneTimeline";
+import { welcomeRecentActivityFeedItemKey } from "@/lib/welcomeRecentActivityFeed";
 
 const imgLucidePlus = mcpAsset("91e46d01-6ae8-4fc9-aa4e-13b1040fb3cf");
 const imgLucideActivity = mcpAsset("8b04e159-5943-4424-a1ff-8259ce5f1905");
@@ -172,6 +173,14 @@ function classificationLabel(classification: GitContributionClassification | nul
   }
 }
 
+function taskMovePillProps(): { className: string } {
+  const base =
+    "inline-flex shrink-0 rounded-full border border-solid px-2.5 py-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium leading-none";
+  return {
+    className: `${base} border-[#cfe8fc] bg-[#e8f4fe] text-[#0b4f7a]`,
+  };
+}
+
 function classificationPillProps(
   classification: GitContributionClassification | null | undefined,
 ): { className: string; style?: CSSProperties } {
@@ -225,8 +234,9 @@ function formatActivityTimelineDate(iso: string | null | undefined): string {
   return `${dd}-${mm}-${yyyy}`;
 }
 
-const RECENT_ACTIVITY_PAGE_SIZE = 7;
-const RECENT_ACTIVITY_FETCH_LIMIT = 100;
+/** Initial batch and each “Show more” step (server `limit` grows: 5 → 10 → 15 …). */
+const RECENT_ACTIVITY_PAGE_SIZE = 5;
+const RECENT_ACTIVITY_MAX_LIMIT = 500;
 
 function RecentActivitySkeletonRows() {
   return (
@@ -255,10 +265,10 @@ function RecentActivitySkeletonRows() {
 }
 
 function LiveRecentActivityList({ projectId, members }: { projectId: number; members: Member[] }) {
-  const [activityExpanded, setActivityExpanded] = useState(false);
+  const [feedLimit, setFeedLimit] = useState(RECENT_ACTIVITY_PAGE_SIZE);
 
   useEffect(() => {
-    setActivityExpanded(false);
+    setFeedLimit(RECENT_ACTIVITY_PAGE_SIZE);
   }, [projectId]);
 
   const memberNameByUserId = useMemo(() => {
@@ -270,18 +280,18 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
   }, [members]);
 
   const { data, isLoading, isError, isFetching, refetch } = useQuery({
-    queryKey: ["projects", projectId, "git-contributions", "recent"],
-    queryFn: () => fetchProjectGitContributions(projectId, { limit: RECENT_ACTIVITY_FETCH_LIMIT }),
+    queryKey: ["projects", projectId, "welcome-recent-activity", feedLimit],
+    queryFn: () => fetchWelcomeRecentActivityFeed(projectId, { limit: feedLimit }),
     enabled: projectId != null,
     staleTime: STALE_SHORT_MS,
+    placeholderData: (previousData) => previousData,
   });
 
-  const rows = useMemo(() => data?.data ?? [], [data?.data]);
-  const displayRows = useMemo(() => {
-    if (rows.length <= RECENT_ACTIVITY_PAGE_SIZE || activityExpanded) return rows;
-    return rows.slice(0, RECENT_ACTIVITY_PAGE_SIZE);
-  }, [rows, activityExpanded]);
-  const hasMoreThanPage = rows.length > RECENT_ACTIVITY_PAGE_SIZE;
+  const rows = useMemo(() => data?.items ?? [], [data?.items]);
+  /** Full page returned and we are below the API cap ⇒ there may be more rows (fetch next page on “Show more”). */
+  const canLoadMore =
+    rows.length > 0 && rows.length === feedLimit && feedLimit < RECENT_ACTIVITY_MAX_LIMIT;
+  const canShowLess = feedLimit > RECENT_ACTIVITY_PAGE_SIZE && rows.length > 0;
 
   return (
     <>
@@ -328,15 +338,64 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
           className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
           aria-hidden
         />
-        {displayRows.map((c) => {
-          const author = c.user_name?.trim() || memberNameByUserId.get(c.user_id) || "Contributor";
-          const summary = commitSummaryLine(c);
-          const branchLabel = c.branch?.trim() || "default";
-          const titleLine = `${author} pushed to ${branchLabel}`;
-          const dateLabel = formatActivityTimelineDate(c.created_at);
+        {rows.map((entry, rowIdx) => {
+          if (entry.type === "commit") {
+            const c = entry.contribution;
+            const author = c.user_name?.trim() || memberNameByUserId.get(c.user_id) || "Contributor";
+            const summary = commitSummaryLine(c);
+            const branchLabel = c.branch?.trim() || "default";
+            const titleLine = `${author} pushed to ${branchLabel}`;
+            const dateLabel = formatActivityTimelineDate(c.created_at);
+            return (
+              <div
+                key={welcomeRecentActivityFeedItemKey(entry, rowIdx)}
+                className="relative z-[1] flex max-w-[474px] items-start overflow-hidden rounded-[8px] pr-2"
+              >
+                <div className="flex w-[50px] shrink-0 justify-center">
+                  <div
+                    className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]"
+                    aria-hidden
+                  >
+                    <GitCommit className="size-4 text-[#606d76]" strokeWidth={2} />
+                  </div>
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col justify-center py-1.5 pl-4 pr-2 font-['Satoshi',sans-serif] font-medium leading-normal">
+                  <p className="w-[183px] max-w-full truncate text-[12px] text-[#727d83]" title={c.created_at ?? undefined}>
+                    {dateLabel}
+                  </p>
+                  <p className="text-[16px] text-[#0b191f]">{titleLine}</p>
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <span {...classificationPillProps(c.classification)}>
+                      {classificationLabel(c.classification)}
+                    </span>
+                    {c.commit_url ? (
+                      <a
+                        href={c.commit_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-w-0 max-w-full items-center gap-1 truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 hover:text-[#0d52cc]"
+                        title={summary}
+                      >
+                        <span className="min-w-0 truncate">{summary}</span>
+                        <ExternalLink className="size-3 shrink-0" strokeWidth={2} aria-hidden />
+                      </a>
+                    ) : (
+                      <p className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-[#727d83]" title={summary}>
+                        {summary}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          const actor = entry.user_name?.trim() || (entry.user_id != null ? memberNameByUserId.get(entry.user_id) : undefined) || "Someone";
+          const dateLabel = formatActivityTimelineDate(entry.created_at);
+          const columnLine = `${entry.from_column} → ${entry.to_column}`;
+          const titleLine = `${actor} moved “${entry.task_title}”`;
           return (
             <div
-              key={c.id}
+              key={welcomeRecentActivityFeedItemKey(entry, rowIdx)}
               className="relative z-[1] flex max-w-[474px] items-start overflow-hidden rounded-[8px] pr-2"
             >
               <div className="flex w-[50px] shrink-0 justify-center">
@@ -344,48 +403,48 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
                   className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]"
                   aria-hidden
                 >
-                  <GitCommit className="size-4 text-[#606d76]" strokeWidth={2} />
+                  <ArrowRightLeft className="size-4 text-[#606d76]" strokeWidth={2} />
                 </div>
               </div>
               <div className="flex min-w-0 flex-1 flex-col justify-center py-1.5 pl-4 pr-2 font-['Satoshi',sans-serif] font-medium leading-normal">
-                <p className="w-[183px] max-w-full truncate text-[12px] text-[#727d83]" title={c.created_at ?? undefined}>
+                <p className="w-[183px] max-w-full truncate text-[12px] text-[#727d83]" title={entry.created_at}>
                   {dateLabel}
                 </p>
                 <p className="text-[16px] text-[#0b191f]">{titleLine}</p>
                 <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                  <span {...classificationPillProps(c.classification)}>
-                    {classificationLabel(c.classification)}
-                  </span>
-                  {c.commit_url ? (
-                    <a
-                      href={c.commit_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex min-w-0 max-w-full items-center gap-1 truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 hover:text-[#0d52cc]"
-                      title={summary}
-                    >
-                      <span className="min-w-0 truncate">{summary}</span>
-                      <ExternalLink className="size-3 shrink-0" strokeWidth={2} aria-hidden />
-                    </a>
-                  ) : (
-                    <p className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-[#727d83]" title={summary}>
-                      {summary}
-                    </p>
-                  )}
+                  <span {...taskMovePillProps()}>Column move</span>
+                  <p className="min-w-0 max-w-full truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-[#727d83]" title={columnLine}>
+                    {columnLine}
+                  </p>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
-      {hasMoreThanPage ? (
-        <button
-          type="button"
-          onClick={() => setActivityExpanded((v) => !v)}
-          className="mt-2 self-start pl-[66px] font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 outline-none hover:text-[#0d52cc] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40"
-        >
-          {activityExpanded ? "Show less" : "Show more"}
-        </button>
+      {canLoadMore || canShowLess ? (
+        <div className="mt-2 flex flex-wrap items-center gap-4 pl-[66px]">
+          {canLoadMore ? (
+            <button
+              type="button"
+              onClick={() => setFeedLimit((n) => Math.min(n + RECENT_ACTIVITY_PAGE_SIZE, RECENT_ACTIVITY_MAX_LIMIT))}
+              disabled={isFetching}
+              className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 outline-none hover:text-[#0d52cc] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isFetching ? "Loading…" : "Show more"}
+            </button>
+          ) : null}
+          {canShowLess ? (
+            <button
+              type="button"
+              onClick={() => setFeedLimit(RECENT_ACTIVITY_PAGE_SIZE)}
+              disabled={isFetching}
+              className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] underline decoration-[#606d76]/40 underline-offset-2 outline-none hover:text-[#0b191f] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Show less
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
       )}
