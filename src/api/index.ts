@@ -19,6 +19,7 @@ export {
     deleteProjectAttachment,
     getProjectAttachmentDownloadUrl,
     downloadProjectAttachment,
+    fetchWelcomeRecentActivityFeed,
 } from './projects';
 export type { DownloadProjectAttachmentResult } from './projects';
 export { fetchCursorMcpTaskDetail } from './cursorMcp';

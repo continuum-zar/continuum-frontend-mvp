@@ -1,4 +1,4 @@
-/** Matches project-level recent activity (`WelcomeEmptyProjectBody` RECENT_ACTIVITY_PAGE_SIZE). */
+/** Default page size for task activity timeline “Show more” (welcome feed uses its own constant). */
 export const TASK_ACTIVITY_TIMELINE_PAGE_SIZE = 7;
 
 export function sliceTaskActivityTimeline<T>(

@@ -65,7 +65,6 @@ import { AssignMemberModal } from '../components/AssignMemberModal';
 import { LogTimeModal } from '../components/dashboard-placeholder/LogTimeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
-import { VirtualList } from '@/app/components/ui/VirtualList';
 
 /* ─── helpers ─── */
 
@@ -105,6 +104,9 @@ const SCOPE_OPTIONS: { value: ScopeWeight; label: string }[] = [
 ];
 
 const AVATAR_COLORS = ['#E8A303', '#EE7F84', '#7157E7', '#4A9FF8', '#10b981', '#f17173'];
+
+/** Task sidebar: initial rows and each “Show more” step for Comments + Activity. */
+const TASK_DETAIL_FEED_PAGE = 3;
 
 function resolveAssigneeLabel(idStr: string | null | undefined, members: Member[] | undefined): string {
   if (idStr == null || idStr === '') return 'Unassigned';
@@ -427,6 +429,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const commentsQuery = useTaskCommentsInfinite(taskId);
   const comments = commentsQuery.data?.pages.flatMap((p) => p.comments) ?? [];
   const commentsLoading = commentsQuery.isLoading;
+  const commentsSorted = useMemo(
+    () =>
+      [...comments].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+    [comments],
+  );
   const createCommentMutation = useCreateTaskComment(taskId);
   const { data: members } = useProjectMembers(task?.project_id, { enabled: !!task?.project_id });
   const addTaskLabelMutation = useAddTaskLabel(taskId);
@@ -466,6 +473,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [scopeDropdownOpen, setScopeDropdownOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [mcpLinkCopied, setMcpLinkCopied] = useState(false);
+  const [visibleCommentCount, setVisibleCommentCount] = useState(TASK_DETAIL_FEED_PAGE);
+  const [visibleActivityCount, setVisibleActivityCount] = useState(TASK_DETAIL_FEED_PAGE);
 
   const cursorMcpShareUrl = useMemo(() => {
     if (typeof window === 'undefined' || !taskId) return '';
@@ -484,17 +493,46 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     }
   }, [cursorMcpShareUrl]);
 
-  const loadMoreTimeline = useCallback(() => {
-    if (timelineQuery.hasNextPage && !timelineQuery.isFetchingNextPage) {
-      void timelineQuery.fetchNextPage();
-    }
-  }, [timelineQuery]);
+  useEffect(() => {
+    setVisibleCommentCount(TASK_DETAIL_FEED_PAGE);
+    setVisibleActivityCount(TASK_DETAIL_FEED_PAGE);
+  }, [taskId]);
 
-  const loadMoreComments = useCallback(() => {
-    if (commentsQuery.hasNextPage && !commentsQuery.isFetchingNextPage) {
+  useEffect(() => {
+    if (taskId == null) return;
+    if (
+      visibleCommentCount > commentsSorted.length &&
+      commentsQuery.hasNextPage &&
+      !commentsQuery.isFetchingNextPage
+    ) {
       void commentsQuery.fetchNextPage();
     }
-  }, [commentsQuery]);
+  }, [
+    taskId,
+    visibleCommentCount,
+    commentsSorted.length,
+    commentsQuery.hasNextPage,
+    commentsQuery.isFetchingNextPage,
+    commentsQuery,
+  ]);
+
+  useEffect(() => {
+    if (taskId == null) return;
+    if (
+      visibleActivityCount > timeline.length &&
+      timelineQuery.hasNextPage &&
+      !timelineQuery.isFetchingNextPage
+    ) {
+      void timelineQuery.fetchNextPage();
+    }
+  }, [
+    taskId,
+    visibleActivityCount,
+    timeline.length,
+    timelineQuery.hasNextPage,
+    timelineQuery.isFetchingNextPage,
+    timelineQuery,
+  ]);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descTextareaRef = useAutosizeTextarea(descDraft, { minPx: 106, maxPx: 560 });
@@ -731,9 +769,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
 
   const assigneeUserIds = getTaskAssigneeUserIds(task);
   const mappedAttachments = (attachments ?? []).map(mapAttachment);
-  const sortedComments = [...(comments ?? [])].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-  );
+  const displayedComments = commentsSorted.slice(0, visibleCommentCount);
+  const displayedTimeline = timeline.slice(0, visibleActivityCount);
+  const hasMoreComments =
+    commentsSorted.length > visibleCommentCount || commentsQuery.hasNextPage;
+  const hasMoreActivity = timeline.length > visibleActivityCount || timelineQuery.hasNextPage;
 
   return (
     <div className="flex h-full w-full min-h-0 items-stretch font-['Satoshi',sans-serif]">
@@ -1291,40 +1331,54 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   </div>
                 ))}
               </div>
-            ) : sortedComments.length > 0 ? (
-              <VirtualList
-                items={sortedComments}
-                threshold={12}
-                estimateSize={96}
-                gap={16}
-                maxHeight="min(45vh, 420px)"
-                getItemKey={(c) => c.id}
-                onEndReached={loadMoreComments}
-                scrollClassName="pr-1"
-              >
-                {(c) => (
-                  <div className="flex gap-4">
-                    <div className="mt-1 shrink-0">
-                      <TaskCommentAvatar author={c.author} />
+            ) : commentsSorted.length > 0 ? (
+              <>
+                <div className="flex flex-col gap-4">
+                  {displayedComments.map((c) => (
+                    <div key={c.id} className="flex gap-4">
+                      <div className="mt-1 shrink-0">
+                        <TaskCommentAvatar author={c.author} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[12px] text-[#727d83]">
+                          {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                        </p>
+                        <p className="text-[16px] leading-none text-[#0b191f]">{commentAuthorDisplayName(c.author)}</p>
+                        <p className="mt-1 whitespace-pre-wrap text-[14px] font-medium leading-snug text-[#606d76]">
+                          {c.content}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[12px] text-[#727d83]">
-                        {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                      </p>
-                      <p className="text-[16px] leading-none text-[#0b191f]">{commentAuthorDisplayName(c.author)}</p>
-                      <p className="mt-1 whitespace-pre-wrap text-[14px] font-medium leading-snug text-[#606d76]">
-                        {c.content}
-                      </p>
-                    </div>
+                  ))}
+                </div>
+                {hasMoreComments || visibleCommentCount > TASK_DETAIL_FEED_PAGE ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-4">
+                    {hasMoreComments ? (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleCommentCount((n) => n + TASK_DETAIL_FEED_PAGE)}
+                        disabled={commentsQuery.isFetchingNextPage}
+                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 outline-none hover:text-[#0d52cc] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {commentsQuery.isFetchingNextPage ? 'Loading…' : 'Show more'}
+                      </button>
+                    ) : null}
+                    {visibleCommentCount > TASK_DETAIL_FEED_PAGE && commentsSorted.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleCommentCount(TASK_DETAIL_FEED_PAGE)}
+                        disabled={commentsQuery.isFetchingNextPage}
+                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] underline decoration-[#606d76]/40 underline-offset-2 outline-none hover:text-[#0b191f] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Show less
+                      </button>
+                    ) : null}
                   </div>
-                )}
-              </VirtualList>
+                ) : null}
+              </>
             ) : (
               <p className="text-[13px] text-[#727d83]">No comments yet.</p>
             )}
-            {sortedComments.length > 0 && commentsQuery.isFetchingNextPage ? (
-              <p className="mt-2 text-[13px] text-[#727d83]">Loading more comments…</p>
-            ) : null}
           </div>
 
           {/* Activity */}
@@ -1348,38 +1402,49 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               </div>
             ) : timeline.length > 0 ? (
               <>
-                <div id="task-activity-timeline-list" role="list">
-                  <VirtualList
-                    items={timeline}
-                    threshold={10}
-                    estimateSize={88}
-                    gap={16}
-                    maxHeight="min(45vh, 420px)"
-                    getItemKey={(entry) => entry.id}
-                    timelineLineLeftPx={24}
-                    onEndReached={loadMoreTimeline}
-                    scrollClassName="pr-1"
-                  >
-                    {(entry) => (
-                      <div className="relative z-[1] flex gap-4" role="listitem">
-                        <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
-                          <Activity size={16} className="text-[#727d83]" />
-                        </div>
-                        <div>
-                          <p className="text-[12px] text-[#727d83]">
-                            {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
-                          </p>
-                          <p className="text-[16px] leading-none text-[#0b191f]">{timelineActorName(entry)}</p>
-                          <p className="text-[12px] text-[#727d83]">{getActivityLabel(entry, members)}</p>
-                        </div>
+                <div id="task-activity-timeline-list" role="list" className="relative flex flex-col gap-4">
+                  <div
+                    className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
+                    aria-hidden
+                  />
+                  {displayedTimeline.map((entry) => (
+                    <div key={entry.id} className="relative z-[1] flex gap-4" role="listitem">
+                      <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
+                        <Activity size={16} className="text-[#727d83]" />
                       </div>
-                    )}
-                  </VirtualList>
+                      <div>
+                        <p className="text-[12px] text-[#727d83]">
+                          {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
+                        </p>
+                        <p className="text-[16px] leading-none text-[#0b191f]">{timelineActorName(entry)}</p>
+                        <p className="text-[12px] text-[#727d83]">{getActivityLabel(entry, members)}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                {timelineQuery.isFetchingNextPage ? (
-                  <p className="mt-2 pl-[66px] font-['Satoshi',sans-serif] text-[13px] text-[#727d83]">
-                    Loading more activity…
-                  </p>
+                {hasMoreActivity || visibleActivityCount > TASK_DETAIL_FEED_PAGE ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-4 pl-[66px]">
+                    {hasMoreActivity ? (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleActivityCount((n) => n + TASK_DETAIL_FEED_PAGE)}
+                        disabled={timelineQuery.isFetchingNextPage}
+                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 outline-none hover:text-[#0d52cc] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {timelineQuery.isFetchingNextPage ? 'Loading…' : 'Show more'}
+                      </button>
+                    ) : null}
+                    {visibleActivityCount > TASK_DETAIL_FEED_PAGE && timeline.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleActivityCount(TASK_DETAIL_FEED_PAGE)}
+                        disabled={timelineQuery.isFetchingNextPage}
+                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] underline decoration-[#606d76]/40 underline-offset-2 outline-none hover:text-[#0b191f] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Show less
+                      </button>
+                    ) : null}
+                  </div>
                 ) : null}
               </>
             ) : (
