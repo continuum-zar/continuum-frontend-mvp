@@ -2,12 +2,12 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getKanbanColumnInsertSlot, insertSlotToReorderIndex } from "./kanbanColumnReorder";
 import { setKanbanDragActive } from "./kanbanCursor";
+import {
+  isPointerInKanbanBoardHorizontalScrollZone,
+  stepKanbanBoardHorizontalAutoScrollFromPointer,
+} from "./kanbanBoardHorizontalAutoScroll";
 
 const DRAG_THRESHOLD_PX = 6;
-/** Distance from board edge (px) where auto-scroll starts. */
-const AUTO_SCROLL_EDGE_PX = 56;
-/** Max horizontal scroll per frame at full intensity. */
-const AUTO_SCROLL_MAX_STEP_PX = 18;
 
 type BoardEl = HTMLDivElement | null;
 
@@ -92,19 +92,7 @@ export function useKanbanColumnPointerDrag({ boardRef, columnIds, onReorder }: O
         if (!board || !d?.active) return;
 
         const x = d.lastClientX;
-        const br = board.getBoundingClientRect();
-        const maxScroll = Math.max(0, board.scrollWidth - board.clientWidth);
-        let inZone = false;
-
-        if (x < br.left + AUTO_SCROLL_EDGE_PX && board.scrollLeft > 0.5) {
-          inZone = true;
-          const t = Math.min(1, (br.left + AUTO_SCROLL_EDGE_PX - x) / AUTO_SCROLL_EDGE_PX);
-          board.scrollLeft = Math.max(0, board.scrollLeft - AUTO_SCROLL_MAX_STEP_PX * t);
-        } else if (x > br.right - AUTO_SCROLL_EDGE_PX && board.scrollLeft < maxScroll - 0.5) {
-          inZone = true;
-          const t = Math.min(1, (x - (br.right - AUTO_SCROLL_EDGE_PX)) / AUTO_SCROLL_EDGE_PX);
-          board.scrollLeft = Math.min(maxScroll, board.scrollLeft + AUTO_SCROLL_MAX_STEP_PX * t);
-        }
+        const inZone = stepKanbanBoardHorizontalAutoScrollFromPointer(board, x);
 
         const rects = readColumnRects(board);
         if (rects.length === columnIdsRef.current.length) {
@@ -177,14 +165,8 @@ export function useKanbanColumnPointerDrag({ boardRef, columnIds, onReorder }: O
 
       if (d.active) {
         const board = boardRef.current;
-        if (board) {
-          const br = board.getBoundingClientRect();
-          const maxScroll = Math.max(0, board.scrollWidth - board.clientWidth);
-          const inLeft =
-            e.clientX < br.left + AUTO_SCROLL_EDGE_PX && board.scrollLeft > 0.5;
-          const inRight =
-            e.clientX > br.right - AUTO_SCROLL_EDGE_PX && board.scrollLeft < maxScroll - 0.5;
-          if ((inLeft || inRight) && autoScrollRafRef.current == null) {
+        if (board && isPointerInKanbanBoardHorizontalScrollZone(board, e.clientX)) {
+          if (autoScrollRafRef.current == null) {
             scheduleAutoScroll();
           }
         }

@@ -1,15 +1,22 @@
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  isPointerInKanbanBoardHorizontalScrollZone,
+  stepKanbanBoardHorizontalAutoScrollFromPointer,
+} from "./kanbanBoardHorizontalAutoScroll";
 import { setKanbanDragActive } from "./kanbanCursor";
 
 const DRAG_THRESHOLD_PX = 5;
 
-interface Options {
+export interface UseKanbanPointerDragOptions {
   onDrop: (taskId: string, columnId: string) => void;
   getTaskColumn: (taskId: string) => string | null;
+  /** Horizontal scroll container for the board row; enables edge auto-scroll while dragging a card. */
+  boardScrollRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-interface DragRef {
+/** In-flight pointer drag state for a task card (ghost, thresholds, latest pointer for scroll). */
+interface CardDragSession {
   taskId: string;
   startX: number;
   startY: number;
@@ -18,17 +25,35 @@ interface DragRef {
   active: boolean;
   ghost: HTMLElement | null;
   sourceEl: HTMLElement | null;
+  /** Latest pointer position (viewport) — drives auto-scroll RAF and hit-testing after scroll. */
+  lastClientX: number;
+  lastClientY: number;
 }
 
-export function useKanbanPointerDrag({ onDrop, getTaskColumn }: Options) {
+export function useKanbanPointerDrag({
+  onDrop,
+  getTaskColumn,
+  boardScrollRef,
+}: UseKanbanPointerDragOptions) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
-  const drag = useRef<DragRef | null>(null);
+  const drag = useRef<CardDragSession | null>(null);
+  const autoScrollRafRef = useRef<number | null>(null);
+
   const onDropRef = useRef(onDrop);
   onDropRef.current = onDrop;
   const getTaskColumnRef = useRef(getTaskColumn);
   getTaskColumnRef.current = getTaskColumn;
+  const boardScrollRefStable = useRef(boardScrollRef);
+  boardScrollRefStable.current = boardScrollRef;
+
+  const cancelAutoScroll = useCallback(() => {
+    if (autoScrollRafRef.current != null) {
+      cancelAnimationFrame(autoScrollRafRef.current);
+      autoScrollRafRef.current = null;
+    }
+  }, []);
 
   const findColumn = useCallback(
     (x: number, y: number, ghost: HTMLElement | null): string | null => {
@@ -46,6 +71,7 @@ export function useKanbanPointerDrag({ onDrop, getTaskColumn }: Options) {
   );
 
   const cleanup = useCallback(() => {
+    cancelAutoScroll();
     const d = drag.current;
     if (d?.ghost) d.ghost.remove();
     drag.current = null;
@@ -53,7 +79,7 @@ export function useKanbanPointerDrag({ onDrop, getTaskColumn }: Options) {
     setDragOverCol(null);
     setKanbanDragActive(false);
     document.body.style.removeProperty("user-select");
-  }, []);
+  }, [cancelAutoScroll]);
 
   const swallowNextClick = useCallback(() => {
     const handler = (e: MouseEvent) => {
@@ -71,9 +97,33 @@ export function useKanbanPointerDrag({ onDrop, getTaskColumn }: Options) {
   } | null>(null);
 
   useEffect(() => {
+    const scheduleAutoScroll = () => {
+      if (autoScrollRafRef.current != null) return;
+      const tick = () => {
+        autoScrollRafRef.current = null;
+        const board = boardScrollRefStable.current?.current ?? null;
+        const d = drag.current;
+        if (!board || !d?.active) return;
+
+        const inZone = stepKanbanBoardHorizontalAutoScrollFromPointer(board, d.lastClientX);
+
+        const col = findColumn(d.lastClientX, d.lastClientY, d.ghost);
+        const current = getTaskColumnRef.current(d.taskId);
+        setDragOverCol(col && col !== current ? col : null);
+
+        if (drag.current?.active && inZone) {
+          autoScrollRafRef.current = requestAnimationFrame(tick);
+        }
+      };
+      autoScrollRafRef.current = requestAnimationFrame(tick);
+    };
+
     const onMove = (e: PointerEvent) => {
       const d = drag.current;
       if (!d) return;
+
+      d.lastClientX = e.clientX;
+      d.lastClientY = e.clientY;
 
       const dx = e.clientX - d.startX;
       const dy = e.clientY - d.startY;
@@ -118,11 +168,20 @@ export function useKanbanPointerDrag({ onDrop, getTaskColumn }: Options) {
       const col = findColumn(e.clientX, e.clientY, d.ghost);
       const current = getTaskColumnRef.current(d.taskId);
       setDragOverCol(col && col !== current ? col : null);
+
+      const board = boardScrollRefStable.current?.current ?? null;
+      if (d.active && board && isPointerInKanbanBoardHorizontalScrollZone(board, e.clientX)) {
+        if (autoScrollRafRef.current == null) {
+          scheduleAutoScroll();
+        }
+      }
     };
 
     const onUp = (e: PointerEvent) => {
       const d = drag.current;
       if (!d) return;
+
+      cancelAutoScroll();
 
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
@@ -162,7 +221,7 @@ export function useKanbanPointerDrag({ onDrop, getTaskColumn }: Options) {
       }
       cleanup();
     };
-  }, [findColumn, cleanup, swallowNextClick]);
+  }, [findColumn, cleanup, swallowNextClick, cancelAutoScroll]);
 
   const cardPointerDown = useCallback(
     (taskId: string) => (e: React.PointerEvent<HTMLDivElement>) => {
@@ -187,6 +246,8 @@ export function useKanbanPointerDrag({ onDrop, getTaskColumn }: Options) {
         active: false,
         ghost: null,
         sourceEl: el,
+        lastClientX: e.clientX,
+        lastClientY: e.clientY,
       };
 
       const h = handlersRef.current;

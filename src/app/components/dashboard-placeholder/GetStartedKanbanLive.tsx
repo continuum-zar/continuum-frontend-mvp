@@ -279,7 +279,10 @@ export function GetStartedKanbanLive({
     });
   };
 
+  const kanbanBoardRowRef = useRef<HTMLDivElement | null>(null);
+
   const { draggingId, dragOverCol, cardPointerDown } = useKanbanPointerDrag({
+    boardScrollRef: kanbanBoardRowRef,
     onDrop: (taskId, colId) => {
       handleMoveToColumn(taskId, colId);
     },
@@ -289,7 +292,6 @@ export function GetStartedKanbanLive({
     },
   });
 
-  const kanbanBoardRowRef = useRef<HTMLDivElement | null>(null);
   const setKanbanBoardRowRef = useCallback(
     (el: HTMLDivElement | null) => {
       kanbanBoardRowRef.current = el;
@@ -367,12 +369,23 @@ export function GetStartedKanbanLive({
         onMoveToColumn={(columnId) => handleMoveToColumn(task.id, columnId)}
       >
         <div
-          className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${isDragging ? "opacity-0" : "cursor-open-hand"}`}
+          className={cn(
+            "content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100",
+            isDragging ? "pointer-events-none" : "cursor-open-hand",
+          )}
           onPointerDown={cardPointerDown(task.id)}
-          onClick={() => navigate(taskHref)}
+          onClick={() => {
+            if (!isDragging) navigate(taskHref);
+          }}
         >
+          {isDragging ? (
+            <div
+              className="flex min-h-[184px] w-full shrink-0 flex-col items-center justify-center rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)] px-4 py-6"
+              aria-label="Original column — drop here to keep this task in this list"
+            />
+          ) : (
         <div
-          className={`bg-white ${isDragging ? "border-2 border-[#24B5F8]" : "border border-[#ebedee]"} border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full`}
+          className="border-border bg-white content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] border border-solid shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full"
         >
           <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full">
             <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">
@@ -453,6 +466,7 @@ export function GetStartedKanbanLive({
             </div>
           </div>
         </div>
+          )}
         </div>
       </KanbanTaskCardContextMenu>
     );
