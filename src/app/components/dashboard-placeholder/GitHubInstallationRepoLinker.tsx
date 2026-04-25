@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { useLinkRepository, useProjectRepositories } from "@/api";
 import { getGitHubOAuthAuthorizeLocation } from "@/api/githubApp";
+import { isGithubInstallationAccessExpiredError } from "@/api/githubInstallationAccessError";
 import { getApiErrorMessage, useGithubInstallationRepositories } from "@/api/hooks";
 import { rememberGithubOAuthReturnPath } from "@/lib/githubOAuthReturn";
 import type { GitHubInstallationRepository } from "@/types/githubApp";
@@ -70,7 +71,9 @@ export function GitHubInstallationRepoLinker({
 
   const axiosStatus = isAxiosError(reposQuery.error) ? reposQuery.error.response?.status : undefined;
   const notConnected = axiosStatus === 404;
-  const forbidden = axiosStatus === 403;
+  const accessExpired =
+    reposQuery.isError && isGithubInstallationAccessExpiredError(reposQuery.error);
+  const forbidden = axiosStatus === 403 && !accessExpired;
   const serviceUnavailable = axiosStatus === 503;
   const connected = reposQuery.isSuccess;
 
@@ -152,6 +155,11 @@ export function GitHubInstallationRepoLinker({
                 Not connected yet. Use <span className="font-medium text-[#0b191f]">Connect to GitHub</span> to authorize
                 the app for this project.
               </p>
+            ) : accessExpired ? (
+              <p className="text-[14px] text-[#0b191f]">
+                <span className="font-medium">Your GitHub access has expired.</span>{" "}
+                Reconnect so Continuum can list repositories and keep indexing up to date.
+              </p>
             ) : forbidden ? (
               <p className="text-[14px] text-[#0b191f]">
                 You don&apos;t have access to this project&apos;s GitHub data. Ask a project admin to connect or grant
@@ -188,6 +196,16 @@ export function GitHubInstallationRepoLinker({
             onClick={() => void handleConnect()}
             disabled={reposQuery.isLoading}
             className="mt-1 self-start text-[13px] font-semibold text-[#5521FE] underline underline-offset-2 transition-colors hover:text-[#3b19b0] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Reconnect to GitHub
+          </button>
+        ) : accessExpired ? (
+          <button
+            type="button"
+            onClick={() => void handleConnect()}
+            disabled={reposQuery.isLoading || connectBusy}
+            style={{ background: PRIMARY_GRADIENT }}
+            className="mt-1 inline-flex h-10 w-full items-center justify-center rounded-[8px] text-[14px] font-semibold text-white transition-[filter] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-[200px] sm:self-start"
           >
             Reconnect to GitHub
           </button>
