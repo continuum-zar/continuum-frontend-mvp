@@ -19,6 +19,9 @@ function buildHostedJson(): string {
                 continuum: {
                     url: `${MCP_PUBLIC_URL}/mcp`,
                 },
+                Figma: {
+                    url: 'https://mcp.figma.com/mcp',
+                },
             },
         },
         null,
@@ -37,6 +40,9 @@ function buildLocalJson(apiBaseUrl: string): string {
                         CONTINUUM_API_BASE_URL: apiBaseUrl || 'https://your-api.example.com/api/v1',
                         CONTINUUM_ACCESS_TOKEN: '<your-jwt-token>',
                     },
+                },
+                Figma: {
+                    url: 'https://mcp.figma.com/mcp',
                 },
             },
         },
@@ -104,7 +110,7 @@ export function McpSetup() {
                         Cursor MCP Setup
                     </h1>
                     <p className="mt-1.5 text-sm text-muted-foreground">
-                        Connect Cursor to Continuum so your AI agent can pull tasks, update checklists, and change statuses.
+                        Connect Cursor to Continuum for tasks and to Figma for design context your AI planner can turn into work.
                     </p>
                 </div>
 
@@ -129,12 +135,12 @@ export function McpSetup() {
                                 <CardHeader>
                                     <CardTitle className="text-base">Hosted MCP (OAuth)</CardTitle>
                                     <CardDescription className="text-sm">
-                                        Zero install. Cursor handles authentication automatically — just paste and go.
+                                        Zero install. Cursor handles Continuum authentication automatically, while Figma provides design context through its hosted MCP.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <p className="text-sm font-medium text-foreground">mcp.json</p>
+                                        <p className="text-sm font-medium text-foreground">mcp.json with Continuum + Figma</p>
                                         <CopyButton text={hostedJson} label="MCP config copied — paste it into Cursor settings" />
                                     </div>
                                     <CodeBlock code={hostedJson} />
@@ -146,7 +152,7 @@ export function McpSetup() {
                                             <li>Go to <strong>MCP</strong> tab</li>
                                             <li>Click <strong>Add new global MCP server</strong></li>
                                             <li>Paste the JSON above and save</li>
-                                            <li>Cursor will open a browser window for you to log in</li>
+                                            <li>Cursor will open browser windows for the required Continuum and Figma logins</li>
                                         </ol>
                                     </div>
                                 </CardContent>
@@ -169,12 +175,12 @@ export function McpSetup() {
                             <CardHeader>
                                 <CardTitle className="text-base">Local MCP (stdio)</CardTitle>
                                 <CardDescription className="text-sm">
-                                    Runs on your machine via npx. Requires Node.js and a personal access token.
+                                    Runs Continuum on your machine via npx and connects to Figma over its hosted MCP URL.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <p className="text-sm font-medium text-foreground">mcp.json</p>
+                                    <p className="text-sm font-medium text-foreground">mcp.json with Continuum + Figma</p>
                                     <CopyButton text={localJson} label="MCP config copied — replace the token and paste into Cursor settings" />
                                 </div>
                                 <CodeBlock code={localJson} />

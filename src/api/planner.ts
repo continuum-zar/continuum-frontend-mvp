@@ -17,6 +17,18 @@ export interface FileContent {
     text: string;
 }
 
+export interface FigmaContext {
+    file_key: string;
+    node_id?: string | null;
+    url?: string | null;
+    source_name?: string | null;
+    summary: string;
+    components?: string[];
+    tokens?: string[];
+    interactions?: string[];
+    screenshots?: string[];
+}
+
 export interface PlannerChatResponse {
     reply: string;
     confidence: number;
@@ -89,6 +101,7 @@ function isAbortLike(err: unknown): boolean {
 export async function sendPlannerChat(
     messages: PlannerMessage[],
     file_contents: FileContent[],
+    figma_context?: FigmaContext | null,
     options?: { signal?: AbortSignal },
 ): Promise<PlannerChatResponse> {
     const { data } = await api.post<PlannerChatResponse>(
@@ -96,6 +109,7 @@ export async function sendPlannerChat(
         {
             messages,
             file_contents,
+            figma_context,
         },
         { signal: options?.signal, timeout: 600_000 },
     );
@@ -105,10 +119,12 @@ export async function sendPlannerChat(
 export async function generatePlan(
     messages: PlannerMessage[],
     file_contents: FileContent[],
+    figma_context?: FigmaContext | null,
 ): Promise<GeneratePlanResponse> {
     const { data: raw } = await api.post<unknown>('/planner/generate-plan', {
         messages,
         file_contents,
+        figma_context,
     }, {
         timeout: 600_000,
     });
@@ -154,11 +170,13 @@ export function usePlannerChat() {
             messages,
             file_contents,
             signal,
+            figma_context,
         }: {
             messages: PlannerMessage[];
             file_contents: FileContent[];
+            figma_context?: FigmaContext | null;
             signal?: AbortSignal;
-        }) => sendPlannerChat(messages, file_contents, { signal }),
+        }) => sendPlannerChat(messages, file_contents, figma_context, { signal }),
         onError: (err: unknown) => {
             if (isAbortLike(err)) return;
             toast.error(getApiErrorMessage(err, 'Chat request failed'));
@@ -171,10 +189,12 @@ export function useGeneratePlan() {
         mutationFn: ({
             messages,
             file_contents,
+            figma_context,
         }: {
             messages: PlannerMessage[];
             file_contents: FileContent[];
-        }) => generatePlan(messages, file_contents),
+            figma_context?: FigmaContext | null;
+        }) => generatePlan(messages, file_contents, figma_context),
         onError: (err: unknown) => {
             toast.error(getApiErrorMessage(err, 'Plan generation failed'));
         },

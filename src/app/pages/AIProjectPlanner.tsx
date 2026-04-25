@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ import {
     ChevronRight,
     Check,
     Info,
+    Link2,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import {
@@ -30,6 +32,7 @@ import {
 import type {
     PlannerMessage,
     FileContent,
+    FigmaContext,
     ProjectPlan,
     PlannedMilestone,
 } from '@/api/planner';
@@ -43,6 +46,8 @@ import {
 import { cn } from '../components/ui/utils';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { PlannerAssistantMarkdown } from '@/app/components/planner/PlannerAssistantMarkdown';
+import { Dialog, DialogClose, DialogOverlay, DialogPortal } from '@/app/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 
 type Phase = 'chat' | 'plan_review' | 'creating' | 'complete';
 
@@ -63,6 +68,46 @@ export type AIProjectPlannerProps = {
 
 const PLAN_CARD_SHADOW =
     'shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]';
+
+function buildFigmaContextFromUrl(rawUrl: string): FigmaContext | null {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return null;
+
+    try {
+        const parsed = new URL(trimmed);
+        if (!parsed.hostname.includes('figma.com')) return null;
+
+        const segments = parsed.pathname.split('/').filter(Boolean);
+        const kind = segments[0];
+        const fileKey = kind === 'design' && segments[2] === 'branch'
+            ? segments[3]
+            : segments[1];
+        if (!fileKey) return null;
+
+        const rawNodeId = parsed.searchParams.get('node-id');
+        const nodeId = rawNodeId?.replace('-', ':') ?? null;
+
+        return {
+            file_key: fileKey,
+            node_id: nodeId,
+            url: trimmed,
+            source_name: segments[2] && segments[2] !== 'branch'
+                ? decodeURIComponent(segments[2])
+                : 'Figma design',
+            summary: [
+                'Figma design reference attached for planner context.',
+                nodeId ? `Focus node: ${nodeId}.` : 'No specific node was provided.',
+                'Use the design to derive UI surfaces, components, states, tokens, and visual acceptance criteria.',
+            ].join(' '),
+            components: [],
+            tokens: [],
+            interactions: [],
+            screenshots: [],
+        };
+    } catch {
+        return null;
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Milestone card (plan review) — AI planner visual language
@@ -172,6 +217,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     const [messages, setMessages] = useState<PlannerMessage[]>([]);
     const [input, setInput] = useState('');
     const [fileContents, setFileContents] = useState<FileContent[]>([]);
+    const [figmaContext, setFigmaContext] = useState<FigmaContext | null>(null);
     const [confidence, setConfidence] = useState(0);
     /** Set when /generate-plan succeeds; shown on plan review stat cards (distinct from chat gauge). */
     const [planConfidence, setPlanConfidence] = useState<number | null>(null);
@@ -179,6 +225,8 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     const [readyToPlan, setReadyToPlan] = useState(false);
     /** UI-only: matches Figma “Auto” affordance next to the composer submit control. */
     const [autoMode, setAutoMode] = useState(true);
+    const [figmaModalOpen, setFigmaModalOpen] = useState(false);
+    const [figmaUrlInput, setFigmaUrlInput] = useState('');
 
     // Plan state
     const [phase, setPhase] = useState<Phase>('chat');
@@ -237,6 +285,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
             const res = await chatMutation.mutateAsync({
                 messages: updatedMessages,
                 file_contents: fileContents,
+                figma_context: figmaContext,
                 signal: controller.signal,
             });
 
@@ -284,6 +333,23 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
         setFileContents((prev) => prev.filter((_, i) => i !== index));
     };
 
+    const handleAttachFigma = () => {
+        setFigmaUrlInput(figmaContext?.url ?? '');
+        setFigmaModalOpen(true);
+    };
+
+    const handleAttachFigmaFromModal = () => {
+        const next = buildFigmaContextFromUrl(figmaUrlInput);
+        if (!next) {
+            toast.error('Enter a valid Figma design URL.');
+            return;
+        }
+
+        setFigmaContext(next);
+        setFigmaModalOpen(false);
+        toast.success('Figma design attached');
+    };
+
     const handleGeneratePlan = async () => {
         if (generateMutation.isPending) return;
 
@@ -291,6 +357,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
             const res = await generateMutation.mutateAsync({
                 messages,
                 file_contents: fileContents,
+                figma_context: figmaContext,
             });
             setPlan(res.plan);
             setPlanConfidence(res.confidence);
@@ -502,7 +569,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                         {/* Composer — Figma input area (target node 77:13681; structure from 77:13509 — MCP could not resolve 77:13681) */}
                                         <div className="shrink-0 bg-gradient-to-b from-transparent to-white px-4 pb-4">
                                             <div className="mx-auto w-full max-w-[600px]">
-                                                {fileContents.length > 0 && (
+                                                {(fileContents.length > 0 || figmaContext) && (
                                                     <div className="mb-2 flex flex-wrap gap-2">
                                                         {fileContents.map((fc, i) => (
                                                             <span
@@ -533,6 +600,30 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                                                 </button>
                                                             </span>
                                                         ))}
+                                                        {figmaContext && (
+                                                            <span className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm">
+                                                                <span
+                                                                    className="flex w-9 shrink-0 items-center justify-center self-stretch bg-[#e7f2fc]"
+                                                                    aria-hidden
+                                                                >
+                                                                    <Link2
+                                                                        className="size-4 shrink-0 text-[#2f6df6]"
+                                                                        strokeWidth={1.75}
+                                                                    />
+                                                                </span>
+                                                                <span className="min-w-0 max-w-[220px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[320px]">
+                                                                    {figmaContext.source_name || 'Figma design attached'}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setFigmaContext(null)}
+                                                                    className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-[#606d76] hover:text-[#0b191f]"
+                                                                    aria-label="Remove Figma design"
+                                                                >
+                                                                    <X className="size-3.5" strokeWidth={2} />
+                                                                </button>
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 )}
 
@@ -619,23 +710,30 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                                                         />
                                                                     )}
                                                                 </button>
-                                                                <button
-                                                                    type="button"
-                                                                    className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center p-0 opacity-50"
-                                                                    aria-label="Composer options"
-                                                                    title="Coming soon"
-                                                                >
-                                                                    <img
-                                                                        src={
-                                                                            aiPlannerComposerSettingsSrc
-                                                                        }
-                                                                        alt=""
-                                                                        width={18}
-                                                                        height={18}
-                                                                        className="h-[18px] w-[18px] object-contain"
-                                                                        aria-hidden
-                                                                    />
-                                                                </button>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={handleAttachFigma}
+                                                                            className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-sm p-0 text-[#606d76] transition-colors hover:bg-[#edf0f3] hover:text-[#0b191f]"
+                                                                            aria-label="Attach Figma design"
+                                                                        >
+                                                                            <img
+                                                                                src={
+                                                                                    aiPlannerComposerSettingsSrc
+                                                                                }
+                                                                                alt=""
+                                                                                width={18}
+                                                                                height={18}
+                                                                                className="h-[18px] w-[18px] object-contain"
+                                                                                aria-hidden
+                                                                            />
+                                                                        </button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent side="top">
+                                                                        Attach Figma design
+                                                                    </TooltipContent>
+                                                                </Tooltip>
                                                             </div>
                                                             <div className="flex items-center gap-[10px]">
                                                                 <button
@@ -867,6 +965,41 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                     </div>
                                 )}
 
+                                {figmaContext && (
+                                    <div
+                                        className={cn(
+                                            'rounded-2xl border border-[#dbeafe] bg-[#f8fbff] p-5',
+                                            PLAN_CARD_SHADOW,
+                                        )}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e7f2fc]">
+                                                <Link2 className="size-4 text-[#2f6df6]" />
+                                            </span>
+                                            <div className="min-w-0">
+                                                <h3 className="font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f]">
+                                                    Figma Design Context
+                                                </h3>
+                                                <p className="mt-1 font-['Inter',sans-serif] text-[13px] leading-[20px] text-[#606d76]">
+                                                    This plan used {figmaContext.source_name || 'the attached Figma design'}
+                                                    {figmaContext.node_id ? ` (${figmaContext.node_id})` : ''} as design evidence.
+                                                    Review frontend and design-system tasks against the linked frame.
+                                                </p>
+                                                {figmaContext.url && (
+                                                    <a
+                                                        href={figmaContext.url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="mt-2 inline-flex max-w-full truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#2f6df6] hover:underline"
+                                                    >
+                                                        Open Figma reference
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-3 gap-4">
                                     {(
                                         [
@@ -991,6 +1124,82 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                     )}
                 </AnimatePresence>
             </div>
+            <Dialog open={figmaModalOpen} onOpenChange={setFigmaModalOpen}>
+                <DialogPortal>
+                    <DialogOverlay className="bg-black/25" />
+                    <DialogPrimitive.Content
+                        aria-describedby={undefined}
+                        className={cn(
+                            'fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
+                        )}
+                    >
+                        <DialogPrimitive.Title className="sr-only">
+                            Attach Figma design
+                        </DialogPrimitive.Title>
+                        <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+                            <DialogClose asChild>
+                                <button
+                                    type="button"
+                                    className="inline-flex size-5 items-center justify-center text-[#606d76]"
+                                    aria-label="Close"
+                                >
+                                    <ArrowLeft className="size-5" />
+                                </button>
+                            </DialogClose>
+                            <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                                Attach Figma Design
+                            </p>
+                            <div className="size-5" />
+                        </div>
+                        <div
+                            className="flex w-full flex-col gap-5 px-9 py-6"
+                            style={{
+                                backgroundImage:
+                                    'linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)',
+                            }}
+                        >
+                            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                                Paste a Figma design or frame URL
+                            </p>
+                            <input
+                                type="url"
+                                autoFocus
+                                value={figmaUrlInput}
+                                onChange={(e) => setFigmaUrlInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key !== 'Enter') return;
+                                    e.preventDefault();
+                                    handleAttachFigmaFromModal();
+                                }}
+                                placeholder="https://www.figma.com/design/..."
+                                className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76]/40 focus-visible:border-[#1466ff]"
+                            />
+                            <div className="flex w-full justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setFigmaModalOpen(false)}
+                                    className="h-10 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleAttachFigmaFromModal}
+                                    disabled={!figmaUrlInput.trim()}
+                                    className={cn(
+                                        "h-10 rounded-[8px] px-4 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors",
+                                        figmaUrlInput.trim()
+                                            ? 'bg-[#1466ff] hover:bg-[#0051e6]'
+                                            : 'bg-[rgba(96,109,118,0.1)] text-[#606d76]/50',
+                                    )}
+                                >
+                                    Attach
+                                </button>
+                            </div>
+                        </div>
+                    </DialogPrimitive.Content>
+                </DialogPortal>
+            </Dialog>
         </div>
     );
 }
