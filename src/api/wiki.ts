@@ -23,6 +23,23 @@ export interface GeneratedTaskChecklistItem {
     is_completed?: boolean;
 }
 
+export interface FigmaAttachmentRequest {
+    url: string;
+    file_key?: string | null;
+    node_id?: string | null;
+    source_name?: string | null;
+}
+
+export interface GeneratedTaskResource {
+    kind: 'figma_link' | 'figma_export';
+    name: string;
+    url: string;
+    node_id?: string | null;
+    asset_name?: string | null;
+    format?: string | null;
+    mime_type?: string | null;
+}
+
 export interface GeneratedTask {
     title: string;
     description?: string | null;
@@ -33,6 +50,7 @@ export interface GeneratedTask {
     relevant_files: string[];
     checklist: GeneratedTaskChecklistItem[];
     labels?: string[];
+    resources?: GeneratedTaskResource[];
 }
 
 export interface GenerateTasksResponse {
@@ -57,6 +75,7 @@ export interface WikiConfirmTaskItem {
     estimated_hours?: number | null;
     checklists?: Array<{ text: string; done?: boolean }> | null;
     labels?: string[] | null;
+    resources?: GeneratedTaskResource[];
 }
 
 export interface ConfirmTasksResponse {
@@ -87,7 +106,12 @@ export async function getWikiScanStatus(
 
 export async function generateTasks(
     projectId: number | string,
-    body: { prompt: string; max_tasks?: number; file_contents?: FileContent[] }
+    body: {
+        prompt: string;
+        max_tasks?: number;
+        file_contents?: FileContent[];
+        figma_attachment?: FigmaAttachmentRequest | null;
+    }
 ): Promise<GenerateTasksResponse> {
     const { data } = await api.post<GenerateTasksResponse>(
         `/projects/${projectId}/wiki/generate`,
@@ -95,6 +119,7 @@ export async function generateTasks(
             prompt: body.prompt,
             max_tasks: body.max_tasks ?? 10,
             ...(body.file_contents?.length ? { file_contents: body.file_contents } : {}),
+            ...(body.figma_attachment ? { figma_attachment: body.figma_attachment } : {}),
         },
         { timeout: 600_000 },
     );

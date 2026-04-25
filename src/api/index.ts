@@ -223,6 +223,8 @@ export type {
     ScanStatusResponse,
     GenerateTasksResponse,
     GeneratedTask,
+    FigmaAttachmentRequest,
+    GeneratedTaskResource,
     WikiConfirmTaskItem,
     ConfirmTasksResponse,
 } from './wiki';
