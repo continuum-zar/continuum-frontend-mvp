@@ -9,7 +9,7 @@ import { useLinkRepository, useProjectRepositories } from "@/api";
 import { getGitHubOAuthAuthorizeLocation } from "@/api/githubApp";
 import { isGithubInstallationAccessExpiredError } from "@/api/githubInstallationAccessError";
 import { getApiErrorMessage, useGithubInstallationRepositories } from "@/api/hooks";
-import { rememberGithubOAuthReturnPath } from "@/lib/githubOAuthReturn";
+import { rememberGithubOAuthReturnPath, type RememberGithubOAuthReturnPathOpts } from "@/lib/githubOAuthReturn";
 import type { GitHubInstallationRepository } from "@/types/githubApp";
 import type { Repository } from "@/types/repository";
 
@@ -31,17 +31,32 @@ function linkedRepoKey(repo: Repository): string {
   return (repo.repositoryName || "").toLowerCase();
 }
 
+/** Session hints after GitHub OAuth redirect; defaults match Settings → GitHub integration. */
+export type GithubOAuthReturnHints = Pick<
+  RememberGithubOAuthReturnPathOpts,
+  "reopenSettings" | "reopenGithubIntegrationModal" | "reopenWelcomeLinkRepoModal"
+>;
+
+const DEFAULT_GITHUB_OAUTH_HINTS: GithubOAuthReturnHints = {
+  reopenSettings: true,
+  reopenGithubIntegrationModal: true,
+  reopenWelcomeLinkRepoModal: false,
+};
+
 export type GitHubInstallationRepoLinkerProps = {
   projectId: number;
   /** When false, skip installation and linked-repo fetches (e.g. parent dialog closed). */
   queryEnabled?: boolean;
   onRepoLinked?: () => void;
+  /** Override where the SPA restores UI after GitHub OAuth (defaults: reopen Settings + nested GitHub modal). */
+  githubOAuthReturnHints?: GithubOAuthReturnHints;
 };
 
 export function GitHubInstallationRepoLinker({
   projectId,
   queryEnabled = true,
   onRepoLinked,
+  githubOAuthReturnHints,
 }: GitHubInstallationRepoLinkerProps) {
   const [connectBusy, setConnectBusy] = useState(false);
   const [search, setSearch] = useState("");
@@ -103,9 +118,18 @@ export function GitHubInstallationRepoLinker({
     setConnectBusy(true);
     try {
       const url = await getGitHubOAuthAuthorizeLocation(projectId);
+      const hints = githubOAuthReturnHints ?? DEFAULT_GITHUB_OAUTH_HINTS;
+      const reopenSettings = hints.reopenSettings === true;
+      const reopenGithubIntegrationModal =
+        reopenSettings && hints.reopenGithubIntegrationModal === true;
       rememberGithubOAuthReturnPath(
-        `${window.location.pathname}${window.location.search}`,
-        { reopenSettings: true },
+        `${window.location.pathname}${window.location.search}${window.location.hash}`,
+        {
+          reopenSettings,
+          reopenGithubIntegrationModal,
+          restoreProjectApiId: projectId,
+          reopenWelcomeLinkRepoModal: hints.reopenWelcomeLinkRepoModal === true,
+        },
       );
       window.location.assign(url);
     } catch (err) {

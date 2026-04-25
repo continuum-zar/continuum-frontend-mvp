@@ -91,6 +91,11 @@ export function WelcomeLinkRepositoryModal({
                 projectId={projectId!}
                 queryEnabled={open}
                 onRepoLinked={() => onOpenChange(false)}
+                githubOAuthReturnHints={{
+                  reopenSettings: false,
+                  reopenGithubIntegrationModal: false,
+                  reopenWelcomeLinkRepoModal: true,
+                }}
               />
             )}
           </div>

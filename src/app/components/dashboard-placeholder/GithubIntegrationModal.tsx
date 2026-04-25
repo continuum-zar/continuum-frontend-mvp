@@ -20,9 +20,17 @@ import { GitHubInstallationRepoLinker } from "./GitHubInstallationRepoLinker";
 type GithubIntegrationModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** After GitHub OAuth, pre-select this Continuum project once projects are loaded. */
+  oauthResumeProjectApiId?: number | null;
+  onOAuthResumeProjectApplied?: () => void;
 };
 
-export function GithubIntegrationModal({ open, onOpenChange }: GithubIntegrationModalProps) {
+export function GithubIntegrationModal({
+  open,
+  onOpenChange,
+  oauthResumeProjectApiId = null,
+  onOAuthResumeProjectApplied,
+}: GithubIntegrationModalProps) {
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const [projectApiId, setProjectApiId] = useState<number | null>(null);
 
@@ -37,6 +45,18 @@ export function GithubIntegrationModal({ open, onOpenChange }: GithubIntegration
       return projects[0]!.apiId;
     });
   }, [open, projects]);
+
+  useEffect(() => {
+    if (!open || oauthResumeProjectApiId == null || !Number.isFinite(oauthResumeProjectApiId)) return;
+    if (projectsLoading || projects.length === 0) return;
+    const id = oauthResumeProjectApiId;
+    if (!projects.some((p) => p.apiId === id)) {
+      onOAuthResumeProjectApplied?.();
+      return;
+    }
+    setProjectApiId(id);
+    onOAuthResumeProjectApplied?.();
+  }, [open, projects, projectsLoading, oauthResumeProjectApiId, onOAuthResumeProjectApplied]);
 
   const handleClose = (next: boolean) => {
     onOpenChange(next);

@@ -61,6 +61,9 @@ type SettingsModalProps = {
   onOpenChange: (open: boolean) => void;
   /** When set while the dialog is open, switches the visible section (guided tour). */
   tourSection?: SettingsSection | null;
+  /** One-shot resume after GitHub OAuth: open nested GitHub integration with optional project id. */
+  postGithubOAuthGithubModal?: { projectApiId: number | null } | null;
+  onPostGithubOAuthGithubModalConsumed?: () => void;
 };
 
 const NAV: { id: SettingsSection; label: string }[] = [
@@ -147,7 +150,13 @@ function defaultNotificationPrefs(): Record<keyof typeof NOTIFICATION_DEFAULTS, 
   };
 }
 
-export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModalProps) {
+export function SettingsModal({
+  open,
+  onOpenChange,
+  tourSection,
+  postGithubOAuthGithubModal = null,
+  onPostGithubOAuthGithubModalConsumed,
+}: SettingsModalProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -169,6 +178,7 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
   const [bankSwiftBic, setBankSwiftBic] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [githubIntegrationOpen, setGithubIntegrationOpen] = useState(false);
+  const [githubModalOauthResumeProjectApiId, setGithubModalOauthResumeProjectApiId] = useState<number | null>(null);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistSendPending, setWaitlistSendPending] = useState(false);
 
@@ -236,11 +246,19 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
     }
   }, [section, isGlobalAdmin]);
 
+  useEffect(() => {
+    if (!open || postGithubOAuthGithubModal == null) return;
+    setGithubModalOauthResumeProjectApiId(postGithubOAuthGithubModal.projectApiId);
+    setGithubIntegrationOpen(true);
+    onPostGithubOAuthGithubModalConsumed?.();
+  }, [open, postGithubOAuthGithubModal, onPostGithubOAuthGithubModalConsumed]);
+
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setSection("general");
       setFeedbackOpen(false);
       setGithubIntegrationOpen(false);
+      setGithubModalOauthResumeProjectApiId(null);
     }
     onOpenChange(next);
   };
@@ -849,7 +867,15 @@ export function SettingsModal({ open, onOpenChange, tourSection }: SettingsModal
       </DialogPortal>
     </Dialog>
     <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
-    <GithubIntegrationModal open={githubIntegrationOpen} onOpenChange={setGithubIntegrationOpen} />
+    <GithubIntegrationModal
+      open={githubIntegrationOpen}
+      onOpenChange={(next) => {
+        setGithubIntegrationOpen(next);
+        if (!next) setGithubModalOauthResumeProjectApiId(null);
+      }}
+      oauthResumeProjectApiId={githubIntegrationOpen ? githubModalOauthResumeProjectApiId : null}
+      onOAuthResumeProjectApplied={() => setGithubModalOauthResumeProjectApiId(null)}
+    />
     </>
   );
 }
