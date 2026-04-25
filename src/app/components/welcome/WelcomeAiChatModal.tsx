@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Check, FileText, Loader2, Minus, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, Check, FileText, Link2, Loader2, Minus, X } from "lucide-react";
 import {
   Fragment,
   useCallback,
@@ -24,7 +24,7 @@ import {
   type FileContent,
 } from "@/api";
 import TextareaAutosize from "react-textarea-autosize";
-import type { GeneratedTask, WikiConfirmTaskItem } from "@/api";
+import type { FigmaAttachmentRequest, GeneratedTask, WikiConfirmTaskItem } from "@/api";
 import {
   Dialog,
   DialogOverlay,
@@ -79,6 +79,28 @@ type WelcomeComposerAttachment = {
   isImage: boolean;
   previewUrl?: string;
 };
+
+function buildFigmaAttachmentFromUrl(rawUrl: string): FigmaAttachmentRequest | null {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = new URL(trimmed);
+    if (!["figma.com", "www.figma.com"].includes(parsed.hostname)) return null;
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    if (segments.length < 2 || !["design", "file"].includes(segments[0])) return null;
+    const fileKey = segments[2] === "branch" ? segments[3] : segments[1];
+    if (!fileKey) return null;
+    const rawNodeId = parsed.searchParams.get("node-id");
+    return {
+      url: trimmed,
+      file_key: fileKey,
+      node_id: rawNodeId ? rawNodeId.replace(/-/g, ":") : null,
+      source_name: segments[2] && segments[2] !== "branch" ? decodeURIComponent(segments[2]) : null,
+    };
+  } catch {
+    return null;
+  }
+}
 
 type ChatPhase = "welcome" | "thinking" | "responded" | "getStartedLoading" | "getStartedAnswer";
 
@@ -136,6 +158,7 @@ function mapGeneratedTaskToConfirmItem(
         ? task.checklist.map((c) => ({ text: c.title, done: c.is_completed ?? false }))
         : null,
     labels: task.labels && task.labels.length > 0 ? task.labels : null,
+    resources: task.resources ?? [],
   };
 }
 
@@ -202,6 +225,9 @@ export function WelcomeAiChatModal({
   const reportingLockRef = useRef(false);
 
   const [composerAttachments, setComposerAttachments] = useState<WelcomeComposerAttachment[]>([]);
+  const [figmaAttachment, setFigmaAttachment] = useState<FigmaAttachmentRequest | null>(null);
+  const [figmaModalOpen, setFigmaModalOpen] = useState(false);
+  const [figmaUrlInput, setFigmaUrlInput] = useState("");
   const composerAttachmentsRef = useRef(composerAttachments);
   composerAttachmentsRef.current = composerAttachments;
   const welcomeFileInputRef = useRef<HTMLInputElement>(null);
@@ -250,6 +276,22 @@ export function WelcomeAiChatModal({
     });
   }, []);
 
+  const handleAttachFigma = useCallback(() => {
+    setFigmaUrlInput(figmaAttachment?.url ?? "");
+    setFigmaModalOpen(true);
+  }, [figmaAttachment]);
+
+  const handleAttachFigmaFromModal = useCallback(() => {
+    const next = buildFigmaAttachmentFromUrl(figmaUrlInput);
+    if (!next) {
+      toast.error("Enter a valid Figma design or frame URL.");
+      return;
+    }
+    setFigmaAttachment(next);
+    setFigmaModalOpen(false);
+    toast.success("Figma design attached");
+  }, [figmaUrlInput]);
+
   const milestoneIdForConfirm = useMemo(
     () => parseMilestoneIdParam(milestoneIdParam ?? null),
     [milestoneIdParam],
@@ -273,6 +315,9 @@ export function WelcomeAiChatModal({
       setApiError(null);
       setConfirming(false);
       setConfirmed(false);
+      setFigmaAttachment(null);
+      setFigmaUrlInput("");
+      setFigmaModalOpen(false);
       abortRef.current?.abort();
       abortRef.current = null;
       setReportingThread([]);
@@ -364,6 +409,7 @@ export function WelcomeAiChatModal({
         prompt: text,
         max_tasks: 10,
         ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
+        ...(figmaAttachment ? { figma_attachment: figmaAttachment } : {}),
       });
       if (controller.signal.aborted) return;
 
@@ -387,7 +433,7 @@ export function WelcomeAiChatModal({
       setApiError(msg);
       setPhase("getStartedAnswer");
     }
-  }, [draftMessage, projectId, clearComposerAttachments]);
+  }, [draftMessage, projectId, clearComposerAttachments, figmaAttachment]);
 
   const stopGetStarted = () => {
     abortRef.current?.abort();
@@ -633,6 +679,9 @@ export function WelcomeAiChatModal({
                       disabled={isGetStartedFlow && !projectId}
                       attachments={composerAttachments}
                       onRemoveAttachment={removeComposerAttachment}
+                      figmaAttachment={figmaAttachment}
+                      onAttachFigma={isGetStartedFlow ? handleAttachFigma : undefined}
+                      onRemoveFigma={() => setFigmaAttachment(null)}
                       fileInputRef={welcomeFileInputRef}
                       onAddFiles={(files) => void addComposerFiles(files)}
                       uploadPending={uploadMutation.isPending}
@@ -747,7 +796,13 @@ export function WelcomeAiChatModal({
                                               }}
                                               className="w-full rounded-md border-0 bg-transparent py-1.5 text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f] transition-colors hover:bg-[#f5f5f5]"
                                             >
-                                              {task.title}
+                                              <span className="block">{task.title}</span>
+                                              {task.resources?.length ? (
+                                                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#e7f2fc] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#2f6df6]">
+                                                  <Link2 className="size-3" aria-hidden />
+                                                  {task.resources.length} Figma resource{task.resources.length === 1 ? "" : "s"}
+                                                </span>
+                                              ) : null}
                                             </button>
                                           </li>
                                         ))}
@@ -832,6 +887,75 @@ export function WelcomeAiChatModal({
         }}
       />
     )}
+    <Dialog open={figmaModalOpen} onOpenChange={setFigmaModalOpen}>
+      <DialogPortal>
+        <DialogOverlay className="bg-black/25" />
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          className={cn(
+            "fixed left-1/2 top-1/2 z-[120] flex w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+          )}
+        >
+          <DialogPrimitive.Title className="sr-only">Attach Figma design</DialogPrimitive.Title>
+          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+            <DialogPrimitive.Close asChild>
+              <button type="button" className="inline-flex size-5 items-center justify-center text-[#606d76]" aria-label="Close">
+                <ArrowLeft className="size-5" />
+              </button>
+            </DialogPrimitive.Close>
+            <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+              Attach Figma Design
+            </p>
+            <div className="size-5" />
+          </div>
+          <div className="flex w-full flex-col gap-5 px-9 py-6">
+            <div className="space-y-1">
+              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                Figma frame URL
+              </p>
+              <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-[#727d83]">
+                Continuum will inspect layout, typography, gradients, icons, assets, and measurements before creating tasks.
+              </p>
+            </div>
+            <input
+              type="url"
+              autoFocus
+              value={figmaUrlInput}
+              onChange={(e) => setFigmaUrlInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                handleAttachFigmaFromModal();
+              }}
+              placeholder="https://www.figma.com/design/..."
+              className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76]/40 focus-visible:border-[#1466ff]"
+            />
+            <div className="flex w-full justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setFigmaModalOpen(false)}
+                className="h-10 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAttachFigmaFromModal}
+                disabled={!figmaUrlInput.trim()}
+                className={cn(
+                  "h-10 rounded-[8px] px-4 font-['Satoshi',sans-serif] text-[14px] font-semibold transition-colors",
+                  figmaUrlInput.trim()
+                    ? "bg-[#1466ff] text-white hover:bg-[#0051e6]"
+                    : "bg-[rgba(96,109,118,0.1)] text-[#606d76]/50",
+                )}
+              >
+                Attach
+              </button>
+            </div>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPortal>
+    </Dialog>
   </>
   );
 }
@@ -845,6 +969,9 @@ function ComposerWelcome({
   inputId = "welcome-ai-chat-input",
   attachments,
   onRemoveAttachment,
+  figmaAttachment,
+  onAttachFigma,
+  onRemoveFigma,
   fileInputRef,
   onAddFiles,
   uploadPending,
@@ -858,6 +985,9 @@ function ComposerWelcome({
   inputId?: string;
   attachments: WelcomeComposerAttachment[];
   onRemoveAttachment: (id: string) => void;
+  figmaAttachment?: FigmaAttachmentRequest | null;
+  onAttachFigma?: () => void;
+  onRemoveFigma?: () => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onAddFiles: (files: File[]) => void;
   uploadPending: boolean;
@@ -881,7 +1011,7 @@ function ComposerWelcome({
         }}
       />
       <div className="relative mb-[-11px] flex shrink-0 flex-col gap-2">
-        {attachments.length > 0 && (
+        {(attachments.length > 0 || figmaAttachment) && (
           <div
             className="flex flex-wrap gap-2"
             aria-label="Attachments for AI message"
@@ -933,6 +1063,27 @@ function ComposerWelcome({
                   </button>
                 </span>
               ),
+            )}
+            {figmaAttachment && (
+              <span className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm">
+                <span
+                  className="flex w-9 shrink-0 items-center justify-center self-stretch bg-[#e7f2fc]"
+                  aria-hidden
+                >
+                  <Link2 className="size-4 shrink-0 text-[#2f6df6]" strokeWidth={1.75} />
+                </span>
+                <span className="min-w-0 max-w-[180px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f]">
+                  {figmaAttachment.source_name || "Figma design attached"}
+                </span>
+                <button
+                  type="button"
+                  onClick={onRemoveFigma}
+                  className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-[#606d76] hover:text-[#0b191f]"
+                  aria-label="Remove Figma design"
+                >
+                  <X className="size-3.5" strokeWidth={2} />
+                </button>
+              </span>
             )}
           </div>
         )}
@@ -994,13 +1145,20 @@ function ComposerWelcome({
                   </span>
                 )}
               </button>
-              <div className="relative size-[18px] shrink-0 overflow-clip">
+              <button
+                type="button"
+                onClick={onAttachFigma}
+                disabled={!onAttachFigma || disabled}
+                title="Attach Figma design"
+                className="relative size-[18px] shrink-0 overflow-clip rounded-sm p-0 transition-colors hover:bg-[#edf0f3] disabled:opacity-50"
+                aria-label="Attach Figma design"
+              >
                 <div className="absolute inset-[16.67%]">
                   <div className="absolute inset-[-4.17%]">
                     <img alt="" className="block size-full max-w-none" src={imgSettings2} />
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
             <div className="relative flex shrink-0 items-center gap-2.5">
               <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#727d83]">
