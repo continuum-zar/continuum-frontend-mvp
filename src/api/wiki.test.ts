@@ -67,18 +67,22 @@ describe('wiki AI task generation API', () => {
             ],
         });
 
-        expect(postMock).toHaveBeenCalledWith('/projects/1/wiki/confirm', {
-            tasks: [
-                expect.objectContaining({
-                    title: 'Implement dashboard',
-                    resources: [
-                        expect.objectContaining({
-                            kind: 'figma_link',
-                            name: 'Dashboard frame',
-                        }),
-                    ],
-                }),
-            ],
-        });
+        expect(postMock).toHaveBeenCalledWith(
+            '/projects/1/wiki/confirm',
+            {
+                tasks: [
+                    expect.objectContaining({
+                        title: 'Implement dashboard',
+                        resources: [
+                            expect.objectContaining({
+                                kind: 'figma_link',
+                                name: 'Dashboard frame',
+                            }),
+                        ],
+                    }),
+                ],
+            },
+            { timeout: 180_000 },
+        );
     });
 });
