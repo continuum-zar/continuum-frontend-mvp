@@ -133,7 +133,8 @@ export async function confirmTasks(
 ): Promise<ConfirmTasksResponse> {
     const { data } = await api.post<ConfirmTasksResponse>(
         `/projects/${projectId}/wiki/confirm`,
-        body
+        body,
+        { timeout: 180_000 },
     );
     return data;
 }
