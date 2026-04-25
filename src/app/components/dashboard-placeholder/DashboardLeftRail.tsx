@@ -27,7 +27,11 @@ import {
 } from "../../data/dashboardPlaceholderProjects";
 import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
 import { GuidedTourLayer } from "@/app/components/onboarding/GuidedTourLayer";
-import { consumeGithubOAuthReopenSettings } from "@/lib/githubOAuthReturn";
+import {
+  consumeGithubOAuthReopenGithubIntegrationModal,
+  consumeGithubOAuthReopenSettings,
+  consumeGithubOAuthRestoreProjectApiId,
+} from "@/lib/githubOAuthReturn";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import type { SettingsSection } from "./SettingsModal";
 import { cn } from "../ui/utils";
@@ -451,6 +455,9 @@ export function DashboardLeftRail() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [postGithubOAuthGithubModal, setPostGithubOAuthGithubModal] = useState<{
+    projectApiId: number | null;
+  } | null>(null);
   const [settingsSectionOverride, setSettingsSectionOverride] = useState<SettingsSection | null>(
     null,
   );
@@ -567,14 +574,20 @@ export function DashboardLeftRail() {
   }, [tourSettingsModalOpen, setTourSettingsModalOpen]);
 
   /**
-   * Reopen Settings → Integrations after a GitHub OAuth round-trip. The flag is set by
-   * GitHubInstallationRepoLinker.handleConnect before leaving the SPA and consumed here
-   * exactly once so navigating away and back doesn't keep re-opening the modal.
+   * Reopen Settings → Integrations (and optionally the nested GitHub dialog) after a GitHub
+   * OAuth round-trip. Hints are set by GitHubInstallationRepoLinker before leaving the SPA;
+   * related keys are always consumed here once so they never leak across navigations.
    */
   useEffect(() => {
-    if (consumeGithubOAuthReopenSettings()) {
+    const reopenGithub = consumeGithubOAuthReopenGithubIntegrationModal();
+    const restoreProjectApiId = consumeGithubOAuthRestoreProjectApiId();
+    const reopenSettings = consumeGithubOAuthReopenSettings();
+    if (reopenSettings) {
       setSettingsSectionOverride("integrations");
       setSettingsOpen(true);
+      if (reopenGithub) {
+        setPostGithubOAuthGithubModal({ projectApiId: restoreProjectApiId });
+      }
     }
   }, []);
 
@@ -952,6 +965,8 @@ export function DashboardLeftRail() {
           if (!next) setSettingsSectionOverride(null);
         }}
         tourSection={settingsSectionOverride ?? settingsTourSection}
+        postGithubOAuthGithubModal={postGithubOAuthGithubModal}
+        onPostGithubOAuthGithubModalConsumed={() => setPostGithubOAuthGithubModal(null)}
       />
       <LogTimeModal
         open={logModalOpen}
