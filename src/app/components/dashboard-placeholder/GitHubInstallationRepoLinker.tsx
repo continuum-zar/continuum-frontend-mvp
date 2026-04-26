@@ -69,7 +69,11 @@ export function GitHubInstallationRepoLinker({
   }, [queryEnabled]);
 
   const axiosStatus = isAxiosError(reposQuery.error) ? reposQuery.error.response?.status : undefined;
+  const axiosErrorCode = isAxiosError(reposQuery.error)
+    ? (reposQuery.error.response?.data as { detail?: { error?: string } } | undefined)?.detail?.error
+    : undefined;
   const notConnected = axiosStatus === 404;
+  const githubAccessExpired = axiosStatus === 401 && axiosErrorCode === "github_access_expired";
   const forbidden = axiosStatus === 403;
   const serviceUnavailable = axiosStatus === 503;
   const connected = reposQuery.isSuccess;
@@ -151,6 +155,10 @@ export function GitHubInstallationRepoLinker({
               <p className="text-[14px] text-[#606d76]">
                 Not connected yet. Use <span className="font-medium text-[#0b191f]">Connect to GitHub</span> to authorize
                 the app for this project.
+              </p>
+            ) : githubAccessExpired ? (
+              <p className="text-[14px] text-[#0b191f]">
+                GitHub access expired or was revoked. Reconnect to GitHub to restore repository access.
               </p>
             ) : forbidden ? (
               <p className="text-[14px] text-[#0b191f]">

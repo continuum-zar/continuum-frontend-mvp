@@ -135,9 +135,10 @@ export async function fetchProjectDashboard(projectId: number | string): Promise
 export async function fetchProjectVelocityReport(
     projectId: number | string,
     weeks = 104,
+    granularity: 'weekly' | 'daily' = 'weekly',
 ): Promise<ProjectVelocityResponse> {
     const { data } = await api.get<ProjectVelocityResponse>(`/projects/${projectId}/velocity-report`, {
-        params: { weeks },
+        params: { weeks, granularity },
     });
     return data;
 }

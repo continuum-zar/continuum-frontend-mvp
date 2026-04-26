@@ -120,7 +120,7 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
             alt=""
             className="absolute block max-w-none size-full"
             src={imgLucideHouse}
-            style={{ filter: "grayscale(1) saturate(0) opacity(0.7)" }}
+            style={{ filter: "grayscale(1) saturate(0) brightness(0.55)" }}
           />
         </div>
       )}
@@ -145,14 +145,12 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
 
 type Frame1Props = {
   className?: string;
-  isHomeActive?: boolean;
   isInvoiceActive?: boolean;
   onInvoiceClick: () => void;
 };
 
 function Frame1({
   className,
-  isHomeActive = false,
   isInvoiceActive = false,
   onInvoiceClick,
   isAssignedActive = false,
@@ -167,12 +165,8 @@ function Frame1({
         aria-label="Home"
       >
         <Component2
-          className={`content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] ${
-            isHomeActive
-              ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
-              : "bg-[#edf0f3]"
-          }`}
-          state={isHomeActive ? "Selected" : "Default"}
+          className="content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] bg-[#edf0f3]"
+          state="Default"
           type="Home"
         />
       </Link>
@@ -288,14 +282,12 @@ function LeftRailTimerControls({
 
 function Frame({
   className,
-  isHomeActive = false,
   isInvoiceActive = false,
   onInvoiceClick,
   isAssignedActive = false,
   isCreatedActive = false,
 }: {
   className?: string;
-  isHomeActive?: boolean;
   isInvoiceActive?: boolean;
   onInvoiceClick: () => void;
   isAssignedActive?: boolean;
@@ -313,7 +305,6 @@ function Frame({
       </div>
       <Frame1
         className="content-stretch flex gap-[8px] items-center relative shrink-0"
-        isHomeActive={isHomeActive}
         isInvoiceActive={isInvoiceActive}
         onInvoiceClick={onInvoiceClick}
         isAssignedActive={isAssignedActive}
@@ -587,7 +578,6 @@ export function DashboardLeftRail() {
     }
   }, [tourActive]);
 
-  const isHomeActive = pathname === WORKSPACE_BASE;
   const isInvoiceActive = invoiceOpen;
   const isAssignedActive = pathname.startsWith(`${WORKSPACE_BASE}/assigned`);
   const isCreatedActive = pathname.startsWith(`${WORKSPACE_BASE}/created`);
@@ -611,7 +601,6 @@ export function DashboardLeftRail() {
         </div>
         <Frame
           className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0"
-          isHomeActive={isHomeActive}
           isInvoiceActive={isInvoiceActive}
           onInvoiceClick={() => setInvoiceOpen(true)}
           isAssignedActive={isAssignedActive}
