@@ -46,6 +46,7 @@ import {
   fetchClientProjects,
   fetchClientProjectProgress,
   postProjectQuery,
+  useIndexingProgressPoll,
 } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
@@ -324,6 +325,14 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   }, [staleWorkResponse]);
 
   const hasProjects = userRole === 'Client' ? clientProjectsList.length > 0 : projects.length > 0;
+
+  const queryProjectIdForChat =
+    effectiveRole === 'Client' ? (selectedProject || clientProjectId) : selectedProject;
+
+  const indexingProgressQuery = useIndexingProgressPoll(
+    queryProjectIdForChat,
+    chatSending && Boolean(queryProjectIdForChat && queryProjectIdForChat !== 'all'),
+  );
 
   const handleSendChat = useCallback(async () => {
     const msg = chatMessage.trim();
@@ -1030,6 +1039,8 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
             onChatMessageChange={setChatMessage}
             onSend={handleSendChat}
             chatSending={chatSending}
+            indexingProgress={indexingProgressQuery.data}
+            indexingPollFailed={indexingProgressQuery.isError}
           />
         </div>
       )}

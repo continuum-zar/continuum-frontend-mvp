@@ -162,6 +162,9 @@ export {
     fetchClientProjects,
     fetchClientProjectProgress,
     postProjectQuery,
+    fetchIndexingProgress,
+    useIndexingProgressPoll,
+    indexingProgressKeys,
     fetchProjectStats,
     fetchMemberContributions,
 } from './dashboard';
@@ -244,6 +247,7 @@ export type {
     ProjectQueryRequest,
     ProjectQueryResponse,
     ProjectQuerySource,
+    IndexingProgressResponse,
     MemberContributionStats,
 } from './dashboard';
 export {

@@ -1,4 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { INDEXING_PROGRESS_POLL_MS } from '@/lib/queryDefaults';
 import type { FileContent } from './planner';
 
 // Dashboard metrics
@@ -259,4 +261,40 @@ export async function postProjectQuery(
         timeout: 600_000,
     });
     return data;
+}
+
+/** RAG chunk indexing progress (`GET /api/v1/indexing/progress`). */
+export interface IndexingProgressResponse {
+    project_id: number;
+    scanned: number;
+    total: number;
+    status: 'idle' | 'running' | 'complete' | 'error';
+    error_message?: string | null;
+}
+
+export const indexingProgressKeys = {
+    all: ['indexing-progress'] as const,
+    project: (projectId: number | string) => [...indexingProgressKeys.all, projectId] as const,
+};
+
+export async function fetchIndexingProgress(projectId: number | string): Promise<IndexingProgressResponse> {
+    const { data } = await api.get<IndexingProgressResponse>('/indexing/progress', {
+        params: { project_id: projectId },
+    });
+    return data;
+}
+
+/**
+ * Polls embedding-index progress while `enabled` is true (e.g. during a long
+ * `postProjectQuery` request so the UI can update in parallel).
+ */
+export function useIndexingProgressPoll(projectId: number | string | undefined | null, enabled: boolean) {
+    const id = projectId != null && projectId !== '' ? projectId : null;
+    return useQuery({
+        queryKey: id != null ? indexingProgressKeys.project(id) : ['indexing-progress', 'disabled'],
+        queryFn: () => fetchIndexingProgress(id!),
+        enabled: Boolean(id != null && enabled),
+        staleTime: 0,
+        refetchInterval: id != null && enabled ? INDEXING_PROGRESS_POLL_MS : false,
+    });
 }
