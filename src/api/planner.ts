@@ -27,6 +27,45 @@ export interface FigmaContext {
     tokens?: string[];
     interactions?: string[];
     screenshots?: string[];
+    blueprint?: FigmaBlueprint | null;
+}
+
+export interface BlueprintNode {
+    id: string;
+    name: string;
+    type: string;
+    semantic: string;
+    children?: BlueprintNode[];
+    annotations?: {
+        logic?: string[];
+        state?: string[];
+        data?: string[];
+        aria?: string[];
+        route?: string[];
+        api?: string[];
+        custom?: Record<string, string[]>;
+    };
+}
+
+export interface FigmaBlueprint {
+    file_key: string;
+    node_id?: string | null;
+    url: string;
+    source_name?: string | null;
+    frame_name?: string | null;
+    pruned_node_count: number;
+    raw_node_count: number;
+    root: BlueprintNode;
+    flows: Array<{ node_id: string; node_name: string; kind: string; value: string }>;
+    component_inventory: Array<{ node_id: string; name: string; component_id?: string | null }>;
+    token_index: Record<string, string>;
+    quality_report?: {
+        status: string;
+        missing_annotations?: string[];
+        implementation_risks?: string[];
+        confidence?: number;
+    } | null;
+    digest_markdown: string;
 }
 
 export interface PlannerChatResponse {
@@ -47,6 +86,7 @@ export interface PlannedTask {
     scope_weight: 'XS' | 'S' | 'M' | 'L' | 'XL';
     checklist: ChecklistItem[];
     labels: string[];
+    figma_node_ids?: string[];
 }
 
 export interface PlannedMilestone {
@@ -84,6 +124,16 @@ export async function uploadPlannerFile(file: File): Promise<FileContent> {
     formData.append('file', file);
     const { data } = await api.post<FileContent>('/planner/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 600_000,
+    });
+    return data;
+}
+
+export async function fetchFigmaBlueprint(url: string, node_id?: string | null): Promise<FigmaBlueprint> {
+    const { data } = await api.post<FigmaBlueprint>('/figma/blueprint', {
+        url,
+        ...(node_id ? { node_id } : {}),
+    }, {
         timeout: 600_000,
     });
     return data;
@@ -142,9 +192,13 @@ export async function generatePlan(
     return data;
 }
 
-export async function approvePlan(plan: ProjectPlan): Promise<ApprovePlanResponse> {
+export async function approvePlan(
+    plan: ProjectPlan,
+    figma_blueprint?: FigmaBlueprint | null,
+): Promise<ApprovePlanResponse> {
     const { data } = await api.post<ApprovePlanResponse>('/planner/approve-plan', {
         plan,
+        ...(figma_blueprint ? { figma_blueprint } : {}),
     }, {
         timeout: 600_000,
     });
@@ -203,7 +257,13 @@ export function useGeneratePlan() {
 
 export function useApprovePlan() {
     return useMutation({
-        mutationFn: approvePlan,
+        mutationFn: ({
+            plan,
+            figma_blueprint,
+        }: {
+            plan: ProjectPlan;
+            figma_blueprint?: FigmaBlueprint | null;
+        }) => approvePlan(plan, figma_blueprint),
         onError: (err: unknown) => {
             toast.error(getApiErrorMessage(err, 'Failed to create project from plan'));
         },
