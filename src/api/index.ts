@@ -279,6 +279,7 @@ export {
     sendPlannerChat,
     generatePlan,
     approvePlan,
+    fetchFigmaBlueprint,
     useUploadPlannerFile,
     usePlannerChat,
     useGeneratePlan,
@@ -291,6 +292,7 @@ export type {
     PlannedTask,
     PlannedMilestone,
     ProjectPlan,
+    FigmaBlueprint,
     GeneratePlanResponse,
     ApprovePlanResponse,
 } from './planner';

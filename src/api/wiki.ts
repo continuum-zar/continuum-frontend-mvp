@@ -5,6 +5,7 @@ import { getApiErrorMessage } from './hooks';
 import { projectKeys } from './hooks';
 import { STALE_MODERATE_MS, WIKI_SCAN_POLL_MS } from '@/lib/queryDefaults';
 import type { FileContent } from './planner';
+import type { FigmaBlueprint } from './planner';
 import type { TaskPriority } from '@/types/task';
 
 export interface ScanRepositoryRequest {
@@ -31,7 +32,7 @@ export interface FigmaAttachmentRequest {
 }
 
 export interface GeneratedTaskResource {
-    kind: 'figma_link' | 'figma_export';
+    kind: 'figma_link' | 'figma_export' | 'design_blueprint';
     name: string;
     url: string;
     node_id?: string | null;
@@ -51,6 +52,7 @@ export interface GeneratedTask {
     checklist: GeneratedTaskChecklistItem[];
     labels?: string[];
     resources?: GeneratedTaskResource[];
+    figma_node_ids?: string[];
 }
 
 export interface GenerateTasksResponse {
@@ -59,6 +61,7 @@ export interface GenerateTasksResponse {
     tasks: GeneratedTask[];
     source_files_used: string[];
     confidence: number;
+    figma_blueprint?: FigmaBlueprint | null;
 }
 
 /** Task create payload for wiki/confirm (matches backend TaskCreate). */
@@ -76,6 +79,7 @@ export interface WikiConfirmTaskItem {
     checklists?: Array<{ text: string; done?: boolean }> | null;
     labels?: string[] | null;
     resources?: GeneratedTaskResource[];
+    figma_node_ids?: string[];
 }
 
 export interface ConfirmTasksResponse {
@@ -111,6 +115,7 @@ export async function generateTasks(
         max_tasks?: number;
         file_contents?: FileContent[];
         figma_attachment?: FigmaAttachmentRequest | null;
+        figma_blueprint?: FigmaBlueprint | null;
     }
 ): Promise<GenerateTasksResponse> {
     const { data } = await api.post<GenerateTasksResponse>(
@@ -120,6 +125,7 @@ export async function generateTasks(
             max_tasks: body.max_tasks ?? 10,
             ...(body.file_contents?.length ? { file_contents: body.file_contents } : {}),
             ...(body.figma_attachment ? { figma_attachment: body.figma_attachment } : {}),
+            ...(body.figma_blueprint ? { figma_blueprint: body.figma_blueprint } : {}),
         },
         { timeout: 600_000 },
     );
@@ -129,7 +135,7 @@ export async function generateTasks(
 /** Persist AI-generated tasks after user confirmation. Creator is set only on the server from the auth session (`POST .../wiki/confirm`). */
 export async function confirmTasks(
     projectId: number | string,
-    body: { tasks: WikiConfirmTaskItem[] }
+    body: { tasks: WikiConfirmTaskItem[]; figma_blueprint?: FigmaBlueprint | null }
 ): Promise<ConfirmTasksResponse> {
     const { data } = await api.post<ConfirmTasksResponse>(
         `/projects/${projectId}/wiki/confirm`,
