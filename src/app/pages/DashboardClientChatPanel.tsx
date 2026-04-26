@@ -1,11 +1,13 @@
 import { memo } from 'react';
 import { Bot, Send } from 'lucide-react';
 import type { Variants } from 'motion/react';
+import { IndexingProgressBanner } from '@/app/components/IndexingProgressBanner';
 import { PlannerAssistantMarkdown } from '@/app/components/planner/PlannerAssistantMarkdown';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Avatar, AvatarFallback } from '@/app/components/ui/avatar';
 import { motion } from 'motion/react';
+import type { IndexingProgressResponse } from '@/api/dashboard';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -16,6 +18,8 @@ type DashboardClientChatPanelProps = {
   onChatMessageChange: (value: string) => void;
   onSend: () => void;
   chatSending: boolean;
+  indexingProgress?: IndexingProgressResponse;
+  indexingPollFailed?: boolean;
 };
 
 export const DashboardClientChatPanel = memo(function DashboardClientChatPanel({
@@ -25,6 +29,8 @@ export const DashboardClientChatPanel = memo(function DashboardClientChatPanel({
   onChatMessageChange,
   onSend,
   chatSending,
+  indexingProgress,
+  indexingPollFailed,
 }: DashboardClientChatPanelProps) {
   return (
     <motion.div
@@ -58,6 +64,12 @@ export const DashboardClientChatPanel = memo(function DashboardClientChatPanel({
             </div>
           </div>
         ))}
+        {chatSending ? (
+          <IndexingProgressBanner
+            progress={indexingProgress}
+            pollFailed={Boolean(indexingPollFailed)}
+          />
+        ) : null}
       </div>
       <div className="p-4 border-t border-border">
         <div className="relative">

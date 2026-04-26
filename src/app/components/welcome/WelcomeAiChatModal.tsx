@@ -20,6 +20,7 @@ import {
   getApiErrorMessage,
   postProjectQuery,
   projectKeys,
+  useIndexingProgressPoll,
   useUploadPlannerFile,
   fetchFigmaBlueprint,
   type FileContent,
@@ -37,6 +38,7 @@ import {
   type CreateTaskModalPrefill,
   type ChecklistRow,
 } from "../CreateTaskModal";
+import { IndexingProgressBanner } from "@/app/components/IndexingProgressBanner";
 import { PlannerAssistantMarkdown } from "../planner/PlannerAssistantMarkdown";
 
 /** Figma — base panel 14:3223 / welcome mock 14:3453, 395×537 */
@@ -322,6 +324,11 @@ export function WelcomeAiChatModal({
   const useReportingApi = useMemo(
     () => Boolean(showQuickActions && projectId != null && Number(projectId) > 0),
     [showQuickActions, projectId],
+  );
+
+  const indexingProgressQuery = useIndexingProgressPoll(
+    projectId ?? null,
+    Boolean(open && reportingPending && useReportingApi && projectId != null && projectId > 0),
   );
 
   useEffect(() => {
@@ -735,6 +742,8 @@ export function WelcomeAiChatModal({
               fileInputRef={welcomeFileInputRef}
               onAddFiles={(files) => void addComposerFiles(files)}
               uploadPending={uploadMutation.isPending}
+              indexingProgress={indexingProgressQuery.data}
+              indexingPollFailed={indexingProgressQuery.isError}
             />
           ) : (
             <div className="relative z-[5] flex min-h-0 w-full flex-1 flex-col">
@@ -1251,6 +1260,8 @@ function ReportingAssistantPanel({
   fileInputRef,
   onAddFiles,
   uploadPending,
+  indexingProgress,
+  indexingPollFailed,
 }: {
   reportingThread: ReportingMsg[];
   reportingPending: boolean;
@@ -1263,6 +1274,8 @@ function ReportingAssistantPanel({
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onAddFiles: (files: File[]) => void;
   uploadPending: boolean;
+  indexingProgress?: import("@/api").IndexingProgressResponse;
+  indexingPollFailed?: boolean;
 }) {
   return (
     <div className="relative z-[5] flex min-h-0 w-full flex-1 flex-col">
@@ -1309,7 +1322,11 @@ function ReportingAssistantPanel({
             </Fragment>
           ))}
           {reportingPending && (
-            <div className="flex w-full flex-col items-start gap-2 rounded-[16px]">
+            <div className="flex w-full flex-col items-start gap-3 rounded-[16px]">
+              <IndexingProgressBanner
+                progress={indexingProgress}
+                pollFailed={Boolean(indexingPollFailed)}
+              />
               <div className="flex w-full items-center gap-2 opacity-50">
                 <SpinnerGradientThinking />
                 <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
