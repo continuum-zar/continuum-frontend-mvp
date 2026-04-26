@@ -28,11 +28,13 @@ import {
     useUploadPlannerFile,
     useGeneratePlan,
     useApprovePlan,
+    fetchFigmaBlueprint,
 } from '@/api/planner';
 import type {
     PlannerMessage,
     FileContent,
     FigmaContext,
+    FigmaBlueprint,
     ProjectPlan,
     PlannedMilestone,
 } from '@/api/planner';
@@ -69,44 +71,8 @@ export type AIProjectPlannerProps = {
 const PLAN_CARD_SHADOW =
     'shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]';
 
-function buildFigmaContextFromUrl(rawUrl: string): FigmaContext | null {
-    const trimmed = rawUrl.trim();
-    if (!trimmed) return null;
-
-    try {
-        const parsed = new URL(trimmed);
-        if (!parsed.hostname.includes('figma.com')) return null;
-
-        const segments = parsed.pathname.split('/').filter(Boolean);
-        const kind = segments[0];
-        const fileKey = kind === 'design' && segments[2] === 'branch'
-            ? segments[3]
-            : segments[1];
-        if (!fileKey) return null;
-
-        const rawNodeId = parsed.searchParams.get('node-id');
-        const nodeId = rawNodeId?.replace('-', ':') ?? null;
-
-        return {
-            file_key: fileKey,
-            node_id: nodeId,
-            url: trimmed,
-            source_name: segments[2] && segments[2] !== 'branch'
-                ? decodeURIComponent(segments[2])
-                : 'Figma design',
-            summary: [
-                'Figma design reference attached for planner context.',
-                nodeId ? `Focus node: ${nodeId}.` : 'No specific node was provided.',
-                'Use the design to derive UI surfaces, components, states, tokens, and visual acceptance criteria.',
-            ].join(' '),
-            components: [],
-            tokens: [],
-            interactions: [],
-            screenshots: [],
-        };
-    } catch {
-        return null;
-    }
+function countBlueprintAnnotations(blueprint?: FigmaBlueprint | null): number {
+    return blueprint?.flows?.length ?? 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -227,6 +193,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     const [autoMode, setAutoMode] = useState(true);
     const [figmaModalOpen, setFigmaModalOpen] = useState(false);
     const [figmaUrlInput, setFigmaUrlInput] = useState('');
+    const [figmaBlueprintLoading, setFigmaBlueprintLoading] = useState(false);
 
     // Plan state
     const [phase, setPhase] = useState<Phase>('chat');
@@ -338,16 +305,34 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
         setFigmaModalOpen(true);
     };
 
-    const handleAttachFigmaFromModal = () => {
-        const next = buildFigmaContextFromUrl(figmaUrlInput);
-        if (!next) {
+    const handleAttachFigmaFromModal = async () => {
+        const url = figmaUrlInput.trim();
+        if (!url) return;
+        setFigmaBlueprintLoading(true);
+        try {
+            const blueprint = await fetchFigmaBlueprint(url);
+            const next: FigmaContext = {
+                file_key: blueprint.file_key,
+                node_id: blueprint.node_id ?? null,
+                url: blueprint.url,
+                source_name: blueprint.frame_name || blueprint.source_name || 'Figma design',
+                summary: blueprint.digest_markdown,
+                components: blueprint.component_inventory.map((component) => component.name),
+                tokens: Object.values(blueprint.token_index),
+                interactions: blueprint.flows.map((flow) => `${flow.kind}: ${flow.value}`),
+                screenshots: [],
+                blueprint,
+            };
+            setFigmaContext(next);
+            setFigmaModalOpen(false);
+            toast.success(
+                `Figma blueprint attached (${blueprint.pruned_node_count} nodes, ${countBlueprintAnnotations(blueprint)} annotations)`,
+            );
+        } catch {
             toast.error('Enter a valid Figma design URL.');
-            return;
+        } finally {
+            setFigmaBlueprintLoading(false);
         }
-
-        setFigmaContext(next);
-        setFigmaModalOpen(false);
-        toast.success('Figma design attached');
     };
 
     const handleGeneratePlan = async () => {
@@ -373,7 +358,10 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
         setPhase('creating');
 
         try {
-            const res = await approveMutation.mutateAsync(plan);
+            const res = await approveMutation.mutateAsync({
+                plan,
+                figma_blueprint: figmaContext?.blueprint ?? null,
+            });
             toast.success(
                 `Project created with ${res.milestone_count} milestones and ${res.task_count} tasks`,
             );
@@ -611,8 +599,11 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                                                         strokeWidth={1.75}
                                                                     />
                                                                 </span>
-                                                                <span className="min-w-0 max-w-[220px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[320px]">
+                                                                <span className="min-w-0 max-w-[260px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[360px]">
                                                                     {figmaContext.source_name || 'Figma design attached'}
+                                                                    {figmaContext.blueprint
+                                                                        ? ` · ${figmaContext.blueprint.pruned_node_count} nodes · ${countBlueprintAnnotations(figmaContext.blueprint)} annotations`
+                                                                        : ''}
                                                                 </span>
                                                                 <button
                                                                     type="button"
@@ -1161,6 +1152,12 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                             <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
                                 Paste a Figma design or frame URL
                             </p>
+                            <p className="font-['Inter',sans-serif] text-[12px] leading-[18px] text-[#727d83]">
+                                Add layer-name hints like <code>&amp;logic: submit-form</code>,{' '}
+                                <code>&amp;data: user.email</code>, or{' '}
+                                <code>&amp;api: PATCH /users/me</code> so Continuum can create
+                                controller-aware tasks.
+                            </p>
                             <input
                                 type="url"
                                 autoFocus
@@ -1169,7 +1166,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                 onKeyDown={(e) => {
                                     if (e.key !== 'Enter') return;
                                     e.preventDefault();
-                                    handleAttachFigmaFromModal();
+                                    void handleAttachFigmaFromModal();
                                 }}
                                 placeholder="https://www.figma.com/design/..."
                                 className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76]/40 focus-visible:border-[#1466ff]"
@@ -1184,16 +1181,23 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={handleAttachFigmaFromModal}
-                                    disabled={!figmaUrlInput.trim()}
+                                    onClick={() => void handleAttachFigmaFromModal()}
+                                    disabled={!figmaUrlInput.trim() || figmaBlueprintLoading}
                                     className={cn(
                                         "h-10 rounded-[8px] px-4 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors",
-                                        figmaUrlInput.trim()
+                                        figmaUrlInput.trim() && !figmaBlueprintLoading
                                             ? 'bg-[#1466ff] hover:bg-[#0051e6]'
                                             : 'bg-[rgba(96,109,118,0.1)] text-[#606d76]/50',
                                     )}
                                 >
-                                    Attach
+                                    {figmaBlueprintLoading ? (
+                                        <span className="inline-flex items-center gap-2">
+                                            <Loader2 className="size-4 animate-spin" />
+                                            Processing
+                                        </span>
+                                    ) : (
+                                        'Attach'
+                                    )}
                                 </button>
                             </div>
                         </div>

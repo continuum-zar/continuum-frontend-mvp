@@ -21,10 +21,11 @@ import {
   postProjectQuery,
   projectKeys,
   useUploadPlannerFile,
+  fetchFigmaBlueprint,
   type FileContent,
 } from "@/api";
 import TextareaAutosize from "react-textarea-autosize";
-import type { FigmaAttachmentRequest, GeneratedTask, WikiConfirmTaskItem } from "@/api";
+import type { FigmaAttachmentRequest, FigmaBlueprint, GeneratedTask, WikiConfirmTaskItem } from "@/api";
 import {
   Dialog,
   DialogOverlay,
@@ -102,6 +103,15 @@ function buildFigmaAttachmentFromUrl(rawUrl: string): FigmaAttachmentRequest | n
   }
 }
 
+function figmaAttachmentFromBlueprint(blueprint: FigmaBlueprint): FigmaAttachmentRequest {
+  return {
+    url: blueprint.url,
+    file_key: blueprint.file_key,
+    node_id: blueprint.node_id ?? null,
+    source_name: blueprint.frame_name || blueprint.source_name || null,
+  };
+}
+
 type ChatPhase = "welcome" | "thinking" | "responded" | "getStartedLoading" | "getStartedAnswer";
 
 type ReportingMsg =
@@ -159,6 +169,7 @@ function mapGeneratedTaskToConfirmItem(
         : null,
     labels: task.labels && task.labels.length > 0 ? task.labels : null,
     resources: task.resources ?? [],
+    figma_node_ids: task.figma_node_ids ?? [],
   };
 }
 
@@ -226,6 +237,8 @@ export function WelcomeAiChatModal({
 
   const [composerAttachments, setComposerAttachments] = useState<WelcomeComposerAttachment[]>([]);
   const [figmaAttachment, setFigmaAttachment] = useState<FigmaAttachmentRequest | null>(null);
+  const [figmaBlueprint, setFigmaBlueprint] = useState<FigmaBlueprint | null>(null);
+  const [figmaBlueprintLoading, setFigmaBlueprintLoading] = useState(false);
   const [figmaModalOpen, setFigmaModalOpen] = useState(false);
   const [figmaUrlInput, setFigmaUrlInput] = useState("");
   const composerAttachmentsRef = useRef(composerAttachments);
@@ -281,15 +294,24 @@ export function WelcomeAiChatModal({
     setFigmaModalOpen(true);
   }, [figmaAttachment]);
 
-  const handleAttachFigmaFromModal = useCallback(() => {
+  const handleAttachFigmaFromModal = useCallback(async () => {
     const next = buildFigmaAttachmentFromUrl(figmaUrlInput);
     if (!next) {
       toast.error("Enter a valid Figma design or frame URL.");
       return;
     }
-    setFigmaAttachment(next);
-    setFigmaModalOpen(false);
-    toast.success("Figma design attached");
+    setFigmaBlueprintLoading(true);
+    try {
+      const blueprint = await fetchFigmaBlueprint(next.url, next.node_id);
+      setFigmaBlueprint(blueprint);
+      setFigmaAttachment(figmaAttachmentFromBlueprint(blueprint));
+      setFigmaModalOpen(false);
+      toast.success(`Figma blueprint attached (${blueprint.pruned_node_count} nodes, ${blueprint.flows.length} annotations)`);
+    } catch {
+      toast.error("Could not inspect that Figma URL. Check access and try again.");
+    } finally {
+      setFigmaBlueprintLoading(false);
+    }
   }, [figmaUrlInput]);
 
   const milestoneIdForConfirm = useMemo(
@@ -316,6 +338,7 @@ export function WelcomeAiChatModal({
       setConfirming(false);
       setConfirmed(false);
       setFigmaAttachment(null);
+      setFigmaBlueprint(null);
       setFigmaUrlInput("");
       setFigmaModalOpen(false);
       abortRef.current?.abort();
@@ -410,6 +433,7 @@ export function WelcomeAiChatModal({
         max_tasks: 10,
         ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
         ...(figmaAttachment ? { figma_attachment: figmaAttachment } : {}),
+        ...(figmaBlueprint ? { figma_blueprint: figmaBlueprint } : {}),
       });
       if (controller.signal.aborted) return;
 
@@ -433,7 +457,7 @@ export function WelcomeAiChatModal({
       setApiError(msg);
       setPhase("getStartedAnswer");
     }
-  }, [draftMessage, projectId, clearComposerAttachments, figmaAttachment]);
+  }, [draftMessage, projectId, clearComposerAttachments, figmaAttachment, figmaBlueprint]);
 
   const stopGetStarted = () => {
     abortRef.current?.abort();
@@ -458,7 +482,7 @@ export function WelcomeAiChatModal({
     setConfirming(true);
     try {
       const items = tasks.map((t) => mapGeneratedTaskToConfirmItem(t, pid, milestoneIdForConfirm));
-      const res = await confirmTasks(pid, { tasks: items });
+      const res = await confirmTasks(pid, { tasks: items, figma_blueprint: figmaBlueprint });
       if (res.created_count < 1) {
         toast.error("No tasks were created. Try again.");
         return;
@@ -479,6 +503,7 @@ export function WelcomeAiChatModal({
     confirmed,
     queryClient,
     showQuickActions,
+    figmaBlueprint,
   ]);
 
   const isReportingChat = useReportingApi && (reportingThread.length > 0 || reportingPending);
@@ -681,7 +706,11 @@ export function WelcomeAiChatModal({
                       onRemoveAttachment={removeComposerAttachment}
                       figmaAttachment={figmaAttachment}
                       onAttachFigma={isGetStartedFlow ? handleAttachFigma : undefined}
-                      onRemoveFigma={() => setFigmaAttachment(null)}
+                      onRemoveFigma={() => {
+                        setFigmaAttachment(null);
+                        setFigmaBlueprint(null);
+                      }}
+                      figmaBlueprint={figmaBlueprint}
                       fileInputRef={welcomeFileInputRef}
                       onAddFiles={(files) => void addComposerFiles(files)}
                       uploadPending={uploadMutation.isPending}
@@ -915,6 +944,7 @@ export function WelcomeAiChatModal({
               </p>
               <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-[#727d83]">
                 Continuum will inspect layout, typography, gradients, icons, assets, and measurements before creating tasks.
+                Layer-name hints like &amp;logic: submit-form or &amp;data: user.email make the tasks more precise.
               </p>
             </div>
             <input
@@ -925,7 +955,7 @@ export function WelcomeAiChatModal({
               onKeyDown={(e) => {
                 if (e.key !== "Enter") return;
                 e.preventDefault();
-                handleAttachFigmaFromModal();
+                void handleAttachFigmaFromModal();
               }}
               placeholder="https://www.figma.com/design/..."
               className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76]/40 focus-visible:border-[#1466ff]"
@@ -940,16 +970,23 @@ export function WelcomeAiChatModal({
               </button>
               <button
                 type="button"
-                onClick={handleAttachFigmaFromModal}
-                disabled={!figmaUrlInput.trim()}
+                onClick={() => void handleAttachFigmaFromModal()}
+                disabled={!figmaUrlInput.trim() || figmaBlueprintLoading}
                 className={cn(
                   "h-10 rounded-[8px] px-4 font-['Satoshi',sans-serif] text-[14px] font-semibold transition-colors",
-                  figmaUrlInput.trim()
+                  figmaUrlInput.trim() && !figmaBlueprintLoading
                     ? "bg-[#1466ff] text-white hover:bg-[#0051e6]"
                     : "bg-[rgba(96,109,118,0.1)] text-[#606d76]/50",
                 )}
               >
-                Attach
+                {figmaBlueprintLoading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin" />
+                    Processing
+                  </span>
+                ) : (
+                  "Attach"
+                )}
               </button>
             </div>
           </div>
@@ -970,6 +1007,7 @@ function ComposerWelcome({
   attachments,
   onRemoveAttachment,
   figmaAttachment,
+  figmaBlueprint,
   onAttachFigma,
   onRemoveFigma,
   fileInputRef,
@@ -986,6 +1024,7 @@ function ComposerWelcome({
   attachments: WelcomeComposerAttachment[];
   onRemoveAttachment: (id: string) => void;
   figmaAttachment?: FigmaAttachmentRequest | null;
+  figmaBlueprint?: FigmaBlueprint | null;
   onAttachFigma?: () => void;
   onRemoveFigma?: () => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -1072,8 +1111,11 @@ function ComposerWelcome({
                 >
                   <Link2 className="size-4 shrink-0 text-[#2f6df6]" strokeWidth={1.75} />
                 </span>
-                <span className="min-w-0 max-w-[180px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f]">
+                <span className="min-w-0 max-w-[220px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f]">
                   {figmaAttachment.source_name || "Figma design attached"}
+                  {figmaBlueprint
+                    ? ` · ${figmaBlueprint.pruned_node_count} nodes · ${figmaBlueprint.flows.length} annotations`
+                    : ""}
                 </span>
                 <button
                   type="button"
