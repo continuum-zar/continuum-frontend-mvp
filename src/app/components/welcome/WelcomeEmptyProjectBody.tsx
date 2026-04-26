@@ -565,7 +565,17 @@ function repositoryStatusSubtitle(
 ): string {
   if (scanLoading && !scan) return "Loading status…";
   const isScanning = scan?.is_scanning ?? false;
-  if (isScanning) return "Indexing…";
+  if (isScanning) {
+    const total = scan?.scan_files_total;
+    const processed = scan?.scan_files_processed;
+    if (total != null && total > 0 && processed != null) {
+      return `${processed}/${total} file${total === 1 ? "" : "s"} indexed`;
+    }
+    if (total === 0 && processed === 0) {
+      return "No eligible source files to index";
+    }
+    return "Indexing…";
+  }
   const files = scan?.files_indexed ?? 0;
   const lastAt = parseApiUtcDateTime(scan?.last_scanned_at);
   const parts: string[] = [];
@@ -609,13 +619,38 @@ function LiveRepositoryRow({
           <Link2 className="size-4 text-[#606d76]" strokeWidth={1.75} />
         </div>
         <div className="flex min-h-[50px] min-w-0 flex-1 items-center gap-4 border-l border-solid border-[#ededed] py-1.5 pl-4 pr-2">
-          <div className="flex min-w-0 flex-1 flex-col justify-center font-['Satoshi',sans-serif] font-medium leading-normal">
+          <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 font-['Satoshi',sans-serif] font-medium leading-normal">
             <p className="truncate text-[16px] text-[#0b191f]" title={repo.repositoryUrl}>
               {repo.repositoryUrl}
             </p>
             <p className="max-w-full truncate text-[12px] text-[#727d83]" title={subtitle}>
               {subtitle}
             </p>
+            {isScanning &&
+            scanStatus != null &&
+            (scanStatus.scan_files_total ?? 0) > 0 &&
+            scanStatus.scan_files_processed != null ? (
+              <div
+                className="h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-[#ededed]"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={scanStatus.scan_files_total ?? 0}
+                aria-valuenow={scanStatus.scan_files_processed ?? 0}
+              >
+                <div
+                  className="h-1 rounded-full bg-[#0b4f7a] transition-[width] duration-300 ease-out"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.round(
+                        ((scanStatus.scan_files_processed ?? 0) * 100) /
+                          (scanStatus.scan_files_total ?? 1),
+                      ),
+                    )}%`,
+                  }}
+                />
+              </div>
+            ) : null}
           </div>
           <button
             type="button"
