@@ -1,6 +1,7 @@
 import api from '@/lib/api';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { fetchMilestones, projectKeys } from './projects';
 import { getApiErrorMessage } from './hooks';
 
 // ---------------------------------------------------------------------------
@@ -256,6 +257,7 @@ export function useGeneratePlan() {
 }
 
 export function useApprovePlan() {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: ({
             plan,
@@ -264,6 +266,29 @@ export function useApprovePlan() {
             plan: ProjectPlan;
             figma_blueprint?: FigmaBlueprint | null;
         }) => approvePlan(plan, figma_blueprint),
+        onSuccess: async (data) => {
+            const pid = data.project_id;
+            // Left rail + dashboard read from React Query; without this, the new project and
+            // milestones stay stale until a full page refresh.
+            void queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.detail(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.kanbanBoard(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.members(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.allTasks() });
+            void queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
+            void queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
+            try {
+                await queryClient.prefetchQuery({
+                    queryKey: projectKeys.milestones(pid),
+                    queryFn: () => fetchMilestones(pid),
+                });
+            } catch {
+                /* non-fatal — invalidation above still triggers refetch for mounted queries */
+            }
+        },
         onError: (err: unknown) => {
             toast.error(getApiErrorMessage(err, 'Failed to create project from plan'));
         },
