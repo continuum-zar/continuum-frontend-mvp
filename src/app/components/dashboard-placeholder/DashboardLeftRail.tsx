@@ -27,7 +27,11 @@ import {
 } from "../../data/dashboardPlaceholderProjects";
 import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
 import { GuidedTourLayer } from "@/app/components/onboarding/GuidedTourLayer";
-import { consumeGithubOAuthReopenSettings } from "@/lib/githubOAuthReturn";
+import {
+  consumeGithubOAuthReopenGithubIntegrationModal,
+  consumeGithubOAuthReopenSettings,
+  consumeGithubOAuthRestoreProjectApiId,
+} from "@/lib/githubOAuthReturn";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import type { SettingsSection } from "./SettingsModal";
 import { cn } from "../ui/utils";
@@ -120,7 +124,7 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
             alt=""
             className="absolute block max-w-none size-full"
             src={imgLucideHouse}
-            style={{ filter: "grayscale(1) saturate(0) opacity(0.7)" }}
+            style={{ filter: "grayscale(1) saturate(0) brightness(0.55)" }}
           />
         </div>
       )}
@@ -145,14 +149,12 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
 
 type Frame1Props = {
   className?: string;
-  isHomeActive?: boolean;
   isInvoiceActive?: boolean;
   onInvoiceClick: () => void;
 };
 
 function Frame1({
   className,
-  isHomeActive = false,
   isInvoiceActive = false,
   onInvoiceClick,
   isAssignedActive = false,
@@ -167,12 +169,8 @@ function Frame1({
         aria-label="Home"
       >
         <Component2
-          className={`content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] ${
-            isHomeActive
-              ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
-              : "bg-[#edf0f3]"
-          }`}
-          state={isHomeActive ? "Selected" : "Default"}
+          className="content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] bg-[#edf0f3]"
+          state="Default"
           type="Home"
         />
       </Link>
@@ -288,14 +286,12 @@ function LeftRailTimerControls({
 
 function Frame({
   className,
-  isHomeActive = false,
   isInvoiceActive = false,
   onInvoiceClick,
   isAssignedActive = false,
   isCreatedActive = false,
 }: {
   className?: string;
-  isHomeActive?: boolean;
   isInvoiceActive?: boolean;
   onInvoiceClick: () => void;
   isAssignedActive?: boolean;
@@ -313,7 +309,6 @@ function Frame({
       </div>
       <Frame1
         className="content-stretch flex gap-[8px] items-center relative shrink-0"
-        isHomeActive={isHomeActive}
         isInvoiceActive={isInvoiceActive}
         onInvoiceClick={onInvoiceClick}
         isAssignedActive={isAssignedActive}
@@ -451,6 +446,9 @@ export function DashboardLeftRail() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [postGithubOAuthGithubModal, setPostGithubOAuthGithubModal] = useState<{
+    projectApiId: number | null;
+  } | null>(null);
   const [settingsSectionOverride, setSettingsSectionOverride] = useState<SettingsSection | null>(
     null,
   );
@@ -567,14 +565,20 @@ export function DashboardLeftRail() {
   }, [tourSettingsModalOpen, setTourSettingsModalOpen]);
 
   /**
-   * Reopen Settings → Integrations after a GitHub OAuth round-trip. The flag is set by
-   * GitHubInstallationRepoLinker.handleConnect before leaving the SPA and consumed here
-   * exactly once so navigating away and back doesn't keep re-opening the modal.
+   * Reopen Settings → Integrations (and optionally the nested GitHub dialog) after a GitHub
+   * OAuth round-trip. Hints are set by GitHubInstallationRepoLinker before leaving the SPA;
+   * related keys are always consumed here once so they never leak across navigations.
    */
   useEffect(() => {
-    if (consumeGithubOAuthReopenSettings()) {
+    const reopenGithub = consumeGithubOAuthReopenGithubIntegrationModal();
+    const restoreProjectApiId = consumeGithubOAuthRestoreProjectApiId();
+    const reopenSettings = consumeGithubOAuthReopenSettings();
+    if (reopenSettings) {
       setSettingsSectionOverride("integrations");
       setSettingsOpen(true);
+      if (reopenGithub) {
+        setPostGithubOAuthGithubModal({ projectApiId: restoreProjectApiId });
+      }
     }
   }, []);
 
@@ -587,7 +591,6 @@ export function DashboardLeftRail() {
     }
   }, [tourActive]);
 
-  const isHomeActive = pathname === WORKSPACE_BASE;
   const isInvoiceActive = invoiceOpen;
   const isAssignedActive = pathname.startsWith(`${WORKSPACE_BASE}/assigned`);
   const isCreatedActive = pathname.startsWith(`${WORKSPACE_BASE}/created`);
@@ -611,7 +614,6 @@ export function DashboardLeftRail() {
         </div>
         <Frame
           className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0"
-          isHomeActive={isHomeActive}
           isInvoiceActive={isInvoiceActive}
           onInvoiceClick={() => setInvoiceOpen(true)}
           isAssignedActive={isAssignedActive}
@@ -952,6 +954,8 @@ export function DashboardLeftRail() {
           if (!next) setSettingsSectionOverride(null);
         }}
         tourSection={settingsSectionOverride ?? settingsTourSection}
+        postGithubOAuthGithubModal={postGithubOAuthGithubModal}
+        onPostGithubOAuthGithubModalConsumed={() => setPostGithubOAuthGithubModal(null)}
       />
       <LogTimeModal
         open={logModalOpen}

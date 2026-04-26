@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { formatDistanceToNow } from "date-fns";
 import { parseApiUtcDateTime } from "@/lib/parseApiUtcDateTime";
 import { playRepoIndexingCompleteSound } from "@/lib/playRepoIndexingCompleteSound";
+import { consumeGithubOAuthReopenWelcomeLinkRepoModal } from "@/lib/githubOAuthReturn";
 import { ArrowRightLeft, Download, ExternalLink, FileText, GitCommit, Link2, Loader2, RefreshCw, X } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
@@ -654,6 +655,12 @@ export function WelcomeEmptyProjectBody({
   const [addResourceOpen, setAddResourceOpen] = useState(false);
   const [linkRepoOpen, setLinkRepoOpen] = useState(false);
   const previouslyScanningRepoIdsRef = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (consumeGithubOAuthReopenWelcomeLinkRepoModal()) {
+      setLinkRepoOpen(true);
+    }
+  }, []);
 
   const attachmentsQuery = useProjectAttachments(projectId);
   const repositoriesQuery = useProjectRepositories(projectId);

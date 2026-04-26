@@ -3,7 +3,8 @@ import type { GitHubInstallationRepository } from '@/types/githubApp';
 
 /**
  * List repositories for the GitHub App installation linked to this Continuum project.
- * 404 = installation not connected; 503 = server GitHub App credentials missing.
+ * 404 = installation not connected; 401/422 (or 403 + OAuth-related detail) = reconnect;
+ * 503 = server GitHub App credentials missing.
  */
 export async function fetchGitHubInstallationRepositories(
   projectId: number

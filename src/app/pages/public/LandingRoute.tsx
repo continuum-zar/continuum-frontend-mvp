@@ -6,6 +6,23 @@ import { useAuthStore } from "@/store/authStore";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import LandingPage from "./LandingPage";
 
+function parseStoredGithubOAuthReturn(returnPath: string): {
+  pathname: string;
+  searchFromStored: string;
+  hash: string;
+} {
+  try {
+    const u = new URL(returnPath, "http://localhost");
+    return {
+      pathname: u.pathname,
+      searchFromStored: u.search ? u.search.slice(1) : "",
+      hash: u.hash ?? "",
+    };
+  } catch {
+    return { pathname: "/", searchFromStored: "", hash: "" };
+  }
+}
+
 /**
  * Public marketing landing at `/`. Authenticated users are sent to the default tasks board.
  *
@@ -34,14 +51,14 @@ export function LandingRoute() {
     const hasGithubOAuthParams = new URLSearchParams(location.search).has("github_oauth");
     const returnPath = hasGithubOAuthParams ? peekGithubOAuthReturnPath() : null;
     if (returnPath) {
-      const [pathname, existingSearch = ""] = returnPath.split("?");
-      const merged = new URLSearchParams(existingSearch);
+      const { pathname, searchFromStored, hash } = parseStoredGithubOAuthReturn(returnPath);
+      const merged = new URLSearchParams(searchFromStored);
       const incoming = new URLSearchParams(location.search);
       incoming.forEach((v, k) => merged.set(k, v));
       const search = merged.toString();
       return (
         <Navigate
-          to={{ pathname, search: search ? `?${search}` : "" }}
+          to={{ pathname, search: search ? `?${search}` : "", hash }}
           replace
         />
       );

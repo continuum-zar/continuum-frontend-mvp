@@ -1,21 +1,20 @@
 import * as React from "react";
 import { LaptopMinimalCheck } from "lucide-react";
-import { DESKTOP_ONLY_MAX_BREAKPOINT } from "@/app/components/ui/use-mobile";
+import { DESKTOP_ONLY_GATE_MEDIA_QUERY } from "@/app/components/ui/use-mobile";
 
 const HEADLINE_GRADIENT =
   "linear-gradient(151.67deg, rgb(36, 181, 248) 4.62%, rgb(85, 33, 254) 148.53%)";
 
 function getShouldShowDesktopOnlyScreen(): boolean {
   if (typeof window === "undefined") return false;
-  return window.matchMedia(`(max-width: ${DESKTOP_ONLY_MAX_BREAKPOINT}px)`).matches;
+  return window.matchMedia(DESKTOP_ONLY_GATE_MEDIA_QUERY).matches;
 }
 
 function useSyncDesktopOnlyViewport(): boolean {
   const [showDesktopOnly, setShowDesktopOnly] = React.useState(getShouldShowDesktopOnlyScreen);
 
   React.useEffect(() => {
-    const query = `(max-width: ${DESKTOP_ONLY_MAX_BREAKPOINT}px)`;
-    const mql = window.matchMedia(query);
+    const mql = window.matchMedia(DESKTOP_ONLY_GATE_MEDIA_QUERY);
     const sync = () => {
       setShowDesktopOnly(mql.matches);
     };
@@ -28,7 +27,7 @@ function useSyncDesktopOnlyViewport(): boolean {
 }
 
 /**
- * Full-viewport message on phone / tablet widths: ask users to use desktop.
+ * Full-viewport message when the viewport is below minimum width or height: ask users to use a larger display.
  */
 export function MobileDesktopOnlyScreen() {
   return (
@@ -78,7 +77,9 @@ export function MobileDesktopOnlyScreen() {
 }
 
 /**
- * At or below `DESKTOP_ONLY_MAX_BREAKPOINT` (1366px width), show the desktop-only message instead of the app.
+ * If the viewport is narrower than `DESKTOP_ONLY_MIN_WIDTH` **or** shorter than
+ * `DESKTOP_ONLY_MIN_HEIGHT` (see `use-mobile.ts`), show the desktop-only message
+ * instead of the app.
  */
 export function MobileDesktopOnlyGate({ children }: { children: React.ReactNode }) {
   const showDesktopOnly = useSyncDesktopOnlyViewport();

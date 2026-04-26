@@ -18,12 +18,10 @@ import {
   UserX,
   Zap,
   CheckCircle2,
-  Circle,
   MoreVertical,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Progress } from '../components/ui/progress';
 import { Skeleton } from '../components/ui/skeleton';
 import { VirtualList } from '../components/ui/VirtualList';
 import {
@@ -48,10 +46,9 @@ import {
   fetchClientProjects,
   fetchClientProjectProgress,
   postProjectQuery,
-  fetchProjectStats,
 } from '@/api';
 import { useAuthStore } from '@/store/authStore';
-import { STALE_MODERATE_MS, STALE_REFERENCE_MS, STALE_TIME_DATA_MS } from '@/lib/queryDefaults';
+import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
 import {
   Bar,
   LineChart,
@@ -86,7 +83,6 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
   const [rhythmMember, setRhythmMember] = useState("all");
-  const [snapshotMember, setSnapshotMember] = useState("all");
   const [chatMessage, setChatMessage] = useState("");
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     { role: 'assistant', content: "Hello! I'm your Continuum assistant. Ask me anything about the project's progress, invoices, or recent activities." },
@@ -161,24 +157,10 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const { data: rhythmMembers = [] } = useProjectMembers(
     isProjectPM && hasProjectSelected ? selectedProject : undefined
   );
-  /** Only developers (backend role) for Team Productivity Rhythm dropdown */
-  const rhythmDeveloperMembers = useMemo(
-    () =>
-      rhythmMembers.filter(
-        (m) =>
-          (m.userRole ?? '').toLowerCase() === 'backend' ||
-          (m.userRole ?? '').toLowerCase() === 'developer'
-      ),
+  /** Include all project members in the heatmap selector, regardless of role. */
+  const rhythmProjectMembers = useMemo(
+    () => rhythmMembers,
     [rhythmMembers]
-  );
-
-  /** Options for Team Task Snapshot: All Developers + developers only (same filter as Team Productivity Rhythm). */
-  const snapshotMembersList = useMemo(
-    () => [
-      { id: 'all', name: 'All Developers (Collective)' },
-      ...rhythmDeveloperMembers.map((m) => ({ id: String(m.userId), name: m.name })),
-    ],
-    [rhythmDeveloperMembers]
   );
 
   // Default to first project when list loads; clear when no projects (no "All Projects" option)
@@ -194,22 +176,15 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     }
   }, [userRole, projects, selectedProject]);
 
-  // Reset Team Task Snapshot member to "all" when selected member is not in current project's list
-  useEffect(() => {
-    if (snapshotMember === 'all') return;
-    const validIds = new Set(snapshotMembersList.map((m) => m.id));
-    if (!validIds.has(snapshotMember)) setSnapshotMember('all');
-  }, [snapshotMember, snapshotMembersList]);
-
   const rhythmUserId = useMemo(() => {
     if (!isProjectPM) return user?.id ?? null;
     if (isProjectPM) {
-      if (rhythmMember === 'all') return rhythmDeveloperMembers[0]?.userId ?? null;
-      const m = rhythmDeveloperMembers.find((x) => String(x.id) === rhythmMember);
+      if (rhythmMember === 'all') return rhythmProjectMembers[0]?.userId ?? null;
+      const m = rhythmProjectMembers.find((x) => String(x.id) === rhythmMember);
       return m?.userId ?? null;
     }
     return null;
-  }, [isProjectPM, user?.id, rhythmMember, rhythmDeveloperMembers]);
+  }, [isProjectPM, user?.id, rhythmMember, rhythmProjectMembers]);
 
   const { data: rhythmResponse, isLoading: rhythmLoading, isError: rhythmError } = useQuery({
     queryKey: ['user-rhythm', rhythmUserId],
@@ -242,15 +217,6 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     placeholderData: (previousData) => previousData,
   });
 
-  const needMemberStats = hasProjectSelected && isProjectPM && snapshotMember !== 'all';
-  const { data: memberStats, isLoading: memberStatsLoading, isError: memberStatsError } = useQuery({
-    queryKey: ['project-stats', selectedProject, snapshotMember],
-    queryFn: () => fetchProjectStats(selectedProject, Number(snapshotMember)),
-    enabled: needMemberStats,
-    staleTime: STALE_TIME_DATA_MS,
-    placeholderData: (previousData) => previousData,
-  });
-
   const health = dashboardMetrics?.health;
   const velocity = dashboardMetrics?.velocity;
   const velocityScore = velocity?.trend?.velocity_score ?? (velocity?.weeks?.length ? velocity.weeks[velocity.weeks.length - 1].velocity_score : null);
@@ -259,23 +225,6 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const hpsRatio = health?.hps_ratio ?? null;
   const overdueCount = health?.overdue_count ?? 0;
   const unassignedCount = health?.unassigned_count ?? 0;
-
-  const stats = dashboardMetrics?.stats;
-
-  /** For Team Task Snapshot card: use project-wide stats or member-scoped stats when a member is selected. */
-  const snapshotStats = snapshotMember === 'all' ? stats : memberStats;
-  const snapshotTodoCount = snapshotStats?.total_todo_tasks ?? 0;
-  const snapshotInProgressCount = snapshotStats?.total_in_progress_tasks ?? 0;
-  const snapshotDoneCount = snapshotStats?.total_completed_tasks ?? 0;
-  const snapshotOverdueCountFiltered = snapshotStats?.total_overdue_tasks ?? 0;
-  const snapshotTotalTasks = (snapshotStats?.total_tasks ?? 0) || (snapshotTodoCount + snapshotInProgressCount + snapshotDoneCount + snapshotOverdueCountFiltered) || 0;
-  const snapshotLoading = snapshotMember === 'all' ? dashboardLoading : memberStatsLoading;
-  const snapshotError = snapshotMember === 'all' ? dashboardError : memberStatsError;
-  const pctFromSnapshot =
-    snapshotStats && 'completion_percentage' in snapshotStats ? snapshotStats.completion_percentage
-    : snapshotStats && 'progress_percentage' in snapshotStats ? snapshotStats.progress_percentage
-    : undefined;
-  const snapshotCompletionPct = pctFromSnapshot ?? (snapshotTotalTasks > 0 ? Math.round((snapshotDoneCount / snapshotTotalTasks) * 100) : 0);
 
   const { data: classificationBreakdown, isLoading: classificationLoading, isError: classificationError } = useQuery({
     queryKey: ['classification-breakdown', selectedProject],
@@ -400,16 +349,18 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const { data: milestones = [] } = useProjectMilestones(
     isProjectPM && hasProjectSelected ? selectedProject : undefined
   );
-  const activeMilestoneId = useMemo(() => {
-    if (milestones.length === 0) return null;
-    const active = milestones.find((m) => m.status === 'active');
-    return active ? active.id : milestones[0].id;
-  }, [milestones]);
-  const milestoneId = selectedMilestone ?? activeMilestoneId;
+  const firstMilestoneId = milestones.length > 0 ? milestones[0].id : null;
+  const milestoneId = selectedMilestone;
   useEffect(() => {
-    if (activeMilestoneId != null && selectedMilestone === null) setSelectedMilestone(activeMilestoneId);
-    if (milestones.length === 0) setSelectedMilestone(null);
-  }, [activeMilestoneId, selectedMilestone, milestones.length]);
+    if (milestones.length === 0) {
+      setSelectedMilestone(null);
+      return;
+    }
+    const selectedStillExists = selectedMilestone != null && milestones.some((m) => m.id === selectedMilestone);
+    if (!selectedStillExists && firstMilestoneId != null) {
+      setSelectedMilestone(firstMilestoneId);
+    }
+  }, [firstMilestoneId, selectedMilestone, milestones]);
 
   const { data: burndown, isLoading: burndownLoading, isError: burndownError } = useQuery({
     queryKey: ['milestone-burndown', milestoneId],
@@ -441,7 +392,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
 
   const { data: velocityReport, isLoading: velocityLoading, isError: velocityError } = useQuery({
     queryKey: ['velocity-report', selectedProject],
-    queryFn: () => fetchProjectVelocityReport(selectedProject),
+    queryFn: () => fetchProjectVelocityReport(selectedProject, 104, 'daily'),
     enabled: hasProjectSelected && effectiveRole !== 'Client',
     staleTime: STALE_MODERATE_MS,
     placeholderData: (previousData) => previousData,
@@ -449,7 +400,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
 
   const velocityChartData =
     velocityReport?.weeks?.map((w) => ({
-      week: w.week_start_date ? new Date(w.week_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : `W${w.week_number}`,
+      day: w.week_start_date ? new Date(w.week_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : `D${w.week_number}`,
       score: w.velocity_score,
       avg: w.rolling_avg,
       tasks: w.tasks_completed,
@@ -611,8 +562,8 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
             className={`bg-card border border-border rounded-lg p-6 ${effectiveRole === 'Developer' ? 'lg:col-span-2' : ''}`}
           >
             <div className="mb-4">
-              <h3 className="mb-1">Weekly Velocity Composite</h3>
-              <p className="text-sm text-muted-foreground">Weighted score vs. 4-week average</p>
+              <h3 className="mb-1">Daily Velocity Composite</h3>
+              <p className="text-sm text-muted-foreground">Daily weighted score vs. 7-day average</p>
             </div>
             {velocityLoading && hasProjectSelected ? (
               <div className="h-[300px] flex flex-col gap-4">
@@ -637,7 +588,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={velocityChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="week" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
@@ -732,16 +683,16 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
         </div>
       )}
 
-      {/* Row 3: User Rhythm Heatmap & Diagnostics (requires single project) */}
+      {/* Row 3: User Rhythm Heatmap (requires single project) */}
       {effectiveRole !== 'Client' && hasProjectSelected && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 gap-6 mb-6">
 
           {/* Heatmap */}
           <motion.div
             initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduceMotion ? 0 : 0.25, delay: reduceMotion ? 0 : 0.2 }}
-            className="lg:col-span-2 bg-card border border-border rounded-lg p-6"
+            className="bg-card border border-border rounded-lg p-6"
           >
             <div className="mb-6 flex justify-between items-center">
               <div>
@@ -755,8 +706,8 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
                       <SelectValue placeholder="Filter member" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Developers (Collective)</SelectItem>
-                      {rhythmDeveloperMembers.map((m) => (
+                      <SelectItem value="all">All Members (Collective)</SelectItem>
+                      {rhythmProjectMembers.map((m) => (
                         <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -802,8 +753,8 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
                   </div>
                 ) : rhythmError ? (
                   <div className="h-[200px] flex items-center justify-center text-destructive text-sm">Failed to load rhythm</div>
-                ) : isProjectPM && rhythmMember === 'all' && rhythmDeveloperMembers.length === 0 ? (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No developers in this project</div>
+                ) : isProjectPM && rhythmMember === 'all' && rhythmProjectMembers.length === 0 ? (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No members in this project</div>
                 ) : rhythmChartData.length === 0 ? (
                   <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No rhythm data yet</div>
                 ) : (
@@ -828,93 +779,6 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
                 )}
               </div>
             </div>
-          </motion.div>
-
-          {/* Snapshots Radar/Cards */}
-          <motion.div
-            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.25, delay: reduceMotion ? 0 : 0.25 }}
-            className="bg-card border border-border rounded-lg p-6 flex flex-col"
-          >
-            <div className="mb-6 flex justify-between items-start">
-              <div>
-                <h3 className="mb-1">{effectiveRole === 'Developer' ? 'My Task Snapshot' : 'Team Task Snapshot'}</h3>
-                <p className="text-sm text-muted-foreground">Current breakdown</p>
-              </div>
-              {isProjectPM && (
-                <Select value={snapshotMember} onValueChange={setSnapshotMember}>
-                  <SelectTrigger className="w-[180px] h-8 text-xs border-border bg-card">
-                    <SelectValue placeholder="Filter developer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {snapshotMembersList.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {!hasProjectSelected ? (
-              <div className="py-8 text-center text-muted-foreground text-sm">Select a project to view task snapshot</div>
-            ) : snapshotLoading ? (
-              <div className="py-8 space-y-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-4 w-4 rounded-full" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                    <Skeleton className="h-6 w-8" />
-                  </div>
-                ))}
-                <div className="mt-4 pt-4 border-t border-border">
-                  <Skeleton className="h-2 w-full mb-2" />
-                  <Skeleton className="h-3 w-32" />
-                </div>
-              </div>
-            ) : snapshotError ? (
-              <div className="py-8 text-center text-destructive text-sm">Failed to load snapshot</div>
-            ) : (
-            <>
-            <div className="space-y-4 flex-1">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Circle className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">To Do</span>
-                </div>
-                <span className="text-lg font-bold">{snapshotTodoCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Activity className="h-4 w-4 text-primary" />
-                  <span className="font-medium">In Progress</span>
-                </div>
-                <span className="text-lg font-bold">{snapshotInProgressCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <span className="font-medium">Done</span>
-                </div>
-                <span className="text-lg font-bold">{snapshotDoneCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                  <span className="font-medium">Overdue</span>
-                </div>
-                <span className="text-lg font-bold text-destructive">{snapshotOverdueCountFiltered}</span>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-border">
-              <Progress value={snapshotCompletionPct} className="h-2 mb-2 bg-muted [&>div]:bg-success" />
-              <span className="text-xs text-muted-foreground">{snapshotCompletionPct}% Overall Completion</span>
-            </div>
-            </>
-            )}
           </motion.div>
         </div>
       )}
