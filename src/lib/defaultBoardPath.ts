@@ -1,19 +1,7 @@
 import { fetchMilestones, fetchProjects } from "@/api/projects";
 import { projectSprintHref } from "@/app/data/dashboardPlaceholderProjects";
+import { sortMilestonesForNav } from "@/lib/milestoneSort";
 import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from "@/lib/workspacePaths";
-import type { Milestone } from "@/types/milestone";
-
-/** Same ordering as the left rail sprint list (timeline / due date). */
-function sortMilestonesForNav(list: Milestone[]): Milestone[] {
-  return [...list].sort((a, b) => {
-    const tA = new Date(a.date).getTime();
-    const tB = new Date(b.date).getTime();
-    if (Number.isNaN(tA) && Number.isNaN(tB)) return 0;
-    if (Number.isNaN(tA)) return 1;
-    if (Number.isNaN(tB)) return -1;
-    return tA - tB;
-  });
-}
 
 const FALLBACK_WELCOME_BOARD = workspaceJoin(WORKSPACE_SPRINT_SEGMENT);
 
