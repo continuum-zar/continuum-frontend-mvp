@@ -48,6 +48,7 @@ import {
   postProjectQuery,
 } from '@/api';
 import { useAuthStore } from '@/store/authStore';
+import { DashboardAnalyticsCharts } from '../components/dashboard-charts/DashboardAnalyticsCharts';
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
 import {
   Bar,
@@ -681,6 +682,19 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
             </motion.div>
           )}
         </div>
+      )}
+
+      {effectiveRole !== 'Client' && hasProjectSelected && (
+        <DashboardAnalyticsCharts
+          selectedProject={selectedProject}
+          hasProjectSelected={hasProjectSelected}
+          effectiveRole={effectiveRole}
+          isProjectPM={isProjectPM}
+          reduceMotion={reduceMotion}
+          dashboardMetrics={dashboardMetrics}
+          dashboardLoading={dashboardLoading}
+          dashboardError={dashboardError}
+        />
       )}
 
       {/* Row 3: User Rhythm Heatmap (requires single project) */}
