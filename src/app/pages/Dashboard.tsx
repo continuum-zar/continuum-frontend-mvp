@@ -46,8 +46,10 @@ import {
   fetchClientProjects,
   fetchClientProjectProgress,
   postProjectQuery,
+  useIndexingProgressPoll,
 } from '@/api';
 import { useAuthStore } from '@/store/authStore';
+import { DashboardAnalyticsCharts } from '../components/dashboard-charts/DashboardAnalyticsCharts';
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
 import {
   Bar,
@@ -324,6 +326,14 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   }, [staleWorkResponse]);
 
   const hasProjects = userRole === 'Client' ? clientProjectsList.length > 0 : projects.length > 0;
+
+  const queryProjectIdForChat =
+    effectiveRole === 'Client' ? (selectedProject || clientProjectId) : selectedProject;
+
+  const indexingProgressQuery = useIndexingProgressPoll(
+    queryProjectIdForChat,
+    chatSending && Boolean(queryProjectIdForChat && queryProjectIdForChat !== 'all'),
+  );
 
   const handleSendChat = useCallback(async () => {
     const msg = chatMessage.trim();
@@ -683,6 +693,19 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
         </div>
       )}
 
+      {effectiveRole !== 'Client' && hasProjectSelected && (
+        <DashboardAnalyticsCharts
+          selectedProject={selectedProject}
+          hasProjectSelected={hasProjectSelected}
+          effectiveRole={effectiveRole}
+          isProjectPM={isProjectPM}
+          reduceMotion={reduceMotion}
+          dashboardMetrics={dashboardMetrics}
+          dashboardLoading={dashboardLoading}
+          dashboardError={dashboardError}
+        />
+      )}
+
       {/* Row 3: User Rhythm Heatmap (requires single project) */}
       {effectiveRole !== 'Client' && hasProjectSelected && (
         <div className="grid grid-cols-1 gap-6 mb-6">
@@ -1030,6 +1053,8 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
             onChatMessageChange={setChatMessage}
             onSend={handleSendChat}
             chatSending={chatSending}
+            indexingProgress={indexingProgressQuery.data}
+            indexingPollFailed={indexingProgressQuery.isError}
           />
         </div>
       )}

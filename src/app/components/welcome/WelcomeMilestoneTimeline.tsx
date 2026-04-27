@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { CircleCheckBig, Plus } from "lucide-react";
 
 import { useProjectMilestones } from "@/api/hooks";
-import type { Milestone } from "@/types/milestone";
 
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import {
@@ -13,6 +12,7 @@ import {
 } from "@/app/components/dashboard-placeholder/CreateMilestoneModal";
 import { welcomeMilestoneTimelineMock } from "@/app/data/welcomeDashboardMock";
 import { milestoneTimelineShowsCompletedIcon } from "@/lib/milestoneCompletion";
+import { sortMilestonesForTimeline } from "@/lib/milestoneSort";
 import { cn } from "../ui/utils";
 
 /** Figma node 35:11709 — lucide/goal */
@@ -29,23 +29,6 @@ function formatTimelineDateLabel(iso: string | null | undefined): string {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const yyyy = d.getFullYear();
   return `${dd}-${mm}-${yyyy}`;
-}
-
-function milestoneDueTimeMs(m: Milestone): number {
-  if (!m.dueDateIso) return Number.POSITIVE_INFINITY;
-  const raw = m.dueDateIso.includes("T") ? m.dueDateIso : `${m.dueDateIso}T12:00:00`;
-  const t = new Date(raw).getTime();
-  return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
-}
-
-/** Earliest due date first so the list reads as a forward timeline (past → future). */
-function sortMilestonesForTimeline(list: Milestone[]): Milestone[] {
-  return [...list].sort((a, b) => {
-    const ta = milestoneDueTimeMs(a);
-    const tb = milestoneDueTimeMs(b);
-    if (ta !== tb) return ta - tb;
-    return String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" });
-  });
 }
 
 export type WelcomeMilestoneTimelineProps = {

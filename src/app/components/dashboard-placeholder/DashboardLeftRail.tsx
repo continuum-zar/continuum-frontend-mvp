@@ -8,7 +8,6 @@ import { getRecordingElapsedMs, useTimeRecordingStore } from "@/store/timeRecord
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { useAuthStore } from "@/store/authStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
-import type { Milestone } from "@/types/milestone";
 import type { Project } from "@/types/project";
 
 import { CreateProjectModal } from "./CreateProjectModal";
@@ -35,6 +34,7 @@ import {
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import type { SettingsSection } from "./SettingsModal";
 import { cn } from "../ui/utils";
+import { sortMilestonesForNav } from "@/lib/milestoneSort";
 
 const imgVector = mcpAsset("2470fa31-25cd-47ac-991d-d1c4219bd28d");
 const imgVector4 = mcpAsset("78ced5be-4173-418f-974b-68c6e9f6125c");
@@ -53,18 +53,6 @@ const imgVector7 = mcpAsset("f982bdec-baa8-4afc-b88d-5e64cbe35a27");
 /** Create project menu icons — Figma menu frame 77:14517 (folder + bot vectors; nodes 77:14522 / 77:14527). */
 const imgCreateMenuFolder = mcpAsset("433ffa8e-6a28-4076-9096-ab132955a110");
 const imgCreateMenuBot = mcpAsset("ac888056-fd87-49b0-b71f-ae04de07e7e9");
-
-/** Same ordering as ProjectBoard milestone tabs (timeline order). */
-function sortMilestonesForNav(list: Milestone[]): Milestone[] {
-  return [...list].sort((a, b) => {
-    const tA = new Date(a.date).getTime();
-    const tB = new Date(b.date).getTime();
-    if (Number.isNaN(tA) && Number.isNaN(tB)) return 0;
-    if (Number.isNaN(tA)) return 1;
-    if (Number.isNaN(tB)) return -1;
-    return tA - tB;
-  });
-}
 
 function CornerDownRight({ className }: { className?: string }) {
   return (

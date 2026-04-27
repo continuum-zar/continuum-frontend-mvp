@@ -17,6 +17,10 @@ export interface ScanStatusResponse {
     files_indexed: number;
     last_scanned_at: string | null;
     is_scanning: boolean;
+    /** While `is_scanning`: files attempted in this pass (from server progress cache). */
+    scan_files_processed?: number | null;
+    /** While `is_scanning`: total eligible files in this pass. */
+    scan_files_total?: number | null;
 }
 
 export interface GeneratedTaskChecklistItem {
