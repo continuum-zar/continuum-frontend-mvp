@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ArrowLeft, CalendarPlus } from "lucide-react";
 import { useNavigate } from "react-router";
@@ -35,12 +35,24 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
   const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [isNameFocused, setIsNameFocused] = useState(false);
+  const projectNameInputRef = useRef<HTMLInputElement>(null);
   const startDateInputRef = useRef<HTMLInputElement>(null);
   const dueDateInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useAutosizeTextarea(description, {
     minPx: 56,
     maxPx: 200,
   });
+
+  useEffect(() => {
+    if (!open) {
+      setIsNameFocused(false);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      projectNameInputRef.current?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [open]);
 
   const handleCreate = async () => {
     const name = projectName.trim();
@@ -69,6 +81,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
       setDescription("");
       setStartDate("");
       setDueDate("");
+      setIsNameFocused(false);
     }
     onOpenChange(openFromRadix);
   };
@@ -78,6 +91,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
       <DialogPortal>
         <DialogOverlay className="bg-black/25" />
         <DialogPrimitive.Content
+          onOpenAutoFocus={(e) => e.preventDefault()}
           aria-describedby={undefined}
           className={cn(
             "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
@@ -123,6 +137,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
                 )}
               />
               <input
+                ref={projectNameInputRef}
                 type="text"
                 placeholder="Project name"
                 className="w-full border-none px-0 font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f] placeholder:text-[#606d76]/30 focus:outline-none focus:ring-0"
