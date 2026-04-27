@@ -298,3 +298,90 @@ export function useIndexingProgressPoll(projectId: number | string | undefined |
         refetchInterval: id != null && enabled ? INDEXING_PROGRESS_POLL_MS : false,
     });
 }
+
+/** Daily CFD series (todo / in_progress / done). */
+export interface CumulativeFlowDataPoint {
+    date: string;
+    todo: number;
+    in_progress: number;
+    done: number;
+}
+
+export interface CumulativeFlowResponse {
+    project_id: number;
+    days: number;
+    series: CumulativeFlowDataPoint[];
+}
+
+export async function fetchProjectCumulativeFlow(
+    projectId: number | string,
+    days = 90,
+): Promise<CumulativeFlowResponse> {
+    const { data } = await api.get<CumulativeFlowResponse>(`/projects/${projectId}/cumulative-flow`, {
+        params: { days },
+    });
+    return data;
+}
+
+export interface LeadTimeHistogramBin {
+    label: string;
+    min_days: number;
+    max_days?: number | null;
+    count: number;
+}
+
+export interface LeadTimeDistributionResponse {
+    project_id: number;
+    weeks: number;
+    tasks_included: number;
+    lead_time_bins: LeadTimeHistogramBin[];
+    cycle_time_bins: LeadTimeHistogramBin[];
+    tasks_with_cycle_sample: number;
+}
+
+export async function fetchProjectLeadTimeDistribution(
+    projectId: number | string,
+    weeks = 52,
+): Promise<LeadTimeDistributionResponse> {
+    const { data } = await api.get<LeadTimeDistributionResponse>(
+        `/projects/${projectId}/lead-time-distribution`,
+        { params: { weeks } },
+    );
+    return data;
+}
+
+/** GET /projects/{id}/history — progress % and hours over time. */
+export interface ProjectSnapshotHistoryPoint {
+    id: number;
+    project_id: number;
+    date: string;
+    total_hours: number;
+    progress_percentage: number;
+    active_task_count: number;
+}
+
+export async function fetchProjectHistory(
+    projectId: number | string,
+): Promise<ProjectSnapshotHistoryPoint[]> {
+    const { data } = await api.get<ProjectSnapshotHistoryPoint[]>(`/projects/${projectId}/history`);
+    return data ?? [];
+}
+
+/** GET /projects/{id}/velocity — weekly HPS timeseries (matches HpsDataPoint). */
+export interface HpsVelocityPoint {
+    week: string;
+    hps: number | null;
+    hours_logged: number;
+    scope_points: number;
+    tasks_completed: number;
+}
+
+export async function fetchProjectHpsVelocity(
+    projectId: number | string,
+    weeks = 24,
+): Promise<HpsVelocityPoint[]> {
+    const { data } = await api.get<HpsVelocityPoint[]>(`/projects/${projectId}/velocity`, {
+        params: { weeks },
+    });
+    return data ?? [];
+}

@@ -167,6 +167,10 @@ export {
     indexingProgressKeys,
     fetchProjectStats,
     fetchMemberContributions,
+    fetchProjectCumulativeFlow,
+    fetchProjectLeadTimeDistribution,
+    fetchProjectHistory,
+    fetchProjectHpsVelocity,
 } from './dashboard';
 export { fetchProjectGitContributions } from './gitContributions';
 export type { GitContributionRead, GitContributionClassification } from './gitContributions';
@@ -249,6 +253,12 @@ export type {
     ProjectQuerySource,
     IndexingProgressResponse,
     MemberContributionStats,
+    CumulativeFlowResponse,
+    CumulativeFlowDataPoint,
+    LeadTimeDistributionResponse,
+    LeadTimeHistogramBin,
+    ProjectSnapshotHistoryPoint,
+    HpsVelocityPoint,
 } from './dashboard';
 export {
     fetchInvoices,

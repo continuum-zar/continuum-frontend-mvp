@@ -1,0 +1,8 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TaskStatusFunnelChart > matches snapshot with mixed stats 1`] = `
+<div
+  class="recharts-responsive-container"
+  style="width: 100%; height: 260px; min-width: 0;"
+/>
+`;
