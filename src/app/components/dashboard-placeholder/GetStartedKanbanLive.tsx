@@ -14,6 +14,8 @@ import { KanbanTaskMetaPills } from "./KanbanTaskMetaPills";
 import { KanbanBoardColumnHeader } from "./KanbanBoardColumnHeader";
 import { KanbanColumnHeaderKebabMenu } from "./KanbanColumnHeaderKebabMenu";
 import { filterKanbanTasksBySearchQueryRespectingDrag } from "./kanbanColumnSearchUtils";
+import { CalendarTaskView } from "./CalendarTaskView";
+import { GanttChartView } from "./GanttChartView";
 import { SprintKanbanListView } from "./SprintKanbanListView";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "@/app/components/ui/dialog";
@@ -28,6 +30,7 @@ import {
   useDeleteProjectKanbanColumn,
   useDeleteTask,
   useProjectKanbanBoard,
+  useProjectMilestones,
   useProjectTasksInfinite,
   useUpdateProjectKanbanBoard,
   useUpdateTaskStatus,
@@ -69,8 +72,8 @@ export type GetStartedKanbanLiveProps = {
   milestoneId: string | null;
   /** Project members (for assignee initials on cards). */
   members?: Member[];
-  /** Board columns vs list table — same task data. */
-  view?: "board" | "list";
+  /** Board, list, Gantt, or calendar — same filtered task data. */
+  view?: "board" | "list" | "gantt" | "calendar";
   /** Ref to the board's horizontal scroll container — lets the top-bar slider drive scrollLeft. */
   boardScrollRef?: RefObject<HTMLDivElement | null>;
 };
@@ -85,6 +88,7 @@ export function GetStartedKanbanLive({
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tasksQuery = useProjectTasksInfinite(projectId);
+  const milestonesQuery = useProjectMilestones(projectId);
   const kanbanBoardQuery = useProjectKanbanBoard(projectId);
   const updateKanbanBoardMutation = useUpdateProjectKanbanBoard(projectId);
   const deleteKanbanColumnMutation = useDeleteProjectKanbanColumn(projectId);
@@ -138,6 +142,16 @@ export function GetStartedKanbanLive({
     if (!milestoneId) return list;
     return list.filter((t) => t.milestoneId === milestoneId);
   }, [mergedTasks, milestoneId]);
+  const milestoneNameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const ms of milestonesQuery.data ?? []) {
+      const key = String(ms.id);
+      if (ms.name && ms.name.trim() !== "") {
+        m[key] = ms.name.trim();
+      }
+    }
+    return m;
+  }, [milestonesQuery.data]);
 
   const [columns, setColumns] = useState<KanbanColumnConfig[]>(() => [...DEFAULT_KANBAN_COLUMNS]);
   const [taskColumnPreference, setTaskColumnPreference] = useState<Record<string, string>>({});
@@ -476,6 +490,12 @@ export function GetStartedKanbanLive({
     return view === "list" ? <SprintKanbanListSkeleton /> : <KanbanBoardSkeleton />;
   }
 
+  const openTaskHref = (taskId: string) => {
+    const taskPath = workspaceJoin("task", String(taskId));
+    const taskSearch = searchParams.toString();
+    navigate(taskSearch ? `${taskPath}?${taskSearch}` : taskPath);
+  };
+
   if (tasksQuery.isError) {
     return (
       <div className="content-stretch relative z-[1] flex w-full min-h-[200px] flex-1 items-center justify-center gap-[16px] px-4 text-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
@@ -606,6 +626,16 @@ export function GetStartedKanbanLive({
             />
           )}
         />
+      ) : view === "gantt" ? (
+        <GanttChartView
+          tasks={filtered}
+          members={members}
+          milestoneNameById={milestoneNameById}
+          onOpenTask={openTaskHref}
+          scrollRef={boardScrollRef}
+        />
+      ) : view === "calendar" ? (
+        <CalendarTaskView tasks={filtered} onOpenTask={openTaskHref} />
       ) : (
         <>
       <style>{`

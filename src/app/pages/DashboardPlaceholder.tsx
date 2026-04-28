@@ -406,12 +406,20 @@ export function DashboardPlaceholder() {
   const [searchParams, setSearchParams] = useSearchParams();
   const projectParam = searchParams.get("project");
   const milestoneParam = searchParams.get("milestone");
-  /** Persisted in the URL as `?view=list` so refresh keeps list vs board. */
-  const sprintView: "board" | "list" = searchParams.get("view") === "list" ? "list" : "board";
+  /** Persisted in the URL: `view=list|gantt|calendar`; omit for board. */
+  const sprintViewParam = searchParams.get("view");
+  const sprintView: "board" | "list" | "gantt" | "calendar" =
+    sprintViewParam === "list"
+      ? "list"
+      : sprintViewParam === "gantt"
+        ? "gantt"
+        : sprintViewParam === "calendar"
+          ? "calendar"
+          : "board";
   const isLiveBoard = projectParam != null && isApiProjectId(projectParam);
 
   const setSprintView = useCallback(
-    (next: "board" | "list") => {
+    (next: "board" | "list" | "gantt" | "calendar") => {
       if (!isLiveBoard) return;
       setSearchParams(
         (prev) => {
@@ -419,7 +427,7 @@ export function DashboardPlaceholder() {
           if (next === "board") {
             p.delete("view");
           } else {
-            p.set("view", "list");
+            p.set("view", next);
           }
           return p;
         },
@@ -966,15 +974,53 @@ export function DashboardPlaceholder() {
                       </p>
                     ) : null}
                   </button>
-                  <button className="bg-[#edf0f3] content-stretch cursor-pointer flex gap-[8px] h-full items-center justify-center overflow-clip px-[16px] py-[8px] relative rounded-[8px] shrink-0 w-[40px]" data-name="Component 5" data-node-id="I7:2901;2444:24568">
+                  <button
+                    type="button"
+                    data-tour="sprint-gantt-view"
+                    disabled={!isLiveBoard}
+                    onClick={() => isLiveBoard && setSprintView("gantt")}
+                    aria-pressed={isLiveBoard && sprintView === "gantt"}
+                    className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
+                      isLiveBoard && sprintView === "gantt"
+                        ? "bg-[#cfecff] px-[16px] py-[8px]"
+                        : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                    } ${!isLiveBoard ? "cursor-default" : ""}`}
+                    data-name="Component 5"
+                    data-node-id="I7:2901;2444:24568"
+                    aria-label="Gantt chart view"
+                  >
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/square-chart-gantt" data-node-id="I7:2901;2444:24569">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideSquareChartGantt} />
                     </div>
+                    {isLiveBoard && sprintView === "gantt" ? (
+                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
+                        Gantt
+                      </p>
+                    ) : null}
                   </button>
-                  <button className="bg-[#edf0f3] content-stretch cursor-pointer flex gap-[8px] h-full items-center justify-center overflow-clip px-[16px] py-[8px] relative rounded-[8px] shrink-0 w-[40px]" data-name="Component 4" data-node-id="I7:2901;2444:24572">
+                  <button
+                    type="button"
+                    data-tour="sprint-calendar-view"
+                    disabled={!isLiveBoard}
+                    onClick={() => isLiveBoard && setSprintView("calendar")}
+                    aria-pressed={isLiveBoard && sprintView === "calendar"}
+                    className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
+                      isLiveBoard && sprintView === "calendar"
+                        ? "bg-[#cfecff] px-[16px] py-[8px]"
+                        : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                    } ${!isLiveBoard ? "cursor-default" : ""}`}
+                    data-name="Component 4"
+                    data-node-id="I7:2901;2444:24572"
+                    aria-label="Calendar view"
+                  >
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/calendar" data-node-id="I7:2901;2444:24573">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideCalendar} />
                     </div>
+                    {isLiveBoard && sprintView === "calendar" ? (
+                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
+                        Calendar
+                      </p>
+                    ) : null}
                   </button>
                 </div>
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2902">
@@ -1076,11 +1122,11 @@ export function DashboardPlaceholder() {
                       boardScrollRef={kanbanBoardScrollRef}
                     />
                   </div>
-                  {sprintView === "board" ? (
+                  {(sprintView === "board" || sprintView === "gantt") && (
                     <div className="relative z-[20] mt-auto w-full shrink-0 overflow-visible pt-2">
                       <KanbanBoardScrollSlider scrollRef={kanbanBoardScrollRef} />
                     </div>
-                  ) : null}
+                  )}
                 </div>
               </Suspense>
             ) : (
@@ -1526,7 +1572,8 @@ export function DashboardPlaceholder() {
             )}
           </div>
         </div>
-        <button
+        {sprintView !== "gantt" && sprintView !== "calendar" && (
+          <button
           type="button"
           onClick={() => setAiChatOpen(true)}
           className="absolute bottom-[14px] right-[14px] z-[40] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
@@ -1710,7 +1757,8 @@ export function DashboardPlaceholder() {
               </div>
             </div>
           </div>
-        </button>
+          </button>
+        )}
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
       {isLiveBoard && liveProjectId != null ? (

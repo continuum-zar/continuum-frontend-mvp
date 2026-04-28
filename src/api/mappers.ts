@@ -89,6 +89,7 @@ export function mapTask(t: TaskAPIResponse): Task {
         checklists: { total: totalChecklists, completed: completedChecklists },
         milestoneId: t.milestone_id != null ? String(t.milestone_id) : '',
         dueDate: t.due_date ?? null,
+        ...(t.created_at != null && t.created_at !== '' ? { createdAtIso: t.created_at } : {}),
         ...(linkedBranches.length > 0 ? { linkedBranches } : {}),
     };
 }
