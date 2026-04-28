@@ -151,6 +151,8 @@ export interface Task {
     milestoneId: string;
     /** ISO date from API (`due_date`), for list view */
     dueDate?: string | null;
+    /** ISO timestamp from API (`created_at`) when present — used for Gantt start. */
+    createdAtIso?: string | null;
     /** Repo/branch links for Kanban badges (from `linked_branches` or legacy fields). */
     linkedBranches?: TaskLinkedBranch[];
 }
