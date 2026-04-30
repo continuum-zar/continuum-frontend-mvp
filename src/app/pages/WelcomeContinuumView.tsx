@@ -23,6 +23,7 @@ import {
   isApiProjectId,
 } from "../data/dashboardPlaceholderProjects";
 import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
 
 const imgLucideFolderOpenDot = mcpAsset("565be4ed-fc29-4562-a26f-1c943a6d5847");
 const imgLucideBuilding2 = mcpAsset("71a5ce6a-04cd-4e3a-bf8d-8982fbc63fe8");
@@ -119,37 +120,47 @@ export function WelcomeContinuumView() {
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideX} />
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-                  data-name="Component 5"
-                  data-node-id="8:3538"
-                  aria-label="Discord notifications"
-                  onClick={() => setDiscordIntegrationOpen(true)}
-                >
-                  <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="8:3539">
-                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  data-tour="welcome-edit-project"
-                  data-node-id="8:3541"
-                  disabled={!canEditProject}
-                  onClick={() => {
-                    if (canEditProject) setEditProjectOpen(true);
-                  }}
-                  className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
-                  data-name="Component 9"
-                  aria-label="Edit project"
-                >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+                      data-name="Component 5"
+                      data-node-id="8:3538"
+                      aria-label="Discord notifications"
+                      onClick={() => setDiscordIntegrationOpen(true)}
+                    >
+                      <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="8:3539">
+                        <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
+                      </div>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Configure Discord notifications</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      data-tour="welcome-edit-project"
+                      data-node-id="8:3541"
+                      disabled={!canEditProject}
+                      onClick={() => {
+                        if (canEditProject) setEditProjectOpen(true);
+                      }}
+                      className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+                      data-name="Component 9"
+                      aria-label="Edit project"
+                    >
                   <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-cog" data-node-id="8:3542">
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderCog} />
                   </div>
                   <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3544">
                     Edit
                   </p>
-                </button>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{canEditProject ? "Edit project details" : "Project details unavailable"}</TooltipContent>
+                </Tooltip>
                 <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 6" data-node-id="8:3545">
                   <div className="relative shrink-0 size-[16px]" data-name="lucide/share" data-node-id="8:3546">
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideShare} />
@@ -201,25 +212,30 @@ export function WelcomeContinuumView() {
                             </div>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          data-tour="welcome-invite-members"
-                          className="border border-[#ebedee] border-solid content-stretch flex cursor-pointer gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                          data-name="Component 2"
-                          data-node-id="8:3726"
-                          style={{
-                            backgroundImage:
-                              "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(168.89065931200642deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
-                          }}
-                          onClick={() => setShareProjectOpen(true)}
-                        >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              data-tour="welcome-invite-members"
+                              className="border border-[#ebedee] border-solid content-stretch flex cursor-pointer gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                              data-name="Component 2"
+                              data-node-id="8:3726"
+                              style={{
+                                backgroundImage:
+                                  "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(168.89065931200642deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
+                              }}
+                              onClick={() => setShareProjectOpen(true)}
+                            >
                           <div className="relative shrink-0 size-[24px]" data-name="lucide/plus" data-node-id="8:3727">
                             <img alt="" className="absolute block max-w-none size-full" src={imgLucidePlus1} />
                           </div>
                           <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3729">
                             Invite Members
                           </p>
-                        </button>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Invite members to this project</TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                     <div className="content-stretch flex items-start relative shrink-0 w-full" data-node-id="8:3761">
@@ -293,14 +309,16 @@ export function WelcomeContinuumView() {
             </div>
             )}
             </div>
-            <button
-              type="button"
-              className="absolute bottom-[14px] right-[14px] z-20 flex size-[48px] flex-col items-start isolate overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Open AI assistant"
-              data-tour="welcome-project-assistant"
-              data-node-id="8:3521-fab"
-              onClick={() => setAiChatOpen(true)}
-            >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="absolute bottom-[14px] right-[14px] z-20 flex size-[48px] flex-col items-start isolate overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Open AI assistant"
+                  data-tour="welcome-project-assistant"
+                  data-node-id="8:3521-fab"
+                  onClick={() => setAiChatOpen(true)}
+                >
               <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%+0.5px)] top-[calc(50%+0.5px)] z-[3] flex items-center">
                 <div className="relative size-[28px] shrink-0 overflow-clip">
                   <div className="absolute inset-[16.67%_8.33%]">
@@ -310,7 +328,10 @@ export function WelcomeContinuumView() {
                   </div>
                 </div>
               </div>
-            </button>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Open AI assistant</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>

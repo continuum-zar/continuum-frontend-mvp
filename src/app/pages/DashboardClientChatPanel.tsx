@@ -6,6 +6,7 @@ import { PlannerAssistantMarkdown } from '@/app/components/planner/PlannerAssist
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Avatar, AvatarFallback } from '@/app/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 import { motion } from 'motion/react';
 import type { IndexingProgressResponse } from '@/api/dashboard';
 
@@ -81,15 +82,21 @@ export const DashboardClientChatPanel = memo(function DashboardClientChatPanel({
             className="pr-10 bg-input-background"
             disabled={chatSending}
           />
-          <Button
-            size="icon"
-            variant="ghost"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-primary"
-            onClick={onSend}
-            disabled={chatSending || !chatMessage.trim()}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-primary"
+                onClick={onSend}
+                disabled={chatSending || !chatMessage.trim()}
+                aria-label="Send message"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Send message</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </motion.div>

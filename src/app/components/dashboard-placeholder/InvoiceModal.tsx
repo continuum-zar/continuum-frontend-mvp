@@ -23,6 +23,7 @@ import {
 } from "@/app/data/dashboardPlaceholderProjects";
 import type { Project } from "@/types/project";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { cn } from "../ui/utils";
 import { STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
 import { toast } from "sonner";
@@ -311,28 +312,38 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
       <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
         <div className="my-8 flex w-full max-w-[600px] max-h-[min(90vh,880px)] flex-col overflow-hidden rounded-2xl border border-[#f5f5f5] bg-[#f9f9f9] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]">
           <div className="relative flex shrink-0 items-center justify-between border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
-            <button type="button" onClick={() => onOpenChange(false)} className="text-[#606d76]">
-              <ArrowLeft size={20} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" onClick={() => onOpenChange(false)} className="text-[#606d76]" aria-label="Back">
+                  <ArrowLeft size={20} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Back</TooltipContent>
+            </Tooltip>
             <p
               id="invoice-modal-title"
               className="absolute left-1/2 -translate-x-1/2 text-[16px] font-medium tracking-[-0.16px] text-[#595959]"
             >
               Invoice
             </p>
-            <button
-              type="button"
-              disabled={
-                exportPending ||
-                !selectedProject?.apiId ||
-                waitingForProjectDetail ||
-                billClientLoading
-              }
-              onClick={() => void handleExportPdf()}
-              className="h-10 rounded-lg bg-[#0b191f] px-4 text-sm font-semibold text-white outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-[rgba(96,109,118,0.2)] disabled:text-[#606d76]/70"
-            >
-              {exportPending ? "Exporting…" : "Export PDF"}
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  disabled={
+                    exportPending ||
+                    !selectedProject?.apiId ||
+                    waitingForProjectDetail ||
+                    billClientLoading
+                  }
+                  onClick={() => void handleExportPdf()}
+                  className="h-10 rounded-lg bg-[#0b191f] px-4 text-sm font-semibold text-white outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-[rgba(96,109,118,0.2)] disabled:text-[#606d76]/70"
+                >
+                  {exportPending ? "Exporting…" : "Export PDF"}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Export invoice as PDF</TooltipContent>
+            </Tooltip>
           </div>
 
         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden bg-[#f9f9f9] px-9 py-6 [scrollbar-gutter:stable]">
@@ -420,11 +431,13 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
             </p>
             <Popover open={projectPickerOpen} onOpenChange={setProjectPickerOpen} modal={false}>
               <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="flex h-10 w-[212px] max-w-[212px] shrink-0 items-center justify-between rounded-lg border border-[#e9e9e9] bg-white px-4 text-left text-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Select project"
-                >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex h-10 w-[212px] max-w-[212px] shrink-0 items-center justify-between rounded-lg border border-[#e9e9e9] bg-white px-4 text-left text-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label="Select project"
+                    >
                   <span
                     className={cn(
                       "min-w-0 flex-1 truncate",
@@ -437,8 +450,11 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                         ? selectedProject.title
                         : "Select project"}
                   </span>
-                  <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
-                </button>
+                      <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Select project for invoice</TooltipContent>
+                </Tooltip>
               </PopoverTrigger>
               <PopoverContent
                 align="start"
@@ -553,26 +569,36 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                       {money(itemTotal)}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeRow(item.id)}
-                    className="mb-2 text-[#9fa5a8] hover:text-[#606d76]"
-                    aria-label="Remove line"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => removeRow(item.id)}
+                        className="mb-2 text-[#9fa5a8] hover:text-[#606d76]"
+                        aria-label="Remove line"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remove line item</TooltipContent>
+                  </Tooltip>
                 </div>
               );
             })}
 
-            <button
-              type="button"
-              onClick={addRow}
-              className="inline-flex items-center gap-2 text-[#252014]"
-            >
-              <Plus size={20} />
-              <span className="text-sm font-medium">Add an item</span>
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={addRow}
+                  className="inline-flex items-center gap-2 text-[#252014]"
+                >
+                  <Plus size={20} />
+                  <span className="text-sm font-medium">Add an item</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Add invoice line item</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
