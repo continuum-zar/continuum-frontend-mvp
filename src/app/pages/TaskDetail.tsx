@@ -855,7 +855,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       <button
                         type="button"
                         onClick={() => toggleChecklist(idx)}
-                        className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] ${item.done ? 'bg-[#24B5F8]' : 'border border-[#ebedee] bg-[#f9f9f9]'}`}
+                        className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
                       >
                         {item.done ? <Check size={13} className="text-white" /> : null}
                       </button>
