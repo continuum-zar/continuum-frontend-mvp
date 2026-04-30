@@ -598,10 +598,10 @@ export function CreateTaskLiveModal({
                         type="button"
                         onClick={() => toggleChecklist(item.id)}
                         className={cn(
-                          "flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-solid transition-colors",
+                          "flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-black transition-colors",
                           item.done
-                            ? "border-0 bg-[#24B5F8]"
-                            : "border-[#ebedee] bg-[#f9f9f9]",
+                            ? "bg-[#24B5F8]"
+                            : "bg-[#f9f9f9]",
                         )}
                         aria-label={item.done ? "Mark incomplete" : "Mark complete"}
                       >

@@ -231,10 +231,10 @@ export function AssignMemberModal({
                               disabled={assignBusy}
                               onClick={() => toggleMember(m.userId, !isAssigned)}
                               className={cn(
-                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40",
+                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40",
                                 isAssigned
                                   ? "bg-[#24B5F8]"
-                                  : "border border-[#ebedee] bg-[#f9f9f9]",
+                                  : "bg-[#f9f9f9]",
                                 assignBusy && "cursor-not-allowed opacity-50",
                               )}
                             >
