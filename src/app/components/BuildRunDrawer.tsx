@@ -101,7 +101,7 @@ function EventCard({ ev }: { ev: MergedEvent }) {
   const [expanded, setExpanded] = useState(false);
 
   const renderHeader = (icon: React.ReactNode, label: string, subtitle?: string) => (
-    <div className="flex items-start gap-2">
+    <div className="min-w-0 flex flex-1 items-start gap-2">
       <div className="mt-0.5 shrink-0 text-[#606d76]">{icon}</div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-medium text-[#0b191f]">{label}</p>
@@ -151,8 +151,8 @@ function EventCard({ ev }: { ev: MergedEvent }) {
       const args = formatArgs(ev.payload.args);
       const compact = args.length > 80;
       return (
-        <div className="rounded-[8px] border border-[#e9e9e9] bg-white px-3 py-2">
-          <div className="flex items-start gap-2">
+        <div className="min-w-0 rounded-[8px] border border-[#e9e9e9] bg-white px-3 py-2">
+          <div className="min-w-0 flex items-start gap-2">
             {renderHeader(
               <Terminal size={14} />,
               `Tool: ${name}`,
@@ -173,8 +173,8 @@ function EventCard({ ev }: { ev: MergedEvent }) {
       const preview = String(ev.payload.result_preview ?? "");
       const compact = preview.length > 200;
       return (
-        <div className="rounded-[8px] border border-[#e9e9e9] bg-white px-3 py-2">
-          <div className="flex items-start gap-2">
+        <div className="min-w-0 rounded-[8px] border border-[#e9e9e9] bg-white px-3 py-2">
+          <div className="min-w-0 flex items-start gap-2">
             {renderHeader(
               <Terminal size={14} className="text-[#10b981]" />,
               `${name} → result`,
@@ -429,7 +429,7 @@ export function BuildRunDrawer({
             ) : (
               <ul className="flex flex-col gap-2.5">
                 {merged.map((ev) => (
-                  <li key={ev._key}>
+                  <li key={ev._key} className="min-w-0">
                     <EventCard ev={ev} />
                   </li>
                 ))}
