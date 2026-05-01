@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Tooltip as UiTooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
 import { Skeleton } from '../components/ui/skeleton';
 import { VirtualList } from '../components/ui/VirtualList';
 import {
@@ -451,10 +452,20 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
             </SelectContent>
           </Select>
           {effectiveRole !== 'Client' && (
-            <Button variant="outline"><Clock className="mr-2 h-4 w-4" /> Last 30 Days</Button>
+            <UiTooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline"><Clock className="mr-2 h-4 w-4" /> Last 30 Days</Button>
+              </TooltipTrigger>
+              <TooltipContent>Filter dashboard to last 30 days</TooltipContent>
+            </UiTooltip>
           )}
           {isProjectPM && (
-            <Button variant="outline"><UserX className="mr-2 h-4 w-4" /> Team View</Button>
+            <UiTooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline"><UserX className="mr-2 h-4 w-4" /> Team View</Button>
+              </TooltipTrigger>
+              <TooltipContent>Switch to team-focused metrics</TooltipContent>
+            </UiTooltip>
           )}
         </div>
       </div>
@@ -933,9 +944,14 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
                         </span>
                       </td>
                       <td className="py-3 text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                        <UiTooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Branch actions">
+                              <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Branch actions</TooltipContent>
+                        </UiTooltip>
                       </td>
                     </tr>
                   ))}

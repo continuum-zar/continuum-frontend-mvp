@@ -200,7 +200,6 @@ export function GanttChartView({
         </div>
       );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -301,7 +300,7 @@ export function GanttChartView({
     }
 
     return out;
-  }, [tasks, memberByUserId, collapsedMilestones]);
+  }, [tasks, memberByUserId, collapsedMilestones, milestoneNameById]);
 
   const viewDate = useMemo(() => ganttViewDateForTasks(tasks), [tasks]);
   const dayHeaderDates = useMemo(() => {

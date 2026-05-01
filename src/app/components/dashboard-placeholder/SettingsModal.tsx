@@ -2,19 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { BookOpen, Check, ChevronRight, LogOut, X } from "lucide-react";
+import { BookOpen, ChevronRight, LogOut, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { getApiErrorMessage, sendWaitlistInviteEmail, updateCurrentUserProfile } from "@/api";
+import { useProjects } from "@/api/hooks";
 import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
 import { workspaceJoin } from "@/lib/workspacePaths";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
+import { DiscordIntegrationModal } from "./DiscordIntegrationModal";
 import { FeedbackModal } from "./FeedbackModal";
 import { GithubIntegrationModal } from "./GithubIntegrationModal";
+import { DiscordTriggersSection } from "./settings/DiscordTriggersSection";
 import {
   Select,
   SelectContent,
@@ -23,6 +26,13 @@ import {
   SelectValue,
 } from "../ui/select";
 import { cn } from "../ui/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+
+const BRAND_LOGO = {
+  github: "/assets/brand-assets/github-logo.svg",
+  cursor: "/assets/brand-assets/cursor-logo.svg",
+  discord: "/assets/brand-assets/discord-logo.svg",
+} as const;
 
 const INVOICE_CURRENCIES = ["ZAR", "USD", "EUR", "GBP"] as const;
 
@@ -83,72 +93,6 @@ const SECTION_TITLE: Record<SettingsSection, string> = {
   waitlist: "Waitlist",
 };
 
-type NotificationPrefs = { digest: boolean; instant: boolean };
-
-const NOTIFICATION_DEFAULTS: Record<string, NotificationPrefs> = {
-  mention: { digest: true, instant: false },
-  assigned: { digest: true, instant: true },
-  taskFollow: { digest: false, instant: false },
-  sprint: { digest: false, instant: true },
-  due24h: { digest: false, instant: true },
-  timeLog: { digest: false, instant: true },
-};
-
-const NOTIFICATION_ROWS: { id: keyof typeof NOTIFICATION_DEFAULTS; label: string }[] = [
-  { id: "mention", label: "I am mentioned (@) in a comment" },
-  { id: "assigned", label: "I am assigned to a task" },
-  { id: "taskFollow", label: "An update occurs on a task I follow/watch" },
-  { id: "sprint", label: "A Sprint begins or ends" },
-  { id: "due24h", label: "Reminder: Task due in 24 hours" },
-  { id: "timeLog", label: "Reminder: I haven't logged time today" },
-];
-
-function NotificationCheckbox({
-  checked,
-  onCheckedChange,
-  ariaLabel,
-}: {
-  checked: boolean;
-  onCheckedChange: (next: boolean) => void;
-  ariaLabel: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={checked}
-      aria-label={ariaLabel}
-      onClick={() => onCheckedChange(!checked)}
-      className={cn(
-        "flex size-5 shrink-0 items-center justify-center rounded-[4px] outline-none ring-offset-2 transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-        checked
-          ? "text-white"
-          : "border border-[#ebedee] bg-[#f9f9f9]",
-      )}
-      style={
-        checked
-          ? {
-              backgroundImage:
-                "linear-gradient(141.68deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(85, 33, 254) 0%, rgb(85, 33, 254) 100%)",
-            }
-          : undefined
-      }
-    >
-      {checked ? <Check className="size-[13px]" strokeWidth={2.5} aria-hidden /> : null}
-    </button>
-  );
-}
-
-function defaultNotificationPrefs(): Record<keyof typeof NOTIFICATION_DEFAULTS, NotificationPrefs> {
-  return {
-    mention: { ...NOTIFICATION_DEFAULTS.mention },
-    assigned: { ...NOTIFICATION_DEFAULTS.assigned },
-    taskFollow: { ...NOTIFICATION_DEFAULTS.taskFollow },
-    sprint: { ...NOTIFICATION_DEFAULTS.sprint },
-    due24h: { ...NOTIFICATION_DEFAULTS.due24h },
-    timeLog: { ...NOTIFICATION_DEFAULTS.timeLog },
-  };
-}
 
 export function SettingsModal({
   open,
@@ -168,7 +112,6 @@ export function SettingsModal({
   const [lastName, setLastName] = useState("");
   const [gitCommitEmail, setGitCommitEmail] = useState("");
   const [savePending, setSavePending] = useState(false);
-  const [notificationPrefs, setNotificationPrefs] = useState(defaultNotificationPrefs);
   const [invoiceCurrency, setInvoiceCurrency] = useState<(typeof INVOICE_CURRENCIES)[number]>("ZAR");
   const [invoiceHourlyRate, setInvoiceHourlyRate] = useState("200");
   const [bankAccountName, setBankAccountName] = useState("");
@@ -179,8 +122,28 @@ export function SettingsModal({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [githubIntegrationOpen, setGithubIntegrationOpen] = useState(false);
   const [githubModalOauthResumeProjectApiId, setGithubModalOauthResumeProjectApiId] = useState<number | null>(null);
+  const [discordWebhookOpen, setDiscordWebhookOpen] = useState(false);
+  const [discordProjectId, setDiscordProjectId] = useState<number | null>(null);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistSendPending, setWaitlistSendPending] = useState(false);
+
+  const projectsQuery = useProjects({ enabled: open });
+  const projects = useMemo(
+    () => projectsQuery.data ?? [],
+    [projectsQuery.data],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    if (projects.length === 0) {
+      setDiscordProjectId(null);
+      return;
+    }
+    setDiscordProjectId((prev) => {
+      if (prev != null && projects.some((p) => p.apiId === prev)) return prev;
+      return projects[0]?.apiId ?? null;
+    });
+  }, [open, projects]);
 
   const isGlobalAdmin = user?.role?.toLowerCase() === "admin";
 
@@ -194,7 +157,6 @@ export function SettingsModal({
 
   useEffect(() => {
     if (!open) return;
-    setNotificationPrefs(defaultNotificationPrefs());
     setWaitlistEmail("");
     if (user) {
       setFirstName(user.first_name ?? "");
@@ -259,19 +221,9 @@ export function SettingsModal({
       setFeedbackOpen(false);
       setGithubIntegrationOpen(false);
       setGithubModalOauthResumeProjectApiId(null);
+      setDiscordWebhookOpen(false);
     }
     onOpenChange(next);
-  };
-
-  const setNotificationPref = (
-    rowId: keyof typeof NOTIFICATION_DEFAULTS,
-    key: keyof NotificationPrefs,
-    value: boolean,
-  ) => {
-    setNotificationPrefs((prev) => ({
-      ...prev,
-      [rowId]: { ...prev[rowId], [key]: value },
-    }));
   };
 
   const profileInitials =
@@ -367,7 +319,7 @@ export function SettingsModal({
   };
 
   const showSaveFooter =
-    section === "general" || section === "notification" || section === "invoice";
+    section === "general" || section === "invoice";
 
   return (
     <>
@@ -520,49 +472,32 @@ export function SettingsModal({
 
               {section === "notification" && (
                 <div className="flex flex-col gap-2 pt-2">
-                  <div className="flex w-full flex-col rounded-t-[8px] border-b border-[#ebedee] bg-[#f9f9f9] py-1.5 pl-4">
-                    <div className="flex w-full items-center gap-6 pr-0">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
-                          Trigger Event
+                  <div className="flex flex-col gap-2">
+                    <div className="flex w-full flex-col rounded-t-[8px] border-b border-[#ebedee] bg-[#f9f9f9] py-1.5 pl-4">
+                      <div className="flex w-full items-center gap-6 pr-0">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                            Trigger Event
+                          </p>
+                        </div>
+                        <p className="w-[120px] shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                          Email Digest
+                        </p>
+                        <p className="w-[120px] shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                          Discord
                         </p>
                       </div>
-                      <p className="w-[120px] shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
-                        Email Digest
-                      </p>
-                      <p className="w-[120px] shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
-                        Instant Email
-                      </p>
                     </div>
-                  </div>
-                  <div className="flex flex-col divide-y divide-[#ebedee]">
-                    {NOTIFICATION_ROWS.map((row) => {
-                      const prefs = notificationPrefs[row.id];
-                      return (
-                        <div
-                          key={row.id}
-                          className="flex w-full items-center gap-6 py-2 pl-4"
-                        >
-                          <p className="min-w-0 flex-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#131617]">
-                            {row.label}
-                          </p>
-                          <div className="flex w-[120px] shrink-0 items-center">
-                            <NotificationCheckbox
-                              checked={prefs.digest}
-                              onCheckedChange={(v) => setNotificationPref(row.id, "digest", v)}
-                              ariaLabel={`${row.label}: Email digest`}
-                            />
-                          </div>
-                          <div className="flex w-[120px] shrink-0 items-center">
-                            <NotificationCheckbox
-                              checked={prefs.instant}
-                              onCheckedChange={(v) => setNotificationPref(row.id, "instant", v)}
-                              ariaLabel={`${row.label}: Instant email`}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                    <div className="flex flex-col divide-y divide-[#ebedee]">
+                      <DiscordTriggersSection
+                        projectId={discordProjectId}
+                        renderAsNotificationRows
+                        onSetupWebhook={() => {
+                          setSection("integrations");
+                          setDiscordWebhookOpen(true);
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -695,19 +630,69 @@ export function SettingsModal({
               {section === "integrations" && (
                 <div className="flex flex-col gap-4 pt-6">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                        GitHub
-                      </p>
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
-                        Connect the GitHub App to a project to authorize access and list repositories from your
-                        installation.
-                      </p>
+                    <div className="flex min-w-0 items-start gap-3">
+                      <img
+                        src={BRAND_LOGO.github}
+                        alt=""
+                        aria-hidden
+                        className="mt-0.5 size-6 shrink-0"
+                      />
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                          GitHub
+                        </p>
+                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                          Connect the GitHub App to a project to authorize access and list repositories from your
+                          installation.
+                        </p>
+                      </div>
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => setGithubIntegrationOpen(true)}
+                          className={cn(outlineActionClass, "gap-1")}
+                        >
+                          Manage
+                          <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Manage GitHub integration</TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-4 border-t border-[#ebedee] pt-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <img
+                        src={BRAND_LOGO.discord}
+                        alt=""
+                        aria-hidden
+                        className="mt-0.5 size-6 shrink-0"
+                      />
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                          Discord
+                        </p>
+                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                          Link a Discord webhook to a project to send task and milestone updates to a channel. Pick
+                          which events fire under Notifications.
+                        </p>
+                      </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setGithubIntegrationOpen(true)}
-                      className={cn(outlineActionClass, "gap-1")}
+                      onClick={() => setDiscordWebhookOpen(true)}
+                      disabled={discordProjectId == null}
+                      className={cn(
+                        outlineActionClass,
+                        "gap-1 disabled:cursor-not-allowed disabled:opacity-50",
+                      )}
+                      title={
+                        discordProjectId == null
+                          ? "No project available to link"
+                          : undefined
+                      }
                     >
                       Manage
                       <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
@@ -715,25 +700,38 @@ export function SettingsModal({
                   </div>
 
                   <div className="flex items-start justify-between gap-4 border-t border-[#ebedee] pt-4">
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                        Cursor MCP
-                      </p>
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
-                        Connect Cursor to Continuum so your AI agent can pull tasks, update checklists, and change statuses.
-                      </p>
+                    <div className="flex min-w-0 items-start gap-3">
+                      <img
+                        src={BRAND_LOGO.cursor}
+                        alt=""
+                        aria-hidden
+                        className="mt-0.5 size-6 shrink-0"
+                      />
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                          Cursor MCP
+                        </p>
+                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                          Connect Cursor to Continuum so your AI agent can pull tasks, update checklists, and change statuses.
+                        </p>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleOpenChange(false);
-                        navigate("/mcp-setup");
-                      }}
-                      className={cn(outlineActionClass, "gap-1")}
-                    >
-                      Setup
-                      <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleOpenChange(false);
+                            navigate("/mcp-setup");
+                          }}
+                          className={cn(outlineActionClass, "gap-1")}
+                        >
+                          Setup
+                          <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Open Cursor MCP setup</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               )}
@@ -806,16 +804,21 @@ export function SettingsModal({
                     >
                       Report issue
                     </p>
-                    <button
-                      type="button"
-                      data-tour="settings-report-issue"
-                      onClick={() => setFeedbackOpen(true)}
-                      className={cn(outlineActionClass, "gap-1")}
-                      aria-labelledby="settings-support-report-heading"
-                    >
-                      Report
-                      <ChevronRight className="size-6 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          data-tour="settings-report-issue"
+                          onClick={() => setFeedbackOpen(true)}
+                          className={cn(outlineActionClass, "gap-1")}
+                          aria-labelledby="settings-support-report-heading"
+                        >
+                          Report
+                          <ChevronRight className="size-6 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Report an issue</TooltipContent>
+                    </Tooltip>
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -845,21 +848,31 @@ export function SettingsModal({
 
             {showSaveFooter && (
               <div className="flex shrink-0 justify-end gap-2 border-t border-[#ebedee] px-6 py-6">
-                <button
-                  type="button"
-                  onClick={() => handleOpenChange(false)}
-                  className="h-10 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleSave()}
-                  disabled={savePending}
-                  className="h-10 rounded-[8px] bg-[#0b191f] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {savePending ? "Saving…" : "Save"}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenChange(false)}
+                      className="h-10 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      Cancel
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Discard changes</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => void handleSave()}
+                      disabled={savePending}
+                      className="h-10 rounded-[8px] bg-[#0b191f] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {savePending ? "Saving…" : "Save"}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Save settings changes</TooltipContent>
+                </Tooltip>
               </div>
             )}
           </div>
@@ -875,6 +888,12 @@ export function SettingsModal({
       }}
       oauthResumeProjectApiId={githubIntegrationOpen ? githubModalOauthResumeProjectApiId : null}
       onOAuthResumeProjectApplied={() => setGithubModalOauthResumeProjectApiId(null)}
+    />
+    <DiscordIntegrationModal
+      open={discordWebhookOpen}
+      onOpenChange={setDiscordWebhookOpen}
+      projectId={discordProjectId}
+      onProjectIdChange={setDiscordProjectId}
     />
     </>
   );

@@ -427,12 +427,13 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const timeline = timelineQuery.data?.pages.flatMap((p) => p.entries) ?? [];
   const timelineLoading = timelineQuery.isLoading;
   const commentsQuery = useTaskCommentsInfinite(taskId);
-  const comments = commentsQuery.data?.pages.flatMap((p) => p.comments) ?? [];
   const commentsLoading = commentsQuery.isLoading;
   const commentsSorted = useMemo(
     () =>
-      [...comments].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
-    [comments],
+      [...(commentsQuery.data?.pages.flatMap((p) => p.comments) ?? [])].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      ),
+    [commentsQuery.data],
   );
   const createCommentMutation = useCreateTaskComment(taskId);
   const { data: members } = useProjectMembers(task?.project_id, { enabled: !!task?.project_id });
@@ -855,7 +856,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       <button
                         type="button"
                         onClick={() => toggleChecklist(idx)}
-                        className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] ${item.done ? 'bg-[#24B5F8]' : 'border border-[#ebedee] bg-[#f9f9f9]'}`}
+                        className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
                       >
                         {item.done ? <Check size={13} className="text-white" /> : null}
                       </button>

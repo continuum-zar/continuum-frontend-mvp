@@ -13,6 +13,7 @@ import { taskPriorityFlagClass, type TaskAPIResponse } from "@/types/task";
 import { STALE_REFERENCE_MS, LONG_GC_MS } from "@/lib/queryDefaults";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { DashboardTaskListTableSkeleton } from "@/app/components/dashboard-placeholder/DashboardPlaceholderSkeletons";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
 
 /**
  * Upper bound on simultaneous /projects/:id/members fetches from this page.
@@ -157,19 +158,29 @@ export function DashboardPlaceholderCreated() {
                 <p className="text-[16px]">Created by Me</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#ededed] bg-white text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
-                >
-                  <Bell size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="flex h-8 items-center gap-2 rounded-[8px] border border-[#ededed] bg-white px-4 text-[14px] text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
-                >
-                  <Share size={16} />
-                  Share
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#ededed] bg-white text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    >
+                      <Bell size={16} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Notifications</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex h-8 items-center gap-2 rounded-[8px] border border-[#ededed] bg-white px-4 text-[14px] text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    >
+                      <Share size={16} />
+                      Share
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Share this view</TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
@@ -210,13 +221,18 @@ export function DashboardPlaceholderCreated() {
             <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
               <div className="flex flex-col items-center justify-center gap-3 py-16 text-[#727d83]">
                 <p className="text-[14px]">Could not load tasks.</p>
-                <button
-                  type="button"
-                  className="rounded-[8px] border border-[#ebedee] px-3 py-1.5 text-[14px] text-[#0b191f]"
-                  onClick={() => void refetch()}
-                >
-                  Retry
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="rounded-[8px] border border-[#ebedee] px-3 py-1.5 text-[14px] text-[#0b191f]"
+                      onClick={() => void refetch()}
+                    >
+                      Retry
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Retry loading tasks</TooltipContent>
+                </Tooltip>
               </div>
             </div>
           ) : tasks.length === 0 ? (
@@ -301,14 +317,19 @@ export function DashboardPlaceholderCreated() {
                       </div>
                       <p className="text-[14px] text-[#697378]">{checklistProgressPercent(row)}</p>
                       <div className="flex justify-center text-[#697378]">
-                        <button
-                          type="button"
-                          className="rounded p-0.5 hover:bg-[#f0f3f5]"
-                          aria-label="Task options"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Ellipsis size={16} />
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="rounded p-0.5 hover:bg-[#f0f3f5]"
+                              aria-label="Task options"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Ellipsis size={16} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Task options</TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                   );

@@ -15,6 +15,7 @@ import { InvoiceModal } from "./InvoiceModal";
 import { LogTimeModal } from "./LogTimeModal";
 import { SettingsModal } from "./SettingsModal";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
   DASHBOARD_WELCOME_PROJECT,
   WELCOME_PROJECT_ID,
@@ -156,11 +157,18 @@ function Frame1({
         className="text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Home"
       >
-        <Component2
-          className="content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] bg-[#edf0f3]"
-          state="Default"
-          type="Home"
-        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <Component2
+                className="content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] bg-[#edf0f3]"
+                state="Default"
+                type="Home"
+              />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="right">Home</TooltipContent>
+        </Tooltip>
       </Link>
       <button
         type="button"
@@ -169,13 +177,20 @@ function Frame1({
         className="text-inherit outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Invoices"
       >
-        <Component2
-          className={`content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] ${
-            isInvoiceActive ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]" : "bg-[#edf0f3]"
-          }`}
-          state={isInvoiceActive ? "Selected" : "Default"}
-          type="Invoice"
-        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <Component2
+                className={`content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] ${
+                  isInvoiceActive ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]" : "bg-[#edf0f3]"
+                }`}
+                state={isInvoiceActive ? "Selected" : "Default"}
+                type="Invoice"
+              />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="right">Open invoices</TooltipContent>
+        </Tooltip>
       </button>
       <Link
         to={workspaceJoin("assigned")}
@@ -183,15 +198,22 @@ function Frame1({
         className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Assigned to me"
       >
-        <Component2
-          className={`content-stretch flex h-full w-full gap-[12px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 ${
-            isAssignedActive
-              ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
-              : "bg-[#edf0f3]"
-          }`}
-          state={isAssignedActive ? "Selected" : "Default"}
-          type="Assigned to Me"
-        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex h-full w-full">
+              <Component2
+                className={`content-stretch flex h-full w-full gap-[12px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 ${
+                  isAssignedActive
+                    ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
+                    : "bg-[#edf0f3]"
+                }`}
+                state={isAssignedActive ? "Selected" : "Default"}
+                type="Assigned to Me"
+              />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="right">Assigned to me</TooltipContent>
+        </Tooltip>
       </Link>
       <Link
         to={workspaceJoin("created")}
@@ -199,15 +221,22 @@ function Frame1({
         className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Created by me"
       >
-        <Component2
-          className={`content-stretch flex h-full w-full gap-[12px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 ${
-            isCreatedActive
-              ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
-              : "bg-[#edf0f3]"
-          }`}
-          state={isCreatedActive ? "Selected" : "Default"}
-          type="Created by Me"
-        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex h-full w-full">
+              <Component2
+                className={`content-stretch flex h-full w-full gap-[12px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 ${
+                  isCreatedActive
+                    ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
+                    : "bg-[#edf0f3]"
+                }`}
+                state={isCreatedActive ? "Selected" : "Default"}
+                type="Created by Me"
+              />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="right">Created by me</TooltipContent>
+        </Tooltip>
       </Link>
     </div>
   );
@@ -249,24 +278,36 @@ function LeftRailTimerControls({
         aria-label={primaryLabel}
         aria-pressed={primaryPressed}
       >
-        {phase === "running" ? (
-          <Pause className="relative z-[1] size-[18px] shrink-0 text-white" strokeWidth={2.2} aria-hidden />
-        ) : phase === "paused" ? (
-          <Play className="relative z-[1] size-[20px] shrink-0 fill-white text-white" aria-hidden />
-        ) : (
-          /* Idle — Figma 13:338: large red record disc inside grey ring (not a play glyph). */
-          <span className="relative z-[1] size-[30px] shrink-0 rounded-full bg-[#eb4335]" aria-hidden />
-        )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex">
+              {phase === "running" ? (
+                <Pause className="relative z-[1] size-[18px] shrink-0 text-white" strokeWidth={2.2} aria-hidden />
+              ) : phase === "paused" ? (
+                <Play className="relative z-[1] size-[20px] shrink-0 fill-white text-white" aria-hidden />
+              ) : (
+                /* Idle — Figma 13:338: large red record disc inside grey ring (not a play glyph). */
+                <span className="relative z-[1] size-[30px] shrink-0 rounded-full bg-[#eb4335]" aria-hidden />
+              )}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="right">{primaryLabel}</TooltipContent>
+        </Tooltip>
       </button>
       {phase !== "idle" ? (
-        <button
-          type="button"
-          onClick={onStop}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-solid border-[#ebedee] bg-white text-[#606d76] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Finish and log time"
-        >
-          <Square className="size-3.5 fill-current" strokeWidth={0} aria-hidden />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={onStop}
+              className="flex size-8 shrink-0 items-center justify-center rounded-full border border-solid border-[#ebedee] bg-white text-[#606d76] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Finish and log time"
+            >
+              <Square className="size-3.5 fill-current" strokeWidth={0} aria-hidden />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Finish and log time</TooltipContent>
+        </Tooltip>
       ) : null}
     </div>
   );
@@ -631,24 +672,29 @@ export function DashboardLeftRail() {
                 />
                 <Popover open={createProjectMenuOpen} onOpenChange={setCreateProjectMenuOpen}>
                   <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      data-tour="rail-create-project"
-                      className="inline-flex size-[16px] shrink-0 items-center justify-center overflow-clip rounded-[16px] border-0 bg-transparent p-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                      aria-label="Create project"
-                      aria-expanded={createProjectMenuOpen}
-                      aria-haspopup="dialog"
-                      data-name="Component 35"
-                      data-node-id="I7:2828;2172:27469"
-                    >
-                      <div className="relative size-[16px]">
-                        <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
-                          <div className="absolute inset-[-5.36%]">
-                            <img alt="" className="block max-w-none size-full" src={imgVector5} />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          data-tour="rail-create-project"
+                          className="inline-flex size-[16px] shrink-0 items-center justify-center overflow-clip rounded-[16px] border-0 bg-transparent p-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label="Create project"
+                          aria-expanded={createProjectMenuOpen}
+                          aria-haspopup="dialog"
+                          data-name="Component 35"
+                          data-node-id="I7:2828;2172:27469"
+                        >
+                          <div className="relative size-[16px]">
+                            <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
+                              <div className="absolute inset-[-5.36%]">
+                                <img alt="" className="block max-w-none size-full" src={imgVector5} />
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    </button>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Create project</TooltipContent>
+                    </Tooltip>
                   </PopoverTrigger>
                   <PopoverContent
                     align="start"
@@ -772,17 +818,24 @@ export function DashboardLeftRail() {
                   </p>
                 ) : null}
                   <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      disabled={isRecording}
-                      className="mt-0.5 flex max-w-full items-start gap-0.5 rounded-sm text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-                      aria-label="Select task"
-                    >
-                      <span className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
-                        {selectedTask ? selectedTask.title : "Select ticket"}
-                      </span>
-                      <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={isRecording}
+                          className="mt-0.5 flex max-w-full items-start gap-0.5 rounded-sm text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                          aria-label="Select task"
+                        >
+                          <span className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                            {selectedTask ? selectedTask.title : "Select ticket"}
+                          </span>
+                          <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        {isRecording ? "Stop timer to change task" : "Select ticket"}
+                      </TooltipContent>
+                    </Tooltip>
                   </PopoverTrigger>
               </div>
               <LeftRailTimerControls
@@ -893,17 +946,19 @@ export function DashboardLeftRail() {
           </p>
         </div>
         <div className="h-px w-full shrink-0 bg-[#ebedee]" data-node-id="7:2842" aria-hidden />
-        <button
-          type="button"
-          data-tour="rail-profile-settings"
-          onClick={() => setSettingsOpen(true)}
-          className="content-stretch flex h-[40px] w-full shrink-0 cursor-pointer items-center justify-between rounded-[8px] border-0 bg-transparent p-0 text-left outline-none ring-offset-2 transition-colors hover:bg-[rgba(237,240,243,0.85)] focus-visible:ring-2 focus-visible:ring-ring"
-          data-name="Component 13"
-          data-node-id="7:2843"
-          aria-expanded={settingsOpen}
-          aria-haspopup="dialog"
-          aria-label="Account and settings"
-        >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              data-tour="rail-profile-settings"
+              onClick={() => setSettingsOpen(true)}
+              className="content-stretch flex h-[40px] w-full shrink-0 cursor-pointer items-center justify-between rounded-[8px] border-0 bg-transparent p-0 text-left outline-none ring-offset-2 transition-colors hover:bg-[rgba(237,240,243,0.85)] focus-visible:ring-2 focus-visible:ring-ring"
+              data-name="Component 13"
+              data-node-id="7:2843"
+              aria-expanded={settingsOpen}
+              aria-haspopup="dialog"
+              aria-label="Account and settings"
+            >
           <div className="content-stretch flex min-w-0 gap-[8px] items-center relative shrink-0" data-node-id="7:2844">
             <div
               className="content-stretch flex shrink-0 items-center justify-center relative rounded-[999px] size-[24px] border border-solid border-white"
@@ -931,7 +986,10 @@ export function DashboardLeftRail() {
               </div>
             </div>
           </div>
-        </button>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Account and settings</TooltipContent>
+        </Tooltip>
       </div>
       <CreateProjectModal open={createProjectOpen} onOpenChange={setCreateProjectOpen} />
       <InvoiceModal open={invoiceOpen} onOpenChange={setInvoiceOpen} />
