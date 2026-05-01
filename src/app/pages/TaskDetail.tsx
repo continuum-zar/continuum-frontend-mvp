@@ -17,7 +17,6 @@ import {
   Link2,
   Loader2,
   Plus,
-  Sparkles,
   Tag,
   UserRoundPlus,
   X,
@@ -1187,7 +1186,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       }
                       className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-[#ebedee] bg-white px-5 text-[14px] font-medium text-[#0b191f] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-50`}
                     >
-                      <Sparkles size={16} className="shrink-0 text-[#24B5F8]" aria-hidden />
                       {activeAgentRun ? 'View live build' : 'Build'}
                       {activeAgentRun ? (
                         <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-[#24B5F8]">

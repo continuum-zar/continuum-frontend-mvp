@@ -2,7 +2,7 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, GitBranch, GitPullRequest, Loader2, Sparkles, X } from "lucide-react";
+import { ArrowLeft, GitBranch, GitPullRequest, Loader2, X } from "lucide-react";
 
 import { useStartAgentRun } from "@/api/hooks";
 import {
@@ -298,9 +298,7 @@ export function BuildTaskModal({
             >
               {isPending ? (
                 <Loader2 size={16} className="animate-spin" aria-hidden />
-              ) : (
-                <Sparkles size={16} aria-hidden />
-              )}
+              ) : null}
               {isPending ? "Queuing build…" : "Start build"}
             </button>
           </div>

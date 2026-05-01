@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router';
 import { motion } from 'motion/react';
-import { Play, Pause, Square, Sparkles, Loader2 } from 'lucide-react';
+import { Play, Pause, Square, Loader2 } from 'lucide-react';
 import { Button } from './button';
 import { Input } from './input';
 import { Label } from './label';
@@ -140,9 +140,7 @@ export function GlobalActiveSession() {
                                 >
                                     {isAiGenerating ? (
                                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="h-3 w-3 mr-1" />
-                                    )}
+                                    ) : null}
                                     AI Fill from Commits
                                 </Button>
                             </div>
