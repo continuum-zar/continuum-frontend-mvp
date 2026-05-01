@@ -950,13 +950,18 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                     Activity
                   </Link>
                 </div>
-                <button
-                  type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#ededed] bg-white shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
-                  aria-label="Notifications"
-                >
-                  <Bell className="size-4" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#ededed] bg-white shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                      aria-label="Notifications"
+                    >
+                      <Bell className="size-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Notifications</TooltipContent>
+                </Tooltip>
                 <button
                   type="button"
                   className="flex h-8 items-center gap-2 rounded-[8px] border border-[#ededed] bg-white px-4 text-[14px] text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
@@ -966,14 +971,19 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 </button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      disabled={exportActionPending}
-                      className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white disabled:opacity-60"
-                    >
-                      {exportActionPending ? "Exporting…" : "Export"}
-                      <ChevronDown className="size-4" />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={exportActionPending}
+                          className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white disabled:opacity-60"
+                        >
+                          {exportActionPending ? "Exporting…" : "Export"}
+                          <ChevronDown className="size-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Export time logs</TooltipContent>
+                    </Tooltip>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-[10rem]">
                     <DropdownMenuItem
@@ -1005,9 +1015,14 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
               <h1 className="text-[24px] font-medium text-[#0b191f]">
                 {mainTab === "activity" ? "Activity" : "Time Logs"}
               </h1>
-              <button type="button" className="inline-flex size-6 items-center justify-center text-[#0b191f]" aria-label="More options">
-                <Ellipsis className="size-4" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" className="inline-flex size-6 items-center justify-center text-[#0b191f]" aria-label="More options">
+                    <Ellipsis className="size-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>More options</TooltipContent>
+              </Tooltip>
             </div>
           )}
 
@@ -1019,9 +1034,14 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                   <div className="flex min-w-0 flex-1 flex-col gap-4">
                     <div className="flex w-full items-center gap-2">
                       <h2 className="text-[24px] font-medium text-[#0b191f]">Activity</h2>
-                      <button type="button" className="inline-flex size-6 items-center justify-center text-[#0b191f]" aria-label="More options">
-                        <Ellipsis className="size-4" />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="inline-flex size-6 items-center justify-center text-[#0b191f]" aria-label="More options">
+                            <Ellipsis className="size-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>More options</TooltipContent>
+                      </Tooltip>
                     </div>
                     <div className="flex w-full flex-wrap items-center gap-2">
                       {activityView === "trends" ? (
@@ -1369,18 +1389,23 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 <Search className="size-4 shrink-0 text-[#606d76]" />
                 <span className="text-[14px] text-[#606d76]">Search Projects</span>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  useTimeRecordingStore
-                    .getState()
-                    .openLogModalManual(apiProjectId != null ? Number(apiProjectId) : null)
-                }
-                className="flex h-10 items-center gap-2 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-bold text-white"
-              >
-                <Plus className="size-4" />
-                Add Time Log
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      useTimeRecordingStore
+                        .getState()
+                        .openLogModalManual(apiProjectId != null ? Number(apiProjectId) : null)
+                    }
+                    className="flex h-10 items-center gap-2 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-bold text-white"
+                  >
+                    <Plus className="size-4" />
+                    Add Time Log
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Add a new time log</TooltipContent>
+              </Tooltip>
             </div>
           </div>
 
@@ -1441,20 +1466,30 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                       Yes
                     </p>
                     <div className="flex shrink-0 items-center gap-2">
-                      <button
-                        type="button"
-                        className="flex size-6 shrink-0 items-center justify-center text-[#697378]"
-                        aria-label="Edit"
-                      >
-                        <SquarePen className="size-4" strokeWidth={1.5} />
-                      </button>
-                      <button
-                        type="button"
-                        className="flex size-6 shrink-0 items-center justify-center text-[#697378]"
-                        aria-label="More"
-                      >
-                        <Ellipsis className="size-4" strokeWidth={1.5} />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="flex size-6 shrink-0 items-center justify-center text-[#697378]"
+                            aria-label="Edit"
+                          >
+                            <SquarePen className="size-4" strokeWidth={1.5} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit time log</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="flex size-6 shrink-0 items-center justify-center text-[#697378]"
+                            aria-label="More"
+                          >
+                            <Ellipsis className="size-4" strokeWidth={1.5} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>More actions</TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
                 ))}

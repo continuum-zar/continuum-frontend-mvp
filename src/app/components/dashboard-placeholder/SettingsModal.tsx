@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { cn } from "../ui/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 const INVOICE_CURRENCIES = ["ZAR", "USD", "EUR", "GBP"] as const;
 
@@ -704,14 +705,19 @@ export function SettingsModal({
                         installation.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setGithubIntegrationOpen(true)}
-                      className={cn(outlineActionClass, "gap-1")}
-                    >
-                      Manage
-                      <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => setGithubIntegrationOpen(true)}
+                          className={cn(outlineActionClass, "gap-1")}
+                        >
+                          Manage
+                          <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Manage GitHub integration</TooltipContent>
+                    </Tooltip>
                   </div>
 
                   <div className="flex items-start justify-between gap-4 border-t border-[#ebedee] pt-4">
@@ -723,17 +729,22 @@ export function SettingsModal({
                         Connect Cursor to Continuum so your AI agent can pull tasks, update checklists, and change statuses.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleOpenChange(false);
-                        navigate("/mcp-setup");
-                      }}
-                      className={cn(outlineActionClass, "gap-1")}
-                    >
-                      Setup
-                      <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleOpenChange(false);
+                            navigate("/mcp-setup");
+                          }}
+                          className={cn(outlineActionClass, "gap-1")}
+                        >
+                          Setup
+                          <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Open Cursor MCP setup</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               )}
@@ -806,16 +817,21 @@ export function SettingsModal({
                     >
                       Report issue
                     </p>
-                    <button
-                      type="button"
-                      data-tour="settings-report-issue"
-                      onClick={() => setFeedbackOpen(true)}
-                      className={cn(outlineActionClass, "gap-1")}
-                      aria-labelledby="settings-support-report-heading"
-                    >
-                      Report
-                      <ChevronRight className="size-6 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          data-tour="settings-report-issue"
+                          onClick={() => setFeedbackOpen(true)}
+                          className={cn(outlineActionClass, "gap-1")}
+                          aria-labelledby="settings-support-report-heading"
+                        >
+                          Report
+                          <ChevronRight className="size-6 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Report an issue</TooltipContent>
+                    </Tooltip>
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -845,21 +861,31 @@ export function SettingsModal({
 
             {showSaveFooter && (
               <div className="flex shrink-0 justify-end gap-2 border-t border-[#ebedee] px-6 py-6">
-                <button
-                  type="button"
-                  onClick={() => handleOpenChange(false)}
-                  className="h-10 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleSave()}
-                  disabled={savePending}
-                  className="h-10 rounded-[8px] bg-[#0b191f] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {savePending ? "Saving…" : "Save"}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenChange(false)}
+                      className="h-10 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      Cancel
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Discard changes</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => void handleSave()}
+                      disabled={savePending}
+                      className="h-10 rounded-[8px] bg-[#0b191f] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {savePending ? "Saving…" : "Save"}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Save settings changes</TooltipContent>
+                </Tooltip>
               </div>
             )}
           </div>

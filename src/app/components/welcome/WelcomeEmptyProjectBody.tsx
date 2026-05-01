@@ -50,6 +50,7 @@ import {
 } from "./LiveProjectGauges";
 import { WelcomeMilestoneTimeline } from "./WelcomeMilestoneTimeline";
 import { welcomeRecentActivityFeedItemKey } from "@/lib/welcomeRecentActivityFeed";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
 
 const imgLucidePlus = mcpAsset("91e46d01-6ae8-4fc9-aa4e-13b1040fb3cf");
 const imgLucideActivity = mcpAsset("8b04e159-5943-4424-a1ff-8259ce5f1905");
@@ -298,20 +299,25 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
     <>
       <div className="flex w-full items-center justify-between gap-3">
         <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Recent activity</p>
-        <button
-          type="button"
-          onClick={() => void refetch()}
-          disabled={isFetching}
-          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] disabled:cursor-not-allowed disabled:opacity-60"
-          aria-label={isFetching ? "Refreshing recent activity" : "Refresh recent activity"}
-        >
-          <RefreshCw
-            className={`size-4 shrink-0 text-[#606d76] ${isFetching ? "animate-spin" : ""}`}
-            strokeWidth={2}
-            aria-hidden
-          />
-          Refresh
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+              className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label={isFetching ? "Refreshing recent activity" : "Refresh recent activity"}
+            >
+              <RefreshCw
+                className={`size-4 shrink-0 text-[#606d76] ${isFetching ? "animate-spin" : ""}`}
+                strokeWidth={2}
+                aria-hidden
+              />
+              Refresh
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{isFetching ? "Refreshing recent activity" : "Refresh recent activity"}</TooltipContent>
+        </Tooltip>
       </div>
 
       {isLoading ? (
@@ -499,15 +505,20 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
             )}
           </div>
         </div>
-        <button
-          type="button"
-          className="inline-flex shrink-0 text-[#606d76] disabled:opacity-50"
-          aria-label="Remove"
-          disabled={deleteMutation.isPending}
-          onClick={handleRemove}
-        >
-          <X className="size-4" strokeWidth={1.75} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex shrink-0 text-[#606d76] disabled:opacity-50"
+              aria-label="Remove"
+              disabled={deleteMutation.isPending}
+              onClick={handleRemove}
+            >
+              <X className="size-4" strokeWidth={1.75} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Remove resource</TooltipContent>
+        </Tooltip>
       </div>
     );
   }
@@ -527,34 +538,44 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
           ) : null}
         </div>
       </div>
-      <button
-        type="button"
-        disabled={downloading || deleteMutation.isPending}
-        className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-[#606d76] transition-colors hover:bg-[#edf0f3] hover:text-[#0b191f] disabled:opacity-50"
-        aria-label="Download"
-        onClick={async () => {
-          setDownloading(true);
-          try {
-            const { blob, filename } = await downloadProjectAttachment(att.id);
-            triggerBlobDownload(blob, filename || att.filename);
-          } catch (err) {
-            toast.error(getApiErrorMessage(err, "Failed to download file"));
-          } finally {
-            setDownloading(false);
-          }
-        }}
-      >
-        <Download className="size-4" strokeWidth={1.75} />
-      </button>
-      <button
-        type="button"
-        className="inline-flex shrink-0 self-center text-[#606d76] disabled:opacity-50"
-        aria-label="Remove"
-        disabled={deleteMutation.isPending}
-        onClick={handleRemove}
-      >
-        <X className="size-4" strokeWidth={1.75} />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            disabled={downloading || deleteMutation.isPending}
+            className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-[#606d76] transition-colors hover:bg-[#edf0f3] hover:text-[#0b191f] disabled:opacity-50"
+            aria-label="Download"
+            onClick={async () => {
+              setDownloading(true);
+              try {
+                const { blob, filename } = await downloadProjectAttachment(att.id);
+                triggerBlobDownload(blob, filename || att.filename);
+              } catch (err) {
+                toast.error(getApiErrorMessage(err, "Failed to download file"));
+              } finally {
+                setDownloading(false);
+              }
+            }}
+          >
+            <Download className="size-4" strokeWidth={1.75} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Download resource</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex shrink-0 self-center text-[#606d76] disabled:opacity-50"
+            aria-label="Remove"
+            disabled={deleteMutation.isPending}
+            onClick={handleRemove}
+          >
+            <X className="size-4" strokeWidth={1.75} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Remove resource</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
@@ -652,29 +673,42 @@ function LiveRepositoryRow({
               </div>
             ) : null}
           </div>
-          <button
-            type="button"
-            disabled={indexDisabled}
-            onClick={onIndex}
-            title="Index this repository so AI can use code context"
-            className="flex shrink-0 items-center justify-center gap-1 rounded border border-solid border-[#ededed] bg-white px-2 py-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium whitespace-nowrap text-[#727d83] outline-none hover:bg-[#f7f8f9] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isScanning ? (
-              <Loader2 className="size-3 shrink-0 animate-spin" strokeWidth={2} aria-hidden />
-            ) : null}
-            {isScanning ? "Indexing…" : "Index"}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <button
+                  type="button"
+                  disabled={indexDisabled}
+                  onClick={onIndex}
+                  className="flex shrink-0 items-center justify-center gap-1 rounded border border-solid border-[#ededed] bg-white px-2 py-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium whitespace-nowrap text-[#727d83] outline-none hover:bg-[#f7f8f9] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isScanning ? (
+                    <Loader2 className="size-3 shrink-0 animate-spin" strokeWidth={2} aria-hidden />
+                  ) : null}
+                  {isScanning ? "Indexing…" : "Index"}
+                </button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isScanning ? "Repository indexing in progress" : "Index this repository so AI can use code context"}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
-      <button
-        type="button"
-        className="inline-flex shrink-0 text-[#606d76] disabled:opacity-50"
-        aria-label="Remove"
-        disabled={unlinkMutation.isPending}
-        onClick={handleRemove}
-      >
-        <X className="size-4" strokeWidth={1.75} />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex shrink-0 text-[#606d76] disabled:opacity-50"
+            aria-label="Remove"
+            disabled={unlinkMutation.isPending}
+            onClick={handleRemove}
+          >
+            <X className="size-4" strokeWidth={1.75} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Disconnect repository</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
@@ -814,24 +848,38 @@ export function WelcomeEmptyProjectBody({
           <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Repository</p>
           <div className="flex shrink-0 items-center gap-2">
             {wikiScanStatusQuery.data?.some((s) => s.is_scanning) ? (
-              <button
-                type="button"
-                onClick={() => void wikiScanStatusQuery.refetch()}
-                disabled={wikiScanStatusQuery.isFetching}
-                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] disabled:cursor-not-allowed disabled:opacity-60"
-                aria-label={
-                  wikiScanStatusQuery.isFetching ? "Refreshing repository status" : "Refresh repository status"
-                }
-              >
-                <RefreshCw
-                  className={`size-3.5 shrink-0 text-[#606d76] ${wikiScanStatusQuery.isFetching ? "animate-spin" : ""}`}
-                  strokeWidth={2}
-                  aria-hidden
-                />
-                Refresh status
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => void wikiScanStatusQuery.refetch()}
+                    disabled={wikiScanStatusQuery.isFetching}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label={
+                      wikiScanStatusQuery.isFetching ? "Refreshing repository status" : "Refresh repository status"
+                    }
+                  >
+                    <RefreshCw
+                      className={`size-3.5 shrink-0 text-[#606d76] ${wikiScanStatusQuery.isFetching ? "animate-spin" : ""}`}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                    Refresh status
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {wikiScanStatusQuery.isFetching ? "Refreshing repository status" : "Refresh repository status"}
+                </TooltipContent>
+              </Tooltip>
             ) : null}
-            <AddButton label="Connect" onClick={() => setLinkRepoOpen(true)} />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <AddButton label="Connect" onClick={() => setLinkRepoOpen(true)} />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Connect to repository</TooltipContent>
+            </Tooltip>
           </div>
         </div>
         {repositoriesQuery.isLoading ? (

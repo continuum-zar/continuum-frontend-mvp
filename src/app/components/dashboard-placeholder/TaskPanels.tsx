@@ -30,6 +30,7 @@ import { isApiProjectId } from "@/app/data/dashboardPlaceholderProjects";
 import { welcomeResourcesMock } from "@/app/data/welcomeDashboardMock";
 
 import { LogTimeModal } from "./LogTimeModal";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 type TaskPanelsProps = {
   onBack: () => void;
@@ -208,9 +209,14 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
       <main className="min-h-0 flex-1 overflow-y-auto rounded-[12px] bg-[#f9fafb] p-4">
         <div className="mx-auto w-full max-w-[600px]">
           <div className="flex items-center justify-between py-4">
-            <button type="button" onClick={onBack} className="text-[#606d76]">
-              <ArrowLeft size={20} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" onClick={onBack} className="text-[#606d76]" aria-label="Back to sprint">
+                  <ArrowLeft size={20} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Back to sprint</TooltipContent>
+            </Tooltip>
             <p className="text-[16px] font-medium tracking-[-0.16px] text-[#595959]">Update Task</p>
             <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
           </div>
@@ -447,55 +453,75 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
                       {formatHmsShort(panelElapsedSec)}
                       {timerPhase === "paused" ? " · paused" : ""}
                     </span>
-                    <button
-                      type="button"
-                      onClick={handlePanelTimerPrimary}
-                      className={`inline-flex size-8 items-center justify-center rounded-[8px] border outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40 ${
-                        timerPhase === "running"
-                          ? "border-[#eb4335] bg-[#eb4335] text-white"
-                          : "border-[#24B5F8] bg-[#24B5F8] text-white"
-                      }`}
-                      aria-label={timerPhase === "running" ? "Pause timer" : "Resume timer"}
-                    >
-                      {timerPhase === "running" ? (
-                        <Pause className="size-4 text-white" strokeWidth={2.25} aria-hidden />
-                      ) : (
-                        <Play className="size-4 fill-white text-white" aria-hidden />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => stopRecordingOpenLogModal()}
-                      className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white text-[#606d76] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40"
-                      aria-label="Finish and log time"
-                    >
-                      <Square className="size-3.5 fill-current" strokeWidth={0} aria-hidden />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={handlePanelTimerPrimary}
+                          className={`inline-flex size-8 items-center justify-center rounded-[8px] border outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40 ${
+                            timerPhase === "running"
+                              ? "border-[#eb4335] bg-[#eb4335] text-white"
+                              : "border-[#24B5F8] bg-[#24B5F8] text-white"
+                          }`}
+                          aria-label={timerPhase === "running" ? "Pause timer" : "Resume timer"}
+                        >
+                          {timerPhase === "running" ? (
+                            <Pause className="size-4 text-white" strokeWidth={2.25} aria-hidden />
+                          ) : (
+                            <Play className="size-4 fill-white text-white" aria-hidden />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{timerPhase === "running" ? "Pause timer" : "Resume timer"}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => stopRecordingOpenLogModal()}
+                          className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white text-[#606d76] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40"
+                          aria-label="Finish and log time"
+                        >
+                          <Square className="size-3.5 fill-current" strokeWidth={0} aria-hidden />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Finish and log time</TooltipContent>
+                    </Tooltip>
                   </>
                 ) : taskOptionForTimer ? (
-                  <button
-                    type="button"
-                    onClick={handlePanelTimerPrimary}
-                    disabled={Boolean(isRecording && selectedTask != null && selectedTask.id !== taskOptionForTimer.id)}
-                    title={
-                      isRecording && selectedTask != null && selectedTask.id !== taskOptionForTimer.id
-                        ? "Another task is being timed in the sidebar"
-                        : undefined
-                    }
-                    className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#e9e9e9] bg-white px-3 text-[14px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Play className="size-3.5 fill-[#0b191f] text-[#0b191f]" aria-hidden />
-                    Start timer
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={handlePanelTimerPrimary}
+                        disabled={Boolean(isRecording && selectedTask != null && selectedTask.id !== taskOptionForTimer.id)}
+                        title={
+                          isRecording && selectedTask != null && selectedTask.id !== taskOptionForTimer.id
+                            ? "Another task is being timed in the sidebar"
+                            : undefined
+                        }
+                        className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#e9e9e9] bg-white px-3 text-[14px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Play className="size-3.5 fill-[#0b191f] text-[#0b191f]" aria-hidden />
+                        Start timer
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Start timer for this task</TooltipContent>
+                  </Tooltip>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={() => setLogTimeOpen(true)}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white"
-                >
-                  <Plus size={16} />
-                  Log Time
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setLogTimeOpen(true)}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white"
+                    >
+                      <Plus size={16} />
+                      Log Time
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Add a manual time log</TooltipContent>
+                </Tooltip>
               </div>
             </div>
             <div className="flex justify-between text-[16px]">

@@ -800,94 +800,120 @@ export function DashboardPlaceholder() {
                     milestonesLoading={!secondarySprintMetaReady || liveMilestonesQuery.isLoading}
                   />
                   <div className="bg-[#f0f3f5] content-stretch flex gap-[2px] h-[32px] items-center p-[2px] relative rounded-[8px] shrink-0 w-[251px]" data-node-id="7:2868">
-                    <Link
-                      to={sprintBoardHref}
-                      className="bg-white border border-[#ededed] border-solid content-stretch flex h-[36px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                      data-name="Component 2"
-                      data-node-id="7:2869"
-                    >
-                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="7:2870">
-                        Sprint
-                      </p>
-                    </Link>
-                    <Link
-                      to={
-                        isLiveBoard && projectParam != null && isApiProjectId(projectParam)
-                          ? projectTimeLogsHref(
-                              projectParam,
-                              "time-logs",
-                              milestoneParam ?? undefined,
-                            )
-                          : `${projectTimeLogsHref(WELCOME_PROJECT_ID, "time-logs")}&populated=1`
-                      }
-                      className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                      data-name="Component 3"
-                      data-node-id="7:2871"
-                    >
-                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] text-right whitespace-nowrap" data-node-id="7:2872">
-                        Time logs
-                      </p>
-                    </Link>
-                    <Link
-                      to={
-                        isLiveBoard && projectParam != null && isApiProjectId(projectParam)
-                          ? projectTimeLogsHref(
-                              projectParam,
-                              "activity",
-                              milestoneParam ?? undefined,
-                            )
-                          : `${projectTimeLogsHref(WELCOME_PROJECT_ID, "activity")}&populated=1`
-                      }
-                      className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                      data-name="Component 4"
-                      data-node-id="7:2874"
-                    >
-                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="7:2875">
-                        Activity
-                      </p>
-                    </Link>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to={sprintBoardHref}
+                          className="bg-white border border-[#ededed] border-solid content-stretch flex h-[36px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                          data-name="Component 2"
+                          data-node-id="7:2869"
+                        >
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="7:2870">
+                            Sprint
+                          </p>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent>Open sprint view</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to={
+                            isLiveBoard && projectParam != null && isApiProjectId(projectParam)
+                              ? projectTimeLogsHref(
+                                  projectParam,
+                                  "time-logs",
+                                  milestoneParam ?? undefined,
+                                )
+                              : `${projectTimeLogsHref(WELCOME_PROJECT_ID, "time-logs")}&populated=1`
+                          }
+                          className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                          data-name="Component 3"
+                          data-node-id="7:2871"
+                        >
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] text-right whitespace-nowrap" data-node-id="7:2872">
+                            Time logs
+                          </p>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent>Open time logs</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to={
+                            isLiveBoard && projectParam != null && isApiProjectId(projectParam)
+                              ? projectTimeLogsHref(
+                                  projectParam,
+                                  "activity",
+                                  milestoneParam ?? undefined,
+                                )
+                              : `${projectTimeLogsHref(WELCOME_PROJECT_ID, "activity")}&populated=1`
+                          }
+                          className="content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                          data-name="Component 4"
+                          data-node-id="7:2874"
+                        >
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="7:2875">
+                            Activity
+                          </p>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent>Open activity log</TooltipContent>
+                    </Tooltip>
                   </div>
-                  <button
-                    type="button"
-                    data-tour="sprint-discord-notify"
-                    className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-                    data-name="Component 5"
-                    data-node-id="7:2876"
-                    aria-label="Discord notifications"
-                    onClick={() => setDiscordIntegrationOpen(true)}
-                  >
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="7:2877">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    data-tour="sprint-edit-milestone"
-                    disabled={!canEditMilestone}
-                    onClick={() => {
-                      if (canEditMilestone) setEditMilestoneModalOpen(true);
-                    }}
-                    title={
-                      !isLiveBoard || !milestoneParam
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        data-tour="sprint-discord-notify"
+                        className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+                        data-name="Component 5"
+                        data-node-id="7:2876"
+                        aria-label="Discord notifications"
+                        onClick={() => setDiscordIntegrationOpen(true)}
+                      >
+                        <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="7:2877">
+                          <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Configure Discord notifications</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <button
+                          type="button"
+                          data-tour="sprint-edit-milestone"
+                          disabled={!canEditMilestone}
+                          onClick={() => {
+                            if (canEditMilestone) setEditMilestoneModalOpen(true);
+                          }}
+                          className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+                          data-name="Component 6"
+                          data-node-id="7:2879"
+                          aria-label="Edit milestone"
+                        >
+                          <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-cog" data-node-id="7:2880">
+                            <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderCog} />
+                          </div>
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="7:2882">
+                            Edit
+                          </p>
+                        </button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {!isLiveBoard || !milestoneParam
                         ? "Select a milestone sprint to edit"
                         : !milestoneMetaReady
                           ? "Loading milestone…"
                           : !currentMilestone
                             ? "Milestone not found"
-                            : "Edit milestone"
-                    }
-                    className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
-                    data-name="Component 6"
-                    data-node-id="7:2879"
-                    aria-label="Edit milestone"
-                  >
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-cog" data-node-id="7:2880">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderCog} />
-                    </div>
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="7:2882">
-                      Edit
-                    </p>
-                  </button>
+                            : "Edit milestone"}
+                    </TooltipContent>
+                  </Tooltip>
                   <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 8" data-node-id="7:2883">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/share" data-node-id="7:2884">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideShare} />
@@ -925,103 +951,123 @@ export function DashboardPlaceholder() {
               </div>
               <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2900">
                 <div className="content-stretch flex gap-[8px] h-[40px] items-center relative rounded-[10px] shrink-0" data-name="Component 121" data-node-id="7:2901">
-                  <button
-                    type="button"
-                    data-tour="sprint-board-view"
-                    disabled={!isLiveBoard}
-                    onClick={() => isLiveBoard && setSprintView("board")}
-                    aria-pressed={!isLiveBoard || sprintView === "board"}
-                    className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
-                      !isLiveBoard || sprintView === "board"
-                        ? "bg-[#cfecff] px-[16px] py-[8px]"
-                        : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
-                    }`}
-                    data-name="Component 2"
-                    data-node-id="I7:2901;2444:24560"
-                  >
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/square-kanban" data-node-id="I7:2901;2444:24561">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideSquareKanban} />
-                    </div>
-                    {!isLiveBoard || sprintView === "board" ? (
-                      <p
-                        className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap"
-                        data-node-id="I7:2901;2444:24563"
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        data-tour="sprint-board-view"
+                        disabled={!isLiveBoard}
+                        onClick={() => isLiveBoard && setSprintView("board")}
+                        aria-pressed={!isLiveBoard || sprintView === "board"}
+                        className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
+                          !isLiveBoard || sprintView === "board"
+                            ? "bg-[#cfecff] px-[16px] py-[8px]"
+                            : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                        }`}
+                        data-name="Component 2"
+                        data-node-id="I7:2901;2444:24560"
                       >
-                        Board
-                      </p>
-                    ) : null}
-                  </button>
-                  <button
-                    type="button"
-                    data-tour="sprint-list-view"
-                    disabled={!isLiveBoard}
-                    onClick={() => isLiveBoard && setSprintView("list")}
-                    aria-pressed={isLiveBoard && sprintView === "list"}
-                    className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
-                      isLiveBoard && sprintView === "list"
-                        ? "bg-[#cfecff] px-[16px] py-[8px]"
-                        : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
-                    } ${!isLiveBoard ? "cursor-default" : ""}`}
-                    data-name="Component 3"
-                    data-node-id="I7:2901;2444:24564"
-                  >
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/list" data-node-id="I7:2901;2444:24565">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideList} />
-                    </div>
-                    {isLiveBoard && sprintView === "list" ? (
-                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
-                        List
-                      </p>
-                    ) : null}
-                  </button>
-                  <button
-                    type="button"
-                    data-tour="sprint-gantt-view"
-                    disabled={!isLiveBoard}
-                    onClick={() => isLiveBoard && setSprintView("gantt")}
-                    aria-pressed={isLiveBoard && sprintView === "gantt"}
-                    className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
-                      isLiveBoard && sprintView === "gantt"
-                        ? "bg-[#cfecff] px-[16px] py-[8px]"
-                        : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
-                    } ${!isLiveBoard ? "cursor-default" : ""}`}
-                    data-name="Component 5"
-                    data-node-id="I7:2901;2444:24568"
-                    aria-label="Gantt chart view"
-                  >
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/square-chart-gantt" data-node-id="I7:2901;2444:24569">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideSquareChartGantt} />
-                    </div>
-                    {isLiveBoard && sprintView === "gantt" ? (
-                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
-                        Gantt
-                      </p>
-                    ) : null}
-                  </button>
-                  <button
-                    type="button"
-                    data-tour="sprint-calendar-view"
-                    disabled={!isLiveBoard}
-                    onClick={() => isLiveBoard && setSprintView("calendar")}
-                    aria-pressed={isLiveBoard && sprintView === "calendar"}
-                    className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
-                      isLiveBoard && sprintView === "calendar"
-                        ? "bg-[#cfecff] px-[16px] py-[8px]"
-                        : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
-                    } ${!isLiveBoard ? "cursor-default" : ""}`}
-                    data-name="Component 4"
-                    data-node-id="I7:2901;2444:24572"
-                    aria-label="Calendar view"
-                  >
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/calendar" data-node-id="I7:2901;2444:24573">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideCalendar} />
-                    </div>
-                    {isLiveBoard && sprintView === "calendar" ? (
-                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
-                        Calendar
-                      </p>
-                    ) : null}
-                  </button>
+                        <div className="relative shrink-0 size-[16px]" data-name="lucide/square-kanban" data-node-id="I7:2901;2444:24561">
+                          <img alt="" className="absolute block max-w-none size-full" src={imgLucideSquareKanban} />
+                        </div>
+                        {!isLiveBoard || sprintView === "board" ? (
+                          <p
+                            className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap"
+                            data-node-id="I7:2901;2444:24563"
+                          >
+                            Board
+                          </p>
+                        ) : null}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Board view</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        data-tour="sprint-list-view"
+                        disabled={!isLiveBoard}
+                        onClick={() => isLiveBoard && setSprintView("list")}
+                        aria-pressed={isLiveBoard && sprintView === "list"}
+                        className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
+                          isLiveBoard && sprintView === "list"
+                            ? "bg-[#cfecff] px-[16px] py-[8px]"
+                            : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                        } ${!isLiveBoard ? "cursor-default" : ""}`}
+                        data-name="Component 3"
+                        data-node-id="I7:2901;2444:24564"
+                      >
+                        <div className="relative shrink-0 size-[16px]" data-name="lucide/list" data-node-id="I7:2901;2444:24565">
+                          <img alt="" className="absolute block max-w-none size-full" src={imgLucideList} />
+                        </div>
+                        {isLiveBoard && sprintView === "list" ? (
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
+                            List
+                          </p>
+                        ) : null}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>List view</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        data-tour="sprint-gantt-view"
+                        disabled={!isLiveBoard}
+                        onClick={() => isLiveBoard && setSprintView("gantt")}
+                        aria-pressed={isLiveBoard && sprintView === "gantt"}
+                        className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
+                          isLiveBoard && sprintView === "gantt"
+                            ? "bg-[#cfecff] px-[16px] py-[8px]"
+                            : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                        } ${!isLiveBoard ? "cursor-default" : ""}`}
+                        data-name="Component 5"
+                        data-node-id="I7:2901;2444:24568"
+                        aria-label="Gantt chart view"
+                      >
+                        <div className="relative shrink-0 size-[16px]" data-name="lucide/square-chart-gantt" data-node-id="I7:2901;2444:24569">
+                          <img alt="" className="absolute block max-w-none size-full" src={imgLucideSquareChartGantt} />
+                        </div>
+                        {isLiveBoard && sprintView === "gantt" ? (
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
+                            Gantt
+                          </p>
+                        ) : null}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Gantt view</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        data-tour="sprint-calendar-view"
+                        disabled={!isLiveBoard}
+                        onClick={() => isLiveBoard && setSprintView("calendar")}
+                        aria-pressed={isLiveBoard && sprintView === "calendar"}
+                        className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
+                          isLiveBoard && sprintView === "calendar"
+                            ? "bg-[#cfecff] px-[16px] py-[8px]"
+                            : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                        } ${!isLiveBoard ? "cursor-default" : ""}`}
+                        data-name="Component 4"
+                        data-node-id="I7:2901;2444:24572"
+                        aria-label="Calendar view"
+                      >
+                        <div className="relative shrink-0 size-[16px]" data-name="lucide/calendar" data-node-id="I7:2901;2444:24573">
+                          <img alt="" className="absolute block max-w-none size-full" src={imgLucideCalendar} />
+                        </div>
+                        {isLiveBoard && sprintView === "calendar" ? (
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
+                            Calendar
+                          </p>
+                        ) : null}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Calendar view</TooltipContent>
+                  </Tooltip>
                 </div>
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2902">
                   <div className="content-stretch flex items-center pr-[10.667px] relative shrink-0" data-name="Component 33" data-node-id="7:2903">
@@ -1066,14 +1112,16 @@ export function DashboardPlaceholder() {
                         </div>
                       </div>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => setShareProjectOpen(true)}
-                      aria-label="Invite members"
-                      className="border-0 bg-[#e19c02] content-stretch flex cursor-pointer gap-[5.714px] items-center mr-[-10.667px] p-[9.143px] relative rounded-[428.143px] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                      data-name="Component 31"
-                      data-node-id="I7:2903;2032:931"
-                    >
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => setShareProjectOpen(true)}
+                          aria-label="Invite members"
+                          className="border-0 bg-[#e19c02] content-stretch flex cursor-pointer gap-[5.714px] items-center mr-[-10.667px] p-[9.143px] relative rounded-[428.143px] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                          data-name="Component 31"
+                          data-node-id="I7:2903;2032:931"
+                        >
                       <div className="-translate-x-1/2 -translate-y-1/2 absolute left-1/2 size-[37.333px] top-1/2" data-node-id="I7:2903;2032:931;2469:49931">
                         <img alt="" className="absolute block max-w-none size-full" src={imgEllipse12} />
                       </div>
@@ -1085,27 +1133,35 @@ export function DashboardPlaceholder() {
                       <div className="relative shrink-0 size-[13.714px]" data-name="lucide/user-round-plus" data-node-id="I7:2903;2032:931;2469:48877">
                         <img alt="" className="absolute block max-w-none size-full" src={imgLucideUserRoundPlus} />
                       </div>
-                    </button>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Invite members</TooltipContent>
+                    </Tooltip>
                   </div>
                   <div className="flex flex-row items-center self-stretch">
-                    <button
-                      type="button"
-                      data-tour="sprint-log-time"
-                      onClick={() =>
-                        useTimeRecordingStore.getState().openLogModalManual(isLiveBoard ? liveProjectId : null)
-                      }
-                      className="content-stretch flex h-full shrink-0 items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[10px]"
-                      data-name="Component 4"
-                      data-node-id="7:2904"
-                      style={{ backgroundImage: "linear-gradient(165.24069544367063deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)" }}
-                    >
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          data-tour="sprint-log-time"
+                          onClick={() =>
+                            useTimeRecordingStore.getState().openLogModalManual(isLiveBoard ? liveProjectId : null)
+                          }
+                          className="content-stretch flex h-full shrink-0 items-center justify-center gap-[8px] rounded-[8px] px-[16px] py-[10px]"
+                          data-name="Component 4"
+                          data-node-id="7:2904"
+                          style={{ backgroundImage: "linear-gradient(165.24069544367063deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)" }}
+                        >
                       <div className="relative shrink-0 size-[16px]" data-name="lucide/plus" data-node-id="7:2905">
                         <img alt="" className="absolute block max-w-none size-full" src={imgLucidePlus} />
                       </div>
                       <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap" data-node-id="7:2907">
                         Log Time
                       </p>
-                    </button>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Add a manual time log</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               </div>
@@ -1152,21 +1208,26 @@ export function DashboardPlaceholder() {
                           </div>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        data-tour="sprint-create-task"
-                        onClick={() => setCreateTaskOpen(true)}
-                        className="content-stretch flex cursor-pointer items-center overflow-clip border-0 bg-transparent p-[5px] relative rounded-[6px] shrink-0"
-                        data-name="Component 134"
-                        data-node-id="I7:2910;2469:50013"
-                        aria-label="Create task"
-                      >
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            data-tour="sprint-create-task"
+                            onClick={() => setCreateTaskOpen(true)}
+                            className="content-stretch flex cursor-pointer items-center overflow-clip border-0 bg-transparent p-[5px] relative rounded-[6px] shrink-0"
+                            data-name="Component 134"
+                            data-node-id="I7:2910;2469:50013"
+                            aria-label="Create task"
+                          >
                         <div className="relative shrink-0 size-[14px]" data-name="Vector" data-node-id="I7:2910;2469:50013;2469:50004">
                           <div className="absolute inset-[-5.36%]">
                             <img alt="" className="block max-w-none size-full" src={imgVector11} />
                           </div>
                         </div>
-                      </button>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Create task</TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
                 </div>
@@ -1573,14 +1634,16 @@ export function DashboardPlaceholder() {
           </div>
         </div>
         {sprintView !== "gantt" && sprintView !== "calendar" && (
-          <button
-          type="button"
-          onClick={() => setAiChatOpen(true)}
-          className="absolute bottom-[14px] right-[14px] z-[40] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Open AI assistant"
-          data-tour="sprint-ai-assistant"
-          data-node-id="7:2936"
-        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+              type="button"
+              onClick={() => setAiChatOpen(true)}
+              className="absolute bottom-[14px] right-[14px] z-[40] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Open AI assistant"
+              data-tour="sprint-ai-assistant"
+              data-node-id="7:2936"
+            >
           <div className="-translate-x-1/2 -translate-y-1/2 absolute content-stretch flex items-center left-[calc(50%+0.5px)] top-[calc(50%+0.5px)] z-[3]" data-node-id="I7:2936;3646:40266">
             <div className="overflow-clip relative shrink-0 size-[28px]" data-name="Frame 453/bot" data-node-id="I7:2936;3646:40267">
               <div className="absolute inset-[16.67%_8.33%]" data-name="Vector" data-node-id="I7:2936;3646:40267;3392:54498">
@@ -1757,7 +1820,10 @@ export function DashboardPlaceholder() {
               </div>
             </div>
           </div>
-          </button>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Open AI assistant</TooltipContent>
+          </Tooltip>
         )}
       </div>
       <CreateTaskModal open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
