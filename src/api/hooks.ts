@@ -1610,3 +1610,104 @@ export function useGithubInstallationRepositories(projectId: number | null, quer
         refetchOnWindowFocus: false,
     });
 }
+
+// ---------------------------------------------------------------------------
+// Agentic task completor ("Build" runs)
+// ---------------------------------------------------------------------------
+import {
+    cancelAgentRun,
+    fetchAgentRun,
+    listAgentRuns,
+    startAgentRun,
+} from './agent';
+import type {
+    AgentRun,
+    AgentRunDetail,
+    AgentRunListResponse,
+    StartAgentRunBody,
+} from '@/types/agentRun';
+
+export const agentRunKeys = {
+    all: ['agent-runs'] as const,
+    forTask: (taskId: number | string) => [...agentRunKeys.all, 'task', String(taskId)] as const,
+    detail: (taskId: number | string, runId: string) =>
+        [...agentRunKeys.all, 'task', String(taskId), 'run', runId] as const,
+};
+
+/** Latest builds for a task. Polls quickly while at least one is active. */
+export function useTaskAgentRuns(
+    taskId: number | string | undefined | null,
+    options?: { limit?: number; enabled?: boolean },
+) {
+    const limit = options?.limit ?? 10;
+    return useQuery<AgentRunListResponse>({
+        queryKey: taskId != null && taskId !== '' ? agentRunKeys.forTask(taskId) : agentRunKeys.all,
+        queryFn: () => listAgentRuns(taskId!, { limit }),
+        enabled: (options?.enabled ?? true) && taskId != null && taskId !== '',
+        staleTime: STALE_SHORT_MS,
+        refetchInterval: (query) => {
+            const data = query.state.data as AgentRunListResponse | undefined;
+            const hasActive = !!data?.runs?.some((r) => r.status === 'queued' || r.status === 'running');
+            return hasActive ? 4_000 : false;
+        },
+        refetchOnWindowFocus: false,
+    });
+}
+
+/** Detailed view of a single run (snapshot + persisted events for replay). */
+export function useAgentRun(
+    taskId: number | string | undefined | null,
+    runId: string | undefined | null,
+    options?: { enabled?: boolean },
+) {
+    return useQuery<AgentRunDetail>({
+        queryKey:
+            taskId != null && taskId !== '' && runId
+                ? agentRunKeys.detail(taskId, runId)
+                : agentRunKeys.all,
+        queryFn: () => fetchAgentRun(taskId!, runId!),
+        enabled:
+            (options?.enabled ?? true) &&
+            taskId != null &&
+            taskId !== '' &&
+            !!runId,
+        staleTime: STALE_SHORT_MS,
+        refetchOnWindowFocus: false,
+    });
+}
+
+export function useStartAgentRun(taskId: number | string) {
+    const queryClient = useQueryClient();
+    return useMutation<AgentRun, unknown, StartAgentRunBody>({
+        mutationFn: (body) => startAgentRun(taskId, body),
+        onSuccess: (run) => {
+            queryClient.invalidateQueries({ queryKey: agentRunKeys.forTask(taskId) });
+            queryClient.setQueryData(agentRunKeys.detail(taskId, run.id), {
+                ...run,
+                events: [],
+            } as AgentRunDetail);
+            toast.success('Build queued — opening live view');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to start build'));
+        },
+    });
+}
+
+export function useCancelAgentRun(taskId: number | string) {
+    const queryClient = useQueryClient();
+    return useMutation<AgentRun, unknown, string>({
+        mutationFn: (runId) => cancelAgentRun(taskId, runId),
+        onSuccess: (run) => {
+            queryClient.invalidateQueries({ queryKey: agentRunKeys.forTask(taskId) });
+            queryClient.setQueryData(agentRunKeys.detail(taskId, run.id), (prev) => {
+                if (!prev || typeof prev !== 'object') return prev;
+                return { ...(prev as AgentRunDetail), ...run };
+            });
+            toast.success('Build cancellation requested');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to cancel build'));
+        },
+    });
+}

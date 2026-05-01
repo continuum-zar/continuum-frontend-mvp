@@ -347,3 +347,28 @@ export {
     githubAppKeys,
 } from './githubApp';
 export type { GitHubInstallationRepository, GitHubRepoOwner, GitHubRepoPermissions } from '@/types/githubApp';
+export {
+    startAgentRun,
+    listAgentRuns,
+    fetchAgentRun,
+    cancelAgentRun,
+    agentRunEventsStreamUrl,
+} from './agent';
+export {
+    agentRunKeys,
+    useTaskAgentRuns,
+    useAgentRun,
+    useStartAgentRun,
+    useCancelAgentRun,
+} from './hooks';
+export type {
+    AgentRun,
+    AgentRunDetail,
+    AgentRunEvent,
+    AgentRunListResponse,
+    AgentRunMode,
+    AgentRunStatus,
+    AgentEventKind,
+    StartAgentRunBody,
+} from '@/types/agentRun';
+export { isAgentRunActive, isAgentRunTerminal, AGENT_RUN_TERMINAL_STATUSES } from '@/types/agentRun';
