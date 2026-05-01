@@ -785,7 +785,7 @@ export function WelcomeEmptyProjectBody({
         <WelcomeMilestoneTimeline variant="live" projectId={projectId} />
       </div>
 
-      <div className="flex w-full max-w-[815px] flex-col gap-4">
+      <div id="recent-activity" className="flex w-full max-w-[815px] flex-col gap-4" data-tour="welcome-recent-activity">
         <LiveRecentActivityList projectId={projectId} members={members} />
       </div>
 

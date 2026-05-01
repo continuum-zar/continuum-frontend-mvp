@@ -38,6 +38,7 @@ import {
     addProjectAttachmentLink,
     deleteProjectAttachment,
     normalizeProjectKeyId,
+    fetchWelcomeRecentActivityFeed,
 } from './projects';
 export { projectKeys };
 import {
@@ -396,6 +397,26 @@ export function useAllTasks(options?: { enabled?: boolean }) {
         gcTime: LONG_GC_MS,
         refetchOnWindowFocus: false,
         placeholderData: keepPrev,
+    });
+}
+
+/**
+ * Welcome-style recent activity feed (commits + status moves) for a project.
+ * Powers the in-app notifications bell — short stale time so the badge updates
+ * promptly while the user is on the page.
+ */
+export function useProjectRecentActivity(
+    projectId: number | string | null | undefined,
+    options?: { limit?: number; enabled?: boolean },
+) {
+    const limit = options?.limit ?? 50;
+    const enabled = (options?.enabled ?? true) && projectId != null && projectId !== '';
+    return useQuery({
+        queryKey: ['projects', projectId, 'welcome-recent-activity', limit],
+        queryFn: () => fetchWelcomeRecentActivityFeed(projectId!, { limit }),
+        enabled,
+        staleTime: STALE_SHORT_MS,
+        refetchOnWindowFocus: true,
     });
 }
 

@@ -34,7 +34,7 @@ import { taskPriorityFlagClass, type TaskPriority } from "@/types/task";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { CreateMilestoneModal } from "../components/dashboard-placeholder/CreateMilestoneModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
-import { DiscordIntegrationModal } from "../components/dashboard-placeholder/DiscordIntegrationModal";
+import { NotificationBell } from "../components/notifications/NotificationBell";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
 import { ReleaseNotesModal } from "../components/welcome/ReleaseNotesModal";
@@ -398,7 +398,6 @@ export function DashboardPlaceholder() {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
-  const [discordIntegrationOpen, setDiscordIntegrationOpen] = useState(false);
   const [welcomeToContinuumOpen, setWelcomeToContinuumOpen] = useState(false);
   /** Horizontal scroll container of the live Kanban board — driven by the bottom slider. */
   const kanbanBoardScrollRef = useRef<HTMLDivElement | null>(null);
@@ -847,19 +846,31 @@ export function DashboardPlaceholder() {
                       </p>
                     </Link>
                   </div>
-                  <button
-                    type="button"
-                    data-tour="sprint-discord-notify"
-                    className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-                    data-name="Component 5"
-                    data-node-id="7:2876"
-                    aria-label="Discord notifications"
-                    onClick={() => setDiscordIntegrationOpen(true)}
-                  >
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="7:2877">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
-                    </div>
-                  </button>
+                  {isLiveBoard && liveProjectId != null && milestoneParam ? (
+                    <NotificationBell
+                      scope={{
+                        kind: "milestone",
+                        projectId: liveProjectId,
+                        milestoneId: milestoneParam,
+                      }}
+                      iconSrc={imgLucideBell}
+                      className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] cursor-pointer"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 cursor-default focus-visible:ring-2 focus-visible:ring-ring"
+                      data-name="Component 5"
+                      data-node-id="7:2876"
+                      aria-label="Notifications"
+                      aria-disabled="true"
+                      title="Notifications coming soon"
+                    >
+                      <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="7:2877">
+                        <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
+                      </div>
+                    </button>
+                  )}
                   <button
                     type="button"
                     data-tour="sprint-edit-milestone"
@@ -1788,11 +1799,6 @@ export function DashboardPlaceholder() {
         />
       ) : null}
       <WelcomeShareProjectModal open={shareProjectOpen} onOpenChange={setShareProjectOpen} projectId={isLiveBoard ? Number(projectParam) : undefined} />
-      <DiscordIntegrationModal
-        open={discordIntegrationOpen}
-        onOpenChange={setDiscordIntegrationOpen}
-        projectId={isLiveBoard && liveProjectId != null ? liveProjectId : undefined}
-      />
       <WelcomeAiChatModal
         open={aiChatOpen}
         onOpenChange={setAiChatOpen}

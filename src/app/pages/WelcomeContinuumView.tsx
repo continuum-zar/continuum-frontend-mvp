@@ -5,8 +5,8 @@ import { useProject, useProjectMembers } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
-import { DiscordIntegrationModal } from "../components/dashboard-placeholder/DiscordIntegrationModal";
 import { EditProjectModal } from "../components/dashboard-placeholder/EditProjectModal";
+import { NotificationBell } from "../components/notifications/NotificationBell";
 import {
   WelcomeRecentActivity,
   WelcomeRepo,
@@ -66,7 +66,6 @@ export function WelcomeContinuumView() {
 
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
-  const [discordIntegrationOpen, setDiscordIntegrationOpen] = useState(false);
   const [editProjectOpen, setEditProjectOpen] = useState(false);
 
   const canEditProject =
@@ -75,11 +74,6 @@ export function WelcomeContinuumView() {
     isApiProjectId(routeProjectId) &&
     projectQuery.isSuccess &&
     projectQuery.data != null;
-
-  const apiProjectIdForDiscord =
-    isApiRoute && routeProjectId && isApiProjectId(routeProjectId)
-      ? Number(routeProjectId)
-      : undefined;
 
   return (
     <div
@@ -119,18 +113,27 @@ export function WelcomeContinuumView() {
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideX} />
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-                  data-name="Component 5"
-                  data-node-id="8:3538"
-                  aria-label="Discord notifications"
-                  onClick={() => setDiscordIntegrationOpen(true)}
-                >
-                  <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="8:3539">
-                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
-                  </div>
-                </button>
+                {isApiRoute && routeProjectId && isApiProjectId(routeProjectId) ? (
+                  <NotificationBell
+                    scope={{ kind: "project", projectId: Number(routeProjectId) }}
+                    iconSrc={imgLucideBell}
+                    className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] cursor-pointer"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 cursor-default focus-visible:ring-2 focus-visible:ring-ring"
+                    data-name="Component 5"
+                    data-node-id="8:3538"
+                    aria-label="Notifications"
+                    aria-disabled="true"
+                    title="Notifications coming soon"
+                  >
+                    <div className="relative shrink-0 size-[16px]" data-name="lucide/bell" data-node-id="8:3539">
+                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideBell} />
+                    </div>
+                  </button>
+                )}
                 <button
                   type="button"
                   data-tour="welcome-edit-project"
@@ -331,11 +334,6 @@ export function WelcomeContinuumView() {
             ? Number(routeProjectId)
             : undefined
         }
-      />
-      <DiscordIntegrationModal
-        open={discordIntegrationOpen}
-        onOpenChange={setDiscordIntegrationOpen}
-        projectId={apiProjectIdForDiscord}
       />
       {canEditProject && routeProjectId && (
         <EditProjectModal

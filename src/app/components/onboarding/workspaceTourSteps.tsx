@@ -362,17 +362,6 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     ]),
   },
   {
-    id: "sprint-discord",
-    title: "Notifications",
-    ensureUrl: U.sprintWelcome,
-    targetSelector: '[data-tour="sprint-discord-notify"]',
-    body: T([
-      { text: "Hook up ", h: "peach" },
-      { text: "Discord", h: "cyan" },
-      { text: " so important updates surface where your team already chats.", h: "peach" },
-    ]),
-  },
-  {
     id: "sprint-log-time",
     title: "Log time",
     ensureUrl: U.sprintWelcome,
@@ -429,8 +418,8 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     settingsSection: "notification",
     body: T([
       { text: "Choose ", h: "peach" },
-      { text: "email digests vs. instant alerts", h: "cyan" },
-      { text: " for mentions, assignments, and deadlines.", h: "peach" },
+      { text: "email digests and Discord alerts", h: "cyan" },
+      { text: " per project — pick which task and milestone events post to a channel.", h: "peach" },
     ]),
   },
   {
@@ -455,7 +444,7 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     settingsSection: "integrations",
     body: T([
       { text: "Connect ", h: "peach" },
-      { text: "Git, chat, and automation", h: "cyan" },
+      { text: "GitHub, Discord, and Cursor", h: "cyan" },
       { text: " so Continuum stays in sync with your stack.", h: "peach" },
     ]),
   },
