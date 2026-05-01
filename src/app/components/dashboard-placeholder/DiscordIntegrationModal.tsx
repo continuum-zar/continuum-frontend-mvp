@@ -1,96 +1,95 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 import {
   useCreateIntegration,
+  useProjects,
   useProjectIntegrations,
   useTestIntegration,
   useUpdateIntegration,
 } from "@/api/hooks";
 
-import {
-  DEFAULT_NOTIFICATION_TRIGGERS,
-  type NotificationTriggers,
-} from "@/types/integration";
-
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { cn } from "../ui/utils";
 
 const PRIMARY_GRADIENT =
   "linear-gradient(141.68deg, #24B5F8 -123.02%, #5521FE 802.55%)";
 
+const DISCORD_LOGO = "/assets/brand-assets/discord-logo.svg";
+
 type DiscordIntegrationModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** When omitted, the modal explains that a project context is required. */
+  /** Optional initial project id when opening from context. */
   projectId?: number | null;
+  /** Called when the project selection changes. */
+  onProjectIdChange?: (projectId: number | null) => void;
 };
-
-const SECTIONS: {
-  title: string;
-  items: { key: keyof NotificationTriggers; label: string }[];
-}[] = [
-  {
-    title: "Project",
-    items: [
-      { key: "project_renamed", label: "Project renamed" },
-      { key: "project_member_joined", label: "Member joined" },
-      { key: "project_member_removed", label: "Member removed" },
-    ],
-  },
-  {
-    title: "Tasks",
-    items: [
-      { key: "task_created", label: "Task created" },
-      { key: "task_status_changed", label: "Task status changed" },
-      { key: "task_assignee_changed", label: "Assignee changed" },
-      { key: "task_deleted", label: "Task deleted" },
-      { key: "task_comment_added", label: "Comment added" },
-    ],
-  },
-  {
-    title: "Milestones",
-    items: [
-      { key: "milestone_created", label: "Milestone created" },
-      { key: "milestone_updated", label: "Milestone updated" },
-      { key: "milestone_deleted", label: "Milestone deleted" },
-    ],
-  },
-];
 
 export function DiscordIntegrationModal({
   open,
   onOpenChange,
   projectId,
+  onProjectIdChange,
 }: DiscordIntegrationModalProps) {
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [triggers, setTriggers] = useState<NotificationTriggers>(
-    DEFAULT_NOTIFICATION_TRIGGERS,
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
+    projectId ?? null,
   );
+  const [webhookUrl, setWebhookUrl] = useState("");
   const hydratedFromServerRef = useRef(false);
+  const projectsQuery = useProjects({ enabled: open });
+  const projects = useMemo(
+    () => projectsQuery.data ?? [],
+    [projectsQuery.data],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    if (projects.length === 0) {
+      setSelectedProjectId(null);
+      return;
+    }
+    setSelectedProjectId((prev) => {
+      if (projectId != null && projects.some((p) => p.apiId === projectId)) {
+        return projectId;
+      }
+      if (prev != null && projects.some((p) => p.apiId === prev)) return prev;
+      return projects[0]?.apiId ?? null;
+    });
+  }, [open, projectId, projects]);
+
+  useEffect(() => {
+    onProjectIdChange?.(selectedProjectId);
+  }, [selectedProjectId, onProjectIdChange]);
 
   const integrationsQuery = useProjectIntegrations(
-    open && projectId != null ? projectId : null,
+    open && selectedProjectId != null ? selectedProjectId : null,
   );
   const discordIntegration = integrationsQuery.data?.find(
     (i) => i.integration_type === "discord",
   );
 
-  const createIntegration = useCreateIntegration(projectId ?? null);
-  const updateIntegration = useUpdateIntegration(projectId ?? null);
-  const testIntegration = useTestIntegration(projectId ?? null);
+  const createIntegration = useCreateIntegration(selectedProjectId ?? null);
+  const updateIntegration = useUpdateIntegration(selectedProjectId ?? null);
+  const testIntegration = useTestIntegration(selectedProjectId ?? null);
 
   useEffect(() => {
     if (!open) {
       hydratedFromServerRef.current = false;
       return;
     }
-    if (projectId == null) {
+    if (selectedProjectId == null) {
       setWebhookUrl("");
-      setTriggers(DEFAULT_NOTIFICATION_TRIGGERS);
       return;
     }
     if (integrationsQuery.isLoading || !integrationsQuery.isSuccess) return;
@@ -100,17 +99,9 @@ export function DiscordIntegrationModal({
       (i) => i.integration_type === "discord",
     );
     setWebhookUrl(d?.webhook_url ?? "");
-    if (d?.notification_triggers) {
-      setTriggers({
-        ...DEFAULT_NOTIFICATION_TRIGGERS,
-        ...d.notification_triggers,
-      });
-    } else {
-      setTriggers(DEFAULT_NOTIFICATION_TRIGGERS);
-    }
   }, [
     open,
-    projectId,
+    selectedProjectId,
     integrationsQuery.isLoading,
     integrationsQuery.isSuccess,
     integrationsQuery.data,
@@ -119,26 +110,25 @@ export function DiscordIntegrationModal({
   const handleClose = (next: boolean) => {
     if (!next) {
       setWebhookUrl("");
-      setTriggers(DEFAULT_NOTIFICATION_TRIGGERS);
     }
     onOpenChange(next);
   };
 
   const trimmed = webhookUrl.trim();
   const canSubmit =
-    projectId != null &&
+    selectedProjectId != null &&
     trimmed.length > 0 &&
     integrationsQuery.isSuccess &&
     !createIntegration.isPending &&
     !updateIntegration.isPending;
 
   const handleLink = () => {
-    if (!canSubmit || projectId == null) return;
+    if (!canSubmit || selectedProjectId == null) return;
     if (discordIntegration) {
       updateIntegration.mutate(
         {
           integrationId: discordIntegration.id,
-          body: { webhook_url: trimmed, notification_triggers: triggers },
+          body: { webhook_url: trimmed },
         },
         { onSuccess: () => handleClose(false) },
       );
@@ -147,7 +137,6 @@ export function DiscordIntegrationModal({
         {
           integration_type: "discord",
           webhook_url: trimmed,
-          notification_triggers: triggers,
         },
         { onSuccess: () => handleClose(false) },
       );
@@ -161,16 +150,12 @@ export function DiscordIntegrationModal({
     discordIntegration != null &&
     trimmed === (discordIntegration.webhook_url ?? "").trim();
   const canTest =
-    projectId != null &&
+    selectedProjectId != null &&
     discordIntegration != null &&
     integrationsQuery.isSuccess &&
     webhookMatchesSaved &&
     !busy &&
     !testIntegration.isPending;
-
-  const toggleTrigger = (key: keyof NotificationTriggers) => {
-    setTriggers((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -179,11 +164,11 @@ export function DiscordIntegrationModal({
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white font-['Satoshi',sans-serif] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            "fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,560px)] w-[calc(100%-2rem)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white font-['Satoshi',sans-serif] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           )}
         >
           <DialogPrimitive.Title className="sr-only">
-            Discord integration
+            Discord webhook
           </DialogPrimitive.Title>
 
           <div className="grid w-full grid-cols-[20px_1fr_20px] shrink-0 items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
@@ -196,9 +181,17 @@ export function DiscordIntegrationModal({
                 <ArrowLeft className="size-5" />
               </button>
             </DialogClose>
-            <p className="text-center text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
-              Discord integration
-            </p>
+            <div className="flex items-center justify-center gap-2">
+              <img
+                src={DISCORD_LOGO}
+                alt=""
+                aria-hidden
+                className="size-5 shrink-0"
+              />
+              <p className="text-center text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                Discord webhook
+              </p>
+            </div>
             <div className="size-5" aria-hidden />
           </div>
 
@@ -209,11 +202,10 @@ export function DiscordIntegrationModal({
                 "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
             }}
           >
-            {projectId == null ? (
+            {selectedProjectId == null ? (
               <p className="text-left text-[15px] leading-relaxed text-[#606d76]">
-                Open one of your projects from the dashboard to link a Discord
-                webhook. You can choose which project and task events send
-                notifications to your channel.
+                No project available yet. Create a project first, then link one
+                Discord webhook per project.
               </p>
             ) : integrationsQuery.isLoading ? (
               <div className="flex items-center justify-center gap-2 py-10 text-[14px] text-[#606d76]">
@@ -226,10 +218,48 @@ export function DiscordIntegrationModal({
               </p>
             ) : (
               <div className="flex flex-col gap-5">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[14px] font-medium text-[#606d76]">
+                    Project
+                  </span>
+                  <Select
+                    value={selectedProjectId != null ? String(selectedProjectId) : ""}
+                    onValueChange={(v) => setSelectedProjectId(v ? Number(v) : null)}
+                    disabled={projects.length === 0 || projectsQuery.isLoading}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        "h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] shadow-none focus:ring-2 focus:ring-ring",
+                        "[&_svg]:size-6 [&_svg]:opacity-100 [&_svg]:text-[#0b191f]",
+                      )}
+                      aria-label="Project for Discord webhook"
+                    >
+                      <SelectValue
+                        placeholder={
+                          projectsQuery.isLoading
+                            ? "Loading projects…"
+                            : "No projects available"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="z-[200] font-['Satoshi',sans-serif]">
+                      {projects.map((p) => (
+                        <SelectItem
+                          key={p.apiId}
+                          value={String(p.apiId)}
+                          className="text-[16px] font-medium"
+                        >
+                          {p.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+
                 <p className="text-[14px] leading-relaxed text-[#606d76]">
                   In Discord: Server Settings → Integrations → Webhooks. Paste
-                  the webhook URL below, then choose which events notify this
-                  channel.
+                  the webhook URL below and link it to this project. Choose
+                  which events fire under Settings → Notifications.
                 </p>
                 <div className="flex flex-col gap-1">
                   <label
@@ -248,56 +278,6 @@ export function DiscordIntegrationModal({
                     className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76]/40 focus-visible:border-[#1466ff] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                   />
                 </div>
-
-                <div className="flex flex-col gap-3">
-                  <div>
-                    <p className="text-[15px] font-semibold text-[#0b191f]">
-                      Actions
-                    </p>
-                    <p className="text-[13px] text-[#606d76]">
-                      Select the events that trigger a notification.
-                    </p>
-                  </div>
-                  {SECTIONS.map((section) => (
-                    <div key={section.title} className="flex flex-col gap-2">
-                      <p className="text-[13px] font-semibold text-[#252014]">
-                        {section.title}
-                      </p>
-                      <ul className="flex flex-col gap-2 pl-0.5">
-                        {section.items.map(({ key, label }) => (
-                          <li key={key}>
-                            <button
-                              type="button"
-                              aria-pressed={triggers[key]}
-                              onClick={() => toggleTrigger(key)}
-                              className="flex w-full cursor-pointer items-center gap-2 rounded-[4px] py-0.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#24B5F8]/40"
-                            >
-                              <span
-                                className={cn(
-                                  "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-solid transition-colors",
-                                  triggers[key]
-                                    ? "border-0 bg-[#24B5F8]"
-                                    : "border-[#ebedee] bg-[#f9f9f9]",
-                                )}
-                                aria-hidden
-                              >
-                                {triggers[key] ? (
-                                  <Check
-                                    className="size-[13px] text-white"
-                                    strokeWidth={2.5}
-                                  />
-                                ) : null}
-                              </span>
-                              <span className="font-['Inter',sans-serif] text-[14px] font-normal leading-[19px] text-[#0b191f]">
-                                {label}
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
           </div>
@@ -311,7 +291,7 @@ export function DiscordIntegrationModal({
                 Cancel
               </button>
             </DialogClose>
-            {projectId != null && discordIntegration != null && (
+            {selectedProjectId != null && discordIntegration != null && (
               <button
                 type="button"
                 onClick={() => testIntegration.mutate(discordIntegration.id)}
@@ -330,7 +310,7 @@ export function DiscordIntegrationModal({
                 )}
               </button>
             )}
-            {projectId != null && (
+            {selectedProjectId != null && (
               <button
                 type="button"
                 onClick={handleLink}
