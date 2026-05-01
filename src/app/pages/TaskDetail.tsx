@@ -427,12 +427,13 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const timeline = timelineQuery.data?.pages.flatMap((p) => p.entries) ?? [];
   const timelineLoading = timelineQuery.isLoading;
   const commentsQuery = useTaskCommentsInfinite(taskId);
-  const comments = commentsQuery.data?.pages.flatMap((p) => p.comments) ?? [];
   const commentsLoading = commentsQuery.isLoading;
   const commentsSorted = useMemo(
     () =>
-      [...comments].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
-    [comments],
+      [...(commentsQuery.data?.pages.flatMap((p) => p.comments) ?? [])].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      ),
+    [commentsQuery.data],
   );
   const createCommentMutation = useCreateTaskComment(taskId);
   const { data: members } = useProjectMembers(task?.project_id, { enabled: !!task?.project_id });

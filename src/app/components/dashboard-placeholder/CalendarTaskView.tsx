@@ -53,7 +53,7 @@ function getDaysInMonthGrid(year: number, month: number): Date[] {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   // Monday-based week
-  let startWd = (getDay(firstDay) + 6) % 7; // 0=Mon
+  const startWd = (getDay(firstDay) + 6) % 7; // 0=Mon
   const endWd = (getDay(lastDay) + 6) % 7;
   const cells: Date[] = [];
   for (let i = startWd - 1; i >= 0; i--) cells.push(subDays(firstDay, i + 1));
@@ -107,7 +107,6 @@ export function CalendarTaskView({ tasks, onOpenTask }: CalendarTaskViewProps) {
       .catch(() => { if (!cancelled) setGoogleEvents([]); })
       .finally(() => { if (!cancelled) setGoogleLoading(false); });
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, tokenVersion]);
 
   const handleConnect = useCallback(() => {

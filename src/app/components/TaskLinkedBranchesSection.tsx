@@ -131,7 +131,7 @@ export function TaskLinkedBranchesSection({
       const drafts = prev.filter((e) => !isCompleteEntry(e));
       return [...fromServer, ...drafts];
     });
-  }, [task.id, branchSyncKey, projectRepos]);
+  }, [task, task.id, branchSyncKey, projectRepos]);
 
   const repoIdsUnique = useMemo(
     () => [...new Set(entries.map((e) => e.repoId).filter((id): id is number => id != null))],

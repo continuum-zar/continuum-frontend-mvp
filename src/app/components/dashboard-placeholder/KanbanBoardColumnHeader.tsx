@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 import { cn } from "@/app/components/ui/utils";
 import { kanbanColumnAutoSortInfo, type KanbanColumnConfig } from "./kanbanBoardTypes";
 import { KanbanColumnAutoSortHint } from "./KanbanColumnAutoSortHint";
-import { useKanbanColumnSearchDismiss } from "./KanbanColumnSearchControls";
+import { useKanbanColumnSearchDismiss } from "./useKanbanColumnSearchDismiss";
 
 export type KanbanBoardColumnHeaderProps = {
   col: KanbanColumnConfig;
