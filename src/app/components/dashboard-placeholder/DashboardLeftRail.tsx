@@ -38,7 +38,6 @@ import { cn } from "../ui/utils";
 import { sortMilestonesForNav } from "@/lib/milestoneSort";
 
 const imgVector = mcpAsset("2470fa31-25cd-47ac-991d-d1c4219bd28d");
-const imgVector4 = mcpAsset("78ced5be-4173-418f-974b-68c6e9f6125c");
 const imgVector5 = mcpAsset("04dec58a-df34-4fc6-ba98-484eea4a0b4c");
 const imgLucideScrollText = mcpAsset("8f3bfd7b-fb81-41c7-bc6d-5fcf8c73d1e4");
 const imgLucideTarget = mcpAsset("6bf96cb4-388b-4e5f-961a-4656035c5b07");
@@ -61,25 +60,6 @@ function CornerDownRight({ className }: { className?: string }) {
       <div className="absolute inset-[16.67%]" data-name="Vector" data-node-id="7:375">
         <div className="absolute inset-[-6.25%]">
           <img alt="" className="block max-w-none size-full" src={imgVector} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type Component1Props = {
-  className?: string;
-  property1?: "Default" | "Hover" | "Pressing";
-  type?: "Ellipse" | "Plus";
-};
-
-function Component1({ className, property1 = "Default", type = "Plus" }: Component1Props) {
-  const isDefaultAndPlus = property1 === "Default" && type === "Plus";
-  return (
-    <div className={className || `overflow-clip relative rounded-[4px] ${isDefaultAndPlus ? "size-[16px]" : "content-stretch flex flex-col items-start px-[2.667px] py-[7.333px] w-[16px]"}`} id={isDefaultAndPlus ? "node-7_364" : "node-7_357"}>
-      <div className={isDefaultAndPlus ? "absolute inset-[20.83%]" : "h-[1.333px] relative shrink-0 w-[10.667px]"} data-name="Vector" id={isDefaultAndPlus ? "node-7_365" : "node-7_358"}>
-        <div className={`absolute ${isDefaultAndPlus ? "inset-[-5.36%]" : "inset-[-50%_-6.25%]"}`}>
-          <img alt="" className="block max-w-none size-full" src={isDefaultAndPlus ? imgVector5 : imgVector4} />
         </div>
       </div>
     </div>
@@ -666,25 +646,21 @@ export function DashboardLeftRail() {
                 </p>
               </div>
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27467">
-                <Component1
-                  className="content-stretch flex flex-col items-start overflow-clip px-[2.667px] py-[7.333px] relative rounded-[4px] shrink-0 w-[16px]"
-                  type="Ellipse"
-                />
                 <Popover open={createProjectMenuOpen} onOpenChange={setCreateProjectMenuOpen}>
-                  <PopoverTrigger asChild>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <PopoverTrigger asChild>
                         <button
                           type="button"
                           data-tour="rail-create-project"
-                          className="inline-flex size-[16px] shrink-0 items-center justify-center overflow-clip rounded-[16px] border-0 bg-transparent p-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                          className="inline-flex size-6 shrink-0 items-center justify-center overflow-clip rounded-full border-0 bg-transparent p-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                           aria-label="Create project"
                           aria-expanded={createProjectMenuOpen}
                           aria-haspopup="dialog"
                           data-name="Component 35"
                           data-node-id="I7:2828;2172:27469"
                         >
-                          <div className="relative size-[16px]">
+                          <div className="relative size-6">
                             <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
                               <div className="absolute inset-[-5.36%]">
                                 <img alt="" className="block max-w-none size-full" src={imgVector5} />
@@ -692,10 +668,10 @@ export function DashboardLeftRail() {
                             </div>
                           </div>
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">Create project</TooltipContent>
-                    </Tooltip>
-                  </PopoverTrigger>
+                      </PopoverTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Create project</TooltipContent>
+                  </Tooltip>
                   <PopoverContent
                     align="start"
                     side="bottom"
