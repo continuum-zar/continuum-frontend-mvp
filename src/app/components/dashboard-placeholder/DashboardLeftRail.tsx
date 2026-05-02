@@ -793,9 +793,9 @@ export function DashboardLeftRail() {
                     Paused
                   </p>
                 ) : null}
-                  <PopoverTrigger asChild>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <PopoverTrigger asChild>
                         <button
                           type="button"
                           disabled={isRecording}
@@ -807,12 +807,12 @@ export function DashboardLeftRail() {
                           </span>
                           <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        {isRecording ? "Stop timer to change task" : "Select ticket"}
-                      </TooltipContent>
-                    </Tooltip>
-                  </PopoverTrigger>
+                      </PopoverTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      {isRecording ? "Stop timer to change task" : "Select ticket"}
+                    </TooltipContent>
+                  </Tooltip>
               </div>
               <LeftRailTimerControls
                 phase={timerPhase}
