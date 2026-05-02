@@ -51,6 +51,8 @@ export interface GeneratedTask {
     scope_weight: 'XS' | 'S' | 'M' | 'L' | 'XL';
     /** When returned by generate, forwarded to wiki confirm create. */
     priority?: TaskPriority;
+    /** Estimated developer effort in hours from the AI (optional). */
+    estimated_hours?: number | null;
     rationale: string;
     relevant_files: string[];
     checklist: GeneratedTaskChecklistItem[];

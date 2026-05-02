@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, ArrowUp, Check, FileText, Link2, Loader2, Minus, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, Check, FileText, Flag, Link2, Loader2, Minus, X } from "lucide-react";
 import {
   Fragment,
   useCallback,
@@ -27,6 +27,7 @@ import {
 } from "@/api";
 import TextareaAutosize from "react-textarea-autosize";
 import type { FigmaAttachmentRequest, FigmaBlueprint, GeneratedTask, WikiConfirmTaskItem } from "@/api";
+import { taskPriorityFlagClass, taskPriorityLabel } from "@/types/task";
 import {
   Dialog,
   DialogOverlay,
@@ -163,6 +164,7 @@ function mapGeneratedTaskToConfirmItem(
     project_id: projectId,
     milestone_id: milestoneId,
     priority: task.priority ?? "medium",
+    estimated_hours: task.estimated_hours ?? null,
     scope_weight: task.scope_weight,
     status: "todo",
     checklists:
@@ -835,6 +837,23 @@ export function WelcomeAiChatModal({
                                               className="w-full rounded-md border-0 bg-transparent py-1.5 text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f] transition-colors hover:bg-[#f5f5f5]"
                                             >
                                               <span className="block">{task.title}</span>
+                                              <span className="mt-1 flex flex-wrap items-center gap-2">
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-[#f3f4f6] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]">
+                                                  <Flag
+                                                    className={cn(
+                                                      "size-3 shrink-0",
+                                                      taskPriorityFlagClass(task.priority ?? "medium"),
+                                                    )}
+                                                    aria-hidden
+                                                  />
+                                                  {taskPriorityLabel(task.priority ?? "medium")}
+                                                </span>
+                                                {task.estimated_hours != null ? (
+                                                  <span className="rounded-full bg-[#edf0f3] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium tabular-nums text-[#606d76]">
+                                                    ~{task.estimated_hours} h
+                                                  </span>
+                                                ) : null}
+                                              </span>
                                               {task.resources?.length ? (
                                                 <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#e7f2fc] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#2f6df6]">
                                                   <Link2 className="size-3" aria-hidden />
