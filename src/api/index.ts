@@ -301,6 +301,7 @@ export {
 } from './planner';
 export type {
     PlannerMessage,
+    PlannerChoiceQuestion,
     FileContent,
     PlannerChatResponse,
     PlannedTask,

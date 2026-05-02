@@ -33,6 +33,7 @@ describe('planner API', () => {
                 confidence: 85,
                 missing_areas: [],
                 ready_to_plan: true,
+                choice_questions: [],
             },
         });
 
