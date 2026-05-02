@@ -8,9 +8,23 @@ import { getApiErrorMessage } from './hooks';
 // Types
 // ---------------------------------------------------------------------------
 
+/** Single clarifying question with four suggested answers (UI adds "Other"). From `/planner/chat`. */
+export interface PlannerChoiceQuestion {
+    id: string;
+    prompt: string;
+    /** Exactly four strings from the API */
+    options: string[];
+}
+
+/**
+ * Assistant messages may include `choice_questions`.
+ * User messages from choice-card batches may set `omitFromDisplay` so the bubble is hidden (answer shows on the card).
+ */
 export interface PlannerMessage {
     role: 'user' | 'assistant';
     content: string;
+    choice_questions?: PlannerChoiceQuestion[];
+    omitFromDisplay?: boolean;
 }
 
 export interface FileContent {
@@ -74,6 +88,7 @@ export interface PlannerChatResponse {
     confidence: number;
     missing_areas: string[];
     ready_to_plan: boolean;
+    choice_questions?: PlannerChoiceQuestion[];
 }
 
 export interface ChecklistItem {
@@ -149,6 +164,13 @@ function isAbortLike(err: unknown): boolean {
     );
 }
 
+/** Backend `PlannerMessage` is only `role` + `content`; strip client-only fields. */
+function plannerMessagesForApi(
+    messages: PlannerMessage[],
+): Array<{ role: 'user' | 'assistant'; content: string }> {
+    return messages.map((m) => ({ role: m.role, content: m.content }));
+}
+
 export async function sendPlannerChat(
     messages: PlannerMessage[],
     file_contents: FileContent[],
@@ -158,7 +180,7 @@ export async function sendPlannerChat(
     const { data } = await api.post<PlannerChatResponse>(
         '/planner/chat',
         {
-            messages,
+            messages: plannerMessagesForApi(messages),
             file_contents,
             figma_context,
         },
@@ -173,7 +195,7 @@ export async function generatePlan(
     figma_context?: FigmaContext | null,
 ): Promise<GeneratePlanResponse> {
     const { data: raw } = await api.post<unknown>('/planner/generate-plan', {
-        messages,
+        messages: plannerMessagesForApi(messages),
         file_contents,
         figma_context,
     }, {

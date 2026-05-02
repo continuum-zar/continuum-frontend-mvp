@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
@@ -32,6 +32,7 @@ import {
 } from '@/api/planner';
 import type {
     PlannerMessage,
+    PlannerChoiceQuestion,
     FileContent,
     FigmaContext,
     FigmaBlueprint,
@@ -48,6 +49,7 @@ import {
 import { cn } from '../components/ui/utils';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { PlannerAssistantMarkdown } from '@/app/components/planner/PlannerAssistantMarkdown';
+import { PlannerChoiceQuestions } from '@/app/components/planner/PlannerChoiceQuestions';
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from '@/app/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 
@@ -66,10 +68,29 @@ const DEFAULT_MISSING_HINTS = [
 export type AIProjectPlannerProps = {
     /** When true, fills the dashboard-placeholder shell and uses placeholder routes for back / project links. */
     embedded?: boolean;
+    /** When set (e.g. embedded shell), back navigation asks for confirmation before leaving. */
+    onRequestNavigateAway?: (proceed: () => void) => void;
 };
 
 const PLAN_CARD_SHADOW =
     'shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]';
+
+function normalizeChoiceQuestions(raw: unknown): PlannerChoiceQuestion[] {
+    if (!Array.isArray(raw)) return [];
+    const out: PlannerChoiceQuestion[] = [];
+    for (const item of raw) {
+        if (!item || typeof item !== 'object') continue;
+        const o = item as Record<string, unknown>;
+        const id = typeof o.id === 'string' ? o.id : '';
+        const prompt = typeof o.prompt === 'string' ? o.prompt : '';
+        const options = Array.isArray(o.options)
+            ? o.options.map((x) => (typeof x === 'string' ? x : String(x)))
+            : [];
+        if (!id || !prompt || options.length < 4) continue;
+        out.push({ id, prompt, options: options.slice(0, 4) });
+    }
+    return out;
+}
 
 function countBlueprintAnnotations(blueprint?: FigmaBlueprint | null): number {
     return blueprint?.flows?.length ?? 0;
@@ -176,7 +197,10 @@ function MilestoneCard({
 // ---------------------------------------------------------------------------
 // Main page component
 // ---------------------------------------------------------------------------
-export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
+export function AIProjectPlanner({
+    embedded = false,
+    onRequestNavigateAway,
+}: AIProjectPlannerProps) {
     const navigate = useNavigate();
 
     // Chat state
@@ -194,6 +218,18 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
     const [figmaModalOpen, setFigmaModalOpen] = useState(false);
     const [figmaUrlInput, setFigmaUrlInput] = useState('');
     const [figmaBlueprintLoading, setFigmaBlueprintLoading] = useState(false);
+    /** Submitted choice-question ids after a full batch was sent successfully. */
+    const [answeredChoiceIds, setAnsweredChoiceIds] = useState<Set<string>>(
+        () => new Set(),
+    );
+    /** Per assistant-turn index: question id → answer text before the batch is submitted to `/chat`. */
+    const [choiceSelectionsByMessage, setChoiceSelectionsByMessage] = useState<
+        Record<number, Record<string, string>>
+    >({});
+    /** After a choice batch is sent, question id → selected answer (shown on the card instead of a chat bubble). */
+    const [submittedChoiceAnswers, setSubmittedChoiceAnswers] = useState<Record<string, string>>(
+        {},
+    );
 
     // Plan state
     const [phase, setPhase] = useState<Phase>('chat');
@@ -229,6 +265,17 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
         chatMutation.isPending,
     ]);
 
+    /** Earliest assistant message that still has unsubmitted choice questions (by batch completion). */
+    const earliestIncompleteChoiceMessageIndex = useMemo(() => {
+        for (let i = 0; i < messages.length; i++) {
+            const m = messages[i];
+            if (m.role !== 'assistant' || !m.choice_questions?.length) continue;
+            const allDone = m.choice_questions.every((q) => answeredChoiceIds.has(q.id));
+            if (!allDone) return i;
+        }
+        return null;
+    }, [messages, answeredChoiceIds]);
+
     // -----------------------------------------------------------------------
     // Handlers
     // -----------------------------------------------------------------------
@@ -236,50 +283,155 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
         chatAbortRef.current?.abort();
     }, []);
 
+    const sendUserMessage = useCallback(
+        async (
+            text: string,
+            opts?: {
+                preserveComposer?: boolean;
+                /** After a successful batch submit, mark these ids and clear local selections. */
+                choiceBatchOnSuccess?: {
+                    messageIndex: number;
+                    questionIds: string[];
+                    answersByQuestionId: Record<string, string>;
+                };
+            },
+        ) => {
+            const trimmed = text.trim();
+            if (!trimmed || chatMutation.isPending) return;
+
+            const controller = new AbortController();
+            chatAbortRef.current = controller;
+
+            const userMsg: PlannerMessage = {
+                role: 'user',
+                content: trimmed,
+                ...(opts?.choiceBatchOnSuccess ? { omitFromDisplay: true as const } : {}),
+            };
+            const updatedMessages = [...messages, userMsg];
+            setMessages(updatedMessages);
+            if (!opts?.preserveComposer) {
+                setInput('');
+            }
+
+            try {
+                const res = await chatMutation.mutateAsync({
+                    messages: updatedMessages,
+                    file_contents: fileContents,
+                    figma_context: figmaContext,
+                    signal: controller.signal,
+                });
+
+                const assistantMsg: PlannerMessage = {
+                    role: 'assistant',
+                    content: res.reply,
+                    choice_questions: normalizeChoiceQuestions(res.choice_questions),
+                };
+                setMessages((prev) => [...prev, assistantMsg]);
+                setConfidence(res.confidence);
+                setMissingAreas(res.missing_areas);
+                setReadyToPlan(res.ready_to_plan);
+
+                if (opts?.choiceBatchOnSuccess) {
+                    const { messageIndex, questionIds, answersByQuestionId } =
+                        opts.choiceBatchOnSuccess;
+                    setAnsweredChoiceIds((prev) => {
+                        const next = new Set(prev);
+                        for (const id of questionIds) next.add(id);
+                        return next;
+                    });
+                    setSubmittedChoiceAnswers((prev) => ({
+                        ...prev,
+                        ...answersByQuestionId,
+                    }));
+                    setChoiceSelectionsByMessage((prev) => {
+                        const copy = { ...prev };
+                        delete copy[messageIndex];
+                        return copy;
+                    });
+                }
+            } catch (err: unknown) {
+                const e = err as { code?: string; name?: string };
+                const aborted =
+                    e?.code === 'ERR_CANCELED' ||
+                    e?.name === 'CanceledError' ||
+                    e?.name === 'AbortError';
+                if (aborted) {
+                    setMessages((prev) => prev.slice(0, -1));
+                    if (!opts?.preserveComposer) {
+                        setInput(text);
+                    }
+                } else if (opts?.choiceBatchOnSuccess) {
+                    setMessages((prev) => prev.slice(0, -1));
+                }
+            } finally {
+                if (chatAbortRef.current === controller) {
+                    chatAbortRef.current = null;
+                }
+            }
+        },
+        [messages, fileContents, figmaContext, chatMutation],
+    );
+
     const handleSend = async () => {
-        const text = input.trim();
-        if (!text || chatMutation.isPending) return;
+        await sendUserMessage(input);
+    };
 
-        const controller = new AbortController();
-        chatAbortRef.current = controller;
+    const handleClearChoiceSelection = useCallback((messageIndex: number, questionId: string) => {
+        if (chatMutation.isPending) return;
+        setChoiceSelectionsByMessage((prev) => {
+            const row = { ...(prev[messageIndex] ?? {}) };
+            delete row[questionId];
+            if (Object.keys(row).length === 0) {
+                const next = { ...prev };
+                delete next[messageIndex];
+                return next;
+            }
+            return { ...prev, [messageIndex]: row };
+        });
+    }, [chatMutation.isPending]);
 
-        const userMsg: PlannerMessage = { role: 'user', content: text };
-        const updatedMessages = [...messages, userMsg];
-        setMessages(updatedMessages);
-        setInput('');
+    const handleChoiceSelect = useCallback(
+        (messageIndex: number, question: PlannerChoiceQuestion, answer: string) => {
+            if (chatMutation.isPending) return;
+            const msg = messages[messageIndex];
+            if (!msg?.choice_questions?.length) return;
 
-        try {
-            const res = await chatMutation.mutateAsync({
-                messages: updatedMessages,
-                file_contents: fileContents,
-                figma_context: figmaContext,
-                signal: controller.signal,
+            const prevRow = choiceSelectionsByMessage[messageIndex] ?? {};
+            const nextRow = { ...prevRow, [question.id]: answer };
+            setChoiceSelectionsByMessage((prev) => ({
+                ...prev,
+                [messageIndex]: nextRow,
+            }));
+
+            const allAnswered = msg.choice_questions.every((q) => {
+                const a =
+                    q.id === question.id ? answer : (nextRow[q.id] ?? '').trim();
+                return a.length > 0;
             });
 
-            const assistantMsg: PlannerMessage = {
-                role: 'assistant',
-                content: res.reply,
-            };
-            setMessages((prev) => [...prev, assistantMsg]);
-            setConfidence(res.confidence);
-            setMissingAreas(res.missing_areas);
-            setReadyToPlan(res.ready_to_plan);
-        } catch (err: unknown) {
-            const e = err as { code?: string; name?: string };
-            const aborted =
-                e?.code === 'ERR_CANCELED' ||
-                e?.name === 'CanceledError' ||
-                e?.name === 'AbortError';
-            if (aborted) {
-                setMessages((prev) => prev.slice(0, -1));
-                setInput(text);
-            }
-        } finally {
-            if (chatAbortRef.current === controller) {
-                chatAbortRef.current = null;
-            }
-        }
-    };
+            if (!allAnswered) return;
+
+            const parts = msg.choice_questions.map((q) => {
+                const a = q.id === question.id ? answer : nextRow[q.id]!;
+                return `${q.prompt}\n${a}`;
+            });
+            const body = parts.join('\n\n');
+            void sendUserMessage(body, {
+                preserveComposer: true,
+                choiceBatchOnSuccess: {
+                    messageIndex,
+                    questionIds: msg.choice_questions.map((q) => q.id),
+                    answersByQuestionId: { ...nextRow },
+                },
+            });
+        },
+        [
+            messages,
+            choiceSelectionsByMessage,
+            chatMutation.isPending,
+            sendUserMessage,
+        ],
+    );
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -385,6 +537,18 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
 
     const backHref = embedded ? workspaceJoin(WORKSPACE_SPRINT_SEGMENT) : WORKSPACE_BASE;
 
+    const runBackNavigation = useCallback(() => {
+        navigate(backHref);
+    }, [navigate, backHref]);
+
+    const requestBackNavigation = useCallback(() => {
+        if (onRequestNavigateAway) {
+            onRequestNavigateAway(runBackNavigation);
+        } else {
+            runBackNavigation();
+        }
+    }, [onRequestNavigateAway, runBackNavigation]);
+
     const displayMissingAreas =
         missingAreas.length > 0 ? missingAreas : [...DEFAULT_MISSING_HINTS];
 
@@ -412,7 +576,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
             {phase !== 'chat' && (
                 <div className="flex shrink-0 items-center justify-between border-b border-[#ebedee] bg-white px-6 py-4">
                     <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="icon" onClick={() => navigate(backHref)}>
+                        <Button variant="ghost" size="icon" onClick={requestBackNavigation}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                         <div>
@@ -447,7 +611,7 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                 <div className="relative flex shrink-0 items-center justify-between rounded-t-2xl px-9 py-4">
                                     <button
                                         type="button"
-                                        onClick={() => navigate(backHref)}
+                                        onClick={requestBackNavigation}
                                         className="inline-flex size-5 shrink-0 items-center justify-center rounded-md text-[#0b191f] transition-colors hover:bg-black/[0.04]"
                                         aria-label="Back"
                                     >
@@ -513,7 +677,17 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                                 )}
 
                                                 {/* Chat turns — Figma 77:13823: user = pill #edf0f3 / assistant = Inter 13px plain left */}
-                                                {messages.map((msg, i) => (
+                                                {messages.map((msg, i) => {
+                                                    const hideChoiceFollowUps =
+                                                        earliestIncompleteChoiceMessageIndex !==
+                                                            null &&
+                                                        i > earliestIncompleteChoiceMessageIndex;
+                                                    if (msg.role === 'user' && msg.omitFromDisplay) {
+                                                        return (
+                                                            <Fragment key={`${msg.role}-${i}`} />
+                                                        );
+                                                    }
+                                                    return (
                                                     <motion.div
                                                         key={`${msg.role}-${i}`}
                                                         initial={{ opacity: 0, y: 8 }}
@@ -529,14 +703,54 @@ export function AIProjectPlanner({ embedded = false }: AIProjectPlannerProps) {
                                                                 {msg.content}
                                                             </div>
                                                         ) : (
-                                                            <div className="w-full min-w-0">
+                                                            <div className="flex w-full min-w-0 flex-col gap-1">
                                                                 <PlannerAssistantMarkdown
                                                                     content={msg.content}
                                                                 />
+                                                                {msg.choice_questions &&
+                                                                    msg.choice_questions.length >
+                                                                        0 &&
+                                                                    !hideChoiceFollowUps && (
+                                                                        <PlannerChoiceQuestions
+                                                                            questions={
+                                                                                msg.choice_questions
+                                                                            }
+                                                                            submittedIds={
+                                                                                answeredChoiceIds
+                                                                            }
+                                                                            localSelections={
+                                                                                choiceSelectionsByMessage[
+                                                                                    i
+                                                                                ] ?? {}
+                                                                            }
+                                                                            disabled={
+                                                                                chatMutation.isPending
+                                                                            }
+                                                                            onSelect={(q, a) =>
+                                                                                handleChoiceSelect(
+                                                                                    i,
+                                                                                    q,
+                                                                                    a,
+                                                                                )
+                                                                            }
+                                                                            onClearLocalSelection={(
+                                                                                q,
+                                                                            ) =>
+                                                                                handleClearChoiceSelection(
+                                                                                    i,
+                                                                                    q.id,
+                                                                                )
+                                                                            }
+                                                                            submittedAnswers={
+                                                                                submittedChoiceAnswers
+                                                                            }
+                                                                        />
+                                                                    )}
                                                             </div>
                                                         )}
                                                     </motion.div>
-                                                ))}
+                                                    );
+                                                })}
 
                                                 {chatMutation.isPending && (
                                                     <div className="flex w-full justify-start">

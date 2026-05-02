@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Pause, Play, Search, Square } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
+import type { PlannerNavigationGuardProps } from "@/app/components/planner/PlannerLeaveConfirmModal";
 
 import { getApiErrorMessage, useAllTasks, useProjectMilestones, useProjects } from "@/api/hooks";
 import { getRecordingElapsedMs, useTimeRecordingStore } from "@/store/timeRecordingStore";
@@ -128,12 +129,31 @@ function Frame1({
   onInvoiceClick,
   isAssignedActive = false,
   isCreatedActive = false,
-}: Frame1Props & { isAssignedActive?: boolean; isCreatedActive?: boolean }) {
+  plannerNavigationGuard,
+}: Frame1Props & {
+  isAssignedActive?: boolean;
+  isCreatedActive?: boolean;
+  plannerNavigationGuard?: PlannerNavigationGuardProps;
+}) {
+  const navigate = useNavigate();
+  const homeTo = WORKSPACE_BASE;
+  const assignedTo = workspaceJoin("assigned");
+  const createdTo = workspaceJoin("created");
+
+  const onRailLinkClick = (e: React.MouseEvent, to: string) => {
+    if (!plannerNavigationGuard) return;
+    e.preventDefault();
+    plannerNavigationGuard.requestNavigate(() => {
+      void navigate(to);
+    });
+  };
+
   return (
     <div className={className || "content-stretch flex gap-[8px] items-center relative"} data-node-id="7:72">
       <Link
-        to={WORKSPACE_BASE}
+        to={homeTo}
         data-tour="rail-home"
+        onClick={(e) => onRailLinkClick(e, homeTo)}
         className="text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Home"
       >
@@ -173,8 +193,9 @@ function Frame1({
         </Tooltip>
       </button>
       <Link
-        to={workspaceJoin("assigned")}
+        to={assignedTo}
         data-tour="rail-assigned"
+        onClick={(e) => onRailLinkClick(e, assignedTo)}
         className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Assigned to me"
       >
@@ -196,8 +217,9 @@ function Frame1({
         </Tooltip>
       </Link>
       <Link
-        to={workspaceJoin("created")}
+        to={createdTo}
         data-tour="rail-created"
+        onClick={(e) => onRailLinkClick(e, createdTo)}
         className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Created by me"
       >
@@ -299,12 +321,14 @@ function Frame({
   onInvoiceClick,
   isAssignedActive = false,
   isCreatedActive = false,
+  plannerNavigationGuard,
 }: {
   className?: string;
   isInvoiceActive?: boolean;
   onInvoiceClick: () => void;
   isAssignedActive?: boolean;
   isCreatedActive?: boolean;
+  plannerNavigationGuard?: PlannerNavigationGuardProps;
 }) {
   return (
     <div className={className || "content-stretch flex flex-col gap-[8px] items-start relative"} data-node-id="7:92">
@@ -322,6 +346,7 @@ function Frame({
         onInvoiceClick={onInvoiceClick}
         isAssignedActive={isAssignedActive}
         isCreatedActive={isCreatedActive}
+        plannerNavigationGuard={plannerNavigationGuard}
       />
     </div>
   );
@@ -337,6 +362,7 @@ type DashboardPlaceholderProjectBlockProps = {
   projectParam: string | null;
   /** Milestone / sprint rows under the project; null when collapsed or none */
   sprintItems: SprintNavItem[] | null;
+  plannerNavigationGuard?: PlannerNavigationGuardProps;
 };
 
 function DashboardPlaceholderProjectBlock({
@@ -346,7 +372,9 @@ function DashboardPlaceholderProjectBlock({
   pathname,
   projectParam,
   sprintItems,
+  plannerNavigationGuard,
 }: DashboardPlaceholderProjectBlockProps) {
+  const navigate = useNavigate();
   const isExpanded = expandedProjectId === projectId;
   const [searchParams] = useSearchParams();
   const milestoneParam = searchParams.get("milestone");
@@ -354,11 +382,20 @@ function DashboardPlaceholderProjectBlock({
   const sprintSurfaceActive = isSprintNavActive(projectId, pathname, projectParam);
   const overviewActive = isProjectOverviewActive(projectId, pathname);
   const parentWhileSprintActive = isExpanded && sprintSurfaceActive && !overviewActive;
+  const overviewHref = projectMainHref(projectId);
 
   return (
     <div className="flex w-full flex-col">
       <Link
-        to={projectMainHref(projectId)}
+        to={overviewHref}
+        onClick={(e) => {
+          if (plannerNavigationGuard) {
+            e.preventDefault();
+            plannerNavigationGuard.requestNavigate(() => {
+              void navigate(overviewHref);
+            });
+          }
+        }}
         aria-current={overviewActive ? "page" : undefined}
         className={cn(
           "content-stretch relative z-[2] flex h-[40px] w-full shrink-0 cursor-pointer items-center rounded-[8px] px-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
@@ -388,6 +425,14 @@ function DashboardPlaceholderProjectBlock({
           <Link
             key={item.milestoneId}
             to={item.to}
+            onClick={(e) => {
+              if (plannerNavigationGuard) {
+                e.preventDefault();
+                plannerNavigationGuard.requestNavigate(() => {
+                  void navigate(item.to);
+                });
+              }
+            }}
             aria-current={rowActive ? "page" : undefined}
             className={cn(
               "content-stretch z-[1] flex h-[40px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] pl-[24px] pr-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
@@ -419,11 +464,13 @@ function ApiProjectBlock({
   expandedProjectId,
   pathname,
   projectParam,
+  plannerNavigationGuard,
 }: {
   project: Project;
   expandedProjectId: string | null;
   pathname: string;
   projectParam: string | null;
+  plannerNavigationGuard?: PlannerNavigationGuardProps;
 }) {
   const projectId = project.id;
   const isExpanded = expandedProjectId === projectId;
@@ -445,11 +492,16 @@ function ApiProjectBlock({
       pathname={pathname}
       projectParam={projectParam}
       sprintItems={sprintItems}
+      plannerNavigationGuard={plannerNavigationGuard}
     />
   );
 }
 
-export function DashboardLeftRail() {
+export function DashboardLeftRail({
+  plannerNavigationGuard,
+}: {
+  plannerNavigationGuard?: PlannerNavigationGuardProps;
+} = {}) {
   const navigate = useNavigate();
   const [createProjectMenuOpen, setCreateProjectMenuOpen] = useState(false);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
@@ -627,6 +679,7 @@ export function DashboardLeftRail() {
           onInvoiceClick={() => setInvoiceOpen(true)}
           isAssignedActive={isAssignedActive}
           isCreatedActive={isCreatedActive}
+          plannerNavigationGuard={plannerNavigationGuard}
         />
         <div
           className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden"
@@ -699,7 +752,14 @@ export function DashboardLeftRail() {
                       className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-[#151515] outline-none transition-colors hover:bg-[#f5f7f8] focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => {
                         setCreateProjectMenuOpen(false);
-                        navigate(workspaceJoin("ai-planner"));
+                        const go = () => {
+                          void navigate(workspaceJoin("ai-planner"));
+                        };
+                        if (plannerNavigationGuard) {
+                          plannerNavigationGuard.requestNavigate(go);
+                        } else {
+                          go();
+                        }
                       }}
                     >
                       <span
@@ -734,6 +794,7 @@ export function DashboardLeftRail() {
                       ]
                     : null
                 }
+                plannerNavigationGuard={plannerNavigationGuard}
               />
               {apiProjects.map((project) => (
                 <ApiProjectBlock
@@ -742,6 +803,7 @@ export function DashboardLeftRail() {
                   expandedProjectId={expandedProjectId}
                   pathname={pathname}
                   projectParam={projectParam}
+                  plannerNavigationGuard={plannerNavigationGuard}
                 />
               ))}
             </div>
