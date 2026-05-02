@@ -430,32 +430,32 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
               Project <Info size={14} aria-hidden />
             </p>
             <Popover open={projectPickerOpen} onOpenChange={setProjectPickerOpen} modal={false}>
-              <PopoverTrigger asChild>
-                <Tooltip>
-                  <TooltipTrigger asChild>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <PopoverTrigger asChild>
                     <button
                       type="button"
                       className="flex h-10 w-[212px] max-w-[212px] shrink-0 items-center justify-between rounded-lg border border-[#e9e9e9] bg-white px-4 text-left text-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       aria-label="Select project"
                     >
-                  <span
-                    className={cn(
-                      "min-w-0 flex-1 truncate",
-                      selectedProject ? "text-[#252014]" : "text-[#9fa5a8]",
-                    )}
-                  >
-                    {projectsPending
-                      ? "Loading…"
-                      : selectedProject
-                        ? selectedProject.title
-                        : "Select project"}
-                  </span>
+                      <span
+                        className={cn(
+                          "min-w-0 flex-1 truncate",
+                          selectedProject ? "text-[#252014]" : "text-[#9fa5a8]",
+                        )}
+                      >
+                        {projectsPending
+                          ? "Loading…"
+                          : selectedProject
+                            ? selectedProject.title
+                            : "Select project"}
+                      </span>
                       <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
                     </button>
-                  </TooltipTrigger>
-                  <TooltipContent>Select project for invoice</TooltipContent>
-                </Tooltip>
-              </PopoverTrigger>
+                  </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Select project for invoice</TooltipContent>
+              </Tooltip>
               <PopoverContent
                 align="start"
                 side="bottom"
