@@ -1,6 +1,7 @@
 import api from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import type { TaskPriority } from '@/types/task';
 import { fetchMilestones, projectKeys } from './projects';
 import { getApiErrorMessage } from './hooks';
 
@@ -100,6 +101,8 @@ export interface PlannedTask {
     title: string;
     description: string | null;
     scope_weight: 'XS' | 'S' | 'M' | 'L' | 'XL';
+    priority?: TaskPriority;
+    estimated_hours?: number | null;
     checklist: ChecklistItem[];
     labels: string[];
     figma_node_ids?: string[];

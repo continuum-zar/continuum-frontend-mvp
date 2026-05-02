@@ -7,6 +7,7 @@ import {
     ArrowLeft,
     ArrowUp,
     FileText,
+    Flag,
     X,
     Loader2,
     ChevronDown,
@@ -47,6 +48,7 @@ import {
     aiPlannerComposerSettingsSrc,
 } from '../assets/dashboardPlaceholderAssets';
 import { cn } from '../components/ui/utils';
+import { taskPriorityFlagClass, taskPriorityLabel } from '@/types/task';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { PlannerAssistantMarkdown } from '@/app/components/planner/PlannerAssistantMarkdown';
 import { PlannerChoiceQuestions } from '@/app/components/planner/PlannerChoiceQuestions';
@@ -166,6 +168,23 @@ function MilestoneCard({
                                         <span className="font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f]">
                                             {task.title}
                                         </span>
+                                    </div>
+                                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-[#edf0f3] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]">
+                                            <Flag
+                                                className={cn(
+                                                    'size-3 shrink-0',
+                                                    taskPriorityFlagClass(task.priority ?? 'medium'),
+                                                )}
+                                                aria-hidden
+                                            />
+                                            {taskPriorityLabel(task.priority ?? 'medium')}
+                                        </span>
+                                        {task.estimated_hours != null ? (
+                                            <span className="rounded-full bg-[#edf0f3] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium tabular-nums text-[#606d76]">
+                                                ~{task.estimated_hours} h
+                                            </span>
+                                        ) : null}
                                     </div>
                                     {task.description && (
                                         <p className="mt-1 line-clamp-2 font-['Inter',sans-serif] text-[12px] leading-[18px] text-[#727d83]">
