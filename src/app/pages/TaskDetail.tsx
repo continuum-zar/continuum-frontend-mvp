@@ -48,6 +48,7 @@ import { formatDistanceToNow } from 'date-fns';
 import {
   TASK_PRIORITY_OPTIONS,
   getTaskAssigneeUserIds,
+  getTaskLinkedBranches,
   taskPriorityFlagClass,
   taskPriorityLabel,
   type ScopeWeight,
@@ -62,9 +63,13 @@ import {
 } from '../components/AddTaskResourceModal';
 import { TaskLinkedBranchesSection } from '../components/TaskLinkedBranchesSection';
 import { AssignMemberModal } from '../components/AssignMemberModal';
+import { BuildTaskModal } from '../components/BuildTaskModal';
+import { BuildRunDrawer } from '../components/BuildRunDrawer';
 import { LogTimeModal } from '../components/dashboard-placeholder/LogTimeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
+import { useTaskAgentRuns } from '@/api';
+import { isAgentRunActive } from '@/types/agentRun';
 
 /* ─── helpers ─── */
 
@@ -468,6 +473,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [pendingUploadRows, setPendingUploadRows] = useState<TaskResourcePendingUploadRow[]>([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [logTimeOpen, setLogTimeOpen] = useState(false);
+  const [buildModalOpen, setBuildModalOpen] = useState(false);
+  const [buildDrawerRunId, setBuildDrawerRunId] = useState<string | null>(null);
+  const [buildDrawerOpen, setBuildDrawerOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
@@ -481,6 +489,71 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     if (typeof window === 'undefined' || !taskId) return '';
     return buildCursorMcpTaskShareUrl(window.location.origin, taskId);
   }, [taskId]);
+
+  /* ─ agentic build runs ─ */
+  const taskAgentRunsQuery = useTaskAgentRuns(taskId, { enabled: !!taskId, limit: 5 });
+  const taskLinkedBranchCount = useMemo(() => {
+    if (!task) return 0;
+    return getTaskLinkedBranches(task).filter(
+      (b) =>
+        typeof b.linked_repo === 'string' &&
+        b.linked_repo.trim() !== '' &&
+        typeof b.linked_branch === 'string' &&
+        b.linked_branch.trim() !== '',
+    ).length;
+  }, [task]);
+  const activeAgentRun = useMemo(() => {
+    const list = taskAgentRunsQuery.data?.runs ?? [];
+    return list.find((r) => isAgentRunActive(r.status)) ?? null;
+  }, [taskAgentRunsQuery.data]);
+
+  // Sync ?build=<runId> on the URL with the drawer state so refresh keeps the
+  // live view open.
+  useEffect(() => {
+    const urlRun = searchParams.get('build');
+    if (urlRun && urlRun !== buildDrawerRunId) {
+      setBuildDrawerRunId(urlRun);
+      setBuildDrawerOpen(true);
+    } else if (!urlRun && buildDrawerOpen && buildDrawerRunId == null) {
+      setBuildDrawerOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const openBuildDrawer = useCallback(
+    (runId: string) => {
+      setBuildDrawerRunId(runId);
+      setBuildDrawerOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.set('build', runId);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const closeBuildDrawer = useCallback(
+    (open: boolean) => {
+      setBuildDrawerOpen(open);
+      if (!open) {
+        const next = new URLSearchParams(searchParams);
+        next.delete('build');
+        setSearchParams(next, { replace: true });
+      }
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const handleOpenBuildModal = useCallback(() => {
+    if (taskLinkedBranchCount === 0) {
+      toast.error('Link at least one repository and branch before starting a build.');
+      return;
+    }
+    if (activeAgentRun) {
+      openBuildDrawer(activeAgentRun.id);
+      return;
+    }
+    setBuildModalOpen(true);
+  }, [taskLinkedBranchCount, activeAgentRun, openBuildDrawer]);
 
   const handleCopyCursorMcpUrl = useCallback(async () => {
     if (!cursorMcpShareUrl) return;
@@ -1100,6 +1173,39 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     {`Copies the Cursor MCP task page link. For full agent integration (checklists, status changes), configure the Continuum MCP server in Cursor.`}
                   </TooltipContent>
                 </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={handleOpenBuildModal}
+                      disabled={taskLinkedBranchCount === 0}
+                      aria-label={
+                        activeAgentRun
+                          ? 'Open the live build view'
+                          : 'Start an agentic build for this task'
+                      }
+                      className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-[#ebedee] bg-white px-5 text-[14px] font-medium text-[#0b191f] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-50`}
+                    >
+                      {activeAgentRun ? 'View live build' : 'Build'}
+                      {activeAgentRun ? (
+                        <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-[#24B5F8]">
+                          <span className="absolute inline-flex h-2 w-2 rounded-full bg-[#24B5F8] opacity-75 motion-safe:animate-ping" />
+                        </span>
+                      ) : null}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="top"
+                    className="max-w-xs border-0 bg-black text-balance text-white shadow-md"
+                    arrowClassName="bg-black fill-black"
+                  >
+                    {taskLinkedBranchCount === 0
+                      ? 'Link at least one repo + branch under Development to enable Build.'
+                      : activeAgentRun
+                        ? 'A build is already running for this task. Click to open the live view.'
+                        : 'Lets the Continuum agent implement this task autonomously: clones the repo, edits files, runs tests, then commits or opens a PR.'}
+                  </TooltipContent>
+                </Tooltip>
                 <button
                   type="button"
                   onClick={handleUpdateTask}
@@ -1475,6 +1581,23 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         projectId={task.project_id != null ? Number(task.project_id) : undefined}
         prefillTaskId={taskId}
       />
+      {taskId ? (
+        <BuildTaskModal
+          open={buildModalOpen}
+          onOpenChange={setBuildModalOpen}
+          taskId={taskId}
+          task={task}
+          onRunStarted={(run) => openBuildDrawer(run.id)}
+        />
+      ) : null}
+      {taskId ? (
+        <BuildRunDrawer
+          open={buildDrawerOpen}
+          onOpenChange={closeBuildDrawer}
+          taskId={taskId}
+          runId={buildDrawerRunId}
+        />
+      ) : null}
     </div>
   );
 }
