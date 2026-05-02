@@ -26,7 +26,13 @@ import {
   type FileContent,
 } from "@/api";
 import TextareaAutosize from "react-textarea-autosize";
-import type { FigmaAttachmentRequest, FigmaBlueprint, GeneratedTask, WikiConfirmTaskItem } from "@/api";
+import type {
+  FigmaAttachmentRequest,
+  FigmaBlueprint,
+  GeneratedTask,
+  WikiConfirmTaskItem,
+} from "@/api";
+import type { PlannerChoiceQuestion } from "@/api/planner";
 import { taskPriorityFlagClass, taskPriorityLabel } from "@/types/task";
 import {
   Dialog,
@@ -41,6 +47,7 @@ import {
 } from "../CreateTaskModal";
 import { IndexingProgressBanner } from "@/app/components/IndexingProgressBanner";
 import { PlannerAssistantMarkdown } from "../planner/PlannerAssistantMarkdown";
+import { PlannerChoiceQuestions } from "../planner/PlannerChoiceQuestions";
 
 /** Figma — base panel 14:3223 / welcome mock 14:3453, 395×537 */
 const imgChevronDown = mcpAsset("efd29821-4b68-45a8-a943-000591716212");
@@ -76,6 +83,23 @@ const MOCK_AI_BODY =
   "42% of weighted scope is complete. There have been 3 structural updates in the last sprint. Signals are Stable based on hours-per-scope efficiency. 2 tasks are currently flagged as stalled or missing scope.";
 
 const THINKING_MS = 1600;
+
+function normalizeWikiChoiceQuestions(raw: unknown): PlannerChoiceQuestion[] {
+  if (!Array.isArray(raw)) return [];
+  const out: PlannerChoiceQuestion[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const id = typeof o.id === "string" ? o.id : "";
+    const prompt = typeof o.prompt === "string" ? o.prompt : "";
+    const options = Array.isArray(o.options)
+      ? o.options.map((x) => (typeof x === "string" ? x : String(x)))
+      : [];
+    if (!id || !prompt || options.length < 4) continue;
+    out.push({ id, prompt, options: options.slice(0, 4) });
+  }
+  return out;
+}
 
 type WelcomeComposerAttachment = {
   id: string;
@@ -225,6 +249,18 @@ export function WelcomeAiChatModal({
   // Real API state (getStarted / !showQuickActions flow)
   const [generatedTasks, setGeneratedTasks] = useState<GeneratedTask[]>([]);
   const [generatedSummary, setGeneratedSummary] = useState("");
+  /** First user message for this generation round (clarifications append to this). */
+  const [taskGenOriginalPrompt, setTaskGenOriginalPrompt] = useState("");
+  const [taskGenClarificationLog, setTaskGenClarificationLog] = useState("");
+  const [wikiClarifyReply, setWikiClarifyReply] = useState<string | null>(null);
+  const [wikiChoiceQuestions, setWikiChoiceQuestions] = useState<PlannerChoiceQuestion[]>([]);
+  const [wikiChoiceSelections, setWikiChoiceSelections] = useState<Record<string, string>>({});
+  const [wikiSubmittedChoiceIds, setWikiSubmittedChoiceIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [wikiSubmittedChoiceAnswers, setWikiSubmittedChoiceAnswers] = useState<
+    Record<string, string>
+  >({});
   const [apiError, setApiError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -430,6 +466,13 @@ export function WelcomeAiChatModal({
     setSelectedPrompt(text);
     setDraftMessage("");
     setApiError(null);
+    setTaskGenOriginalPrompt(text);
+    setTaskGenClarificationLog("");
+    setWikiClarifyReply(null);
+    setWikiChoiceQuestions([]);
+    setWikiChoiceSelections({});
+    setWikiSubmittedChoiceIds(new Set());
+    setWikiSubmittedChoiceAnswers({});
     setPhase("getStartedLoading");
 
     const controller = new AbortController();
@@ -446,15 +489,26 @@ export function WelcomeAiChatModal({
       });
       if (controller.signal.aborted) return;
 
-      setGeneratedTasks(res.tasks);
       const count = res.tasks.length;
-      setGeneratedSummary(
-        count === 0
-          ? "I couldn't generate any tasks from that prompt. Try being more specific."
-          : count === 1
-            ? "I generated 1 task based on your request."
-            : `I generated ${count} tasks based on your request.`,
-      );
+      const questions = normalizeWikiChoiceQuestions(res.choice_questions);
+
+      if (questions.length > 0) {
+        setWikiClarifyReply(res.reply?.trim() ? res.reply!.trim() : null);
+        setWikiChoiceQuestions(questions);
+        setGeneratedTasks(res.tasks);
+        setGeneratedSummary("");
+      } else {
+        setWikiClarifyReply(null);
+        setWikiChoiceQuestions([]);
+        setGeneratedTasks(res.tasks);
+        setGeneratedSummary(
+          count === 0
+            ? "I couldn't generate any tasks from that prompt. Try being more specific."
+            : count === 1
+              ? "I generated 1 task based on your request."
+              : `I generated ${count} tasks based on your request.`,
+        );
+      }
       setPhase("getStartedAnswer");
       clearComposerAttachments();
     } catch (err) {
@@ -468,6 +522,118 @@ export function WelcomeAiChatModal({
     }
   }, [draftMessage, projectId, clearComposerAttachments, figmaAttachment, figmaBlueprint]);
 
+  const handleWikiChoiceSelect = useCallback(
+    (question: PlannerChoiceQuestion, answer: string) => {
+      if (phase === "getStartedLoading" || !projectId) return;
+      const nextSelections = { ...wikiChoiceSelections, [question.id]: answer };
+      setWikiChoiceSelections(nextSelections);
+
+      const allAnswered = wikiChoiceQuestions.every((q) => {
+        const a = q.id === question.id ? answer : (nextSelections[q.id] ?? "").trim();
+        return a.length > 0;
+      });
+      if (!allAnswered) return;
+
+      const batchText = wikiChoiceQuestions
+        .map((q) => {
+          const a = q.id === question.id ? answer : nextSelections[q.id]!;
+          return `${q.prompt}\n${a}`;
+        })
+        .join("\n\n");
+
+      const nextLog = taskGenClarificationLog
+        ? `${taskGenClarificationLog}\n\n${batchText}`
+        : batchText;
+      const fullPrompt = `${taskGenOriginalPrompt}\n\n--- Clarifications ---\n${nextLog}`;
+
+      const answersRecord = Object.fromEntries(
+        wikiChoiceQuestions.map((q) => [
+          q.id,
+          q.id === question.id ? answer : nextSelections[q.id]!,
+        ]),
+      ) as Record<string, string>;
+
+      void (async () => {
+        setPhase("getStartedLoading");
+        setApiError(null);
+        try {
+          const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+          const res = await generateTasks(projectId, {
+            prompt: fullPrompt,
+            max_tasks: 10,
+            ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
+            ...(figmaAttachment ? { figma_attachment: figmaAttachment } : {}),
+            ...(figmaBlueprint ? { figma_blueprint: figmaBlueprint } : {}),
+          });
+
+          setTaskGenClarificationLog(nextLog);
+          setWikiChoiceSelections({});
+          setWikiSubmittedChoiceAnswers((prev) => ({ ...prev, ...answersRecord }));
+          setWikiSubmittedChoiceIds((prev) => {
+            const n = new Set(prev);
+            for (const q of wikiChoiceQuestions) n.add(q.id);
+            return n;
+          });
+
+          const count = res.tasks.length;
+          const questionsNext = normalizeWikiChoiceQuestions(res.choice_questions);
+
+          if (questionsNext.length > 0) {
+            setWikiClarifyReply(res.reply?.trim() ? res.reply!.trim() : null);
+            setWikiChoiceQuestions(questionsNext);
+            setWikiSubmittedChoiceIds(new Set());
+            setWikiSubmittedChoiceAnswers({});
+            setGeneratedTasks(res.tasks);
+            setGeneratedSummary("");
+          } else {
+            setWikiClarifyReply(null);
+            setWikiChoiceQuestions([]);
+            setWikiSubmittedChoiceIds(new Set());
+            setWikiSubmittedChoiceAnswers({});
+            setGeneratedTasks(res.tasks);
+            setGeneratedSummary(
+              count === 0
+                ? "I couldn't generate any tasks from that prompt. Try being more specific."
+                : count === 1
+                  ? "I generated 1 task based on your request."
+                  : `I generated ${count} tasks based on your request.`,
+            );
+          }
+          setPhase("getStartedAnswer");
+        } catch (err) {
+          const msg = getApiErrorMessage(
+            err,
+            "Task generation failed. Make sure the repository is indexed and try again.",
+          );
+          setApiError(msg);
+          setPhase("getStartedAnswer");
+        }
+      })();
+    },
+    [
+      phase,
+      projectId,
+      wikiChoiceQuestions,
+      wikiChoiceSelections,
+      taskGenOriginalPrompt,
+      taskGenClarificationLog,
+      figmaAttachment,
+      figmaBlueprint,
+    ],
+  );
+
+  const handleWikiClearChoiceSelection = useCallback(
+    (q: PlannerChoiceQuestion) => {
+      if (phase === "getStartedLoading") return;
+      setWikiChoiceSelections((prev) => {
+        const row = { ...prev };
+        delete row[q.id];
+        return row;
+      });
+    },
+    [phase],
+  );
+
   const stopGetStarted = () => {
     abortRef.current?.abort();
     abortRef.current = null;
@@ -476,6 +642,13 @@ export function WelcomeAiChatModal({
     setSelectedPrompt(null);
     setGeneratedTasks([]);
     setGeneratedSummary("");
+    setTaskGenOriginalPrompt("");
+    setTaskGenClarificationLog("");
+    setWikiClarifyReply(null);
+    setWikiChoiceQuestions([]);
+    setWikiChoiceSelections({});
+    setWikiSubmittedChoiceIds(new Set());
+    setWikiSubmittedChoiceAnswers({});
     setApiError(null);
   };
 
@@ -818,9 +991,28 @@ export function WelcomeAiChatModal({
                               </p>
                             ) : (
                               <>
-                                <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-[#0b191f]">
-                                  {generatedSummary}
-                                </p>
+                                {wikiClarifyReply ? (
+                                  <div className="w-full">
+                                    <PlannerAssistantMarkdown content={wikiClarifyReply} />
+                                  </div>
+                                ) : null}
+                                {generatedSummary ? (
+                                  <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-[#0b191f]">
+                                    {generatedSummary}
+                                  </p>
+                                ) : null}
+
+                                {wikiChoiceQuestions.length > 0 ? (
+                                  <PlannerChoiceQuestions
+                                    questions={wikiChoiceQuestions}
+                                    submittedIds={wikiSubmittedChoiceIds}
+                                    submittedAnswers={wikiSubmittedChoiceAnswers}
+                                    localSelections={wikiChoiceSelections}
+                                    disabled={false}
+                                    onSelect={handleWikiChoiceSelect}
+                                    onClearLocalSelection={handleWikiClearChoiceSelection}
+                                  />
+                                ) : null}
 
                                 {generatedTasks.length > 0 && (
                                   <>

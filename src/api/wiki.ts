@@ -6,6 +6,7 @@ import { projectKeys } from './hooks';
 import { STALE_MODERATE_MS, WIKI_SCAN_POLL_MS } from '@/lib/queryDefaults';
 import type { FileContent } from './planner';
 import type { FigmaBlueprint } from './planner';
+import type { PlannerChoiceQuestion } from './planner';
 import type { TaskPriority } from '@/types/task';
 
 export interface ScanRepositoryRequest {
@@ -67,6 +68,10 @@ export interface GenerateTasksResponse {
     tasks: GeneratedTask[];
     source_files_used: string[];
     confidence: number;
+    /** Assistant message when clarifying or explaining gaps (no tasks yet). */
+    reply?: string | null;
+    /** Planner-style follow-ups; answer in UI then retry generation with augmented prompt. */
+    choice_questions?: PlannerChoiceQuestion[];
     figma_blueprint?: FigmaBlueprint | null;
 }
 
