@@ -14,9 +14,9 @@ function TooltipProvider({
   return (
     <TooltipPrimitive.Provider
       data-slot="tooltip-provider"
+      {...props}
       delayDuration={delayDuration}
       disableHoverableContent={disableHoverableContent}
-      {...props}
     />
   );
 }
@@ -36,8 +36,8 @@ function Tooltip({
     <TooltipProvider disableHoverableContent={disableHoverableContent}>
       <TooltipPrimitive.Root
         data-slot="tooltip"
-        disableHoverableContent={disableHoverableContent}
         {...props}
+        disableHoverableContent={disableHoverableContent}
       />
     </TooltipProvider>
   );

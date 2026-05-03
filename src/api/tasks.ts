@@ -48,12 +48,16 @@ export async function fetchAllTasks(): Promise<TaskOption[]> {
     const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/', {
         params: { limit: 500, skip: 0 },
     });
-    return (data.data ?? []).map((t) => ({
-        id: String(t.id),
-        title: t.title ?? '',
-        project: t.project_name ?? '',
-        project_id: t.project_id,
-    }));
+    const list = data?.data;
+    const rows = Array.isArray(list) ? list : [];
+    return rows
+        .filter((t): t is TaskAPIResponse => t != null && typeof t === 'object')
+        .map((t) => ({
+            id: String(t.id),
+            title: t.title ?? '',
+            project: t.project_name ?? '',
+            project_id: t.project_id,
+        }));
 }
 
 /** Fetch a single task by ID. Returns raw API response. */
