@@ -710,31 +710,27 @@ export function DashboardLeftRail({
               </div>
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27467">
                 <Popover open={createProjectMenuOpen} onOpenChange={setCreateProjectMenuOpen}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          data-tour="rail-create-project"
-                          className="inline-flex size-6 shrink-0 items-center justify-center overflow-clip rounded-full border-0 bg-transparent p-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                          aria-label="Create project"
-                          aria-expanded={createProjectMenuOpen}
-                          aria-haspopup="dialog"
-                          data-name="Component 35"
-                          data-node-id="I7:2828;2172:27469"
-                        >
-                          <div className="relative size-6">
-                            <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
-                              <div className="absolute inset-[-5.36%]">
-                                <img alt="" className="block max-w-none size-full" src={imgVector5} />
-                              </div>
-                            </div>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      data-tour="rail-create-project"
+                      className="inline-flex size-6 shrink-0 items-center justify-center overflow-clip rounded-full border-0 bg-transparent p-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label="Create project"
+                      title="Create project"
+                      aria-expanded={createProjectMenuOpen}
+                      aria-haspopup="dialog"
+                      data-name="Component 35"
+                      data-node-id="I7:2828;2172:27469"
+                    >
+                      <div className="relative size-6">
+                        <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2828;2172:27469;2119:3014">
+                          <div className="absolute inset-[-5.36%]">
+                            <img alt="" className="block max-w-none size-full" src={imgVector5} />
                           </div>
-                        </button>
-                      </PopoverTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Create project</TooltipContent>
-                  </Tooltip>
+                        </div>
+                      </div>
+                    </button>
+                  </PopoverTrigger>
                   <PopoverContent
                     align="start"
                     side="bottom"
@@ -865,26 +861,20 @@ export function DashboardLeftRail({
                     Paused
                   </p>
                 ) : null}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={isRecording}
-                          className="mt-0.5 flex max-w-full items-start gap-0.5 rounded-sm text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-                          aria-label="Select task"
-                        >
-                          <span className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
-                            {selectedTask ? selectedTask.title : "Select ticket"}
-                          </span>
-                          <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
-                        </button>
-                      </PopoverTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      {isRecording ? "Stop timer to change task" : "Select ticket"}
-                    </TooltipContent>
-                  </Tooltip>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={isRecording}
+                      className="mt-0.5 flex max-w-full items-start gap-0.5 rounded-sm text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label="Select task"
+                      title={isRecording ? "Stop timer to change task" : "Select ticket"}
+                    >
+                      <span className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                        {selectedTask ? selectedTask.title : "Select ticket"}
+                      </span>
+                      <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
+                    </button>
+                  </PopoverTrigger>
               </div>
               <LeftRailTimerControls
                 phase={timerPhase}
