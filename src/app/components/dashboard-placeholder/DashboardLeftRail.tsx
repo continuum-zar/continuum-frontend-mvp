@@ -577,8 +577,8 @@ export function DashboardLeftRail({
     isError: allTasksError,
     error: allTasksErrorDetail,
   } = useAllTasks({ enabled: shouldLoadPickerTasks });
-  /** Query `data` can be `null` while `data: x = []` only defaults `undefined` — always treat as an array. */
-  const allTasksForPicker = allTasksForPickerRaw ?? [];
+  /** Query `data` can be missing or a non-array if the cache/API shape drifts — always coerce to an array. */
+  const allTasksForPicker = Array.isArray(allTasksForPickerRaw) ? allTasksForPickerRaw : [];
   // `isPending` is true while query is disabled; treat that as "not loading" in the UI so the empty-state
   // message doesn't flash as a spinner before the picker is opened for the first time.
   const allTasksPending = shouldLoadPickerTasks && allTasksPendingRaw;
@@ -606,7 +606,7 @@ export function DashboardLeftRail({
   const projectParam = searchParams.get("project");
   const expandedProjectId = expandedProjectFromLocation(pathname, projectParam);
   const { data: apiProjectsRaw } = useProjects();
-  const apiProjects = apiProjectsRaw ?? [];
+  const apiProjects = Array.isArray(apiProjectsRaw) ? apiProjectsRaw : [];
   const user = useAuthStore((s) => s.user);
   const profileName = user
     ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email

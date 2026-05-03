@@ -24,7 +24,8 @@ export type { Member };
 /** Fetch all projects (list). Returns UI-shaped projects. */
 export async function fetchProjects(): Promise<Project[]> {
     const { data } = await api.get<PaginatedResponse<ProjectAPIResponse>>('/projects/');
-    return (data.data ?? []).map(mapProjectListItem);
+    const list = data?.data;
+    return (Array.isArray(list) ? list : []).map(mapProjectListItem);
 }
 
 /** Create a project. Returns raw API response; call fetchProjects() to refresh list. */
@@ -109,7 +110,7 @@ export async function deleteProjectKanbanColumn(
 /** Fetch milestones for a project. Returns UI-shaped milestones. */
 export async function fetchMilestones(projectId: number | string): Promise<Milestone[]> {
     const { data } = await api.get<MilestoneAPIResponse[]>(`/projects/${projectId}/milestones`);
-    return (data ?? []).map(mapMilestone);
+    return (Array.isArray(data) ? data : []).map(mapMilestone);
 }
 
 /** Create a milestone. Returns raw API response; call fetchMilestones(projectId) to refresh. */
