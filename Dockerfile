@@ -1,5 +1,6 @@
 # Dockerfile for Continuum MVP - builds from repo root
-FROM node:20-slim
+# Node 22+: transitive deps (e.g. chevrotain via mermaid) declare engines.node >=22.
+FROM node:22-slim
 
 # Avoid noisy / flaky npm behaviors during install (helps in CI and with npm 10.x quirks).
 ENV NODE_ENV=development \

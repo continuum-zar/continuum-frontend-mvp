@@ -28,6 +28,7 @@ import {
     usePlannerChat,
     useUploadPlannerFile,
     useGeneratePlan,
+    useGenerateArchitecture,
     useApprovePlan,
     fetchFigmaBlueprint,
 } from '@/api/planner';
@@ -51,6 +52,10 @@ import { cn } from '../components/ui/utils';
 import { taskPriorityFlagClass, taskPriorityLabel } from '@/types/task';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { PlannerAssistantMarkdown } from '@/app/components/planner/PlannerAssistantMarkdown';
+import {
+    PlannerArchitecturePlaceholder,
+    PlannerArchitectureSection,
+} from '@/app/components/planner/PlannerArchitectureSection';
 import { PlannerChoiceQuestions } from '@/app/components/planner/PlannerChoiceQuestions';
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from '@/app/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
@@ -267,6 +272,7 @@ export function AIProjectPlanner({
     const chatMutation = usePlannerChat();
     const uploadMutation = useUploadPlannerFile();
     const generateMutation = useGeneratePlan();
+    const architectureMutation = useGenerateArchitecture();
     const approveMutation = useApprovePlan();
 
     const scrollToBottom = useCallback(() => {
@@ -522,6 +528,27 @@ export function AIProjectPlanner({
             // Error toast handled by hook
         }
     };
+
+    const handleGenerateOrRefreshArchitecture = useCallback(async () => {
+        if (architectureMutation.isPending) return;
+        try {
+            const res = await architectureMutation.mutateAsync({
+                messages,
+                file_contents: fileContents,
+                figma_context: figmaContext,
+            });
+            setPlan((prev) =>
+                prev ? { ...prev, architecture: res.architecture } : prev,
+            );
+        } catch {
+            /* toast via hook */
+        }
+    }, [
+        architectureMutation,
+        messages,
+        fileContents,
+        figmaContext,
+    ]);
 
     const handleApprovePlan = async () => {
         if (!plan || approveMutation.isPending) return;
@@ -1187,6 +1214,23 @@ export function AIProjectPlanner({
                                             {plan.summary}
                                         </p>
                                     </div>
+                                )}
+
+                                {plan.architecture ? (
+                                    <PlannerArchitectureSection
+                                        architecture={plan.architecture}
+                                        onRegenerateArchitecture={
+                                            handleGenerateOrRefreshArchitecture
+                                        }
+                                        regenerateDisabled={approveMutation.isPending}
+                                        regeneratePending={architectureMutation.isPending}
+                                    />
+                                ) : (
+                                    <PlannerArchitecturePlaceholder
+                                        onGenerate={handleGenerateOrRefreshArchitecture}
+                                        disabled={approveMutation.isPending}
+                                        pending={architectureMutation.isPending}
+                                    />
                                 )}
 
                                 {figmaContext && (
