@@ -19,11 +19,23 @@ function TooltipProvider({
 }
 
 function Tooltip({
+  /**
+   * When false, Radix keeps the tooltip open while the pointer moves from the trigger onto the
+   * tooltip ("hoverable" bridge). That path builds a pointer-grace polygon; with nested
+   * `asChild` triggers (e.g. Tooltip → Popover on the same control) the polygon can be undefined
+   * and Radix throws (`isPointInPolygon` reads `.length` on it — Firefox: "can't access property
+   * length, t is undefined"). Default off for stability; pass `false` only where needed.
+   */
+  disableHoverableContent = true,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
   return (
     <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+      <TooltipPrimitive.Root
+        data-slot="tooltip"
+        disableHoverableContent={disableHoverableContent}
+        {...props}
+      />
     </TooltipProvider>
   );
 }
