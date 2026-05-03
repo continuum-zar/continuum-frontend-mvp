@@ -104,11 +104,14 @@ export function SprintKanbanListView({
     const desc = task.description?.trim() ?? "";
     const { preview: descPreview, isTruncated: descTruncated } =
       kanbanTaskDescriptionPreview(desc);
-    const { total: checklistTotal, completed: checklistDone } = task.checklists;
+    const { total: checklistTotal, completed: checklistDone } = task.checklists ?? {
+      total: 0,
+      completed: 0,
+    };
     const checklistPct =
       checklistTotal > 0 ? Math.min(100, Math.round((checklistDone / checklistTotal) * 100)) : 0;
     const progressFraction = checklistTotal > 0 ? checklistPct / 100 : 0;
-    const assigneeUserIds = task.assignees
+    const assigneeUserIds = (task.assignees ?? [])
       .map((s) => Number(s))
       .filter((n) => Number.isFinite(n));
     const branchCount = task.linkedBranches?.length ?? 0;

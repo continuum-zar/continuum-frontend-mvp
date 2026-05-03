@@ -108,10 +108,11 @@ export function GetStartedKanbanLive({
   const kanbanLastSavedSerializedRef = useRef<string | null>(null);
   const memberByUserId = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
 
-  const mergedTasks = useMemo(
-    () => tasksQuery.data?.pages.flatMap((p) => p.tasks) ?? [],
-    [tasksQuery.data?.pages],
-  );
+  const mergedTasks = useMemo(() => {
+    const rows =
+      tasksQuery.data?.pages.flatMap((p) => p.tasks ?? []) ?? [];
+    return rows.filter((t): t is Task => t != null);
+  }, [tasksQuery.data?.pages]);
 
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = tasksQuery;
   useEffect(() => {
@@ -339,11 +340,14 @@ export function GetStartedKanbanLive({
     const { preview: descPreview, isTruncated: descTruncated } =
       kanbanTaskDescriptionPreview(desc);
     const branchCount = task.linkedBranches?.length ?? 0;
-    const { total: checklistTotal, completed: checklistDone } = task.checklists;
+    const { total: checklistTotal, completed: checklistDone } = task.checklists ?? {
+      total: 0,
+      completed: 0,
+    };
     const checklistPct =
       checklistTotal > 0 ? Math.min(100, Math.round((checklistDone / checklistTotal) * 100)) : 0;
     const progressFraction = checklistTotal > 0 ? checklistPct / 100 : 0;
-    const assigneeUserIds = task.assignees
+    const assigneeUserIds = (task.assignees ?? [])
       .map((s) => Number(s))
       .filter((n) => Number.isFinite(n));
 

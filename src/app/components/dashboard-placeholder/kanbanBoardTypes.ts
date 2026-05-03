@@ -21,7 +21,9 @@ export function sortKanbanTasksByPriorityDescending(tasks: Task[]): Task[] {
 
 /** 0–1 completion ratio; 0 when there are no checklist items. */
 export function taskChecklistCompletionRatio(task: Task): number {
-  const { total, completed } = task.checklists;
+  const c = task.checklists;
+  if (c == null) return 0;
+  const { total, completed } = c;
   if (total <= 0) return 0;
   return completed / total;
 }

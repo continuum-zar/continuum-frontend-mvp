@@ -42,7 +42,7 @@ export function filterByMilestoneTaskIds(
       if (milestoneTaskIds.has(item.task_id)) out.push(item);
       continue;
     }
-    const tid = item.contribution.task_id;
+    const tid = item.contribution?.task_id;
     if (tid != null && milestoneTaskIds.has(tid)) out.push(item);
   }
   return out;
@@ -82,7 +82,7 @@ function itemCreatedAt(
   if (item.type === "task_status") {
     return item.created_at ?? null;
   }
-  return item.contribution.created_at ?? null;
+  return item.contribution?.created_at ?? null;
 }
 
 function commitSummary(message: string | null | undefined, hash: string): string {
