@@ -52,11 +52,12 @@ export function VirtualList<T>({
 }: VirtualListProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null);
   const endFiredRef = useRef(false);
+  const safeItems = items ?? [];
 
   const rowSize = estimateSize + gap;
 
   const virtualizer = useVirtualizer({
-    count: items.length,
+    count: safeItems.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => rowSize,
     overscan,
@@ -68,7 +69,7 @@ export function VirtualList<T>({
 
   useEffect(() => {
     endFiredRef.current = false;
-  }, [items.length]);
+  }, [safeItems.length]);
 
   const handleScroll = useCallback(() => {
     if (!onEndReached) return;
@@ -86,13 +87,13 @@ export function VirtualList<T>({
     }
   }, [onEndReached, endReachedOffset]);
 
-  if (items.length <= threshold) {
+  if (safeItems.length <= threshold) {
     return (
       <div
         className={className}
         style={gap > 0 ? { display: 'flex', flexDirection: 'column', gap } : undefined}
       >
-        {items.map((item, index) => children(item, index))}
+        {safeItems.map((item, index) => children(item, index))}
       </div>
     );
   }
@@ -123,7 +124,7 @@ export function VirtualList<T>({
         }}
       >
         {virtualizer.getVirtualItems().map((vi) => {
-          const item = items[vi.index];
+          const item = safeItems[vi.index];
           if (item === undefined) return null;
           return (
             <div
@@ -133,7 +134,7 @@ export function VirtualList<T>({
               className="absolute left-0 top-0 w-full"
               style={{
                 transform: `translateY(${vi.start}px)`,
-                paddingBottom: gap > 0 && vi.index < items.length - 1 ? gap : undefined,
+                paddingBottom: gap > 0 && vi.index < safeItems.length - 1 ? gap : undefined,
               }}
             >
               {children(item, vi.index)}

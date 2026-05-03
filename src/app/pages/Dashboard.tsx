@@ -138,9 +138,10 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
 
   // Projects list – only PM/Developer need the full project list;
   // Client role uses client-projects instead. Key matches useProjects / layout prefetch.
-  const { data: projects = [], isLoading: projectsLoading, isError: projectsError } = useProjects({
+  const { data: projectsRaw, isLoading: projectsLoading, isError: projectsError } = useProjects({
     enabled: userRole !== 'Client',
   });
+  const projects = projectsRaw ?? [];
   const hasProjectSelected = selectedProject !== "";
 
   const selectedProjectObj = useMemo(
@@ -157,9 +158,10 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
     effectiveRole !== 'Client' &&
     (userRole === 'Admin' || selectedProjectObj?.memberRole === 'project_manager');
 
-  const { data: rhythmMembers = [] } = useProjectMembers(
+  const { data: rhythmMembersRaw } = useProjectMembers(
     isProjectPM && hasProjectSelected ? selectedProject : undefined
   );
+  const rhythmMembers = rhythmMembersRaw ?? [];
   /** Include all project members in the heatmap selector, regardless of role. */
   const rhythmProjectMembers = useMemo(
     () => rhythmMembers,
@@ -248,12 +250,13 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   }, [classificationBreakdown]);
   const classificationTotal = (classificationBreakdown?.structural ?? 0) + (classificationBreakdown?.incremental ?? 0) + (classificationBreakdown?.trivial ?? 0);
 
-  const { data: clientProjectsList = [] } = useQuery({
+  const { data: clientProjectsListRaw } = useQuery({
     queryKey: ['client-projects'],
     queryFn: fetchClientProjects,
     enabled: userRole === 'Client',
     staleTime: STALE_REFERENCE_MS,
   });
+  const clientProjectsList = clientProjectsListRaw ?? [];
 
   const clientProjectId = userRole === 'Client' && clientProjectsList.length > 0
     ? (hasProjectSelected && clientProjectsList.some((p) => String(p.id) === selectedProject) ? selectedProject : String(clientProjectsList[0].id))
@@ -357,9 +360,10 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   }, [chatMessage, hasProjectSelected, selectedProject]);
 
   // Milestones – only PM renders the burndown chart & milestone selector on the dashboard
-  const { data: milestones = [] } = useProjectMilestones(
+  const { data: milestonesRaw } = useProjectMilestones(
     isProjectPM && hasProjectSelected ? selectedProject : undefined
   );
+  const milestones = milestonesRaw ?? [];
   const firstMilestoneId = milestones.length > 0 ? milestones[0].id : null;
   const milestoneId = selectedMilestone;
   useEffect(() => {
