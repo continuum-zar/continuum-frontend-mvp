@@ -2,6 +2,7 @@
 
 import type { ReactNode, RefObject } from "react";
 import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
@@ -21,6 +22,8 @@ import {
   SprintKanbanListSkeleton,
 } from "@/app/components/dashboard-placeholder/DashboardPlaceholderSkeletons";
 import { cn } from "@/app/components/ui/utils";
+import { projectKeys } from "@/api/projects";
+import { projectTaskEventsStreamUrl } from "@/api/projectTaskEvents";
 import {
   useAssignTask,
   useRemoveTaskAssignee,
@@ -32,6 +35,7 @@ import {
   useUpdateProjectKanbanBoard,
   useUpdateTaskStatus,
 } from "@/api/hooks";
+import { useAuthStore } from "@/store/authStore";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { reorderKanbanColumns } from "@/lib/kanbanColumnReorder";
 import { useKanbanColumnPointerDrag } from "@/lib/useKanbanColumnPointerDrag";
@@ -94,6 +98,9 @@ export function GetStartedKanbanLive({
 }: GetStartedKanbanLiveProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const tasksQuery = useProjectTasksInfinite(projectId);
   const milestonesQuery = useProjectMilestones(projectId);
   const kanbanBoardQuery = useProjectKanbanBoard(projectId);
@@ -170,6 +177,32 @@ export function GetStartedKanbanLive({
     setColumns([...DEFAULT_KANBAN_COLUMNS]);
     setTaskColumnPreference({});
   }, [projectId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isAuthenticated || !accessToken) return;
+    const url = projectTaskEventsStreamUrl(projectId, accessToken);
+    const es = new EventSource(url);
+    const onMessage = (ev: MessageEvent<string>) => {
+      try {
+        const data = JSON.parse(ev.data) as { type?: string; project_id?: number };
+        if (data.type === "task_updated" && Number(data.project_id) === projectId) {
+          void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+          void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(projectId) });
+        }
+      } catch {
+        /* ignore malformed */
+      }
+    };
+    es.addEventListener("message", onMessage as EventListener);
+    es.onerror = () => {
+      console.debug("[GetStartedKanbanLive] project task-events stream closed or errored");
+      es.close();
+    };
+    return () => {
+      es.removeEventListener("message", onMessage as EventListener);
+      es.close();
+    };
+  }, [projectId, accessToken, isAuthenticated, queryClient]);
 
   useEffect(() => {
     if (!kanbanBoardQuery.isSuccess || kanbanBoardQuery.data == null) return;
