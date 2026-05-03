@@ -22,6 +22,7 @@ const HEARTBEAT_INTERVAL_MS = 3_000
 function needsLlmHeartbeat(method, urlPath) {
   if (method !== 'POST') return false
   if (urlPath === '/api/v1/planner/generate-plan') return true
+  if (urlPath === '/api/v1/planner/generate-architecture') return true
   if (urlPath === '/api/v1/planner/chat') return true
   if (/^\/api\/v1\/projects\/\d+\/wiki\/generate$/.test(urlPath)) return true
   return false
@@ -234,6 +235,8 @@ export default defineConfig({
       'clsx',
       'tailwind-merge',
       'date-fns',
+      'mermaid',
+      'react-zoom-pan-pinch',
     ],
   },
 })

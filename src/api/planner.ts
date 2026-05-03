@@ -114,15 +114,42 @@ export interface PlannedMilestone {
     tasks: PlannedTask[];
 }
 
+export interface ArchitectureComponent {
+    id: string;
+    name: string;
+    kind: string;
+    description?: string | null;
+}
+
+export interface ArchitectureDataFlow {
+    source_id: string;
+    target_id: string;
+    label?: string | null;
+}
+
+export interface SystemArchitecture {
+    overview: string;
+    components: ArchitectureComponent[];
+    data_flows: ArchitectureDataFlow[];
+    mermaid_diagram?: string | null;
+}
+
 export interface ProjectPlan {
     project_name: string;
     project_description: string;
     milestones: PlannedMilestone[];
     summary: string;
+    /** Optional; older API clients may omit. */
+    architecture?: SystemArchitecture | null;
 }
 
 export interface GeneratePlanResponse {
     plan: ProjectPlan;
+    confidence: number;
+}
+
+export interface GenerateArchitectureResponse {
+    architecture: SystemArchitecture;
     confidence: number;
 }
 
@@ -218,6 +245,32 @@ export async function generatePlan(
     return data;
 }
 
+export async function generateArchitecture(
+    messages: PlannerMessage[],
+    file_contents: FileContent[],
+    figma_context?: FigmaContext | null,
+): Promise<GenerateArchitectureResponse> {
+    const { data: raw } = await api.post<unknown>('/planner/generate-architecture', {
+        messages: plannerMessagesForApi(messages),
+        file_contents,
+        figma_context,
+    }, {
+        timeout: 600_000,
+    });
+
+    const data = (typeof raw === 'string' ? JSON.parse(raw) : raw) as GenerateArchitectureResponse;
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !('architecture' in data) ||
+        data.architecture == null ||
+        typeof (data as GenerateArchitectureResponse).confidence !== 'number'
+    ) {
+        throw new Error('Unexpected generate-architecture response shape');
+    }
+    return data;
+}
+
 export async function approvePlan(
     plan: ProjectPlan,
     figma_blueprint?: FigmaBlueprint | null,
@@ -277,6 +330,23 @@ export function useGeneratePlan() {
         }) => generatePlan(messages, file_contents, figma_context),
         onError: (err: unknown) => {
             toast.error(getApiErrorMessage(err, 'Plan generation failed'));
+        },
+    });
+}
+
+export function useGenerateArchitecture() {
+    return useMutation({
+        mutationFn: ({
+            messages,
+            file_contents,
+            figma_context,
+        }: {
+            messages: PlannerMessage[];
+            file_contents: FileContent[];
+            figma_context?: FigmaContext | null;
+        }) => generateArchitecture(messages, file_contents, figma_context),
+        onError: (err: unknown) => {
+            toast.error(getApiErrorMessage(err, 'Architecture generation failed'));
         },
     });
 }
