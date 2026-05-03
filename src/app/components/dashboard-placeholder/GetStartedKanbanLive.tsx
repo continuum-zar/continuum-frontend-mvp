@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode, RefObject } from "react";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
@@ -14,9 +14,6 @@ import { KanbanTaskMetaPills } from "./KanbanTaskMetaPills";
 import { KanbanBoardColumnHeader } from "./KanbanBoardColumnHeader";
 import { KanbanColumnHeaderKebabMenu } from "./KanbanColumnHeaderKebabMenu";
 import { filterKanbanTasksBySearchQueryRespectingDrag } from "./kanbanColumnSearchUtils";
-import { CalendarTaskView } from "./CalendarTaskView";
-import { GanttChartView } from "./GanttChartView";
-import { SprintKanbanListView } from "./SprintKanbanListView";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "@/app/components/ui/dialog";
 import {
@@ -56,6 +53,16 @@ import {
   tasksForKanbanColumn,
   type KanbanColumnConfig,
 } from "./kanbanBoardTypes";
+
+const CalendarTaskView = lazy(() =>
+  import("./CalendarTaskView").then((m) => ({ default: m.CalendarTaskView })),
+);
+const GanttChartView = lazy(() =>
+  import("./GanttChartView").then((m) => ({ default: m.GanttChartView })),
+);
+const SprintKanbanListView = lazy(() =>
+  import("./SprintKanbanListView").then((m) => ({ default: m.SprintKanbanListView })),
+);
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgVector13 = mcpAsset("c1ddd3b4-d26b-4a92-b752-d84ba0208f8a");
@@ -602,40 +609,49 @@ export function GetStartedKanbanLive({
     );
   };
 
+  const alternateViewFallback =
+    view === "list" ? <SprintKanbanListSkeleton /> : <KanbanBoardSkeleton />;
+
   return (
     <>
       {view === "list" ? (
-        <SprintKanbanListView
-          tasks={filtered}
-          columns={columns}
-          columnTasks={columnTasks}
-          members={members}
-          projectId={projectId}
-          milestoneId={milestoneId}
-          onCreateTask={() => setCreateTaskOpen(true)}
-          draggingId={draggingId}
-          dragOverCol={dragOverCol}
-          cardPointerDown={cardPointerDown}
-          columnKebabMenu={(col) => (
-            <KanbanColumnHeaderKebabMenu
-              column={col}
-              onAddList={() => setAddColumnOpen(true)}
-              onRequestDeleteList={
-                isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
-              }
-            />
-          )}
-        />
+        <Suspense fallback={alternateViewFallback}>
+          <SprintKanbanListView
+            tasks={filtered}
+            columns={columns}
+            columnTasks={columnTasks}
+            members={members}
+            projectId={projectId}
+            milestoneId={milestoneId}
+            onCreateTask={() => setCreateTaskOpen(true)}
+            draggingId={draggingId}
+            dragOverCol={dragOverCol}
+            cardPointerDown={cardPointerDown}
+            columnKebabMenu={(col) => (
+              <KanbanColumnHeaderKebabMenu
+                column={col}
+                onAddList={() => setAddColumnOpen(true)}
+                onRequestDeleteList={
+                  isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
+                }
+              />
+            )}
+          />
+        </Suspense>
       ) : view === "gantt" ? (
-        <GanttChartView
-          tasks={filtered}
-          members={members}
-          milestoneNameById={milestoneNameById}
-          onOpenTask={openTaskHref}
-          scrollRef={boardScrollRef}
-        />
+        <Suspense fallback={alternateViewFallback}>
+          <GanttChartView
+            tasks={filtered}
+            members={members}
+            milestoneNameById={milestoneNameById}
+            onOpenTask={openTaskHref}
+            scrollRef={boardScrollRef}
+          />
+        </Suspense>
       ) : view === "calendar" ? (
-        <CalendarTaskView tasks={filtered} onOpenTask={openTaskHref} />
+        <Suspense fallback={alternateViewFallback}>
+          <CalendarTaskView tasks={filtered} onOpenTask={openTaskHref} />
+        </Suspense>
       ) : (
         <>
       <style>{`
