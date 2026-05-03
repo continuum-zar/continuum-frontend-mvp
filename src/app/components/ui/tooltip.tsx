@@ -7,12 +7,15 @@ import { cn } from "./utils";
 
 function TooltipProvider({
   delayDuration = 0,
+  /** Matches Tooltip root default — avoids Radix hoverable-tooltip polygon crashes; pass `false` to restore bridge. */
+  disableHoverableContent = true,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
   return (
     <TooltipPrimitive.Provider
       data-slot="tooltip-provider"
       delayDuration={delayDuration}
+      disableHoverableContent={disableHoverableContent}
       {...props}
     />
   );
@@ -30,7 +33,7 @@ function Tooltip({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
   return (
-    <TooltipProvider>
+    <TooltipProvider disableHoverableContent={disableHoverableContent}>
       <TooltipPrimitive.Root
         data-slot="tooltip"
         disableHoverableContent={disableHoverableContent}
