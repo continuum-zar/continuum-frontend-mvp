@@ -113,6 +113,9 @@ const AVATAR_COLORS = ['#E8A303', '#EE7F84', '#7157E7', '#4A9FF8', '#10b981', '#
 /** Task sidebar: initial rows and each “Show more” step for Comments + Activity. */
 const TASK_DETAIL_FEED_PAGE = 3;
 
+/** Coalesce rapid checklist edits into a single PUT. */
+const TASK_DETAIL_CHECKLIST_DEBOUNCE_MS = 400;
+
 function resolveAssigneeLabel(idStr: string | null | undefined, members: Member[] | undefined): string {
   if (idStr == null || idStr === '') return 'Unassigned';
   const id = Number(idStr);
@@ -426,6 +429,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     { enabled: Boolean(taskId && task?.project_id != null) },
   );
   const updateTaskMutation = useUpdateTask();
+  const checklistDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const checklistPendingRef = useRef<Array<{ id?: string; text: string; done: boolean }> | null>(null);
   const { data: attachments } = useTaskAttachments(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
   const timelineQuery = useTaskTimelineInfinite(taskId);
@@ -680,10 +685,36 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     updateTaskMutation.mutate({ taskId, description: trimmed || null });
   }, [descDraft, task?.description, taskId, updateTaskMutation]);
 
-  /* ─ checklist ─ */
-  const saveChecklists = useCallback((next: Array<{ id?: string; text: string; done: boolean }>) => {
-    setLocalChecklists(next);
-    if (taskId) updateTaskMutation.mutate({ taskId, checklists: next });
+  /* ─ checklist (debounced PUT; local state updates immediately) ─ */
+  const saveChecklists = useCallback(
+    (next: Array<{ id?: string; text: string; done: boolean }>) => {
+      setLocalChecklists(next);
+      checklistPendingRef.current = next;
+      if (checklistDebounceRef.current != null) clearTimeout(checklistDebounceRef.current);
+      checklistDebounceRef.current = window.setTimeout(() => {
+        checklistDebounceRef.current = null;
+        const pending = checklistPendingRef.current;
+        checklistPendingRef.current = null;
+        if (pending != null && taskId) {
+          updateTaskMutation.mutate({ taskId, checklists: pending });
+        }
+      }, TASK_DETAIL_CHECKLIST_DEBOUNCE_MS);
+    },
+    [taskId, updateTaskMutation],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (checklistDebounceRef.current != null) {
+        clearTimeout(checklistDebounceRef.current);
+        checklistDebounceRef.current = null;
+      }
+      const pending = checklistPendingRef.current;
+      checklistPendingRef.current = null;
+      if (pending != null && taskId) {
+        updateTaskMutation.mutate({ taskId, checklists: pending });
+      }
+    };
   }, [taskId, updateTaskMutation]);
 
   const addChecklistItem = () => {

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 
-import { applyAssigneeIdsToTaskResponse, optimisticApplyAssignees } from '@/api/hooks';
+import {
+    applyAssigneeIdsToTaskResponse,
+    optimisticApplyAssignees,
+    optimisticApplyChecklists,
+} from '@/api/hooks';
 import { projectKeys } from '@/api/projects';
 import { mapTask } from '@/api/mappers';
 import type { Task, TaskAPIResponse } from '@/types/task';
@@ -45,5 +49,34 @@ describe('assignee cache helpers', () => {
 
         const list = qc.getQueryData<Task[]>(projectKeys.tasks(7));
         expect(list?.[0]?.assignees).toEqual(['1', '4']);
+    });
+
+    it('optimisticApplyChecklists updates task detail and checklist counts on the board cache', () => {
+        const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        const detail: TaskAPIResponse = {
+            id: 11,
+            title: 'Card',
+            status: 'todo',
+            project_id: 7,
+            checklists: [
+                { text: 'A', done: false },
+                { text: 'B', done: false },
+            ],
+        };
+        qc.setQueryData(['tasks', 'detail', 11], detail);
+        const kanbanTask: Task = mapTask(detail);
+        qc.setQueryData<Task[]>(projectKeys.tasks(7), [kanbanTask]);
+
+        const nextChecklists = [
+            { text: 'A', done: true },
+            { text: 'B', done: false },
+        ];
+        expect(optimisticApplyChecklists(qc, 11, nextChecklists)).toBe(true);
+
+        const patched = qc.getQueryData<TaskAPIResponse>(['tasks', 'detail', 11]);
+        expect(patched?.checklists?.filter((c) => c.done).length).toBe(1);
+
+        const list = qc.getQueryData<Task[]>(projectKeys.tasks(7));
+        expect(list?.[0]?.checklists).toEqual({ total: 2, completed: 1 });
     });
 });

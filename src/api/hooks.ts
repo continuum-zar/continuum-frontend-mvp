@@ -84,6 +84,7 @@ import {
     setTaskAssignees,
     addTaskLabel,
     removeTaskLabel,
+    type TaskChecklistItemUpdate,
 } from './tasks';
 import { fetchLoggedHours, createLoggedHour, sumLoggedHoursForTask } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
@@ -173,6 +174,135 @@ export function applyLinkedBranchesToTaskResponse(
         linked_branch: first?.linked_branch ?? null,
         linked_branch_full_ref: first?.linked_branch_full_ref ?? null,
     };
+}
+
+function checklistProgressFromItems(items: TaskChecklistItemUpdate[]): { total: number; completed: number } {
+    const total = items.length;
+    const completed = items.filter((c) => c.done).length;
+    return { total, completed };
+}
+
+export function applyChecklistsToTaskResponse(
+    task: TaskAPIResponse,
+    checklists: TaskChecklistItemUpdate[],
+): TaskAPIResponse {
+    return { ...task, checklists: [...checklists] };
+}
+
+function patchTaskChecklistsInProjectKanbanCaches(
+    queryClient: QueryClient,
+    taskId: number | string,
+    projectId: number,
+    checklists: TaskChecklistItemUpdate[],
+) {
+    const tid = String(taskId);
+    const counts = checklistProgressFromItems(checklists);
+    const patch = (t: Task): Task => (t.id === tid ? { ...t, checklists: counts } : t);
+
+    queryClient.setQueryData<Task[]>(projectKeys.tasks(projectId), (old) => old?.map(patch) ?? old);
+
+    type TasksPage = { tasks: Task[]; total: number; skip: number; limit: number };
+    queryClient.setQueryData<InfiniteData<TasksPage>>(projectKeys.tasksInfinite(projectId), (old) => {
+        if (!old?.pages?.length) return old;
+        return {
+            ...old,
+            pages: old.pages.map((p) => ({
+                ...p,
+                tasks: p.tasks.map(patch),
+            })),
+        };
+    });
+}
+
+function patchTaskChecklistsInAssignedCreatedLists(
+    queryClient: QueryClient,
+    taskId: number | string,
+    checklists: TaskChecklistItemUpdate[],
+) {
+    const tid = String(taskId);
+    const patchRow = (row: TaskAPIResponse) =>
+        String(row.id) === tid ? applyChecklistsToTaskResponse(row, checklists) : row;
+    queryClient.setQueriesData<TaskAPIResponse[]>(
+        { queryKey: [...projectKeys.all, 'assigned-tasks'], exact: false },
+        (old) => old?.map(patchRow) ?? old,
+    );
+    queryClient.setQueriesData<TaskAPIResponse[]>(
+        { queryKey: [...projectKeys.all, 'created-tasks'], exact: false },
+        (old) => old?.map(patchRow) ?? old,
+    );
+}
+
+/** Optimistically sync checklist arrays into task detail + board/list caches. */
+export function optimisticApplyChecklists(
+    queryClient: QueryClient,
+    taskId: number | string,
+    checklists: TaskChecklistItemUpdate[],
+): boolean {
+    const prev = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
+    if (!prev) return false;
+    queryClient.setQueryData(taskDetailKey(taskId), applyChecklistsToTaskResponse(prev, checklists));
+    patchTaskChecklistsInProjectKanbanCaches(queryClient, taskId, prev.project_id, checklists);
+    patchTaskChecklistsInAssignedCreatedLists(queryClient, taskId, checklists);
+    return true;
+}
+
+function restoreTaskCachesFromSnapshot(
+    queryClient: QueryClient,
+    taskId: number | string,
+    snapshot: TaskAPIResponse,
+) {
+    queryClient.setQueryData(taskDetailKey(taskId), snapshot);
+    patchTaskChecklistsInProjectKanbanCaches(
+        queryClient,
+        taskId,
+        snapshot.project_id,
+        Array.isArray(snapshot.checklists) ? snapshot.checklists : [],
+    );
+    patchTaskInProjectKanbanCaches(queryClient, taskId, snapshot.project_id, getTaskLinkedBranches(snapshot));
+    patchTaskAssigneesInProjectKanbanCaches(
+        queryClient,
+        taskId,
+        snapshot.project_id,
+        getTaskAssigneeUserIds(snapshot),
+    );
+    const tid = String(taskId);
+    const replaceRow = (row: TaskAPIResponse) => (String(row.id) === tid ? snapshot : row);
+    queryClient.setQueriesData<TaskAPIResponse[]>(
+        { queryKey: [...projectKeys.all, 'assigned-tasks'], exact: false },
+        (old) => old?.map(replaceRow) ?? old,
+    );
+    queryClient.setQueriesData<TaskAPIResponse[]>(
+        { queryKey: [...projectKeys.all, 'created-tasks'], exact: false },
+        (old) => old?.map(replaceRow) ?? old,
+    );
+}
+
+function isChecklistOnlyTaskUpdate(vars: {
+    title?: string;
+    description?: string | null;
+    status?: string;
+    scope_weight?: ScopeWeight;
+    priority?: TaskPriority;
+    due_date?: string | null;
+    estimated_hours?: number | null;
+    linked_branches?: TaskLinkedBranch[] | null;
+    linked_repo?: string | null;
+    linked_branch?: string | null;
+    checklists?: TaskChecklistItemUpdate[];
+}): boolean {
+    if (vars.checklists === undefined) return false;
+    return (
+        vars.title === undefined &&
+        vars.description === undefined &&
+        vars.status === undefined &&
+        vars.scope_weight === undefined &&
+        vars.priority === undefined &&
+        vars.due_date === undefined &&
+        vars.estimated_hours === undefined &&
+        vars.linked_branches === undefined &&
+        vars.linked_repo === undefined &&
+        vars.linked_branch === undefined
+    );
 }
 
 function patchTaskInProjectKanbanCaches(
@@ -881,7 +1011,7 @@ export function useUpdateTask() {
             linked_branches?: TaskLinkedBranch[] | null;
             linked_repo?: string | null;
             linked_branch?: string | null;
-            checklists?: Array<{ id?: string; text: string; done: boolean }>;
+            checklists?: TaskChecklistItemUpdate[];
         }) =>
             updateTask(taskId, {
                 title,
@@ -897,31 +1027,56 @@ export function useUpdateTask() {
                 checklists,
             }),
         onMutate: async (variables) => {
-            if (variables.linked_branches === undefined) return {};
             const tid = variables.taskId;
+            const willOptimistic =
+                variables.linked_branches !== undefined || variables.checklists !== undefined;
+            if (!willOptimistic) return {};
+
             await queryClient.cancelQueries({ queryKey: taskDetailKey(tid) });
-            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
-            if (!prevDetail) return {};
-            const branches = variables.linked_branches ?? [];
-            optimisticApplyLinkedBranches(queryClient, tid, branches);
-            return { prevDetailLinked: prevDetail as TaskAPIResponse };
+            const prevSnapshot = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(tid));
+            if (!prevSnapshot) return {};
+
+            if (variables.linked_branches !== undefined) {
+                const branches = variables.linked_branches ?? [];
+                optimisticApplyLinkedBranches(queryClient, tid, branches);
+            }
+            if (variables.checklists !== undefined) {
+                optimisticApplyChecklists(queryClient, tid, variables.checklists);
+            }
+            return { prevSnapshot };
         },
-        onSuccess: (data, { taskId }) => {
-            toast.success('Task updated successfully');
+        onSuccess: (data, variables) => {
+            const { taskId } = variables;
             if (taskId && data) {
                 queryClient.setQueryData(taskDetailKey(taskId), data);
+                if (Array.isArray(data.checklists)) {
+                    patchTaskChecklistsInProjectKanbanCaches(
+                        queryClient,
+                        taskId,
+                        data.project_id,
+                        data.checklists,
+                    );
+                    patchTaskChecklistsInAssignedCreatedLists(queryClient, taskId, data.checklists);
+                }
             }
             if (taskId) {
-                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            }
+            if (!isChecklistOnlyTaskUpdate(variables)) {
+                toast.success('Task updated successfully');
             }
         },
         onError: (err, variables, ctx) => {
-            if (variables.linked_branches !== undefined && ctx?.prevDetailLinked != null) {
-                queryClient.setQueryData(taskDetailKey(variables.taskId), ctx.prevDetailLinked);
+            if (ctx?.prevSnapshot != null) {
+                restoreTaskCachesFromSnapshot(queryClient, variables.taskId, ctx.prevSnapshot);
             }
             toast.error(getApiErrorMessage(err, 'Failed to update task'));
         },
-        onSettled: (_data, _err, variables) => {
+        onSettled: (_data, err, variables) => {
+            if (err != null) return;
+            if (isChecklistOnlyTaskUpdate(variables)) {
+                return;
+            }
             invalidateTasksForCachedTaskProject(queryClient, variables.taskId);
             invalidateDerivedTaskLists(queryClient);
         },
@@ -1163,7 +1318,8 @@ export function useAssignTask() {
             }
             toast.error(getApiErrorMessage(err, 'Failed to update assignee'));
         },
-        onSettled: (_data, _err, { taskId }) => {
+        onSettled: (_data, _err, { taskId }, ctx) => {
+            if (ctx?.prevDetail != null) return;
             invalidateTasksForCachedTaskProject(queryClient, taskId);
             invalidateDerivedTaskLists(queryClient);
         },
@@ -1210,7 +1366,8 @@ export function useRemoveTaskAssignee() {
             }
             toast.error(getApiErrorMessage(err, 'Failed to remove assignee'));
         },
-        onSettled: (_data, _err, { taskId }) => {
+        onSettled: (_data, _err, { taskId }, ctx) => {
+            if (ctx?.prevDetail != null) return;
             invalidateTasksForCachedTaskProject(queryClient, taskId);
             invalidateDerivedTaskLists(queryClient);
         },
@@ -1257,7 +1414,8 @@ export function useSetTaskAssignees() {
             }
             toast.error(getApiErrorMessage(err, 'Failed to update assignees'));
         },
-        onSettled: (_data, _err, { taskId }) => {
+        onSettled: (_data, _err, { taskId }, ctx) => {
+            if (ctx?.prevDetail != null) return;
             invalidateTasksForCachedTaskProject(queryClient, taskId);
             invalidateDerivedTaskLists(queryClient);
         },
