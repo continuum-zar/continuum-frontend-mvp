@@ -33,7 +33,9 @@ function parseStoredGithubOAuthReturn(returnPath: string): {
  */
 export function LandingRoute() {
   const location = useLocation();
-  const { isAuthenticated, isInitialized, accessToken } = useAuthStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   if (!isInitialized && accessToken) {
     return (

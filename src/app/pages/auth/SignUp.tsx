@@ -8,7 +8,10 @@ export function SignUp() {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams] = useSearchParams();
-    const { register, isLoading, error, clearError } = useAuthStore();
+    const register = useAuthStore((state) => state.register);
+    const isLoading = useAuthStore((state) => state.isLoading);
+    const error = useAuthStore((state) => state.error);
+    const clearError = useAuthStore((state) => state.clearError);
     const emailFromSignUp = (location.state as { email?: string } | null)?.email ?? '';
     const [localLoading, setLocalLoading] = useState(false);
     const [firstName, setFirstName] = useState('');

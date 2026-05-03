@@ -5,8 +5,11 @@ import svgPaths from "./landing-svg";
 
 /** Hero panel images under `public/landing/`. */
 const imgWip = "/landing/83a55141b039a44613c6c93d2b20289d9128f6c1.png";
+const imgWipWebp = "/landing/83a55141b039a44613c6c93d2b20289d9128f6c1.webp";
 const imgWip1 = "/landing/4c18501708f09ce453837dc0d00f9f3592d6896b.png";
+const imgWip1Webp = "/landing/4c18501708f09ce453837dc0d00f9f3592d6896b.webp";
 const imgWip2 = "/landing/d50090486565d73083f0d763cbc6c9cf009a03fe.png";
+const imgWip2Webp = "/landing/d50090486565d73083f0d763cbc6c9cf009a03fe.webp";
 type BackgroundImage12Props = {
   additionalClassNames?: string;
 };
@@ -386,7 +389,10 @@ export default function LandingPage() {
             <div className="h-[404.386px] pointer-events-none relative rounded-[9.829px] w-[423.44px]" data-name="WIP">
               <div aria-hidden="true" className="absolute inset-0 rounded-[9.829px]">
                 <div className="absolute inset-0 rounded-[9.829px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)" }} />
-                <img alt="" className="absolute max-w-none object-cover rounded-[9.829px] size-full" src={imgWip} decoding="async" fetchPriority="high" />
+                <picture className="absolute inset-0 block rounded-[9.829px]">
+                  <source srcSet={imgWipWebp} type="image/webp" />
+                  <img alt="" className="absolute max-w-none object-cover rounded-[9.829px] size-full" src={imgWip} decoding="async" fetchPriority="high" />
+                </picture>
               </div>
               <div aria-hidden="true" className="absolute border-[#ededed] border-[1.081px] border-solid inset-0 rounded-[9.829px] shadow-[0px_124.343px_34.6px_0px_rgba(26,58,84,0),0px_80.012px_31.356px_0px_rgba(26,58,84,0.01),0px_44.331px_27.031px_0px_rgba(26,58,84,0.05),0px_19.462px_19.462px_0px_rgba(26,58,84,0.09),0px_5.406px_10.812px_0px_rgba(26,58,84,0.1)]" />
             </div>
@@ -397,7 +403,10 @@ export default function LandingPage() {
             <div className="h-[404.39px] pointer-events-none relative rounded-[5.54px] w-[423.442px]" data-name="WIP">
               <div aria-hidden="true" className="absolute inset-0 rounded-[5.54px]">
                 <div className="absolute inset-0 rounded-[5.54px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)" }} />
-                <img alt="" className="absolute max-w-none object-cover rounded-[5.54px] size-full" src={imgWip1} loading="lazy" decoding="async" />
+                <picture className="absolute inset-0 block rounded-[5.54px]">
+                  <source srcSet={imgWip1Webp} type="image/webp" />
+                  <img alt="" className="absolute max-w-none object-cover rounded-[5.54px] size-full" src={imgWip1} loading="lazy" decoding="async" />
+                </picture>
               </div>
               <div aria-hidden="true" className="absolute border-[#ededed] border-[1.081px] border-solid inset-0 rounded-[5.54px] shadow-[0px_124.345px_34.6px_0px_rgba(26,58,84,0),0px_80.013px_31.356px_0px_rgba(26,58,84,0.01),0px_44.332px_27.031px_0px_rgba(26,58,84,0.05),0px_19.463px_19.463px_0px_rgba(26,58,84,0.09),0px_5.406px_10.813px_0px_rgba(26,58,84,0.1)]" />
             </div>
@@ -406,7 +415,10 @@ export default function LandingPage() {
         <div className="-translate-x-1/2 absolute h-[515.841px] left-[calc(50%+0.4px)] pointer-events-none rounded-[7.54px] top-[25px] w-[794.248px]" data-name="WIP">
           <div aria-hidden="true" className="absolute inset-0 rounded-[7.54px]">
             <div className="absolute inset-0 rounded-[7.54px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)" }} />
-            <img alt="" className="absolute max-w-none object-cover rounded-[7.54px] size-full" src={imgWip2} loading="lazy" decoding="async" />
+            <picture className="absolute inset-0 block rounded-[7.54px]">
+              <source srcSet={imgWip2Webp} type="image/webp" />
+              <img alt="" className="absolute max-w-none object-cover rounded-[7.54px] size-full" src={imgWip2} loading="lazy" decoding="async" />
+            </picture>
           </div>
           <div aria-hidden="true" className="absolute border-[#ededed] border-[1.379px] border-solid inset-0 rounded-[7.54px] shadow-[0px_300px_84px_0px_rgba(26,58,84,0),0px_192px_77px_0px_rgba(26,58,84,0.01),0px_108px_65px_0px_rgba(26,58,84,0.04),0px_48px_48px_0px_rgba(26,58,84,0.07),0px_12px_26px_0px_rgba(26,58,84,0.08)]" />
         </div>

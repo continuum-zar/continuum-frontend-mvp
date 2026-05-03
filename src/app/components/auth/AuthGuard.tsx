@@ -16,7 +16,11 @@ interface AuthGuardProps {
 }
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-    const { isAuthenticated, isLoading, isInitialized, accessToken, checkAuth } = useAuthStore();
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const isLoading = useAuthStore((state) => state.isLoading);
+    const isInitialized = useAuthStore((state) => state.isInitialized);
+    const accessToken = useAuthStore((state) => state.accessToken);
+    const checkAuth = useAuthStore((state) => state.checkAuth);
     const location = useLocation();
     const [fetchError, setFetchError] = useState<string | null>(null);
 

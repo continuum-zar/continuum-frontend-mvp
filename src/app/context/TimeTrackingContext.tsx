@@ -96,7 +96,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
 
     const [projectFilterId, setProjectFilterId] = useState<string>('all');
     const { data: entriesData, isLoading: entriesLoading, isError: entriesError, refetch: refetchEntries } = useLoggedHours(projectFilterId, { limit: 50, enabled: isActivated });
-    const entries = (entriesData ?? []) as TimeEntry[];
+    const entries = useMemo(() => (entriesData ?? []) as TimeEntry[], [entriesData]);
 
     const [sessionState, setSessionState] = useState<SessionState>('idle');
     const [currentTime, setCurrentTime] = useState(0);
@@ -221,10 +221,10 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         }
     }, [activeSessionId]);
 
-    const handleStop = () => {
+    const handleStop = useCallback(() => {
         setSessionState('paused'); // Pause the timer while logging
         setIsLoggingModalOpen(true);
-    };
+    }, []);
 
     const simulateAiGeneration = useCallback(async () => {
         if (!activeSessionId) {
@@ -270,47 +270,76 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         }
     }, [activeSessionId, logForm.description, refetchEntries]);
 
-    const handleLogCancel = () => {
+    const handleLogCancel = useCallback(() => {
         setIsLoggingModalOpen(false);
         // Timer remains paused, user can resume or stop again
-    };
+    }, []);
+
+    const contextValue = useMemo<TimeTrackingContextProps>(
+        () => ({
+            activate,
+            entries,
+            entriesLoading,
+            entriesError,
+            refetchEntries,
+            projectFilterId,
+            setProjectFilterId,
+            sessionState,
+            setSessionState,
+            currentTime,
+            setCurrentTime,
+            activeSessionId,
+            tasks,
+            tasksLoading,
+            tasksError,
+            selectedTask,
+            selectedTaskId,
+            setSelectedTaskId,
+            isLoggingModalOpen,
+            setIsLoggingModalOpen,
+            logForm,
+            setLogForm,
+            isAiGenerating,
+            simulateAiGeneration,
+            handleStart,
+            handlePause,
+            handleResume,
+            handleLogSubmit,
+            handleLogCancel,
+            handleStop,
+            isSessionActionLoading,
+        }),
+        [
+            activate,
+            entries,
+            entriesLoading,
+            entriesError,
+            refetchEntries,
+            projectFilterId,
+            sessionState,
+            currentTime,
+            activeSessionId,
+            tasks,
+            tasksLoading,
+            tasksError,
+            selectedTask,
+            selectedTaskId,
+            isLoggingModalOpen,
+            logForm,
+            isAiGenerating,
+            simulateAiGeneration,
+            handleStart,
+            handlePause,
+            handleResume,
+            handleLogSubmit,
+            handleLogCancel,
+            handleStop,
+            isSessionActionLoading,
+        ]
+    );
 
     return (
-        <TimeTrackingContext.Provider
-            value={{
-                activate,
-                entries,
-                entriesLoading,
-                entriesError,
-                refetchEntries,
-                projectFilterId,
-                setProjectFilterId,
-                sessionState,
-                setSessionState,
-                currentTime,
-                setCurrentTime,
-                activeSessionId,
-                tasks,
-                tasksLoading,
-                tasksError,
-                selectedTask,
-                selectedTaskId,
-                setSelectedTaskId,
-                isLoggingModalOpen,
-                setIsLoggingModalOpen,
-                logForm,
-                setLogForm,
-                isAiGenerating,
-                simulateAiGeneration,
-                handleStart,
-                handlePause,
-                handleResume,
-                handleLogSubmit,
-                handleLogCancel,
-                handleStop,
-                isSessionActionLoading,
-            }}
-        >
+        <TimeTrackingContext.Provider value={contextValue}>
             {children}
         </TimeTrackingContext.Provider>
     );
