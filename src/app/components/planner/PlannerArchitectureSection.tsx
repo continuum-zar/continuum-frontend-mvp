@@ -1,5 +1,4 @@
 import { useEffect, useId, useState } from 'react';
-import mermaid from 'mermaid';
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { Loader2, RefreshCw } from 'lucide-react';
 import type { SystemArchitecture } from '@/api/planner';
@@ -10,15 +9,19 @@ const CARD_SHADOW =
     'shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]';
 
 let mermaidConfigured = false;
+let mermaidModulePromise: Promise<typeof import('mermaid').default> | null = null;
 
-function ensureMermaid(): void {
-    if (mermaidConfigured) return;
+async function ensureMermaid(): Promise<typeof import('mermaid').default> {
+    mermaidModulePromise ??= import('mermaid').then((m) => m.default);
+    const mermaid = await mermaidModulePromise;
+    if (mermaidConfigured) return mermaid;
     mermaid.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
         theme: 'neutral',
     });
     mermaidConfigured = true;
+    return mermaid;
 }
 
 export type PlannerArchitectureSectionProps = {
@@ -96,8 +99,8 @@ export function PlannerArchitectureSection({
 
         let cancelled = false;
         const render = async () => {
-            ensureMermaid();
             try {
+                const mermaid = await ensureMermaid();
                 const rid = `planner-arch-${Math.random().toString(36).slice(2)}`;
                 const { svg } = await mermaid.render(rid, diagram);
                 if (!cancelled) {

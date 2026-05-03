@@ -128,6 +128,13 @@ function invalidateDerivedTaskLists(queryClient: QueryClient) {
     void queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
 }
 
+function invalidateProjectTaskLists(queryClient: QueryClient, projectId: number | string) {
+    void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+    void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(projectId) });
+    void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(projectId) });
+    void queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+}
+
 function invalidateTasksForCachedTaskProject(
     queryClient: QueryClient,
     taskId: number | string | undefined | null,
@@ -136,8 +143,7 @@ function invalidateTasksForCachedTaskProject(
     const task = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
     const pid = task?.project_id;
     if (pid != null) {
-        void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(pid) });
-        void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(pid) });
+        invalidateProjectTaskLists(queryClient, pid);
     }
 }
 
@@ -467,11 +473,8 @@ export function useCreateTask() {
     return useMutation({
         mutationFn: (body: CreateTaskBody) => createTask(body),
         onSuccess: (_data, body) => {
-            queryClient.invalidateQueries({ queryKey: projectKeys.tasks(body.project_id) });
-            void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(body.project_id) });
-            queryClient.invalidateQueries({ queryKey: projectKeys.allTasks() });
-            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
-            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
+            invalidateProjectTaskLists(queryClient, body.project_id);
+            invalidateDerivedTaskLists(queryClient);
             toast.success('Task created');
         },
         onError: (err) => {
@@ -686,29 +689,47 @@ export function useDeleteProject() {
 export function useUpdateTaskStatus(projectId: number | string | undefined | null) {
     const queryClient = useQueryClient();
     const key = projectId != null && projectId !== '' ? projectKeys.tasks(projectId) : null;
+    const infiniteKey =
+        projectId != null && projectId !== '' ? projectKeys.tasksInfinite(projectId) : null;
     return useMutation({
         mutationFn: ({ taskId, status }: { taskId: string; status: string }) => updateTaskStatus(taskId, status),
         onMutate: async ({ taskId, status }) => {
             if (!key) return {};
             await queryClient.cancelQueries({ queryKey: key });
+            if (infiniteKey) await queryClient.cancelQueries({ queryKey: infiniteKey });
             const prev = queryClient.getQueryData(key);
+            const prevInfinite = infiniteKey ? queryClient.getQueryData(infiniteKey) : undefined;
             queryClient.setQueryData(key, (old: Task[] | undefined) => {
                 if (!old) return old;
                 return old.map((t) => (t.id === taskId ? { ...t, status } : t));
             });
-            return { prev };
+            if (infiniteKey) {
+                type TasksPage = { tasks: Task[]; total: number; skip: number; limit: number };
+                queryClient.setQueryData<InfiniteData<TasksPage>>(infiniteKey, (old) => {
+                    if (!old?.pages?.length) return old;
+                    return {
+                        ...old,
+                        pages: old.pages.map((p) => ({
+                            ...p,
+                            tasks: p.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)),
+                        })),
+                    };
+                });
+            }
+            return { prev, prevInfinite };
         },
         onError: (err, _vars, ctx) => {
             if (key && ctx?.prev != null) queryClient.setQueryData(key, ctx.prev);
+            if (infiniteKey && ctx?.prevInfinite != null) {
+                queryClient.setQueryData(infiniteKey, ctx.prevInfinite);
+            }
             toast.error(getApiErrorMessage(err, 'Failed to update task status. Please try again.'));
         },
         onSettled: () => {
-            if (key) queryClient.invalidateQueries({ queryKey: key });
             if (projectId != null && projectId !== '') {
-                void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(projectId) });
+                invalidateProjectTaskLists(queryClient, projectId);
             }
-            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
-            queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
+            invalidateDerivedTaskLists(queryClient);
         },
     });
 }
@@ -1249,8 +1270,7 @@ export function useDeleteTask(projectId: number | string | undefined | null) {
         mutationFn: (taskId: number | string) => deleteTask(taskId),
         onSuccess: (_data, taskId) => {
             if (projectId != null && projectId !== '') {
-                void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
-                void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(projectId) });
+                invalidateProjectTaskLists(queryClient, projectId);
             } else {
                 invalidateTasksForCachedTaskProject(queryClient, taskId);
             }
