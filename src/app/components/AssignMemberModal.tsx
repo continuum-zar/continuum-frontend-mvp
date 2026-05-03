@@ -1,10 +1,10 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, Search, X } from "lucide-react";
 
-import { useProjectMembers, useRemoveTaskAssignee, useSetTaskAssignees } from "@/api/hooks";
+import { useProjectMembers, useSetTaskAssignees } from "@/api/hooks";
 import type { Member } from "@/types/member";
 
 import {
@@ -33,6 +33,18 @@ function memberDisplayLines(m: Member): { primary: string; secondary: string } {
   return { primary: email || "Member", secondary: "" };
 }
 
+function sortedFiniteIds(ids: number[]): number[] {
+  return [...new Set(ids.filter((id) => Number.isFinite(id)))].sort((a, b) => a - b);
+}
+
+function idsEqual(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 type AssignMemberModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -50,22 +62,29 @@ export function AssignMemberModal({
   currentAssigneeIds,
 }: AssignMemberModalProps) {
   const [search, setSearch] = useState("");
+  const [draftIds, setDraftIds] = useState<number[]>(() => sortedFiniteIds(currentAssigneeIds));
+  const prevOpenRef = useRef(false);
 
   const membersQuery = useProjectMembers(projectId, {
     enabled: !!projectId && open,
   });
   const setAssigneesMutation = useSetTaskAssignees();
-  const removeAssigneeMutation = useRemoveTaskAssignee();
+
+  useEffect(() => {
+    const wasOpen = prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (open && !wasOpen) {
+      setDraftIds(sortedFiniteIds(currentAssigneeIds));
+      setSearch("");
+    }
+  }, [open, currentAssigneeIds]);
 
   const members = useMemo(
     () => membersQuery.data ?? [],
     [membersQuery.data],
   );
 
-  const assigneeSet = useMemo(
-    () => new Set(currentAssigneeIds.filter((id) => Number.isFinite(id))),
-    [currentAssigneeIds],
-  );
+  const draftSet = useMemo(() => new Set(draftIds), [draftIds]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return members;
@@ -79,31 +98,43 @@ export function AssignMemberModal({
 
   const sortedFiltered = useMemo(() => {
     return [...filtered].sort((a, b) => {
-      const aAs = assigneeSet.has(a.userId) ? 0 : 1;
-      const bAs = assigneeSet.has(b.userId) ? 0 : 1;
+      const aAs = draftSet.has(a.userId) ? 0 : 1;
+      const bAs = draftSet.has(b.userId) ? 0 : 1;
       if (aAs !== bAs) return aAs - bAs;
       return memberDisplayLines(a).primary.localeCompare(memberDisplayLines(b).primary);
     });
-  }, [filtered, assigneeSet]);
+  }, [filtered, draftSet]);
 
-  const applyUserIds = (next: Set<number>) => {
+  const baselineIds = useMemo(() => sortedFiniteIds(currentAssigneeIds), [currentAssigneeIds]);
+  const hasDraftChanges = open && !idsEqual(draftIds, baselineIds);
+
+  const saveDraft = () => {
     if (!taskId) return;
-    setAssigneesMutation.mutate({
-      taskId,
-      userIds: [...next].sort((a, b) => a - b),
-    });
+    if (!hasDraftChanges) {
+      onOpenChange(false);
+      return;
+    }
+    setAssigneesMutation.mutate(
+      { taskId, userIds: draftIds },
+      {
+        onSuccess: () => {
+          onOpenChange(false);
+        },
+      },
+    );
   };
 
   const toggleMember = (userId: number, checked: boolean) => {
-    const next = new Set(assigneeSet);
-    if (checked) next.add(userId);
-    else next.delete(userId);
-    applyUserIds(next);
+    setDraftIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(userId);
+      else next.delete(userId);
+      return [...next].sort((a, b) => a - b);
+    });
   };
 
   const handleUnassignOne = (userId: number) => {
-    if (!taskId) return;
-    removeAssigneeMutation.mutate({ taskId, userId });
+    toggleMember(userId, false);
   };
 
   return (
@@ -184,17 +215,14 @@ export function AssignMemberModal({
                 ) : (
                   <ul
                     className="flex w-full flex-col gap-2"
-                    aria-busy={setAssigneesMutation.isPending || removeAssigneeMutation.isPending}
+                    aria-busy={setAssigneesMutation.isPending}
                   >
                     {sortedFiltered.map((m) => {
                       const { primary, secondary } = memberDisplayLines(m);
                       const bg = AVATAR_BGS[m.id % AVATAR_BGS.length];
-                      const isAssigned = assigneeSet.has(m.userId);
+                      const isAssigned = draftSet.has(m.userId);
                       const rowId = `assign-member-${m.id}`;
-                      const assignBusy =
-                        setAssigneesMutation.isPending ||
-                        removeAssigneeMutation.isPending ||
-                        !taskId;
+                      const assignBusy = setAssigneesMutation.isPending || !taskId;
                       return (
                         <li
                           key={m.id}
@@ -260,6 +288,28 @@ export function AssignMemberModal({
                 )}
               </div>
             </div>
+          </div>
+
+          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border bg-muted/30 px-6 py-4 sm:px-9">
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
+              >
+                Cancel
+              </button>
+            </DialogClose>
+            <button
+              type="button"
+              disabled={!taskId || setAssigneesMutation.isPending}
+              onClick={saveDraft}
+              className={cn(
+                "rounded-lg bg-[#0b191f] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90",
+                (!taskId || setAssigneesMutation.isPending) && "pointer-events-none opacity-50",
+              )}
+            >
+              {setAssigneesMutation.isPending ? "Saving…" : hasDraftChanges ? "Save changes" : "Done"}
+            </button>
           </div>
         </DialogPrimitive.Content>
       </DialogPortal>

@@ -91,6 +91,7 @@ import type { CreateLoggedHourBody } from './loggedHours';
 import { submitIssueReport } from './feedback';
 import type { SubmitIssueReportBody } from './feedback';
 import type { KanbanBoardColumnApi } from '@/types/kanban';
+import { mapTask } from './mappers';
 import {
     getTaskLinkedBranches,
     getTaskAssigneeUserIds,
@@ -134,6 +135,12 @@ function invalidateProjectTaskLists(queryClient: QueryClient, projectId: number 
     void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(projectId) });
     void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(projectId) });
     void queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+}
+
+/** Refetch board/list task queries only (not milestones or project list). */
+function invalidateProjectTaskBoardLists(queryClient: QueryClient, projectId: number | string) {
+    void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+    void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(projectId) });
 }
 
 function invalidateTasksForCachedTaskProject(
@@ -851,6 +858,28 @@ export function useUpdateTaskStatus(projectId: number | string | undefined | nul
             }
             return { prev, prevInfinite };
         },
+        onSuccess: (data, { taskId }) => {
+            if (!key || !data) return;
+            const tid = String(taskId);
+            const row = mapTask(data);
+            queryClient.setQueryData(key, (old: Task[] | undefined) => {
+                if (!old) return old;
+                return old.map((t) => (t.id === tid ? row : t));
+            });
+            if (infiniteKey) {
+                type TasksPage = { tasks: Task[]; total: number; skip: number; limit: number };
+                queryClient.setQueryData<InfiniteData<TasksPage>>(infiniteKey, (old) => {
+                    if (!old?.pages?.length) return old;
+                    return {
+                        ...old,
+                        pages: old.pages.map((p) => ({
+                            ...p,
+                            tasks: p.tasks.map((t) => (t.id === tid ? row : t)),
+                        })),
+                    };
+                });
+            }
+        },
         onError: (err, _vars, ctx) => {
             if (key && ctx?.prev != null) queryClient.setQueryData(key, ctx.prev);
             if (infiniteKey && ctx?.prevInfinite != null) {
@@ -858,8 +887,8 @@ export function useUpdateTaskStatus(projectId: number | string | undefined | nul
             }
             toast.error(getApiErrorMessage(err, 'Failed to update task status. Please try again.'));
         },
-        onSettled: () => {
-            if (projectId != null && projectId !== '') {
+        onSettled: (_data, err) => {
+            if (projectId != null && projectId !== '' && err != null) {
                 invalidateProjectTaskLists(queryClient, projectId);
             }
             invalidateDerivedTaskLists(queryClient);
@@ -1302,6 +1331,7 @@ export function useAssignTask() {
             if (taskId && data) {
                 queryClient.setQueryData(taskDetailKey(taskId), data);
                 void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                invalidateProjectTaskBoardLists(queryClient, data.project_id);
             }
         },
         onError: (err, variables, ctx) => {
@@ -1350,6 +1380,7 @@ export function useRemoveTaskAssignee() {
             if (taskId && data) {
                 queryClient.setQueryData(taskDetailKey(taskId), data);
                 void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                invalidateProjectTaskBoardLists(queryClient, data.project_id);
             }
         },
         onError: (err, variables, ctx) => {
@@ -1398,6 +1429,7 @@ export function useSetTaskAssignees() {
             if (taskId && data) {
                 queryClient.setQueryData(taskDetailKey(taskId), data);
                 void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+                invalidateProjectTaskBoardLists(queryClient, data.project_id);
             }
         },
         onError: (err, variables, ctx) => {

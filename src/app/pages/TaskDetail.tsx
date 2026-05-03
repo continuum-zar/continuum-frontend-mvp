@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
 import { projectSprintHref } from '@/app/data/dashboardPlaceholderProjects';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
+import { shouldPauseTaskDetailChecklistSyncFromServer } from '@/lib/taskDetailChecklistSync';
 import {
   ArrowLeft,
   Activity,
@@ -54,6 +55,7 @@ import {
   type ScopeWeight,
   type TaskPriority,
   type TaskTimelineEntry,
+  type TaskAPIResponse,
 } from '@/types/task';
 import type { CommentAuthorAPI } from '@/types/comment';
 import type { Member } from '@/types/member';
@@ -431,6 +433,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const updateTaskMutation = useUpdateTask();
   const checklistDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const checklistPendingRef = useRef<Array<{ id?: string; text: string; done: boolean }> | null>(null);
+  const checklistInflightRef = useRef(false);
   const { data: attachments } = useTaskAttachments(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
   const timelineQuery = useTaskTimelineInfinite(taskId);
@@ -620,13 +623,29 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const effortInputRef = useRef<HTMLInputElement>(null);
   const checklistInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    checklistInflightRef.current = false;
+    checklistPendingRef.current = null;
+    if (checklistDebounceRef.current != null) {
+      clearTimeout(checklistDebounceRef.current);
+      checklistDebounceRef.current = null;
+    }
+  }, [taskId]);
+
   /* ─ init from task ─ */
   useEffect(() => {
     if (task) {
       setStatus(task.status ?? 'todo');
       setPriority((task.priority ?? 'medium') as TaskPriority);
       setScope((task.scope_weight ?? 'M') as string);
-      setLocalChecklists(task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : []);
+      const pauseChecklistSync = shouldPauseTaskDetailChecklistSyncFromServer({
+        debounceTimerActive: checklistDebounceRef.current != null,
+        awaitingDebouncedPayload: checklistPendingRef.current != null,
+        checklistSaveInFlight: checklistInflightRef.current,
+      });
+      if (!pauseChecklistSync) {
+        setLocalChecklists(task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : []);
+      }
       // Keep drafts in sync so "Update" does not send empty description/title when the user never opened edit mode.
       if (!editingTitle) setTitleDraft(task.title ?? '');
       if (!editingDesc) setDescDraft(task.description ?? '');
@@ -696,7 +715,15 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         const pending = checklistPendingRef.current;
         checklistPendingRef.current = null;
         if (pending != null && taskId) {
-          updateTaskMutation.mutate({ taskId, checklists: pending });
+          checklistInflightRef.current = true;
+          updateTaskMutation.mutate(
+            { taskId, checklists: pending },
+            {
+              onSettled: () => {
+                checklistInflightRef.current = false;
+              },
+            },
+          );
         }
       }, TASK_DETAIL_CHECKLIST_DEBOUNCE_MS);
     },
@@ -712,7 +739,15 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       const pending = checklistPendingRef.current;
       checklistPendingRef.current = null;
       if (pending != null && taskId) {
-        updateTaskMutation.mutate({ taskId, checklists: pending });
+        checklistInflightRef.current = true;
+        updateTaskMutation.mutate(
+          { taskId, checklists: pending },
+          {
+            onSettled: () => {
+              checklistInflightRef.current = false;
+            },
+          },
+        );
       }
     };
   }, [taskId, updateTaskMutation]);
@@ -770,14 +805,22 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     const trimmed = tagDraft.trim();
     if (!trimmed || !taskId) return;
     addTaskLabelMutation.mutate(trimmed, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: taskDetailQueryKey }),
+      onSuccess: (data) => {
+        queryClient.setQueryData<TaskAPIResponse>(taskDetailQueryKey, (prev) =>
+          prev ? { ...prev, labels: data.labels } : prev,
+        );
+      },
     });
   };
 
   const removeTag = (label: string) => {
     if (!taskId) return;
     removeTaskLabelMutation.mutate(label, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: taskDetailQueryKey }),
+      onSuccess: (data) => {
+        queryClient.setQueryData<TaskAPIResponse>(taskDetailQueryKey, (prev) =>
+          prev ? { ...prev, labels: data.labels } : prev,
+        );
+      },
     });
   };
 
