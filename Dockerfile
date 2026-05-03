@@ -13,6 +13,18 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --include=dev --no-audit --no-fund
 
+# Vite replaces `import.meta.env.VITE_*` at compile time. Values must exist in this stage —
+# they are NOT read from the nginx runtime container. Railway: mark these variables as
+# available at build time; Docker passes them when matching `ARG` names are declared.
+ARG VITE_API_BASE_URL
+ARG VITE_MCP_PUBLIC_URL
+ARG VITE_GOOGLE_CLIENT_ID
+ARG VITE_ENABLE_QUERY_DEVTOOLS
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    VITE_MCP_PUBLIC_URL=$VITE_MCP_PUBLIC_URL \
+    VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID \
+    VITE_ENABLE_QUERY_DEVTOOLS=$VITE_ENABLE_QUERY_DEVTOOLS
+
 COPY . .
 RUN npm run build
 
