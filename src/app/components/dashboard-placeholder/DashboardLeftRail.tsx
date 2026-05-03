@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Pause, Play, Search, Square } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
@@ -11,10 +11,6 @@ import { useAuthStore } from "@/store/authStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
 import type { Project } from "@/types/project";
 
-import { CreateProjectModal } from "./CreateProjectModal";
-import { InvoiceModal } from "./InvoiceModal";
-import { LogTimeModal } from "./LogTimeModal";
-import { SettingsModal } from "./SettingsModal";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
@@ -37,6 +33,15 @@ import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import type { SettingsSection } from "./SettingsModal";
 import { cn } from "../ui/utils";
 import { sortMilestonesForNav } from "@/lib/milestoneSort";
+
+const CreateProjectModal = lazy(() =>
+  import("./CreateProjectModal").then((m) => ({ default: m.CreateProjectModal }))
+);
+const InvoiceModal = lazy(() => import("./InvoiceModal").then((m) => ({ default: m.InvoiceModal })));
+const LogTimeModal = lazy(() => import("./LogTimeModal").then((m) => ({ default: m.LogTimeModal })));
+const SettingsModal = lazy(() =>
+  import("./SettingsModal").then((m) => ({ default: m.SettingsModal }))
+);
 
 const imgVector = mcpAsset("2470fa31-25cd-47ac-991d-d1c4219bd28d");
 const imgVector5 = mcpAsset("04dec58a-df34-4fc6-ba98-484eea4a0b4c");
@@ -1029,27 +1034,43 @@ export function DashboardLeftRail({
           <TooltipContent side="right">Account and settings</TooltipContent>
         </Tooltip>
       </div>
-      <CreateProjectModal open={createProjectOpen} onOpenChange={setCreateProjectOpen} />
-      <InvoiceModal open={invoiceOpen} onOpenChange={setInvoiceOpen} />
-      <SettingsModal
-        open={settingsOpen}
-        onOpenChange={(next) => {
-          setSettingsOpen(next);
-          if (!next) setSettingsSectionOverride(null);
-        }}
-        tourSection={settingsSectionOverride ?? settingsTourSection}
-        postGithubOAuthGithubModal={postGithubOAuthGithubModal}
-        onPostGithubOAuthGithubModalConsumed={() => setPostGithubOAuthGithubModal(null)}
-      />
-      <LogTimeModal
-        open={logModalOpen}
-        onOpenChange={(o) => {
-          if (!o) closeLogModal();
-        }}
-        projectId={timerPrefill?.projectId ?? manualLogProjectId ?? undefined}
-        prefillTaskId={timerPrefill?.taskId}
-        prefillHours={timerPrefill?.hours}
-      />
+      {createProjectOpen ? (
+        <Suspense fallback={null}>
+          <CreateProjectModal open={createProjectOpen} onOpenChange={setCreateProjectOpen} />
+        </Suspense>
+      ) : null}
+      {invoiceOpen ? (
+        <Suspense fallback={null}>
+          <InvoiceModal open={invoiceOpen} onOpenChange={setInvoiceOpen} />
+        </Suspense>
+      ) : null}
+      {settingsOpen ? (
+        <Suspense fallback={null}>
+          <SettingsModal
+            open={settingsOpen}
+            onOpenChange={(next) => {
+              setSettingsOpen(next);
+              if (!next) setSettingsSectionOverride(null);
+            }}
+            tourSection={settingsSectionOverride ?? settingsTourSection}
+            postGithubOAuthGithubModal={postGithubOAuthGithubModal}
+            onPostGithubOAuthGithubModalConsumed={() => setPostGithubOAuthGithubModal(null)}
+          />
+        </Suspense>
+      ) : null}
+      {logModalOpen ? (
+        <Suspense fallback={null}>
+          <LogTimeModal
+            open={logModalOpen}
+            onOpenChange={(o) => {
+              if (!o) closeLogModal();
+            }}
+            projectId={timerPrefill?.projectId ?? manualLogProjectId ?? undefined}
+            prefillTaskId={timerPrefill?.taskId}
+            prefillHours={timerPrefill?.hours}
+          />
+        </Suspense>
+      ) : null}
     </>
   );
 }

@@ -45,7 +45,7 @@ export const STALE_SHORT_MS = 45_000;
 export const WIKI_SCAN_POLL_MS = 5_000;
 
 /** RAG indexing progress while project query may be embedding (`GET /indexing/progress`). */
-export const INDEXING_PROGRESS_POLL_MS = 2_000;
+export const INDEXING_PROGRESS_POLL_MS = 4_000;
 
 /**
  * Candidates for future WebSocket / SSE (push invalidation instead of polling):

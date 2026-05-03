@@ -59,6 +59,7 @@ import {
 import { PlannerChoiceQuestions } from '@/app/components/planner/PlannerChoiceQuestions';
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from '@/app/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
+import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 
 type Phase = 'chat' | 'plan_review' | 'creating' | 'complete';
 
@@ -226,6 +227,7 @@ export function AIProjectPlanner({
     onRequestNavigateAway,
 }: AIProjectPlannerProps) {
     const navigate = useNavigate();
+    const prefersReducedMotion = usePrefersReducedMotion();
 
     // Chat state
     const [messages, setMessages] = useState<PlannerMessage[]>([]);
@@ -734,15 +736,15 @@ export function AIProjectPlanner({
                                                         );
                                                     }
                                                     return (
-                                                    <motion.div
+                                                    <div
                                                         key={`${msg.role}-${i}`}
-                                                        initial={{ opacity: 0, y: 8 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        className={
+                                                        className={cn(
                                                             msg.role === 'user'
                                                                 ? 'flex w-full justify-end'
-                                                                : 'flex w-full justify-start'
-                                                        }
+                                                                : 'flex w-full justify-start',
+                                                            !prefersReducedMotion &&
+                                                                'transition-opacity duration-150 ease-out',
+                                                        )}
                                                     >
                                                         {msg.role === 'user' ? (
                                                             <div className="max-w-[85%] rounded-[32px] bg-[#edf0f3] px-4 py-2 text-left font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] whitespace-pre-wrap">
@@ -794,7 +796,7 @@ export function AIProjectPlanner({
                                                                     )}
                                                             </div>
                                                         )}
-                                                    </motion.div>
+                                                    </div>
                                                     );
                                                 })}
 

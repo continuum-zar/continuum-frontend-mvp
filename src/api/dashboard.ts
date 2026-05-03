@@ -294,8 +294,12 @@ export function useIndexingProgressPoll(projectId: number | string | undefined |
         queryKey: id != null ? indexingProgressKeys.project(id) : ['indexing-progress', 'disabled'],
         queryFn: () => fetchIndexingProgress(id!),
         enabled: Boolean(id != null && enabled),
-        staleTime: 0,
-        refetchInterval: id != null && enabled ? INDEXING_PROGRESS_POLL_MS : false,
+        staleTime: INDEXING_PROGRESS_POLL_MS,
+        refetchInterval: (query) => {
+            if (id == null || !enabled) return false;
+            const status = query.state.data?.status;
+            return status === 'complete' || status === 'error' ? false : INDEXING_PROGRESS_POLL_MS;
+        },
     });
 }
 

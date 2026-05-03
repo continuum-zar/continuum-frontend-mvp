@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { mapBackendRole } from '@/lib/utils/roleMapping';
 
@@ -11,20 +11,17 @@ interface RoleContextType {
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-    const { user } = useAuthStore();
-    // Default to Project Manager
-    const [role, setRole] = useState<Role>('Project Manager');
+    const userRole = useAuthStore((state) => state.user?.role);
 
-    useEffect(() => {
-        if (user) {
-            setRole(mapBackendRole(user.role));
-        } else {
-            setRole('Project Manager');
-        }
-    }, [user]);
+    // Default to Project Manager
+    const role = useMemo<Role>(
+        () => (userRole ? mapBackendRole(userRole) : 'Project Manager'),
+        [userRole]
+    );
+    const value = useMemo(() => ({ role }), [role]);
 
     return (
-        <RoleContext.Provider value={{ role }}>
+        <RoleContext.Provider value={value}>
             {children}
         </RoleContext.Provider>
     );

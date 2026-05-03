@@ -8,7 +8,10 @@ export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const login = useAuthStore((state) => state.login);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const error = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
   const prefilledEmail = (location.state as { email?: string } | null)?.email ?? '';
   const [email, setEmail] = useState(prefilledEmail);
   const [password, setPassword] = useState('');
