@@ -511,9 +511,12 @@ export function useProjectTasksInfinite(projectId: number | string | undefined |
             fetchProjectTasksPage(projectId!, { limit: PROJECT_TASKS_PAGE_SIZE, skip: pageParam }),
         initialPageParam: 0,
         getNextPageParam: (lastPage, _pages, lastPageParam) => {
-            const skip = (lastPageParam as number) + lastPage.tasks.length;
-            if (lastPage.tasks.length === 0) return undefined;
-            return skip < lastPage.total ? skip : undefined;
+            if (lastPage == null) return undefined;
+            const pageTasks = lastPage.tasks ?? [];
+            const skip = (lastPageParam as number) + pageTasks.length;
+            if (pageTasks.length === 0) return undefined;
+            const total = lastPage.total ?? 0;
+            return skip < total ? skip : undefined;
         },
         enabled: projectId != null && projectId !== '',
         staleTime: STALE_TASK_LIST_MS,

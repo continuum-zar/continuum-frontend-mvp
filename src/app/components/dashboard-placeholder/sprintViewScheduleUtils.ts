@@ -16,13 +16,17 @@ export function parseTaskCreatedDate(iso: string | null | undefined): Date | nul
 }
 
 export function assigneeNames(task: Task, memberByUserId: Map<number, Member>): string {
-  const ids = task.assignees.map((s) => Number(s)).filter((n) => Number.isFinite(n));
+  const ids = (task.assignees ?? [])
+    .map((s) => Number(s))
+    .filter((n) => Number.isFinite(n));
   const names = ids.map((id) => memberByUserId.get(id)?.name).filter(Boolean) as string[];
   return names.length ? names.join(", ") : "Unassigned";
 }
 
 export function taskProgressPct(task: Task): number {
-  const { total, completed } = task.checklists;
+  const c = task.checklists;
+  if (c == null) return 0;
+  const { total, completed } = c;
   if (total <= 0) return 0;
   return Math.min(100, Math.round((completed / total) * 100));
 }
@@ -43,18 +47,22 @@ export function taskGanttStartEnd(task: Task): { start: Date; end: Date } {
   return { start: anchor, end: endOfDay(addDays(anchor, 1)) };
 }
 
-export function ganttViewDateForTasks(tasks: Task[]): Date {
-  if (tasks.length === 0) return new Date();
-  const centers = tasks.map((t) => {
+export function ganttViewDateForTasks(tasks: Task[] | null | undefined): Date {
+  const list = tasks ?? [];
+  if (list.length === 0) return new Date();
+  const centers = list.map((t) => {
     const { start, end } = taskGanttStartEnd(t);
     return new Date((start.getTime() + end.getTime()) / 2);
   });
   return centers.reduce((a, b) => new Date((a.getTime() + b.getTime()) / 2));
 }
 
-export function calendarRangeForTasks(tasks: Task[], padDays = 45): { timeMin: Date; timeMax: Date } {
+export function calendarRangeForTasks(
+  tasks: Task[] | null | undefined,
+  padDays = 45,
+): { timeMin: Date; timeMax: Date } {
   const dates: Date[] = [];
-  for (const t of tasks) {
+  for (const t of tasks ?? []) {
     const d = parseTaskDueDate(t.dueDate);
     if (d) dates.push(startOfDay(d));
   }

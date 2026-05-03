@@ -220,8 +220,9 @@ export function GanttChartView({
   });
 
   const ganttTasks: GanttTask[] = useMemo(() => {
+    const taskList = tasks ?? [];
     const grouped = new Map<string, Task[]>();
-    for (const task of tasks) {
+    for (const task of taskList) {
       const key = task.milestoneId?.trim() || "none";
       const bucket = grouped.get(key);
       if (bucket) {
@@ -356,7 +357,7 @@ export function GanttChartView({
     }
   }, [dayHeaderDates]);
 
-  if (tasks.length === 0) {
+  if ((tasks ?? []).length === 0) {
     return (
       <div
         className="flex min-h-[280px] w-full flex-1 items-center justify-center rounded-[8px] border border-[#ebedee] bg-[#f9fafb] px-4 font-['Satoshi',sans-serif] text-[14px] text-[#727d83]"
