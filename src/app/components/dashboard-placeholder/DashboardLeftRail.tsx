@@ -420,12 +420,13 @@ function DashboardPlaceholderProjectBlock({
           </p>
         </div>
       </Link>
-      {sprintItems?.map((item) => {
+      {(sprintItems ?? []).map((item) => {
+        const rows = sprintItems ?? [];
         const rowActive =
           sprintSurfaceActive &&
-          (sprintItems.length === 1 ||
+          (rows.length === 1 ||
             (milestoneParam != null && milestoneParam === item.milestoneId) ||
-            (milestoneParam == null && item.milestoneId === sprintItems[0]?.milestoneId));
+            (milestoneParam == null && item.milestoneId === rows[0]?.milestoneId));
         return (
           <Link
             key={item.milestoneId}
@@ -479,7 +480,8 @@ function ApiProjectBlock({
 }) {
   const projectId = project.id;
   const isExpanded = expandedProjectId === projectId;
-  const { data: milestones = [] } = useProjectMilestones(isExpanded ? project.apiId : undefined);
+  const { data: milestonesRaw } = useProjectMilestones(isExpanded ? project.apiId : undefined);
+  const milestones = milestonesRaw ?? [];
   const sprintItems = useMemo((): SprintNavItem[] | null => {
     if (!isExpanded || milestones.length === 0) return null;
     return sortMilestonesForNav(milestones).map((m) => ({
@@ -570,11 +572,13 @@ export function DashboardLeftRail({
    */
   const shouldLoadPickerTasks = taskPickerOpen || isRecording;
   const {
-    data: allTasksForPicker = [],
+    data: allTasksForPickerRaw,
     isPending: allTasksPendingRaw,
     isError: allTasksError,
     error: allTasksErrorDetail,
   } = useAllTasks({ enabled: shouldLoadPickerTasks });
+  /** Query `data` can be `null` while `data: x = []` only defaults `undefined` — always treat as an array. */
+  const allTasksForPicker = allTasksForPickerRaw ?? [];
   // `isPending` is true while query is disabled; treat that as "not loading" in the UI so the empty-state
   // message doesn't flash as a spinner before the picker is opened for the first time.
   const allTasksPending = shouldLoadPickerTasks && allTasksPendingRaw;
@@ -601,7 +605,8 @@ export function DashboardLeftRail({
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get("project");
   const expandedProjectId = expandedProjectFromLocation(pathname, projectParam);
-  const { data: apiProjects = [] } = useProjects();
+  const { data: apiProjectsRaw } = useProjects();
+  const apiProjects = apiProjectsRaw ?? [];
   const user = useAuthStore((s) => s.user);
   const profileName = user
     ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email
