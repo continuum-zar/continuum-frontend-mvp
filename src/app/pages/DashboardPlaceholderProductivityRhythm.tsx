@@ -8,7 +8,7 @@ const DashboardLeftRail = lazy(() =>
   }))
 );
 
-export function DashboardPlaceholderHome() {
+export function DashboardPlaceholderProductivityRhythm() {
   return (
     <div
       className="box-border flex h-screen min-h-0 w-full flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
@@ -28,11 +28,11 @@ export function DashboardPlaceholderHome() {
                 fallback={
                   <div className="flex min-h-[40vh] items-center justify-center">
                     <Loader2 className="size-8 animate-spin text-[#606d76]" aria-hidden />
-                    <span className="sr-only">Loading dashboard…</span>
+                    <span className="sr-only">Loading productivity rhythm…</span>
                   </div>
                 }
               >
-                <Dashboard hideKpiCards hideProductivityRhythm />
+                <Dashboard surface="productivityRhythm" />
               </Suspense>
             </div>
           </section>

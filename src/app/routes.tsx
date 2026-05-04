@@ -8,6 +8,7 @@ import {
   WORKSPACE_BASE,
   WORKSPACE_SPRINT_SEGMENT,
   workspaceJoin,
+  workspaceMyTasksHref,
 } from "@/lib/workspacePaths";
 import { Login } from "./pages/auth/Login";
 import { WaitlistSignUp } from "./pages/auth/WaitlistSignUp";
@@ -42,11 +43,13 @@ const WelcomeContinuumView = lazy(() =>
 const DashboardPlaceholderTaskView = lazy(() =>
   import("./pages/DashboardPlaceholderTaskView").then((m) => ({ default: m.DashboardPlaceholderTaskView }))
 );
-const DashboardPlaceholderAssigned = lazy(() =>
-  import("./pages/DashboardPlaceholderAssigned").then((m) => ({ default: m.DashboardPlaceholderAssigned }))
+const DashboardPlaceholderMyTasks = lazy(() =>
+  import("./pages/DashboardPlaceholderMyTasks").then((m) => ({ default: m.DashboardPlaceholderMyTasks }))
 );
-const DashboardPlaceholderCreated = lazy(() =>
-  import("./pages/DashboardPlaceholderCreated").then((m) => ({ default: m.DashboardPlaceholderCreated }))
+const DashboardPlaceholderProductivityRhythm = lazy(() =>
+  import("./pages/DashboardPlaceholderProductivityRhythm").then((m) => ({
+    default: m.DashboardPlaceholderProductivityRhythm,
+  }))
 );
 const DashboardPlaceholderAIPlanner = lazy(() =>
   import("./pages/DashboardPlaceholderAIPlanner").then((m) => ({
@@ -339,9 +342,7 @@ const appRoutes = [
     path: `${WORKSPACE_BASE}/assigned`,
     element: (
       <AuthGuard>
-        <Suspense fallback={<WorkspaceShellSkeleton variant="list" />}>
-          <DashboardPlaceholderAssigned />
-        </Suspense>
+        <Navigate to={workspaceMyTasksHref("assigned")} replace />
       </AuthGuard>
     ),
   },
@@ -349,8 +350,26 @@ const appRoutes = [
     path: `${WORKSPACE_BASE}/created`,
     element: (
       <AuthGuard>
+        <Navigate to={workspaceMyTasksHref("created")} replace />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: workspaceJoin("my-tasks"),
+    element: (
+      <AuthGuard>
         <Suspense fallback={<WorkspaceShellSkeleton variant="list" />}>
-          <DashboardPlaceholderCreated />
+          <DashboardPlaceholderMyTasks />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: workspaceJoin("productivity-rhythm"),
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <DashboardPlaceholderProductivityRhythm />
         </Suspense>
       </AuthGuard>
     ),
@@ -417,11 +436,11 @@ const appRoutes = [
   },
   {
     path: `${LEGACY_WORKSPACE_BASE}/assigned`,
-    element: <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/assigned`} />,
+    element: <Navigate to={workspaceMyTasksHref("assigned")} replace />,
   },
   {
     path: `${LEGACY_WORKSPACE_BASE}/created`,
-    element: <LegacyWorkspacePathRedirect targetPathname={`${WORKSPACE_BASE}/created`} />,
+    element: <Navigate to={workspaceMyTasksHref("created")} replace />,
   },
   {
     path: `${LEGACY_WORKSPACE_BASE}/ai-planner`,

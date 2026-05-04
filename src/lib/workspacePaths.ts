@@ -10,6 +10,22 @@ export const WORKSPACE_SPRINT_SEGMENT = "sprint";
 /** Former segment — bookmarks and pathname fallbacks only. */
 export const LEGACY_WORKSPACE_GET_STARTED_SEGMENT = "get-started";
 
+/** Unified assigned / created task list (`/workspace/my-tasks`). */
+export const WORKSPACE_MY_TASKS_SEGMENT = "my-tasks";
+
+/** Standalone productivity rhythm heatmap (`/workspace/productivity-rhythm`). */
+export const WORKSPACE_PRODUCTIVITY_RHYTHM_SEGMENT = "productivity-rhythm";
+
+export type WorkspaceMyTasksScope = "assigned" | "created";
+
+export function workspaceMyTasksHref(scope: WorkspaceMyTasksScope): string {
+  return `${workspaceJoin(WORKSPACE_MY_TASKS_SEGMENT)}?scope=${scope}`;
+}
+
+export function workspaceProductivityRhythmHref(): string {
+  return workspaceJoin(WORKSPACE_PRODUCTIVITY_RHYTHM_SEGMENT);
+}
+
 /**
  * Build a path under `/workspace/...`. No leading slash on segments.
  * `workspaceJoin()` → `/workspace`

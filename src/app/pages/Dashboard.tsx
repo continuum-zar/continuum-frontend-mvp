@@ -51,6 +51,7 @@ import {
 } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import { DashboardAnalyticsCharts } from '../components/dashboard-charts/DashboardAnalyticsCharts';
+import { ProductivityRhythmHeatmapCard } from '../components/dashboard-charts/ProductivityRhythmHeatmapCard';
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
 import {
   Bar,
@@ -68,21 +69,21 @@ import {
   Legend
 } from 'recharts';
 
-// Heatmap Helper
-const getHeatmapColor = (value: number) => {
-  if (value > 45) return 'bg-primary';
-  if (value > 30) return 'bg-primary/80';
-  if (value > 15) return 'bg-primary/50';
-  if (value > 0) return 'bg-primary/20';
-  return 'bg-muted/30';
-};
-
 type DashboardProps = {
   hideKpiCards?: boolean;
+  /** When true (e.g. workspace home), the rhythm heatmap is only on the productivity-rhythm route. */
+  hideProductivityRhythm?: boolean;
+  /** Minimal dashboard: project selector + rhythm heatmap only. */
+  surface?: "default" | "productivityRhythm";
 };
 
-export function Dashboard({ hideKpiCards = false }: DashboardProps) {
+export function Dashboard({
+  hideKpiCards = false,
+  hideProductivityRhythm = false,
+  surface = "default",
+}: DashboardProps) {
   const { role: userRole } = useRole();
+  const rhythmOnly = surface === "productivityRhythm";
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
   const [rhythmMember, setRhythmMember] = useState("all");
@@ -217,7 +218,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const { data: dashboardMetrics, isLoading: dashboardLoading, isError: dashboardError } = useQuery({
     queryKey: ['project-dashboard', selectedProject],
     queryFn: () => fetchProjectDashboard(selectedProject),
-    enabled: hasProjectSelected && effectiveRole !== 'Client',
+    enabled: hasProjectSelected && effectiveRole !== 'Client' && !rhythmOnly,
     staleTime: STALE_MODERATE_MS,
     placeholderData: (previousData) => previousData,
   });
@@ -234,7 +235,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const { data: classificationBreakdown, isLoading: classificationLoading, isError: classificationError } = useQuery({
     queryKey: ['classification-breakdown', selectedProject],
     queryFn: () => fetchClassificationBreakdown(selectedProject),
-    enabled: hasProjectSelected && isProjectPM,
+    enabled: hasProjectSelected && isProjectPM && !rhythmOnly,
     staleTime: STALE_MODERATE_MS,
     placeholderData: (previousData) => previousData,
   });
@@ -314,7 +315,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const { data: staleWorkResponse, isLoading: staleWorkLoading, isError: staleWorkError } = useQuery({
     queryKey: ['stale-work', selectedProject],
     queryFn: () => fetchProjectStaleWork(selectedProject),
-    enabled: hasProjectSelected && isProjectPM,
+    enabled: hasProjectSelected && isProjectPM && !rhythmOnly,
     staleTime: STALE_REFERENCE_MS,
     placeholderData: (previousData) => previousData,
   });
@@ -361,7 +362,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
 
   // Milestones – only PM renders the burndown chart & milestone selector on the dashboard
   const { data: milestonesRaw } = useProjectMilestones(
-    isProjectPM && hasProjectSelected ? selectedProject : undefined
+    isProjectPM && hasProjectSelected && !rhythmOnly ? selectedProject : undefined
   );
   const milestones = milestonesRaw ?? [];
   const firstMilestoneId = milestones.length > 0 ? milestones[0].id : null;
@@ -380,7 +381,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const { data: burndown, isLoading: burndownLoading, isError: burndownError } = useQuery({
     queryKey: ['milestone-burndown', milestoneId],
     queryFn: () => fetchMilestoneBurndown(milestoneId!),
-    enabled: !!milestoneId && isProjectPM,
+    enabled: !!milestoneId && isProjectPM && !rhythmOnly,
     staleTime: STALE_MODERATE_MS,
     placeholderData: (previousData) => previousData,
   });
@@ -408,7 +409,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
   const { data: velocityReport, isLoading: velocityLoading, isError: velocityError } = useQuery({
     queryKey: ['velocity-report', selectedProject],
     queryFn: () => fetchProjectVelocityReport(selectedProject, 104, 'daily'),
-    enabled: hasProjectSelected && effectiveRole !== 'Client',
+    enabled: hasProjectSelected && effectiveRole !== 'Client' && !rhythmOnly,
     staleTime: STALE_MODERATE_MS,
     placeholderData: (previousData) => previousData,
   });
@@ -422,6 +423,74 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
       hours: w.hours_logged,
       commits: w.commits_count,
     })) ?? [];
+
+  const rhythmHeatmap = (
+    <ProductivityRhythmHeatmapCard
+      reduceMotion={reduceMotion}
+      effectiveRole={effectiveRole}
+      isProjectPM={isProjectPM}
+      hasProjectSelected={hasProjectSelected}
+      user={user}
+      rhythmMember={rhythmMember}
+      onRhythmMemberChange={setRhythmMember}
+      rhythmProjectMembers={rhythmProjectMembers}
+      rhythmLoading={rhythmLoading}
+      rhythmError={rhythmError}
+      rhythmChartData={rhythmChartData}
+    />
+  );
+
+  if (rhythmOnly) {
+    return (
+      <div className="p-8 pb-20">
+        <div className="mb-8 flex justify-between items-end">
+          <div>
+            <h1 className="text-2xl mb-2">Productivity rhythm</h1>
+            <p className="text-muted-foreground">
+              {effectiveRole === 'Developer'
+                ? 'Your active minutes by hour block.'
+                : 'Team active minutes by hour block.'}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Select
+              value={userRole === 'Client' ? clientProjectId : (hasProjects ? (selectedProject || String(projects[0]?.id ?? "")) : "__none__")}
+              onValueChange={setSelectedProject}
+              disabled={userRole === 'Client' ? clientProjectsList.length === 0 : (projectsLoading || projectsError || !hasProjects)}
+            >
+              <SelectTrigger className="w-[200px] border-border bg-card">
+                <SelectValue placeholder={userRole === 'Client' ? (clientProjectsList.length === 0 ? 'No projects' : 'Select project') : (projectsLoading ? 'Loading projects...' : hasProjects ? 'Select project' : 'No projects')} />
+              </SelectTrigger>
+              <SelectContent>
+                {userRole === 'Client'
+                  ? clientProjectsList.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                    ))
+                  : hasProjects
+                    ? projects.map((project) => (
+                        <SelectItem key={project.id} value={String(project.id)}>
+                          {project.title}
+                        </SelectItem>
+                      ))
+                    : [<SelectItem key="none" value="__none__">No projects</SelectItem>]}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        {effectiveRole === 'Client' ? (
+          <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground text-sm">
+            Productivity rhythm is available for developer and manager roles on the project team.
+          </div>
+        ) : !hasProjectSelected ? (
+          <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground text-sm">
+            Select a project to view rhythm.
+          </div>
+        ) : (
+          rhythmHeatmap
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 pb-20">
@@ -722,104 +791,7 @@ export function Dashboard({ hideKpiCards = false }: DashboardProps) {
       )}
 
       {/* Row 3: User Rhythm Heatmap (requires single project) */}
-      {effectiveRole !== 'Client' && hasProjectSelected && (
-        <div className="grid grid-cols-1 gap-6 mb-6">
-
-          {/* Heatmap */}
-          <motion.div
-            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.25, delay: reduceMotion ? 0 : 0.2 }}
-            className="bg-card border border-border rounded-lg p-6"
-          >
-            <div className="mb-6 flex justify-between items-center">
-              <div>
-                <h3 className="mb-1">{effectiveRole === 'Developer' ? 'My Productivity Rhythm' : 'Team Productivity Rhythm'}</h3>
-                <p className="text-sm text-muted-foreground">Active minutes by hour block</p>
-              </div>
-              <div className="flex items-center gap-4">
-                {isProjectPM && (
-                  <Select value={rhythmMember} onValueChange={setRhythmMember}>
-                    <SelectTrigger className="w-[180px] h-8 text-xs border-border bg-card">
-                      <SelectValue placeholder="Filter member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Members (Collective)</SelectItem>
-                      {rhythmProjectMembers.map((m) => (
-                        <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <div className="flex items-center text-xs space-x-2 text-muted-foreground">
-                  <span>Less</span>
-                  <div className="w-3 h-3 rounded-sm bg-muted/30" />
-                  <div className="w-3 h-3 rounded-sm bg-primary/20" />
-                  <div className="w-3 h-3 rounded-sm bg-primary/50" />
-                  <div className="w-3 h-3 rounded-sm bg-primary/80" />
-                  <div className="w-3 h-3 rounded-sm bg-primary" />
-                  <span>More</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="w-full overflow-x-auto">
-              <div className="min-w-[600px]">
-                {/* x-axis labels */}
-                <div className="flex mb-2 ml-[40px]">
-                  {Array.from({ length: 11 }, (_, i) => i + 8).map(hour => (
-                    <div key={hour} className="flex-1 text-center text-xs text-muted-foreground">
-                      {hour}:00
-                    </div>
-                  ))}
-                </div>
-
-                {/* grid */}
-                {(effectiveRole === 'Developer' && !user?.id) || (isProjectPM && !hasProjectSelected) ? (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
-                    {isProjectPM ? 'Select a project to view rhythm' : 'Sign in to view your rhythm'}
-                  </div>
-                ) : rhythmLoading ? (
-                  <div className="h-[200px] flex flex-col gap-1 ml-[40px]">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="flex gap-1 h-6">
-                        {[...Array(11)].map((_, j) => (
-                          <Skeleton key={j} className="flex-1 rounded-sm" />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                ) : rhythmError ? (
-                  <div className="h-[200px] flex items-center justify-center text-destructive text-sm">Failed to load rhythm</div>
-                ) : isProjectPM && rhythmMember === 'all' && rhythmProjectMembers.length === 0 ? (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No members in this project</div>
-                ) : rhythmChartData.length === 0 ? (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No rhythm data yet</div>
-                ) : (
-                <div className="flex flex-col gap-1">
-                  {rhythmChartData.map((dayRow, idx) => (
-                    <div key={idx} className="flex items-center">
-                      <div className="w-[40px] text-xs font-medium text-muted-foreground">
-                        {dayRow.day}
-                      </div>
-                      <div className="flex-1 flex gap-1">
-                        {Array.from({ length: 11 }, (_, i) => i + 8).map(hour => (
-                          <div
-                            key={hour}
-                            className={`flex-1 aspect-square rounded-sm ${getHeatmapColor(Number(dayRow[`hour${hour}`] ?? 0))}`}
-                            title={`${dayRow.day} ${hour}:00 - ${dayRow[`hour${hour}`]} mins`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
+      {!hideProductivityRhythm && effectiveRole !== 'Client' && hasProjectSelected && rhythmHeatmap}
 
       {/* Row 4: Git Contribution & Stale Work (requires single project) */}
       {isProjectPM && hasProjectSelected && (

@@ -22,7 +22,13 @@ import {
   projectMainHref,
   projectSprintHref,
 } from "../../data/dashboardPlaceholderProjects";
-import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
+import {
+  WORKSPACE_BASE,
+  WORKSPACE_MY_TASKS_SEGMENT,
+  workspaceJoin,
+  workspaceMyTasksHref,
+  workspaceProductivityRhythmHref,
+} from "@/lib/workspacePaths";
 import { GuidedTourLayer } from "@/app/components/onboarding/GuidedTourLayer";
 import {
   consumeGithubOAuthReopenGithubIntegrationModal,
@@ -75,19 +81,50 @@ function CornerDownRight({ className }: { className?: string }) {
 type Component2Props = {
   className?: string;
   state?: "Default" | "Hover" | "Pressing" | "Selected";
-  type?: "Home" | "Invoice" | "Assigned to Me" | "Created by Me";
+  type?: "Home" | "Invoice" | "My tasks" | "Productivity rhythm";
 };
 
 function Component2({ className, state = "Default", type = "Invoice" }: Component2Props) {
   const isDefaultAndHome = state === "Default" && type === "Home";
   const isSelectedAndInvoice = state === "Selected" && type === "Invoice";
-  const isDefaultAndAssignedToMe = state === "Default" && type === "Assigned to Me";
-  const isSelectedAndAssignedToMe = state === "Selected" && type === "Assigned to Me";
-  const isDefaultAndCreatedByMe = state === "Default" && type === "Created by Me";
-  const isSelectedAndCreatedByMe = state === "Selected" && type === "Created by Me";
+  const isDefaultAndMyTasks = state === "Default" && type === "My tasks";
+  const isSelectedAndMyTasks = state === "Selected" && type === "My tasks";
+  const isDefaultAndProductivityRhythm = state === "Default" && type === "Productivity rhythm";
+  const isSelectedAndProductivityRhythm = state === "Selected" && type === "Productivity rhythm";
   const isSelectedAndHome = state === "Selected" && type === "Home";
+  const isSelectedNav =
+    isSelectedAndHome ||
+    isSelectedAndInvoice ||
+    isSelectedAndMyTasks ||
+    isSelectedAndProductivityRhythm;
   return (
-    <div className={className || `content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] w-[47px] ${isSelectedAndHome || isSelectedAndInvoice || isSelectedAndAssignedToMe || isSelectedAndCreatedByMe ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]" : "bg-[#edf0f3]"}`} id={isSelectedAndHome ? "node-7_55" : isDefaultAndCreatedByMe ? "node-7_43" : isDefaultAndAssignedToMe ? "node-7_31" : "node-7_19"} style={isSelectedAndHome || isSelectedAndInvoice || isSelectedAndAssignedToMe || isSelectedAndCreatedByMe ? { backgroundImage: "linear-gradient(90deg, rgb(215, 235, 254) 0%, rgb(215, 235, 254) 100%), linear-gradient(146.07354234425264deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(237, 240, 243) 0%, rgb(237, 240, 243) 100%)" } : undefined}>
+    <div
+      className={
+        className ||
+        `content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] w-[47px] ${
+          isSelectedNav
+            ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
+            : "bg-[#edf0f3]"
+        }`
+      }
+      id={
+        isSelectedAndHome
+          ? "node-7_55"
+          : isDefaultAndProductivityRhythm
+            ? "node-7_43"
+            : isDefaultAndMyTasks
+              ? "node-7_31"
+              : "node-7_19"
+      }
+      style={
+        isSelectedNav
+          ? {
+              backgroundImage:
+                "linear-gradient(90deg, rgb(215, 235, 254) 0%, rgb(215, 235, 254) 100%), linear-gradient(146.07354234425264deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(237, 240, 243) 0%, rgb(237, 240, 243) 100%)",
+            }
+          : undefined
+      }
+    >
       {type === "Invoice" && (
         <div className="relative shrink-0 size-[16px]" data-name="lucide/scroll-text" data-node-id="7:20">
           <img alt="" className="absolute block max-w-none size-full" src={imgLucideScrollText} />
@@ -103,12 +140,12 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
           />
         </div>
       )}
-      {(isDefaultAndAssignedToMe || isSelectedAndAssignedToMe) && (
+      {(isDefaultAndMyTasks || isSelectedAndMyTasks) && (
         <div className="relative shrink-0 size-[16px]" data-name="lucide/target" data-node-id="7:33">
           <img alt="" className="absolute block max-w-none size-full" src={imgLucideTarget} />
         </div>
       )}
-      {(isDefaultAndCreatedByMe || isSelectedAndCreatedByMe) && (
+      {(isDefaultAndProductivityRhythm || isSelectedAndProductivityRhythm) && (
         <div className="relative shrink-0 size-[16px]" data-name="lucide/list-todo" data-node-id="7:44">
           <img alt="" className="absolute block max-w-none size-full" src={imgLucideListTodo1} />
         </div>
@@ -132,18 +169,17 @@ function Frame1({
   className,
   isInvoiceActive = false,
   onInvoiceClick,
-  isAssignedActive = false,
-  isCreatedActive = false,
+  isMyTasksActive = false,
+  isProductivityRhythmActive = false,
   plannerNavigationGuard,
 }: Frame1Props & {
-  isAssignedActive?: boolean;
-  isCreatedActive?: boolean;
+  isMyTasksActive?: boolean;
+  isProductivityRhythmActive?: boolean;
   plannerNavigationGuard?: PlannerNavigationGuardProps;
 }) {
   const navigate = useNavigate();
   const homeTo = WORKSPACE_BASE;
-  const assignedTo = workspaceJoin("assigned");
-  const createdTo = workspaceJoin("created");
+  const productivityRhythmTo = workspaceProductivityRhythmHref();
 
   const onRailLinkClick = (e: React.MouseEvent, to: string) => {
     if (!plannerNavigationGuard) return;
@@ -198,51 +234,51 @@ function Frame1({
         </Tooltip>
       </button>
       <Link
-        to={assignedTo}
-        data-tour="rail-assigned"
-        onClick={(e) => onRailLinkClick(e, assignedTo)}
+        to={workspaceMyTasksHref("assigned")}
+        data-tour="rail-my-tasks"
+        onClick={(e) => onRailLinkClick(e, workspaceMyTasksHref("assigned"))}
         className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="Assigned to me"
+        aria-label="My tasks — assigned and created"
       >
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-flex h-full w-full">
               <Component2
                 className={`content-stretch flex h-full w-full gap-[12px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 ${
-                  isAssignedActive
+                  isMyTasksActive
                     ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
                     : "bg-[#edf0f3]"
                 }`}
-                state={isAssignedActive ? "Selected" : "Default"}
-                type="Assigned to Me"
+                state={isMyTasksActive ? "Selected" : "Default"}
+                type="My tasks"
               />
             </span>
           </TooltipTrigger>
-          <TooltipContent side="right">Assigned to me</TooltipContent>
+          <TooltipContent side="right">My tasks (assigned and created)</TooltipContent>
         </Tooltip>
       </Link>
       <Link
-        to={createdTo}
-        data-tour="rail-created"
-        onClick={(e) => onRailLinkClick(e, createdTo)}
+        to={productivityRhythmTo}
+        data-tour="rail-productivity-rhythm"
+        onClick={(e) => onRailLinkClick(e, productivityRhythmTo)}
         className="inline-flex h-[40px] w-[47px] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="Created by me"
+        aria-label="Team productivity rhythm"
       >
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-flex h-full w-full">
               <Component2
                 className={`content-stretch flex h-full w-full gap-[12px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 ${
-                  isCreatedActive
-                    ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
+                  isProductivityRhythmActive
+                    ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
                     : "bg-[#edf0f3]"
                 }`}
-                state={isCreatedActive ? "Selected" : "Default"}
-                type="Created by Me"
+                state={isProductivityRhythmActive ? "Selected" : "Default"}
+                type="Productivity rhythm"
               />
             </span>
           </TooltipTrigger>
-          <TooltipContent side="right">Created by me</TooltipContent>
+          <TooltipContent side="right">Team productivity rhythm</TooltipContent>
         </Tooltip>
       </Link>
     </div>
@@ -324,15 +360,15 @@ function Frame({
   className,
   isInvoiceActive = false,
   onInvoiceClick,
-  isAssignedActive = false,
-  isCreatedActive = false,
+  isMyTasksActive = false,
+  isProductivityRhythmActive = false,
   plannerNavigationGuard,
 }: {
   className?: string;
   isInvoiceActive?: boolean;
   onInvoiceClick: () => void;
-  isAssignedActive?: boolean;
-  isCreatedActive?: boolean;
+  isMyTasksActive?: boolean;
+  isProductivityRhythmActive?: boolean;
   plannerNavigationGuard?: PlannerNavigationGuardProps;
 }) {
   return (
@@ -349,8 +385,8 @@ function Frame({
         className="content-stretch flex gap-[8px] items-center relative shrink-0"
         isInvoiceActive={isInvoiceActive}
         onInvoiceClick={onInvoiceClick}
-        isAssignedActive={isAssignedActive}
-        isCreatedActive={isCreatedActive}
+        isMyTasksActive={isMyTasksActive}
+        isProductivityRhythmActive={isProductivityRhythmActive}
         plannerNavigationGuard={plannerNavigationGuard}
       />
     </div>
@@ -663,8 +699,12 @@ export function DashboardLeftRail({
   }, [tourActive]);
 
   const isInvoiceActive = invoiceOpen;
-  const isAssignedActive = pathname.startsWith(`${WORKSPACE_BASE}/assigned`);
-  const isCreatedActive = pathname.startsWith(`${WORKSPACE_BASE}/created`);
+  const myTasksBase = workspaceJoin(WORKSPACE_MY_TASKS_SEGMENT);
+  const isMyTasksActive =
+    pathname.startsWith(myTasksBase) ||
+    pathname.startsWith(`${WORKSPACE_BASE}/assigned`) ||
+    pathname.startsWith(`${WORKSPACE_BASE}/created`);
+  const isProductivityRhythmActive = pathname.startsWith(workspaceProductivityRhythmHref());
 
   return (
     <>
@@ -687,8 +727,8 @@ export function DashboardLeftRail({
           className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0"
           isInvoiceActive={isInvoiceActive}
           onInvoiceClick={() => setInvoiceOpen(true)}
-          isAssignedActive={isAssignedActive}
-          isCreatedActive={isCreatedActive}
+          isMyTasksActive={isMyTasksActive}
+          isProductivityRhythmActive={isProductivityRhythmActive}
           plannerNavigationGuard={plannerNavigationGuard}
         />
         <div
