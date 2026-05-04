@@ -7,7 +7,12 @@ import {
   projectSprintHref,
   WELCOME_PROJECT_ID,
 } from "@/app/data/dashboardPlaceholderProjects";
-import { workspaceJoin, WORKSPACE_SPRINT_SEGMENT } from "@/lib/workspacePaths";
+import {
+  workspaceJoin,
+  WORKSPACE_SPRINT_SEGMENT,
+  workspaceMyTasksHref,
+  workspaceProductivityRhythmHref,
+} from "@/lib/workspacePaths";
 import type { TimeLogsActivitySubView } from "@/store/workspaceTourStore";
 
 import { GuidedTourRichText, type GuidedTourSegment } from "./GuidedTourRichText";
@@ -39,8 +44,8 @@ export type WorkspaceTourStep = {
 
 const U = {
   home: workspaceJoin(),
-  assigned: workspaceJoin("assigned"),
-  created: workspaceJoin("created"),
+  myTasks: workspaceMyTasksHref("assigned"),
+  productivityRhythm: workspaceProductivityRhythmHref(),
   welcome: projectMainHref(WELCOME_PROJECT_ID),
   sprintWelcome: projectSprintHref(WELCOME_PROJECT_ID),
   timeLogsTable: `${workspaceJoin(WORKSPACE_SPRINT_SEGMENT, "time-logs")}?populated=1&tab=time-logs`,
@@ -75,25 +80,29 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     ]),
   },
   {
-    id: "rail-assigned",
-    title: "Assigned to me",
-    ensureUrl: U.assigned,
-    targetSelector: '[data-tour="rail-assigned"]',
+    id: "my-tasks-scope-toggle",
+    title: "My tasks",
+    ensureUrl: U.myTasks,
+    targetSelector: '[data-tour="my-tasks-scope-toggle"]',
     body: T([
-      { text: "A focused queue of " },
-      { text: "tasks assigned to you", h: "cyan" },
-      { text: " across projects.", h: "peach" },
+      { text: "Use the left rail ", h: "peach" },
+      { text: "My tasks", h: "cyan" },
+      { text: " icon to open this list. Switch between ", h: "peach" },
+      { text: "Assigned to me", h: "cyan" },
+      { text: " and ", h: "peach" },
+      { text: "Created by me", h: "cyan" },
+      { text: " with these tabs.", h: "peach" },
     ]),
   },
   {
-    id: "rail-created",
-    title: "Created by me",
-    ensureUrl: U.created,
-    targetSelector: '[data-tour="rail-created"]',
+    id: "rail-productivity-rhythm",
+    title: "Productivity rhythm",
+    ensureUrl: U.productivityRhythm,
+    targetSelector: '[data-tour="rail-productivity-rhythm"]',
     body: T([
-      { text: "Everything you’ve " },
-      { text: "created", h: "cyan" },
-      { text: " so you can track follow-ups.", h: "peach" },
+      { text: "View the ", h: "peach" },
+      { text: "team productivity rhythm", h: "cyan" },
+      { text: " heatmap for the selected project.", h: "peach" },
     ]),
   },
   {
