@@ -34,6 +34,10 @@ type LogTimeModalProps = {
   /** When opening from the timer stop flow, pre-select task and hours */
   prefillTaskId?: string;
   prefillHours?: string;
+  /** Session mode: uses provided submit callback instead of creating a logged-hour row directly. */
+  submitMode?: "loggedHour" | "session";
+  onSessionSubmit?: (payload: { description: string }) => Promise<void>;
+  submitLabel?: string;
 };
 
 export function LogTimeModal({
@@ -42,6 +46,9 @@ export function LogTimeModal({
   projectId,
   prefillTaskId,
   prefillHours,
+  submitMode = "loggedHour",
+  onSessionSubmit,
+  submitLabel,
 }: LogTimeModalProps) {
   const [taskId, setTaskId] = useState("");
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
@@ -126,12 +133,13 @@ export function LogTimeModal({
   }, [taskPickerOpen]);
 
   const hoursNum = Number.parseFloat(hoursSpent);
-  const canSubmit =
-    taskId !== "" &&
-    hoursSpent.trim() !== "" &&
-    Number.isFinite(hoursNum) &&
-    hoursNum > 0 &&
-    !tasksLoading;
+  const canSubmit = submitMode === "session"
+    ? !tasksLoading
+    : taskId !== "" &&
+      hoursSpent.trim() !== "" &&
+      Number.isFinite(hoursNum) &&
+      hoursNum > 0 &&
+      !tasksLoading;
 
   const descLen = description.length;
 
@@ -164,6 +172,19 @@ export function LogTimeModal({
 
   const handleSubmitLogTime = async () => {
     if (!canSubmit) return;
+    if (submitMode === "session") {
+      if (!onSessionSubmit) {
+        toast.error("Session submit callback is missing.");
+        return;
+      }
+      try {
+        await onSessionSubmit({ description: description.trim() });
+        onOpenChange(false);
+      } catch {
+        /* toast handled by caller */
+      }
+      return;
+    }
     const resolvedProjectId =
       projectId != null
         ? projectId
@@ -443,7 +464,7 @@ export function LogTimeModal({
                       canSubmit && !createLoggedHour.isPending ? "text-white" : "text-[#606d76] opacity-50",
                     )}
                   >
-                    {createLoggedHour.isPending ? "Saving…" : "Log Time"}
+                    {createLoggedHour.isPending ? "Saving…" : (submitLabel ?? "Log Time")}
                   </span>
                 </button>
               </div>
