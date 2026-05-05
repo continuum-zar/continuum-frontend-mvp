@@ -5,7 +5,6 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import type { PlannerNavigationGuardProps } from "@/app/components/planner/PlannerLeaveConfirmModal";
 
 import { getApiErrorMessage, useAllTasks, useProjectMilestones, useProjects } from "@/api/hooks";
-import { getRecordingElapsedMs, useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { useAuthStore } from "@/store/authStore";
 import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
@@ -39,14 +38,17 @@ import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import type { SettingsSection } from "./SettingsModal";
 import { cn } from "../ui/utils";
 import { sortMilestonesForNav } from "@/lib/milestoneSort";
+import { useTimeTracking } from "@/app/context/TimeTrackingContext";
 
 const CreateProjectModal = lazy(() =>
   import("./CreateProjectModal").then((m) => ({ default: m.CreateProjectModal }))
 );
 const InvoiceModal = lazy(() => import("./InvoiceModal").then((m) => ({ default: m.InvoiceModal })));
-const LogTimeModal = lazy(() => import("./LogTimeModal").then((m) => ({ default: m.LogTimeModal })));
 const SettingsModal = lazy(() =>
   import("./SettingsModal").then((m) => ({ default: m.SettingsModal }))
+);
+const LogTimeModal = lazy(() =>
+  import("./LogTimeModal").then((m) => ({ default: m.LogTimeModal }))
 );
 
 const imgVector = mcpAsset("2470fa31-25cd-47ac-991d-d1c4219bd28d");
@@ -564,49 +566,36 @@ export function DashboardLeftRail({
     setRailPickerBoundary(node);
   }, []);
 
-  const selectedTask = useTimeRecordingStore((s) => s.selectedTask);
-  const setSelectedTask = useTimeRecordingStore((s) => s.setSelectedTask);
-  const isRecording = useTimeRecordingStore((s) => s.isRecording);
-  const isPaused = useTimeRecordingStore((s) => s.isPaused);
-  const startedAtMs = useTimeRecordingStore((s) => s.startedAtMs);
-  const accumulatedMs = useTimeRecordingStore((s) => s.accumulatedMs);
-  const startRecording = useTimeRecordingStore((s) => s.startRecording);
-  const pauseRecording = useTimeRecordingStore((s) => s.pauseRecording);
-  const resumeRecording = useTimeRecordingStore((s) => s.resumeRecording);
-  const stopRecordingOpenLogModal = useTimeRecordingStore((s) => s.stopRecordingOpenLogModal);
-  const logModalOpen = useTimeRecordingStore((s) => s.logModalOpen);
-  const timerPrefill = useTimeRecordingStore((s) => s.timerPrefill);
-  const manualLogProjectId = useTimeRecordingStore((s) => s.manualLogProjectId);
-  const closeLogModal = useTimeRecordingStore((s) => s.closeLogModal);
+  const {
+    activate: activateTimeTracking,
+    sessionState,
+    currentTime,
+    selectedTask,
+    selectedTaskId,
+    setSelectedTaskId,
+    isLoggingModalOpen,
+    setIsLoggingModalOpen,
+    handleStart,
+    handlePause,
+    handleResume,
+    handleLogSubmit,
+    handleStop,
+  } = useTimeTracking();
 
-  const [, setTick] = useState(0);
   useEffect(() => {
-    if (!isRecording || isPaused || startedAtMs == null) return;
-    const id = window.setInterval(() => setTick((n) => n + 1), 1000);
-    return () => window.clearInterval(id);
-  }, [isRecording, isPaused, startedAtMs]);
+    activateTimeTracking();
+  }, [activateTimeTracking]);
 
-  const timerPhase: "idle" | "running" | "paused" = !isRecording
-    ? "idle"
-    : isPaused
-      ? "paused"
-      : "running";
-
-  const elapsedSec = Math.floor(
-    getRecordingElapsedMs({
-      isRecording,
-      isPaused,
-      startedAtMs,
-      accumulatedMs,
-    }) / 1000,
-  );
+  const timerPhase: "idle" | "running" | "paused" =
+    sessionState === "running" ? "running" : sessionState === "paused" ? "paused" : "idle";
+  const elapsedSec = Math.max(0, Math.floor(currentTime));
 
   /**
    * Only fetch when the user actually opens the task picker (or is recording, so the picker is armed).
    * Previously eager-loaded 500 tasks on every workspace route — big tax on slow networks with no payoff
    * for users who never use the task picker. Cached results stay warm for subsequent opens.
    */
-  const shouldLoadPickerTasks = taskPickerOpen || isRecording;
+  const shouldLoadPickerTasks = taskPickerOpen || sessionState !== "idle";
   const {
     data: allTasksForPickerRaw,
     isPending: allTasksPendingRaw,
@@ -904,10 +893,10 @@ export function DashboardLeftRail({
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      disabled={isRecording}
+                      disabled={sessionState !== "idle"}
                       className="mt-0.5 flex max-w-full items-start gap-0.5 rounded-sm text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                       aria-label="Select task"
-                      title={isRecording ? "Stop timer to change task" : "Select ticket"}
+                      title={sessionState !== "idle" ? "Stop timer to change task" : "Select ticket"}
                     >
                       <span className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
                         {selectedTask ? selectedTask.title : "Select ticket"}
@@ -920,21 +909,20 @@ export function DashboardLeftRail({
                 phase={timerPhase}
                 onPrimary={() => {
                   if (timerPhase === "running") {
-                    pauseRecording();
+                    void handlePause();
                     return;
                   }
                   if (timerPhase === "paused") {
-                    resumeRecording();
+                    void handleResume();
                     return;
                   }
                   if (!selectedTask) {
                     toast.error("Select a task first");
                     return;
                   }
-                  const ok = startRecording();
-                  if (!ok) toast.error("Select a task first");
+                  void handleStart();
                 }}
-                onStop={() => stopRecordingOpenLogModal()}
+                onStop={() => { void handleStop(); }}
               />
           </div>
                   <PopoverContent
@@ -985,7 +973,7 @@ export function DashboardLeftRail({
                               key={t.id}
                               type="button"
                               onClick={() => {
-                                setSelectedTask(t);
+                                setSelectedTaskId(String(t.id));
                                 setTaskPickerOpen(false);
                               }}
                               className={cn(
@@ -1093,16 +1081,19 @@ export function DashboardLeftRail({
           />
         </Suspense>
       ) : null}
-      {logModalOpen ? (
+      {isLoggingModalOpen ? (
         <Suspense fallback={null}>
           <LogTimeModal
-            open={logModalOpen}
-            onOpenChange={(o) => {
-              if (!o) closeLogModal();
+            open={isLoggingModalOpen}
+            onOpenChange={setIsLoggingModalOpen}
+            projectId={selectedTask?.project_id ?? null}
+            prefillTaskId={selectedTaskId || undefined}
+            prefillHours={(Math.max(0, currentTime) / 3600).toFixed(2)}
+            submitMode="session"
+            submitLabel="Log Time"
+            onSessionSubmit={async ({ description }) => {
+              await handleLogSubmit(description);
             }}
-            projectId={timerPrefill?.projectId ?? manualLogProjectId ?? undefined}
-            prefillTaskId={timerPrefill?.taskId}
-            prefillHours={timerPrefill?.hours}
           />
         </Suspense>
       ) : null}

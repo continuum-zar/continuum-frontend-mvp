@@ -75,6 +75,20 @@ export interface UserRhythmDayHourResponse {
     day_hour: UserRhythmDayHourBuckets;
 }
 
+/** Ongoing work session row from GET /projects/{id}/active-work-sessions (snake_case API). */
+export interface ActiveWorkSessionItem {
+    session_id: number;
+    user_id: number;
+    display_name: string;
+    first_name: string;
+    last_name: string;
+    task_id: number | null;
+    task_title: string | null;
+    started_at: string;
+    last_resumed_at: string | null;
+    status: string;
+}
+
 // Stale work
 export interface StaleBranchItem {
     branch: string;
@@ -173,6 +187,11 @@ export async function fetchUserRhythm(userId: number | string, dayHour = true): 
         params: { day_hour: dayHour },
     });
     return data;
+}
+
+export async function fetchProjectActiveWorkSessions(projectId: number | string): Promise<ActiveWorkSessionItem[]> {
+    const { data } = await api.get<ActiveWorkSessionItem[]>(`/projects/${projectId}/active-work-sessions`);
+    return data ?? [];
 }
 
 export async function fetchProjectStaleWork(projectId: number | string, thresholdDays?: number): Promise<StaleWorkResponse> {

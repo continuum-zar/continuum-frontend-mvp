@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'motion/react';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
@@ -34,6 +34,7 @@ import {
 } from '../components/ui/select';
 import { useRole } from '../context/RoleContext';
 import { effectiveDashboardRole } from '@/lib/utils/roleMapping';
+import type { ActiveWorkSessionItem } from '@/api/dashboard';
 import {
   useProjects,
   fetchProjectDashboard,
@@ -42,10 +43,13 @@ import {
   fetchMilestoneBurndown,
   useProjectMembers,
   fetchUserRhythm,
+  fetchProjectActiveWorkSessions,
+  fetchActiveWorkSession,
   fetchClassificationBreakdown,
   fetchProjectStaleWork,
   fetchClientProjects,
   fetchClientProjectProgress,
+  fetchTask,
   postProjectQuery,
   useIndexingProgressPoll,
 } from '@/api';
@@ -53,6 +57,8 @@ import { useAuthStore } from '@/store/authStore';
 import { DashboardAnalyticsCharts } from '../components/dashboard-charts/DashboardAnalyticsCharts';
 import { ProductivityRhythmHeatmapCard } from '../components/dashboard-charts/ProductivityRhythmHeatmapCard';
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
+import { getCurrentHeatmapHour, getTodayHeatmapDayLabel } from '@/lib/productivityRhythmLiveCell';
+import { projectPresenceEventsStreamUrl, type ProjectPresenceEvent } from '@/api/projectPresenceEvents';
 import {
   Bar,
   LineChart,
@@ -83,6 +89,7 @@ export function Dashboard({
   surface = "default",
 }: DashboardProps) {
   const { role: userRole } = useRole();
+  const queryClient = useQueryClient();
   const rhythmOnly = surface === "productivityRhythm";
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
@@ -136,6 +143,8 @@ export function Dashboard({
    * ─────────────────────────────────────────────────────────────────────── */
 
   const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   // Projects list – only PM/Developer need the full project list;
   // Client role uses client-projects instead. Key matches useProjects / layout prefetch.
@@ -208,12 +217,202 @@ export function Dashboard({
     return dayOrder.map((dayKey) => {
       const row: Record<string, string | number> = { day: dayLabels[dayKey] ?? dayKey };
       const dayData = dh[dayKey] ?? {};
-      for (let h = 8; h <= 18; h++) {
+      for (let h = 0; h <= 23; h++) {
         row[`hour${h}`] = Number(dayData[String(h)] ?? 0);
       }
       return row;
     });
   }, [rhythmResponse]);
+
+  const { data: activeWorkSessionsRaw, isLoading: activeSessionsLoading, isError: activeSessionsError } = useQuery({
+    queryKey: ['project-active-work-sessions', selectedProject],
+    queryFn: () => fetchProjectActiveWorkSessions(selectedProject),
+    enabled: hasProjectSelected && isProjectPM,
+    refetchInterval: 45_000,
+    staleTime: 30_000,
+    placeholderData: (previousData) => previousData,
+  });
+
+  const { data: myActiveWorkSession, isLoading: myActiveSessionLoading, isError: myActiveSessionError } = useQuery({
+    queryKey: ['my-active-work-session'],
+    queryFn: fetchActiveWorkSession,
+    enabled: hasProjectSelected && user != null && effectiveRole !== 'Client',
+    refetchInterval: 15_000,
+    staleTime: 5_000,
+  });
+
+  const { data: myActiveTask } = useQuery({
+    queryKey: ['active-session-task', myActiveWorkSession?.task_id],
+    queryFn: () => fetchTask(myActiveWorkSession!.task_id!),
+    enabled: myActiveWorkSession?.task_id != null,
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !hasProjectSelected || effectiveRole === 'Client' || !isAuthenticated || !accessToken) {
+      return;
+    }
+    const url = projectPresenceEventsStreamUrl(selectedProject, accessToken);
+    const es = new EventSource(url);
+    const onMessage = (ev: MessageEvent<string>) => {
+      try {
+        const data = JSON.parse(ev.data) as Partial<ProjectPresenceEvent>;
+        if (!data.type || Number(data.project_id) !== Number(selectedProject)) return;
+        if (!["session_started", "session_paused", "session_resumed", "session_stopped"].includes(data.type)) return;
+        void queryClient.invalidateQueries({ queryKey: ['project-active-work-sessions', selectedProject] });
+        void queryClient.invalidateQueries({ queryKey: ['my-active-work-session'] });
+      } catch {
+        // Ignore malformed payloads and keep stream alive.
+      }
+    };
+    es.addEventListener('message', onMessage as EventListener);
+    return () => {
+      es.removeEventListener('message', onMessage as EventListener);
+      es.close();
+    };
+  }, [selectedProject, hasProjectSelected, effectiveRole, accessToken, isAuthenticated, queryClient]);
+
+  const [liveClockTick, setLiveClockTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setLiveClockTick((x) => x + 1), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const filteredActiveWorkSessions = useMemo(() => {
+    const raw = activeWorkSessionsRaw ?? [];
+    if (!isProjectPM || rhythmMember === 'all') return raw;
+    const m = rhythmProjectMembers.find((x) => String(x.id) === rhythmMember);
+    if (!m) return raw;
+    return raw.filter((s) => s.user_id === m.userId);
+  }, [activeWorkSessionsRaw, isProjectPM, rhythmMember, rhythmProjectMembers]);
+
+  const developerRhythmLiveSessions = useMemo((): ActiveWorkSessionItem[] => {
+    const s = myActiveWorkSession;
+    if (!s || !user) return [];
+    if (String(s.project_id ?? '') !== selectedProject) {
+      console.debug('[RhythmLive] my session project mismatch', {
+        selectedProject,
+        activeSessionProject: s.project_id ?? null,
+        sessionId: s.id,
+      });
+      return [];
+    }
+    const userIdNum = Number(user.id);
+    if (!Number.isFinite(userIdNum)) return [];
+    const sessionIdNum = typeof s.id === 'string' ? Number(s.id) : s.id;
+    if (!Number.isFinite(sessionIdNum)) return [];
+    const display =
+      [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.email || 'You';
+    const started =
+      s.started_at && !Number.isNaN(Date.parse(s.started_at)) ? s.started_at : new Date().toISOString();
+    return [
+      {
+        session_id: sessionIdNum,
+        user_id: typeof s.user_id === 'number' && Number.isFinite(s.user_id) ? s.user_id : userIdNum,
+        display_name: display,
+        first_name: user.first_name ?? '',
+        last_name: user.last_name ?? '',
+        task_id: s.task_id ?? null,
+        task_title: myActiveTask?.title?.trim() || s.note?.trim() || null,
+        started_at: started,
+        last_resumed_at: s.last_resumed_at ?? null,
+        status: s.status,
+      },
+    ];
+  }, [myActiveWorkSession, myActiveTask, user, selectedProject]);
+
+  const liveRhythmSessions = useMemo(() => {
+    const mine = developerRhythmLiveSessions;
+    if (!isProjectPM) return mine;
+    const team = filteredActiveWorkSessions;
+    if (mine.length === 0) return team;
+    // PM view: always merge own current session into team list so a just-started timer
+    // appears immediately even when team cache is stale.
+    const bySessionId = new Map<number, ActiveWorkSessionItem>();
+    for (const s of team) bySessionId.set(s.session_id, s);
+    for (const s of mine) bySessionId.set(s.session_id, s);
+    return Array.from(bySessionId.values());
+  }, [isProjectPM, filteredActiveWorkSessions, developerRhythmLiveSessions]);
+
+  const rhythmLiveInfoBanner = useMemo(() => {
+    if (!user || effectiveRole === 'Client') return null;
+    const s = myActiveWorkSession;
+    if (!s) return null;
+    if (String(s.project_id ?? '') !== selectedProject) {
+      return 'You have an active timer on another project. Pick that project in the dropdown above to see your live marker on the heatmap.';
+    }
+    if (getTodayHeatmapDayLabel() == null) {
+      return 'This heatmap only includes Monday–Friday. Your timer is still running; the live marker appears on weekdays.';
+    }
+    return null;
+  }, [myActiveWorkSession, user, selectedProject, effectiveRole]);
+
+  const showRhythmLiveOverlay = hasProjectSelected && effectiveRole !== 'Client';
+
+  const liveRhythmOverlay = useMemo(() => {
+    void liveClockTick;
+    const sessions = liveRhythmSessions;
+    const loading =
+      (isProjectPM ? activeSessionsLoading : myActiveSessionLoading) && sessions.length === 0;
+    const error =
+      sessions.length === 0 && (isProjectPM ? activeSessionsError : myActiveSessionError);
+    return {
+      dayLabel: getTodayHeatmapDayLabel(),
+      hour: getCurrentHeatmapHour(),
+      sessions,
+      loading,
+      error,
+      infoBanner: rhythmLiveInfoBanner,
+    };
+  }, [
+    liveRhythmSessions,
+    rhythmLiveInfoBanner,
+    isProjectPM,
+    activeSessionsLoading,
+    activeSessionsError,
+    myActiveSessionLoading,
+    myActiveSessionError,
+    liveClockTick,
+  ]);
+
+  useEffect(() => {
+    console.debug('[RhythmLive] query state snapshot', {
+      selectedProject,
+      effectiveRole,
+      isProjectPM,
+      myActiveSession: myActiveWorkSession
+        ? {
+            id: myActiveWorkSession.id,
+            project_id: myActiveWorkSession.project_id ?? null,
+            status: myActiveWorkSession.status,
+            task_id: myActiveWorkSession.task_id ?? null,
+          }
+        : null,
+      teamActiveCount: (activeWorkSessionsRaw ?? []).length,
+      filteredTeamCount: filteredActiveWorkSessions.length,
+      developerLiveCount: developerRhythmLiveSessions.length,
+      mergedLiveCount: liveRhythmSessions.length,
+      overlayDayLabel: liveRhythmOverlay.dayLabel,
+      overlayHour: liveRhythmOverlay.hour,
+      overlayLoading: liveRhythmOverlay.loading,
+      overlayError: liveRhythmOverlay.error,
+      overlayInfoBanner: liveRhythmOverlay.infoBanner ?? null,
+    });
+  }, [
+    selectedProject,
+    effectiveRole,
+    isProjectPM,
+    myActiveWorkSession,
+    activeWorkSessionsRaw,
+    filteredActiveWorkSessions.length,
+    developerRhythmLiveSessions.length,
+    liveRhythmSessions.length,
+    liveRhythmOverlay.dayLabel,
+    liveRhythmOverlay.hour,
+    liveRhythmOverlay.loading,
+    liveRhythmOverlay.error,
+    liveRhythmOverlay.infoBanner,
+  ]);
 
   const { data: dashboardMetrics, isLoading: dashboardLoading, isError: dashboardError } = useQuery({
     queryKey: ['project-dashboard', selectedProject],
@@ -437,6 +636,7 @@ export function Dashboard({
       rhythmLoading={rhythmLoading}
       rhythmError={rhythmError}
       rhythmChartData={rhythmChartData}
+      liveRhythmOverlay={showRhythmLiveOverlay ? liveRhythmOverlay : undefined}
     />
   );
 

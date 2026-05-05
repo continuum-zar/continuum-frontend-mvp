@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAllTasks, useLoggedHours, getApiErrorMessage } from '@/api/hooks';
 import type { TaskOption } from '@/api';
@@ -68,10 +69,10 @@ interface TimeTrackingContextProps {
     handlePause: () => Promise<void>;
     /** Resume the active session (POST work-sessions/{id}/resume). */
     handleResume: () => Promise<void>;
-    handleLogSubmit: () => Promise<void>;
+    handleLogSubmit: (noteOverride?: string) => Promise<void>;
     handleLogCancel: () => void;
-    /** Open Log Time Session modal (timer pauses until user logs or cancels). */
-    handleStop: () => void;
+    /** Open Log Time Session modal; pauses backend session first when needed. */
+    handleStop: () => Promise<void>;
     /** Whether a start/pause/resume/stop request is in flight. */
     isSessionActionLoading: boolean;
 }
@@ -79,6 +80,7 @@ interface TimeTrackingContextProps {
 const TimeTrackingContext = createContext<TimeTrackingContextProps | undefined>(undefined);
 
 export function TimeTrackingProvider({ children }: { children: ReactNode }) {
+    const queryClient = useQueryClient();
     // Lazy-activation gate: time logs URL, legacy /time target, or active-session hint. SPA navigations
     // to time logs should call `activate()` from that view (provider sits above RouterProvider).
     const [isActivated, setIsActivated] = useState<boolean>(() => {
@@ -90,6 +92,14 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
     });
 
     const activate = useCallback(() => setIsActivated(true), []);
+
+    const invalidateMyActiveWorkSession = useCallback(() => {
+        console.debug('[TimeTracking] invalidating session queries', {
+            keys: ['my-active-work-session', 'project-active-work-sessions'],
+        });
+        void queryClient.invalidateQueries({ queryKey: ['my-active-work-session'] });
+        void queryClient.invalidateQueries({ queryKey: ['project-active-work-sessions'] });
+    }, [queryClient]);
 
     const { data: tasksData, isLoading: tasksLoading, isError: tasksError } = useAllTasks({ enabled: isActivated });
     const tasks = useMemo(() => tasksData ?? [], [tasksData]);
@@ -130,7 +140,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         fetchActiveWorkSession()
             .then((session) => {
                 if (cancelled || !session) return;
-                setActiveSessionId(session.id);
+                setActiveSessionId(String(session.id));
                 setSessionState(session.status === 'ACTIVE' ? 'running' : 'paused');
                 setCurrentTime(session.current_duration_seconds ?? 0);
                 if (session.task_id != null && session.task_id !== undefined) {
@@ -158,7 +168,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         const syncInterval = setInterval(() => {
             fetchActiveWorkSession()
                 .then((session) => {
-                if (session?.id === activeSessionId && session.status === 'ACTIVE') {
+                if (session != null && String(session.id) === activeSessionId && session.status === 'ACTIVE') {
                     setCurrentTime(session.current_duration_seconds ?? 0);
                 }
             })
@@ -181,9 +191,16 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
                 ...(Number.isFinite(taskIdNum) && { task_id: taskIdNum }),
                 note: undefined,
             });
-            setActiveSessionId(data.id);
+            console.debug('[TimeTracking] start session response', {
+                sessionId: data.id,
+                status: data.status,
+                projectId: data.project_id,
+                taskId: data.task_id ?? null,
+            });
+            setActiveSessionId(String(data.id));
             setSessionState('running');
             setCurrentTime(data.current_duration_seconds ?? 0);
+            invalidateMyActiveWorkSession();
             // Set localStorage hint so next page load activates the provider immediately
             try { localStorage.setItem(SESSION_HINT_KEY, 'true'); } catch { /* noop */ }
         } catch (err) {
@@ -191,7 +208,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsSessionActionLoading(false);
         }
-    }, [selectedTask, tasks]);
+    }, [selectedTask, tasks, invalidateMyActiveWorkSession]);
 
     const handlePause = useCallback(async () => {
         if (!activeSessionId) return;
@@ -200,12 +217,13 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
             const data = await pauseWorkSession(activeSessionId);
             setSessionState('paused');
             setCurrentTime(data.current_duration_seconds ?? 0);
+            invalidateMyActiveWorkSession();
         } catch (err) {
             toast.error(getApiErrorMessage(err, 'Failed to pause session.'));
         } finally {
             setIsSessionActionLoading(false);
         }
-    }, [activeSessionId]);
+    }, [activeSessionId, invalidateMyActiveWorkSession]);
 
     const handleResume = useCallback(async () => {
         if (!activeSessionId) return;
@@ -214,17 +232,51 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
             const data = await resumeWorkSession(activeSessionId);
             setSessionState('running');
             setCurrentTime(data.current_duration_seconds ?? 0);
+            invalidateMyActiveWorkSession();
         } catch (err) {
             toast.error(getApiErrorMessage(err, 'Failed to resume session.'));
         } finally {
             setIsSessionActionLoading(false);
         }
-    }, [activeSessionId]);
+    }, [activeSessionId, invalidateMyActiveWorkSession]);
 
-    const handleStop = useCallback(() => {
-        setSessionState('paused'); // Pause the timer while logging
-        setIsLoggingModalOpen(true);
-    }, []);
+    const handleStop = useCallback(async () => {
+        if (!activeSessionId) {
+            toast.error('No active session to stop.');
+            return;
+        }
+        setIsSessionActionLoading(true);
+        try {
+            // Keep backend and UI in sync: stop-flow starts from a paused session.
+            if (sessionState === 'running') {
+                const data = await pauseWorkSession(activeSessionId);
+                setSessionState('paused');
+                setCurrentTime(data.current_duration_seconds ?? 0);
+                invalidateMyActiveWorkSession();
+            } else if (sessionState !== 'paused') {
+                const session = await fetchActiveWorkSession();
+                if (!session) {
+                    toast.error('No active session to stop.');
+                    return;
+                }
+                if (session.status === 'ACTIVE') {
+                    const data = await pauseWorkSession(String(session.id));
+                    setSessionState('paused');
+                    setCurrentTime(data.current_duration_seconds ?? 0);
+                } else {
+                    setSessionState('paused');
+                    setCurrentTime(session.current_duration_seconds ?? 0);
+                }
+                setActiveSessionId(String(session.id));
+                invalidateMyActiveWorkSession();
+            }
+            setIsLoggingModalOpen(true);
+        } catch (err) {
+            toast.error(getApiErrorMessage(err, 'Failed to prepare session for logging.'));
+        } finally {
+            setIsSessionActionLoading(false);
+        }
+    }, [activeSessionId, sessionState, invalidateMyActiveWorkSession]);
 
     const simulateAiGeneration = useCallback(async () => {
         if (!activeSessionId) {
@@ -247,14 +299,15 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
         }
     }, [activeSessionId]);
 
-    const handleLogSubmit = useCallback(async () => {
+    const handleLogSubmit = useCallback(async (noteOverride?: string) => {
         if (!activeSessionId) {
             toast.error('No active session to log.');
             return;
         }
         setIsSessionActionLoading(true);
         try {
-            await stopWorkSession(activeSessionId, { note: logForm.description || undefined });
+            const finalNote = noteOverride ?? logForm.description;
+            await stopWorkSession(activeSessionId, { note: finalNote || undefined });
             setIsLoggingModalOpen(false);
             setSessionState('idle');
             setCurrentTime(0);
@@ -262,13 +315,14 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
             setLogForm({ task: '', description: '' });
             // Clear localStorage hint since session is over
             try { localStorage.removeItem(SESSION_HINT_KEY); } catch { /* noop */ }
+            invalidateMyActiveWorkSession();
             refetchEntries();
         } catch (err) {
             toast.error(getApiErrorMessage(err, 'Failed to log session.'));
         } finally {
             setIsSessionActionLoading(false);
         }
-    }, [activeSessionId, logForm.description, refetchEntries]);
+    }, [activeSessionId, logForm.description, refetchEntries, invalidateMyActiveWorkSession]);
 
     const handleLogCancel = useCallback(() => {
         setIsLoggingModalOpen(false);
