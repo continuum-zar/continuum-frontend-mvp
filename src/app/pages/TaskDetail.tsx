@@ -40,6 +40,7 @@ import {
   useRemoveTaskLabel,
   useProjectRepositories,
   useProjectKanbanBoard,
+  useProjectTasks,
   useTaskCommentsInfinite,
   useCreateTaskComment,
 } from '@/api';
@@ -214,7 +215,7 @@ function TaskCommentAvatar({ author }: { author: CommentAuthorAPI }) {
 
 function TaskDetailSkeleton() {
   return (
-    <div className="flex h-full w-full min-h-0 items-stretch font-['Satoshi',sans-serif]">
+    <div className="relative flex h-full w-full min-h-0 items-stretch font-['Satoshi',sans-serif]">
       <main className="min-h-0 flex-1 overflow-y-auto rounded-[12px] bg-[#f9fafb] p-4">
         <div className="mx-auto w-full max-w-[600px] space-y-6 py-4">
           <div className="h-6 w-32 animate-pulse rounded bg-[#e4eaec]" />
@@ -455,6 +456,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const taskDetailQueryKey = ['tasks', 'detail', taskId] as const;
   const { data: projectRepos = [], isLoading: reposLoading } = useProjectRepositories(task?.project_id);
   const { data: kanbanColumnsApi = [] } = useProjectKanbanBoard(task?.project_id ?? null);
+  const { data: projectTasks = [] } = useProjectTasks(task?.project_id ?? null);
   const boardColumns = useMemo(() => {
     if (kanbanColumnsApi.length > 0) return mapKanbanBoardFromApi(kanbanColumnsApi);
     return [...DEFAULT_KANBAN_COLUMNS];
@@ -480,6 +482,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [resourceModalOpen, setResourceModalOpen] = useState(false);
   const [pendingUploadRows, setPendingUploadRows] = useState<TaskResourcePendingUploadRow[]>([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [dependencyModalOpen, setDependencyModalOpen] = useState(false);
+  const [dependencySearch, setDependencySearch] = useState('');
+  const [selectedDependencies, setSelectedDependencies] = useState<number[]>([]);
   const [logTimeOpen, setLogTimeOpen] = useState(false);
   const [buildModalOpen, setBuildModalOpen] = useState(false);
   const [buildDrawerRunId, setBuildDrawerRunId] = useState<string | null>(null);
@@ -649,6 +654,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       // Keep drafts in sync so "Update" does not send empty description/title when the user never opened edit mode.
       if (!editingTitle) setTitleDraft(task.title ?? '');
       if (!editingDesc) setDescDraft(task.description ?? '');
+      setSelectedDependencies(Array.isArray(task.dependencies) ? task.dependencies : []);
     }
   }, [task, editingTitle, editingDesc]);
 
@@ -880,6 +886,18 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       onSuccess: () => setCommentDraft(''),
     });
   };
+
+  const dependencyOptions = useMemo(
+    () =>
+      projectTasks
+        .filter((t) => String(t.id) !== String(taskId))
+        .filter((t) =>
+          dependencySearch.trim()
+            ? t.title.toLowerCase().includes(dependencySearch.trim().toLowerCase())
+            : true,
+        ),
+    [projectTasks, taskId, dependencySearch],
+  );
 
   const handleUpdateTask = async () => {
     if (!taskId) return;
@@ -1166,6 +1184,48 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       deletePending={deleteAttachmentMutation.isPending}
                     />
                   ))}
+                </div>
+              )}
+            </section>
+
+            {/* ─── Dependencies ─── */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[16px] font-medium text-[#0b191f]">Dependencies</p>
+                <button
+                  type="button"
+                  onClick={() => setDependencyModalOpen(true)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 text-[14px] font-medium text-[#0b191f]"
+                >
+                  Add <Plus size={16} />
+                </button>
+              </div>
+              {selectedDependencies.length === 0 ? (
+                <p className="text-[13px] text-[#727d83]">No dependencies yet</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {selectedDependencies.map((depId) => {
+                    const dep = projectTasks.find((t) => Number(t.id) === depId);
+                    return (
+                      <span
+                        key={depId}
+                        className="inline-flex items-center gap-1.5 rounded-[16px] border border-[#cdd2d5] bg-white px-4 py-1.5 text-[13px] font-medium text-[#606d76]"
+                      >
+                        {dep?.title ?? `Task #${depId}`}
+                        <button
+                          type="button"
+                          className="inline-flex size-4 items-center justify-center rounded-full hover:text-[#0b191f]"
+                          onClick={() => {
+                            const next = selectedDependencies.filter((id) => id !== depId);
+                            setSelectedDependencies(next);
+                            if (taskId) updateTaskMutation.mutate({ taskId, dependencies: next });
+                          }}
+                        >
+                          <X size={10} />
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -1671,6 +1731,65 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
           taskId={taskId}
           runId={buildDrawerRunId}
         />
+      ) : null}
+      {dependencyModalOpen ? (
+        <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/25 p-4">
+          <div className="w-full max-w-[520px] rounded-[12px] bg-white p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[16px] font-medium text-[#0b191f]">Select dependencies</p>
+              <button type="button" onClick={() => setDependencyModalOpen(false)} aria-label="Close dependencies modal">
+                <X size={16} />
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Search tasks"
+              value={dependencySearch}
+              onChange={(e) => setDependencySearch(e.target.value)}
+              className="mb-3 w-full rounded-[8px] border border-[#e9e9e9] px-3 py-2 text-[14px] outline-none"
+            />
+            <div className="max-h-[320px] space-y-2 overflow-y-auto">
+              {dependencyOptions.map((opt) => {
+                const optId = Number(opt.id);
+                const checked = Number.isFinite(optId) && selectedDependencies.includes(optId);
+                return (
+                  <label key={opt.id} className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-[#ebedee] p-2">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        if (!Number.isFinite(optId)) return;
+                        setSelectedDependencies((prev) =>
+                          checked ? prev.filter((id) => id !== optId) : [...prev, optId],
+                        );
+                      }}
+                    />
+                    <span className="text-[14px] text-[#0b191f]">{opt.title}</span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-[8px] border border-[#e9e9e9] px-3 py-2 text-[14px]"
+                onClick={() => setDependencyModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-[8px] bg-[#24B5F8] px-3 py-2 text-[14px] text-white"
+                onClick={() => {
+                  if (taskId) updateTaskMutation.mutate({ taskId, dependencies: selectedDependencies });
+                  setDependencyModalOpen(false);
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

@@ -507,7 +507,7 @@ export function GetStartedKanbanLive({
                 </div>
               </div>
             </div>
-            <div className="content-stretch flex items-center justify-between relative shrink-0 w-full">
+            <div className="content-stretch relative flex w-full shrink-0 flex-wrap items-end justify-between gap-2">
               <div className="content-stretch relative flex min-w-0 shrink-0 items-center">
                 <KanbanAssigneeAvatars
                   assigneeUserIds={assigneeUserIds}
@@ -516,11 +516,15 @@ export function GetStartedKanbanLive({
                   variant="card"
                 />
               </div>
-              <KanbanTaskMetaPills
-                attachments={task.attachments}
-                comments={task.comments}
-                branchCount={branchCount}
-              />
+              <div className="ml-auto min-w-0 max-w-full">
+                <KanbanTaskMetaPills
+                  attachments={task.attachments}
+                  comments={task.comments}
+                  branchCount={branchCount}
+                  dependencyCount={task.dependencyCount ?? 0}
+                  wrap
+                />
+              </div>
             </div>
           </div>
         </div>

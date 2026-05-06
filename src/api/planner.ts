@@ -106,6 +106,7 @@ export interface PlannedTask {
     checklist: ChecklistItem[];
     labels: string[];
     figma_node_ids?: string[];
+    dependency_indexes?: number[];
 }
 
 export interface PlannedMilestone {

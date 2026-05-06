@@ -91,6 +91,7 @@ export function mapTask(t: TaskAPIResponse): Task {
         dueDate: t.due_date ?? null,
         ...(t.created_at != null && t.created_at !== '' ? { createdAtIso: t.created_at } : {}),
         ...(linkedBranches.length > 0 ? { linkedBranches } : {}),
+        dependencyCount: Array.isArray(t.dependencies) ? t.dependencies.length : 0,
     };
 }
 
