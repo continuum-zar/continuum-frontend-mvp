@@ -60,6 +60,7 @@ export interface GeneratedTask {
     labels?: string[];
     resources?: GeneratedTaskResource[];
     figma_node_ids?: string[];
+    dependency_indexes?: number[];
 }
 
 export interface GenerateTasksResponse {
@@ -91,6 +92,7 @@ export interface WikiConfirmTaskItem {
     labels?: string[] | null;
     resources?: GeneratedTaskResource[];
     figma_node_ids?: string[];
+    dependency_indexes?: number[];
 }
 
 export interface ConfirmTasksResponse {

@@ -2,31 +2,30 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { ChevronDown, GitBranch, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useReplaceTaskLinkedBranches } from '@/api/hooks';
+import { useCreateAndLinkTaskBranch, useReplaceTaskLinkedBranches } from '@/api/hooks';
 import { fetchRepositoryBranches } from '@/api/repositories';
 import { normalizeProjectKeyId } from '@/api/projects';
 import { STALE_MODERATE_MS } from '@/lib/queryDefaults';
+import {
+  branchNameFromTaskTitle,
+  isDuplicateRepoBranchLink,
+  repositoryLinkedName,
+} from '@/lib/taskBranchNaming';
 import { getTaskLinkedBranches, type TaskAPIResponse, type TaskLinkedBranch } from '@/types/task';
 import type { BranchItem, Repository } from '@/types/repository';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/app/components/ui/dialog';
 
 function createRowKey(): string {
   return typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `row-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-/** Provider full name for task.linked_repo / webhooks; fallback from URL or name. */
-function repoLinkedName(r: Repository): string {
-  const fn = r.fullName?.trim();
-  if (fn) return fn;
-  try {
-    const u = new URL(r.repositoryUrl);
-    const path = u.pathname.replace(/^\/+|\/+$/g, '');
-    if (path.includes('/')) return path;
-  } catch {
-    /* ignore */
-  }
-  return (r.repositoryName || '').trim();
 }
 
 function branchToFullRef(name: string): string {
@@ -37,7 +36,7 @@ function branchToFullRef(name: string): string {
 function findRepoIdForLinkedName(repos: Repository[], linkedName: string): number | null {
   const want = linkedName.trim().toLowerCase();
   if (!want) return null;
-  const m = repos.find((r) => repoLinkedName(r).toLowerCase() === want);
+  const m = repos.find((r) => repositoryLinkedName(r).toLowerCase() === want);
   return m?.id ?? null;
 }
 
@@ -85,7 +84,7 @@ function entriesToPayload(entries: EntryRow[], projectRepos: Repository[]): Task
     if (!repo) continue;
     const bn = e.branchName.trim();
     out.push({
-      linked_repo: repoLinkedName(repo),
+      linked_repo: repositoryLinkedName(repo),
       linked_branch: bn,
       linked_branch_full_ref: branchToFullRef(bn),
     });
@@ -119,9 +118,22 @@ export function TaskLinkedBranchesSection({
   reposLoading,
 }: TaskLinkedBranchesSectionProps) {
   const replaceBranchesMutation = useReplaceTaskLinkedBranches();
+  const createBranchMutation = useCreateAndLinkTaskBranch();
   const [entries, setEntries] = useState<EntryRow[]>(() => parseEntriesFromTask(task, projectRepos));
   const [openRepoKey, setOpenRepoKey] = useState<string | null>(null);
   const [openBranchKey, setOpenBranchKey] = useState<string | null>(null);
+  const [createBranchOpen, setCreateBranchOpen] = useState(false);
+  const [createBranchRepoId, setCreateBranchRepoId] = useState<number | null>(null);
+
+  const generatedBranchName = useMemo(
+    () => branchNameFromTaskTitle(task.title ?? '', taskId),
+    [task.title, taskId],
+  );
+
+  const selectedCreateRepo = useMemo(
+    () => projectRepos.find((r) => r.id === createBranchRepoId) ?? null,
+    [projectRepos, createBranchRepoId],
+  );
 
   const branchSyncKey = useMemo(() => JSON.stringify(getTaskLinkedBranches(task)), [task]);
 
@@ -216,6 +228,29 @@ export function TaskLinkedBranchesSection({
     persist(next);
   };
 
+  const confirmCreateBranch = () => {
+    if (!selectedCreateRepo) {
+      toast.error('Select a repository.');
+      return;
+    }
+    const lr = repositoryLinkedName(selectedCreateRepo);
+    if (isDuplicateRepoBranchLink(getTaskLinkedBranches(task), lr, generatedBranchName)) {
+      toast.error('That repository and branch are already linked.');
+      return;
+    }
+    createBranchMutation.mutate(
+      {
+        taskId,
+        projectId,
+        repository: selectedCreateRepo,
+        branchName: generatedBranchName,
+      },
+      {
+        onSuccess: () => setCreateBranchOpen(false),
+      },
+    );
+  };
+
   if (reposLoading) {
     return <div className="h-[46px] w-full animate-pulse rounded-[8px] bg-[#e4eaec]" />;
   }
@@ -260,7 +295,7 @@ export function TaskLinkedBranchesSection({
                       className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-3"
                     >
                       <span className="min-w-0 truncate text-left text-[14px] font-medium text-[#0b191f]">
-                        {repo ? repoLinkedName(repo) || repo.repositoryName : 'Select repository'}
+                        {repo ? repositoryLinkedName(repo) || repo.repositoryName : 'Select repository'}
                       </span>
                       <ChevronDown size={16} className="shrink-0" />
                     </button>
@@ -271,7 +306,7 @@ export function TaskLinkedBranchesSection({
                         aria-label="Repositories"
                       >
                         {projectRepos.map((r) => {
-                          const name = repoLinkedName(r) || r.repositoryName;
+                          const name = repositoryLinkedName(r) || r.repositoryName;
                           return (
                             <button
                               key={r.id}
@@ -365,15 +400,118 @@ export function TaskLinkedBranchesSection({
         })}
       </ul>
 
-      <button
-        type="button"
-        onClick={addRow}
-        disabled={replaceBranchesMutation.isPending}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-dashed border-[#e9e9e9] bg-white py-2.5 text-[14px] font-medium text-[#606d76] hover:border-[#24B5F8]/50 hover:text-[#0b191f] disabled:opacity-50 sm:w-auto sm:justify-start sm:px-3"
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch">
+        <button
+          type="button"
+          onClick={addRow}
+          disabled={replaceBranchesMutation.isPending || createBranchMutation.isPending}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-dashed border-[#e9e9e9] bg-white py-2.5 text-[14px] font-medium text-[#606d76] hover:border-[#24B5F8]/50 hover:text-[#0b191f] disabled:opacity-50 sm:w-auto sm:justify-start sm:px-3"
+        >
+          {replaceBranchesMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus size={16} />}
+          Add branch link
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setCreateBranchOpen(true);
+            setCreateBranchRepoId(projectRepos[0]?.id ?? null);
+          }}
+          disabled={
+            projectRepos.length === 0 || replaceBranchesMutation.isPending || createBranchMutation.isPending
+          }
+          className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-[#e9e9e9] bg-white py-2.5 text-[14px] font-medium text-[#606d76] hover:border-[#24B5F8]/50 hover:text-[#0b191f] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:justify-start sm:px-3"
+        >
+          {createBranchMutation.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <GitBranch className="size-4 shrink-0" aria-hidden />
+          )}
+          Create branch
+        </button>
+      </div>
+
+      <Dialog
+        open={createBranchOpen}
+        onOpenChange={(open) => {
+          if (!open && createBranchMutation.isPending) return;
+          setCreateBranchOpen(open);
+        }}
       >
-        {replaceBranchesMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus size={16} />}
-        Add branch link
-      </button>
+        <DialogContent
+          className="gap-0 overflow-hidden rounded-[16px] border border-[#e9e9e9] p-0 sm:max-w-md"
+          onPointerDownOutside={(e) => {
+            if (createBranchMutation.isPending) e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            if (createBranchMutation.isPending) e.preventDefault();
+          }}
+        >
+          <DialogHeader className="border-b border-[#e9e9e9] px-6 py-4 text-left">
+            <DialogTitle className="text-[16px] font-medium text-[#0b191f]">Create branch</DialogTitle>
+            <DialogDescription className="text-[13px] leading-snug text-[#727d83]">
+              A new branch will be created on the provider and linked to this task.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 px-6 py-4">
+            <div>
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-[#727d83]">Branch name</p>
+              <p className="break-all rounded-[8px] border border-[#e9e9e9] bg-[#f9fafb] px-3 py-2 font-mono text-[14px] font-medium text-[#0b191f]">
+                {generatedBranchName}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-[#727d83]">Repository</p>
+              <div
+                className="max-h-[240px] overflow-y-auto rounded-[8px] border border-[#e9e9e9]"
+                role="listbox"
+                aria-label="Repositories"
+              >
+                {projectRepos.map((r) => {
+                  const name = repositoryLinkedName(r) || r.repositoryName;
+                  const selected = createBranchRepoId === r.id;
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => setCreateBranchRepoId(r.id)}
+                      disabled={createBranchMutation.isPending}
+                      className={`flex w-full items-start border-b border-[#e9e9e9] px-3 py-2.5 text-left text-[14px] font-medium last:border-b-0 hover:bg-[#f0f3f5] disabled:opacity-50 ${
+                        selected ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                      }`}
+                    >
+                      <span className="min-w-0 flex-1 break-words">{name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 border-t border-[#e9e9e9] px-6 py-4 sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setCreateBranchOpen(false)}
+              disabled={createBranchMutation.isPending}
+              className="inline-flex h-10 items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-4 text-[14px] font-medium text-[#606d76] hover:bg-[#f0f3f5] disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmCreateBranch}
+              disabled={createBranchRepoId == null || createBranchMutation.isPending}
+              className="inline-flex h-10 min-w-[140px] items-center justify-center gap-2 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white hover:bg-[#1aa8eb] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {createBranchMutation.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+              Create branch
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

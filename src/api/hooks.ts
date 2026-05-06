@@ -88,6 +88,9 @@ import {
 } from './tasks';
 import { fetchLoggedHours, createLoggedHour, sumLoggedHoursForTask } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
+import { createRepositoryBranch } from './repositoryBranchCreate';
+import type { Repository } from '@/types/repository';
+import { repositoryLinkedName } from '@/lib/taskBranchNaming';
 import { submitIssueReport } from './feedback';
 import type { SubmitIssueReportBody } from './feedback';
 import type { KanbanBoardColumnApi } from '@/types/kanban';
@@ -296,6 +299,7 @@ function isChecklistOnlyTaskUpdate(vars: {
     linked_repo?: string | null;
     linked_branch?: string | null;
     checklists?: TaskChecklistItemUpdate[];
+    dependencies?: number[] | null;
 }): boolean {
     if (vars.checklists === undefined) return false;
     return (
@@ -308,7 +312,8 @@ function isChecklistOnlyTaskUpdate(vars: {
         vars.estimated_hours === undefined &&
         vars.linked_branches === undefined &&
         vars.linked_repo === undefined &&
-        vars.linked_branch === undefined
+        vars.linked_branch === undefined &&
+        vars.dependencies === undefined
     );
 }
 
@@ -1031,6 +1036,7 @@ export function useUpdateTask() {
             linked_repo,
             linked_branch,
             checklists,
+            dependencies,
         }: {
             taskId: string | number;
             title?: string;
@@ -1044,6 +1050,7 @@ export function useUpdateTask() {
             linked_repo?: string | null;
             linked_branch?: string | null;
             checklists?: TaskChecklistItemUpdate[];
+            dependencies?: number[] | null;
         }) =>
             updateTask(taskId, {
                 title,
@@ -1057,6 +1064,7 @@ export function useUpdateTask() {
                 linked_repo,
                 linked_branch,
                 checklists,
+                dependencies,
             }),
         onMutate: async (variables) => {
             const tid = variables.taskId;
@@ -1189,6 +1197,84 @@ export function useAddTaskLinkedBranch() {
             toast.error(getApiErrorMessage(err, 'Failed to link branch'));
         },
         onSettled: (_d, _e, v) => {
+            invalidateTasksForCachedTaskProject(queryClient, v.taskId);
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
+
+/** Create a branch on the remote via API, then append it to the task's linked branches (single toast). */
+export function useCreateAndLinkTaskBranch() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({
+            taskId,
+            projectId,
+            repository,
+            branchName,
+        }: {
+            taskId: string | number;
+            projectId: number;
+            repository: Repository;
+            branchName: string;
+        }) => {
+            const trimmedName = branchName.trim();
+            const created = await createRepositoryBranch(projectId, repository.id, { name: trimmedName });
+            const finalName = (created?.name ?? trimmedName).trim();
+            let detail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
+            if (!detail) detail = await fetchTask(taskId);
+            const lr = repositoryLinkedName(repository);
+            const link: TaskLinkedBranch = {
+                linked_repo: lr,
+                linked_branch: finalName,
+                linked_branch_full_ref: `refs/heads/${finalName}`,
+            };
+            const next = [...getTaskLinkedBranches(detail), link];
+            try {
+                return await updateTask(taskId, { linked_branches: next });
+            } catch (linkErr) {
+                throw Object.assign(
+                    new Error(
+                        'Branch was created on the remote but could not be linked to this task. Link it manually under Development.',
+                    ),
+                    { cause: linkErr },
+                );
+            }
+        },
+        onSuccess: (data, { taskId, projectId, repository }) => {
+            if (taskId && data) queryClient.setQueryData(taskDetailKey(taskId), data);
+            void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
+            void queryClient.invalidateQueries({
+                queryKey: [
+                    'projects',
+                    'detail',
+                    normalizeProjectKeyId(projectId),
+                    'repositories',
+                    repository.id,
+                    'branches',
+                ] as const,
+            });
+            toast.success('Branch created and linked');
+        },
+        onError: (err: unknown) => {
+            const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+            if (status === 409) {
+                toast.error('That branch already exists. Pick another name or link it with “Add branch link”.');
+                return;
+            }
+            if (status === 403) {
+                toast.error(
+                    'Could not create the branch. Check repository permissions or ask an admin to link the integration.',
+                );
+                return;
+            }
+            if (err instanceof Error && err.message.startsWith('Branch was created on the remote')) {
+                toast.error(err.message);
+                return;
+            }
+            toast.error(getApiErrorMessage(err, 'Failed to create branch'));
+        },
+        onSettled: (_data, _err, v) => {
             invalidateTasksForCachedTaskProject(queryClient, v.taskId);
             invalidateDerivedTaskLists(queryClient);
         },

@@ -80,6 +80,10 @@ export {
     useLinkRepository,
     useUnlinkRepository,
 } from './repositories';
+export {
+    createRepositoryBranch,
+} from './repositoryBranchCreate';
+export type { CreateRepositoryBranchBody, CreateRepositoryBranchResponse } from './repositoryBranchCreate';
 export type { Repository, RepositoryCreateBody, RepositoryProvider, BranchItem } from '@/types/repository';
 export type { CommentAPIResponse } from '@/types/comment';
 export {

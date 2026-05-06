@@ -89,6 +89,7 @@ export async function updateTask(
         linked_repo?: string | null;
         linked_branch?: string | null;
         checklists?: TaskChecklistItemUpdate[];
+        dependencies?: number[] | null;
     }
 ): Promise<TaskAPIResponse> {
     const payload: Record<
@@ -100,6 +101,7 @@ export async function updateTask(
         | number
         | null
         | TaskChecklistItemUpdate[]
+        | number[]
         | TaskLinkedBranchesUpdate
         | undefined
     > = {};
@@ -139,6 +141,9 @@ export async function updateTask(
     }
     if (body.checklists !== undefined) {
         payload.checklists = body.checklists;
+    }
+    if (body.dependencies !== undefined) {
+        payload.dependencies = body.dependencies ?? [];
     }
 
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
@@ -180,6 +185,7 @@ export interface CreateTaskBody {
     milestone_id?: number | null;
     checklists?: Array<{ text: string; done?: boolean }> | null;
     labels?: string[] | null;
+    dependencies?: number[] | null;
 }
 
 /** Create a task. POST /tasks/ */

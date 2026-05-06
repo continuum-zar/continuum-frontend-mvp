@@ -150,6 +150,7 @@ export function SprintKanbanListView({
               attachments={task.attachments}
               comments={task.comments}
               branchCount={branchCount}
+              dependencyCount={task.dependencyCount ?? 0}
             />
           </div>
         </div>
