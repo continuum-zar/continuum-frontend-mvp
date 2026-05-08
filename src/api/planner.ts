@@ -98,6 +98,8 @@ export interface ChecklistItem {
 }
 
 export interface PlannedTask {
+    /** DB id when refining an existing task; omit for new tasks. */
+    task_id?: number | null;
     title: string;
     description: string | null;
     scope_weight: 'XS' | 'S' | 'M' | 'L' | 'XL';
@@ -110,6 +112,8 @@ export interface PlannedTask {
 }
 
 export interface PlannedMilestone {
+    /** DB id when refining an existing milestone; omit for new milestones. */
+    milestone_id?: number | null;
     name: string;
     description: string | null;
     tasks: PlannedTask[];
@@ -140,8 +144,13 @@ export interface ProjectPlan {
     project_description: string;
     milestones: PlannedMilestone[];
     summary: string;
+    reasoning?: string;
     /** Optional; older API clients may omit. */
     architecture?: SystemArchitecture | null;
+}
+
+export interface PlannerRefinementContext {
+    project_id: number;
 }
 
 export interface GeneratePlanResponse {
@@ -160,6 +169,15 @@ export interface ApprovePlanResponse {
     task_ids: number[];
     milestone_count: number;
     task_count: number;
+}
+
+export interface ApplyPlanRefinementResponse {
+    project_id: number;
+    milestones_created: number;
+    milestones_updated: number;
+    tasks_created: number;
+    tasks_updated: number;
+    rejected_changes: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -206,7 +224,7 @@ export async function sendPlannerChat(
     messages: PlannerMessage[],
     file_contents: FileContent[],
     figma_context?: FigmaContext | null,
-    options?: { signal?: AbortSignal },
+    options?: { signal?: AbortSignal; refinement?: PlannerRefinementContext | null },
 ): Promise<PlannerChatResponse> {
     const { data } = await api.post<PlannerChatResponse>(
         '/planner/chat',
@@ -214,6 +232,7 @@ export async function sendPlannerChat(
             messages: plannerMessagesForApi(messages),
             file_contents,
             figma_context,
+            ...(options?.refinement ? { refinement: options.refinement } : {}),
         },
         { signal: options?.signal, timeout: 600_000 },
     );
@@ -224,11 +243,13 @@ export async function generatePlan(
     messages: PlannerMessage[],
     file_contents: FileContent[],
     figma_context?: FigmaContext | null,
+    refinement?: PlannerRefinementContext | null,
 ): Promise<GeneratePlanResponse> {
     const { data: raw } = await api.post<unknown>('/planner/generate-plan', {
         messages: plannerMessagesForApi(messages),
         file_contents,
         figma_context,
+        ...(refinement ? { refinement } : {}),
     }, {
         timeout: 600_000,
     });
@@ -250,11 +271,13 @@ export async function generateArchitecture(
     messages: PlannerMessage[],
     file_contents: FileContent[],
     figma_context?: FigmaContext | null,
+    refinement?: PlannerRefinementContext | null,
 ): Promise<GenerateArchitectureResponse> {
     const { data: raw } = await api.post<unknown>('/planner/generate-architecture', {
         messages: plannerMessagesForApi(messages),
         file_contents,
         figma_context,
+        ...(refinement ? { refinement } : {}),
     }, {
         timeout: 600_000,
     });
@@ -285,6 +308,26 @@ export async function approvePlan(
     return data;
 }
 
+export async function fetchRefinementSnapshot(projectId: number): Promise<ProjectPlan> {
+    const { data } = await api.get<ProjectPlan>(`/planner/refinement-snapshot/${projectId}`);
+    return data;
+}
+
+export async function applyPlanRefinement(
+    projectId: number,
+    plan: ProjectPlan,
+    figma_blueprint?: FigmaBlueprint | null,
+): Promise<ApplyPlanRefinementResponse> {
+    const { data } = await api.post<ApplyPlanRefinementResponse>('/planner/apply-plan-refinement', {
+        project_id: projectId,
+        plan,
+        ...(figma_blueprint ? { figma_blueprint } : {}),
+    }, {
+        timeout: 600_000,
+    });
+    return data;
+}
+
 // ---------------------------------------------------------------------------
 // React Query mutation hooks
 // ---------------------------------------------------------------------------
@@ -305,12 +348,15 @@ export function usePlannerChat() {
             file_contents,
             signal,
             figma_context,
+            refinement,
         }: {
             messages: PlannerMessage[];
             file_contents: FileContent[];
             figma_context?: FigmaContext | null;
             signal?: AbortSignal;
-        }) => sendPlannerChat(messages, file_contents, figma_context, { signal }),
+            refinement?: PlannerRefinementContext | null;
+        }) =>
+            sendPlannerChat(messages, file_contents, figma_context, { signal, refinement }),
         onError: (err: unknown) => {
             if (isAbortLike(err)) return;
             toast.error(getApiErrorMessage(err, 'Chat request failed'));
@@ -324,11 +370,13 @@ export function useGeneratePlan() {
             messages,
             file_contents,
             figma_context,
+            refinement,
         }: {
             messages: PlannerMessage[];
             file_contents: FileContent[];
             figma_context?: FigmaContext | null;
-        }) => generatePlan(messages, file_contents, figma_context),
+            refinement?: PlannerRefinementContext | null;
+        }) => generatePlan(messages, file_contents, figma_context, refinement),
         onError: (err: unknown) => {
             toast.error(getApiErrorMessage(err, 'Plan generation failed'));
         },
@@ -341,11 +389,13 @@ export function useGenerateArchitecture() {
             messages,
             file_contents,
             figma_context,
+            refinement,
         }: {
             messages: PlannerMessage[];
             file_contents: FileContent[];
             figma_context?: FigmaContext | null;
-        }) => generateArchitecture(messages, file_contents, figma_context),
+            refinement?: PlannerRefinementContext | null;
+        }) => generateArchitecture(messages, file_contents, figma_context, refinement),
         onError: (err: unknown) => {
             toast.error(getApiErrorMessage(err, 'Architecture generation failed'));
         },
@@ -387,6 +437,43 @@ export function useApprovePlan() {
         },
         onError: (err: unknown) => {
             toast.error(getApiErrorMessage(err, 'Failed to create project from plan'));
+        },
+    });
+}
+
+export function useApplyPlanRefinement() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            project_id,
+            plan,
+            figma_blueprint,
+        }: {
+            project_id: number;
+            plan: ProjectPlan;
+            figma_blueprint?: FigmaBlueprint | null;
+        }) => applyPlanRefinement(project_id, plan, figma_blueprint),
+        onSuccess: async (data) => {
+            const pid = data.project_id;
+            void queryClient.invalidateQueries({ queryKey: projectKeys.detail(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.kanbanBoard(pid) });
+            void queryClient.invalidateQueries({ queryKey: projectKeys.allTasks() });
+            void queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'assigned-tasks'] });
+            void queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
+            try {
+                await queryClient.prefetchQuery({
+                    queryKey: projectKeys.milestones(pid),
+                    queryFn: () => fetchMilestones(pid),
+                });
+            } catch {
+                /* non-fatal */
+            }
+        },
+        onError: (err: unknown) => {
+            toast.error(getApiErrorMessage(err, 'Failed to apply plan changes'));
         },
     });
 }

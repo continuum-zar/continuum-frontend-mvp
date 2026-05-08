@@ -42,6 +42,7 @@ export function mapProjectListItem(p: ProjectAPIResponse): Project {
             : 'Unknown',
         clientId: p.client_id,
         memberRole: p.member_role ?? undefined,
+        ...(p.created_from_planner != null ? { createdFromPlanner: p.created_from_planner } : {}),
     };
 }
 
@@ -59,6 +60,7 @@ export function mapProjectDetail(res: ProjectDetailAPIResponse): ProjectDetail {
         startDateIso: normalizeProjectDueDateIso(res.start_date ?? null),
         dueDateIso: normalizeProjectDueDateIso(res.due_date ?? null),
         ...(res.client_id != null ? { clientId: res.client_id } : {}),
+        ...(res.created_from_planner != null ? { createdFromPlanner: res.created_from_planner } : {}),
     };
 }
 

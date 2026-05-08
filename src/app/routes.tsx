@@ -384,6 +384,16 @@ const appRoutes = [
       </AuthGuard>
     ),
   },
+  {
+    path: `${WORKSPACE_BASE}/ai-planner/refine/:projectId`,
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <DashboardPlaceholderAIPlanner />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
   /** Legacy `/dashboard-placeholder/*` → `/workspace/*` (bookmarks). */
   {
     path: LEGACY_WORKSPACE_BASE,

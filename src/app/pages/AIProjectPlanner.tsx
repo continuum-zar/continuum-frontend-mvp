@@ -30,7 +30,9 @@ import {
     useGeneratePlan,
     useGenerateArchitecture,
     useApprovePlan,
+    useApplyPlanRefinement,
     fetchFigmaBlueprint,
+    fetchRefinementSnapshot,
 } from '@/api/planner';
 import type {
     PlannerMessage,
@@ -40,7 +42,11 @@ import type {
     FigmaBlueprint,
     ProjectPlan,
     PlannedMilestone,
+    PlannerRefinementContext,
 } from '@/api/planner';
+import { PlannerRefinementDiffModal } from '@/app/components/planner/PlannerRefinementDiffModal';
+import { fetchPlannerLockMeta, type PlannerLockMeta } from '@/lib/plannerLockMeta';
+import { computePlannerPlanDiff, type MilestoneDiffSection } from '@/lib/plannerPlanDiff';
 import { PlannerConfidenceGauge } from '@/app/components/welcome/LiveProjectGauges';
 import {
     aiPlannerBotIconSrc,
@@ -78,6 +84,8 @@ export type AIProjectPlannerProps = {
     embedded?: boolean;
     /** When set (e.g. embedded shell), back navigation asks for confirmation before leaving. */
     onRequestNavigateAway?: (proceed: () => void) => void;
+    /** When set, planner runs in refinement mode for this planner-created project. */
+    refineProjectId?: number | null;
 };
 
 const PLAN_CARD_SHADOW =
@@ -225,9 +233,15 @@ function MilestoneCard({
 export function AIProjectPlanner({
     embedded = false,
     onRequestNavigateAway,
+    refineProjectId = null,
 }: AIProjectPlannerProps) {
     const navigate = useNavigate();
     const prefersReducedMotion = usePrefersReducedMotion();
+
+    const refinementPayload: PlannerRefinementContext | null = useMemo(() => {
+        if (refineProjectId == null || !Number.isFinite(refineProjectId)) return null;
+        return { project_id: refineProjectId };
+    }, [refineProjectId]);
 
     // Chat state
     const [messages, setMessages] = useState<PlannerMessage[]>([]);
@@ -260,6 +274,10 @@ export function AIProjectPlanner({
     // Plan state
     const [phase, setPhase] = useState<Phase>('chat');
     const [plan, setPlan] = useState<ProjectPlan | null>(null);
+    const [baselinePlan, setBaselinePlan] = useState<ProjectPlan | null>(null);
+    const [lockMeta, setLockMeta] = useState<PlannerLockMeta | null>(null);
+    const [diffModalOpen, setDiffModalOpen] = useState(false);
+    const [diffSections, setDiffSections] = useState<MilestoneDiffSection[]>([]);
 
     // Refs
     const chatEndRef = useRef<HTMLDivElement>(null);
@@ -276,6 +294,34 @@ export function AIProjectPlanner({
     const generateMutation = useGeneratePlan();
     const architectureMutation = useGenerateArchitecture();
     const approveMutation = useApprovePlan();
+    const applyRefinementMutation = useApplyPlanRefinement();
+
+    useEffect(() => {
+        if (refinementPayload == null) {
+            setBaselinePlan(null);
+            setLockMeta(null);
+            return;
+        }
+        let cancelled = false;
+        void (async () => {
+            try {
+                const [snap, locks] = await Promise.all([
+                    fetchRefinementSnapshot(refinementPayload.project_id),
+                    fetchPlannerLockMeta(refinementPayload.project_id),
+                ]);
+                if (cancelled) return;
+                setBaselinePlan(snap);
+                setLockMeta(locks);
+            } catch {
+                if (!cancelled) {
+                    toast.error('Could not load this project for refinement.');
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [refinementPayload]);
 
     const scrollToBottom = useCallback(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -346,6 +392,7 @@ export function AIProjectPlanner({
                     file_contents: fileContents,
                     figma_context: figmaContext,
                     signal: controller.signal,
+                    refinement: refinementPayload,
                 });
 
                 const assistantMsg: PlannerMessage = {
@@ -396,7 +443,7 @@ export function AIProjectPlanner({
                 }
             }
         },
-        [messages, fileContents, figmaContext, chatMutation],
+        [messages, fileContents, figmaContext, chatMutation, refinementPayload],
     );
 
     const handleSend = async () => {
@@ -522,6 +569,7 @@ export function AIProjectPlanner({
                 messages,
                 file_contents: fileContents,
                 figma_context: figmaContext,
+                refinement: refinementPayload,
             });
             setPlan(res.plan);
             setPlanConfidence(res.confidence);
@@ -538,6 +586,7 @@ export function AIProjectPlanner({
                 messages,
                 file_contents: fileContents,
                 figma_context: figmaContext,
+                refinement: refinementPayload,
             });
             setPlan((prev) =>
                 prev ? { ...prev, architecture: res.architecture } : prev,
@@ -550,10 +599,23 @@ export function AIProjectPlanner({
         messages,
         fileContents,
         figmaContext,
+        refinementPayload,
     ]);
 
-    const handleApprovePlan = async () => {
-        if (!plan || approveMutation.isPending) return;
+    const handlePrimaryPlanAction = async () => {
+        if (!plan) return;
+
+        if (refinementPayload) {
+            if (!baselinePlan || !lockMeta) {
+                toast.error('Still loading project baseline. Try again in a moment.');
+                return;
+            }
+            setDiffSections(computePlannerPlanDiff(baselinePlan, plan, lockMeta));
+            setDiffModalOpen(true);
+            return;
+        }
+
+        if (approveMutation.isPending) return;
 
         setPhase('creating');
 
@@ -565,6 +627,30 @@ export function AIProjectPlanner({
             toast.success(
                 `Project created with ${res.milestone_count} milestones and ${res.task_count} tasks`,
             );
+            setPhase('complete');
+            setTimeout(() => navigate(projectMainHref(String(res.project_id))), 1500);
+        } catch {
+            setPhase('plan_review');
+        }
+    };
+
+    const handleConfirmApplyRefinement = async () => {
+        if (!plan || !refinementPayload || applyRefinementMutation.isPending) return;
+        setDiffModalOpen(false);
+        setPhase('creating');
+        try {
+            const res = await applyRefinementMutation.mutateAsync({
+                project_id: refinementPayload.project_id,
+                plan,
+                figma_blueprint: figmaContext?.blueprint ?? null,
+            });
+            if (res.rejected_changes.length > 0) {
+                toast.message('Plan updated with some skipped changes', {
+                    description: res.rejected_changes.slice(0, 5).join(' · '),
+                });
+            } else {
+                toast.success('Plan updated');
+            }
             setPhase('complete');
             setTimeout(() => navigate(projectMainHref(String(res.project_id))), 1500);
         } catch {
@@ -632,9 +718,12 @@ export function AIProjectPlanner({
                                 AI Project Planner
                             </h1>
                             <p className="font-['Satoshi',sans-serif] text-xs font-medium text-[#727d83]">
-                                {phase === 'plan_review' && 'Review the generated plan'}
-                                {phase === 'creating' && 'Creating your project...'}
-                                {phase === 'complete' && 'Project created successfully!'}
+                                {phase === 'plan_review' &&
+                                    (refinementPayload ? 'Review proposed changes' : 'Review the generated plan')}
+                                {phase === 'creating' &&
+                                    (refinementPayload ? 'Applying plan updates...' : 'Creating your project...')}
+                                {phase === 'complete' &&
+                                    (refinementPayload ? 'Plan updated!' : 'Project created successfully!')}
                             </p>
                         </div>
                     </div>
@@ -699,6 +788,11 @@ export function AIProjectPlanner({
                                             </div>
                                         ) : (
                                             <>
+                                        {refinementPayload && (!baselinePlan || !lockMeta) ? (
+                                            <div className="mx-9 mb-2 shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-950">
+                                                Loading current project plan for refinement…
+                                            </div>
+                                        ) : null}
                                         <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-9 py-6">
                                             <div className="mx-auto flex min-h-full max-w-[600px] flex-col gap-4">
                                                 {messages.length === 0 && (
@@ -1307,7 +1401,7 @@ export function AIProjectPlanner({
                                     <div className="space-y-3">
                                         {plan.milestones.map((ms, i) => (
                                             <MilestoneCard
-                                                key={i}
+                                                key={ms.milestone_id ?? `m-${i}`}
                                                 milestone={ms}
                                                 index={i}
                                             />
@@ -1326,19 +1420,29 @@ export function AIProjectPlanner({
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={handleApprovePlan}
-                                        disabled={approveMutation.isPending}
+                                        onClick={() => void handlePrimaryPlanAction()}
+                                        disabled={
+                                            refinementPayload
+                                                ? applyRefinementMutation.isPending
+                                                : approveMutation.isPending
+                                        }
                                         className={cn(
                                             "inline-flex h-11 items-center gap-2 rounded-lg px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white shadow-sm transition-opacity disabled:opacity-60",
                                             'bg-gradient-to-br from-[#24b5f8] to-[#5521fe] hover:opacity-95',
                                         )}
                                     >
-                                        {approveMutation.isPending ? (
+                                        {refinementPayload ? (
+                                            applyRefinementMutation.isPending ? (
+                                                <Loader2 className="size-4 shrink-0 animate-spin" />
+                                            ) : (
+                                                <Check className="size-4 shrink-0" />
+                                            )
+                                        ) : approveMutation.isPending ? (
                                             <Loader2 className="size-4 shrink-0 animate-spin" />
                                         ) : (
                                             <Check className="size-4 shrink-0" />
                                         )}
-                                        Approve & Create Project
+                                        {refinementPayload ? 'Review changes' : 'Approve & Create Project'}
                                     </button>
                                 </div>
                             </div>
@@ -1362,10 +1466,12 @@ export function AIProjectPlanner({
                                     <>
                                         <Loader2 className="mx-auto size-12 animate-spin text-[#2E96F9]" />
                                         <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]">
-                                            Creating your project...
+                                            {refinementPayload ? 'Applying updates…' : 'Creating your project...'}
                                         </h3>
                                         <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
-                                            Setting up milestones and tasks
+                                            {refinementPayload
+                                                ? 'Saving milestones and tasks'
+                                                : 'Setting up milestones and tasks'}
                                         </p>
                                     </>
                                 ) : (
@@ -1382,7 +1488,7 @@ export function AIProjectPlanner({
                                             <Check className="mx-auto size-16 text-emerald-500" />
                                         </motion.div>
                                         <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]">
-                                            Project created!
+                                            {refinementPayload ? 'Plan updated!' : 'Project created!'}
                                         </h3>
                                         <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
                                             Redirecting to your project board...
@@ -1394,6 +1500,13 @@ export function AIProjectPlanner({
                     )}
                 </AnimatePresence>
             </div>
+            <PlannerRefinementDiffModal
+                open={diffModalOpen}
+                onOpenChange={setDiffModalOpen}
+                sections={diffSections}
+                isApplying={applyRefinementMutation.isPending}
+                onConfirm={() => void handleConfirmApplyRefinement()}
+            />
             <Dialog open={figmaModalOpen} onOpenChange={setFigmaModalOpen}>
                 <DialogPortal>
                     <DialogOverlay className="bg-black/25" />
