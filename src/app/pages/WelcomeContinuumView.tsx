@@ -24,6 +24,7 @@ import {
 } from "../data/dashboardPlaceholderProjects";
 import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
+import { useAuthStore } from "@/store/authStore";
 
 const imgLucideFolderOpenDot = mcpAsset("565be4ed-fc29-4562-a26f-1c943a6d5847");
 const imgLucideBuilding2 = mcpAsset("71a5ce6a-04cd-4e3a-bf8d-8982fbc63fe8");
@@ -47,6 +48,8 @@ export function WelcomeContinuumView() {
     pathname.startsWith(`${WORKSPACE_BASE}/project/`);
   const projectQuery = useProject(isApiRoute ? routeProjectId : undefined);
   const membersQuery = useProjectMembers(isApiRoute ? routeProjectId : undefined);
+  const user = useAuthStore((s) => s.user);
+  const isGlobalAdmin = user?.role?.toLowerCase() === "admin";
 
   const clientPillLabel = (() => {
     if (!isApiRoute) return "Client name will appear here";
@@ -75,6 +78,11 @@ export function WelcomeContinuumView() {
     isApiProjectId(routeProjectId) &&
     projectQuery.isSuccess &&
     projectQuery.data != null;
+
+  const showAiPlannerRefine =
+    canEditProject &&
+    isGlobalAdmin &&
+    projectQuery.data?.createdFromPlanner === true;
 
   return (
     <div
@@ -161,6 +169,25 @@ export function WelcomeContinuumView() {
                   </TooltipTrigger>
                   <TooltipContent>{canEditProject ? "Edit project details" : "Project details unavailable"}</TooltipContent>
                 </Tooltip>
+                {showAiPlannerRefine && routeProjectId ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Link
+                          to={workspaceJoin("ai-planner", "refine", routeProjectId)}
+                          className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+                          data-tour="welcome-refine-ai-planner"
+                          aria-label="Refine project plan with AI planner"
+                        >
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap">
+                            Edit plan
+                          </p>
+                        </Link>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Open AI Project Planner to refine milestones and tasks</TooltipContent>
+                  </Tooltip>
+                ) : null}
                 <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 6" data-node-id="8:3545">
                   <div className="relative shrink-0 size-[16px]" data-name="lucide/share" data-node-id="8:3546">
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideShare} />

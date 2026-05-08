@@ -199,6 +199,14 @@ export async function fetchProjectTasks(projectId: number | string): Promise<Tas
     return (data.data ?? []).map(mapTask);
 }
 
+/** Raw task rows for planner refinement / locking (large limit). */
+export async function fetchProjectTasksRaw(projectId: number | string): Promise<TaskAPIResponse[]> {
+    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>(`/tasks/`, {
+        params: { project_id: projectId, limit: 500, skip: 0 },
+    });
+    return data.data ?? [];
+}
+
 /** Paginated project tasks (`GET /tasks/?project_id=&limit=&skip=`). */
 export async function fetchProjectTasksPage(
     projectId: number | string,

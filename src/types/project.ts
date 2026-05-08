@@ -17,6 +17,8 @@ export interface ProjectAPIResponse {
     updated_at?: string;
     /** Current user's role on this project (from ProjectMember). */
     member_role?: string;
+    /** True when the project was created via AI Project Planner (approve-plan). */
+    created_from_planner?: boolean;
 }
 
 export interface Project {
@@ -52,6 +54,8 @@ export interface ProjectDetailAPIResponse {
     tasks?: unknown[];
     /** Present on full project payload; used when list omits client_id. */
     client_id?: number | null;
+    /** AI Project Planner origin; used to show refine entry points. */
+    created_from_planner?: boolean;
 }
 
 /** Project detail shape used by UI (e.g. ProjectBoard header) */
@@ -65,4 +69,6 @@ export interface ProjectDetail {
     dueDateIso: string | null;
     /** Billing / invoice: linked client when set. */
     clientId?: number;
+    /** True when project was created from the AI planner approve flow. */
+    createdFromPlanner?: boolean;
 }

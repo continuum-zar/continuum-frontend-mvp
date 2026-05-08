@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useParams } from "react-router";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { PlannerLeaveConfirmModal } from "../components/planner/PlannerLeaveConfirmModal";
 
@@ -7,8 +8,23 @@ const AIProjectPlanner = lazy(() =>
   import("./AIProjectPlanner").then((m) => ({ default: m.AIProjectPlanner }))
 );
 
+export type DashboardPlaceholderAIPlannerProps = {
+  /** When set, planner loads this project id for refinement (overrides route param). */
+  refineProjectId?: number | null;
+};
+
 /** AI Project Planner inside the dashboard-placeholder shell (left rail + bordered main surface). */
-export function DashboardPlaceholderAIPlanner() {
+export function DashboardPlaceholderAIPlanner({
+  refineProjectId: refineProjectIdProp = null,
+}: DashboardPlaceholderAIPlannerProps = {}) {
+  const params = useParams<{ projectId?: string }>();
+  const routePid =
+    params.projectId != null && /^\d+$/.test(params.projectId) ? Number(params.projectId) : null;
+  const refineProjectId =
+    refineProjectIdProp != null && Number.isFinite(refineProjectIdProp)
+      ? refineProjectIdProp
+      : routePid;
+
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const pendingNavigationRef = useRef<(() => void) | null>(null);
 
@@ -56,7 +72,11 @@ export function DashboardPlaceholderAIPlanner() {
                   </div>
                 }
               >
-                <AIProjectPlanner embedded onRequestNavigateAway={requestNavigate} />
+                <AIProjectPlanner
+                  embedded
+                  onRequestNavigateAway={requestNavigate}
+                  refineProjectId={refineProjectId}
+                />
               </Suspense>
             </section>
           </div>

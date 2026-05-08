@@ -31,6 +31,7 @@ export {
     setTaskLinkedBranch,
     deleteTask,
     fetchProjectTasks,
+    fetchProjectTasksRaw,
     fetchProjectTasksPage,
     fetchTaskTimelinePage,
     fetchTaskCommentsPage,
@@ -297,11 +298,14 @@ export {
     sendPlannerChat,
     generatePlan,
     approvePlan,
+    fetchRefinementSnapshot,
+    applyPlanRefinement,
     fetchFigmaBlueprint,
     useUploadPlannerFile,
     usePlannerChat,
     useGeneratePlan,
     useApprovePlan,
+    useApplyPlanRefinement,
 } from './planner';
 export type {
     PlannerMessage,
@@ -314,6 +318,8 @@ export type {
     FigmaBlueprint,
     GeneratePlanResponse,
     ApprovePlanResponse,
+    PlannerRefinementContext,
+    ApplyPlanRefinementResponse,
 } from './planner';
 export {
     fetchProjectIntegrations,
