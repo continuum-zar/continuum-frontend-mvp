@@ -20,6 +20,24 @@ export type TaskDiffRow = {
     change: 'added' | 'removed' | 'modified' | 'unchanged';
     locked?: boolean;
     detail?: string;
+    fieldDiffs?: TaskFieldDiff[];
+    /** Full baseline snapshot when available (null for brand-new tasks). */
+    baselineTask?: PlannedTask | null;
+    /** Full proposed snapshot when available (null for removed tasks). */
+    proposedTask?: PlannedTask | null;
+};
+
+export type TaskFieldDiff = {
+    field:
+        | 'title'
+        | 'description'
+        | 'priority'
+        | 'scope_weight'
+        | 'estimated_hours'
+        | 'labels'
+        | 'checklist';
+    before: string;
+    after: string;
 };
 
 export type MilestoneDiffSection = {
@@ -41,6 +59,74 @@ function stableStringifyTask(t: PlannedTask): string {
         checklist: t.checklist,
         labels: t.labels?.slice().sort(),
     });
+}
+
+function normalizeChecklistValue(checklist: PlannedTask['checklist']): string {
+    if (!Array.isArray(checklist) || checklist.length === 0) return 'None';
+    return checklist
+        .map((item) => `${item.is_completed ? '[x]' : '[ ]'} ${item.title}`)
+        .join('\n');
+}
+
+function normalizeLabelsValue(labels: PlannedTask['labels']): string {
+    if (!Array.isArray(labels) || labels.length === 0) return 'None';
+    return labels.slice().sort().join(', ');
+}
+
+function normalizeTextValue(value: string | null | undefined): string {
+    const trimmed = (value ?? '').trim();
+    return trimmed.length > 0 ? trimmed : 'None';
+}
+
+function normalizePriorityValue(value: PlannedTask['priority']): string {
+    return value ? String(value).toUpperCase() : 'None';
+}
+
+function normalizeEstimatedHoursValue(value: PlannedTask['estimated_hours']): string {
+    if (value == null || Number.isNaN(value)) return 'None';
+    return String(value);
+}
+
+function computeTaskFieldDiffs(beforeTask: PlannedTask, afterTask: PlannedTask): TaskFieldDiff[] {
+    const allFields: TaskFieldDiff[] = [
+        {
+            field: 'title',
+            before: normalizeTextValue(beforeTask.title),
+            after: normalizeTextValue(afterTask.title),
+        },
+        {
+            field: 'description',
+            before: normalizeTextValue(beforeTask.description),
+            after: normalizeTextValue(afterTask.description),
+        },
+        {
+            field: 'priority',
+            before: normalizePriorityValue(beforeTask.priority),
+            after: normalizePriorityValue(afterTask.priority),
+        },
+        {
+            field: 'scope_weight',
+            before: normalizeTextValue(beforeTask.scope_weight),
+            after: normalizeTextValue(afterTask.scope_weight),
+        },
+        {
+            field: 'estimated_hours',
+            before: normalizeEstimatedHoursValue(beforeTask.estimated_hours),
+            after: normalizeEstimatedHoursValue(afterTask.estimated_hours),
+        },
+        {
+            field: 'labels',
+            before: normalizeLabelsValue(beforeTask.labels),
+            after: normalizeLabelsValue(afterTask.labels),
+        },
+        {
+            field: 'checklist',
+            before: normalizeChecklistValue(beforeTask.checklist),
+            after: normalizeChecklistValue(afterTask.checklist),
+        },
+    ];
+
+    return allFields.filter((field) => field.before !== field.after);
 }
 
 export function computePlannerPlanDiff(
@@ -72,18 +158,34 @@ export function computePlannerPlanDiff(
             milestoneId != null && locks?.lockedMilestoneIds.has(milestoneId) === true;
 
         if (b && !p) {
+            const milestoneChange: MilestoneDiffSection['change'] = msLocked ? 'unchanged' : 'removed';
             out.push({
                 key,
                 milestoneId,
                 name,
-                change: 'removed',
+                change: milestoneChange,
                 milestoneLocked: msLocked,
                 tasks: b.tasks.map((t, j) => ({
-                    key: taskKey(t, `${key}-${j}`),
-                    taskId: t.task_id ?? undefined,
-                    title: t.title,
-                    change: 'removed',
-                    locked: t.task_id != null && locks?.lockedTaskIds.has(t.task_id),
+                    ...(msLocked
+                        ? {
+                              key: taskKey(t, `${key}-${j}`),
+                              taskId: t.task_id ?? undefined,
+                              title: t.title,
+                              change: 'unchanged' as const,
+                              locked: true,
+                              detail: 'Locked milestone — server will skip edits',
+                              baselineTask: t,
+                              proposedTask: t,
+                          }
+                        : {
+                              key: taskKey(t, `${key}-${j}`),
+                              taskId: t.task_id ?? undefined,
+                              title: t.title,
+                              change: 'removed' as const,
+                              locked: t.task_id != null && locks?.lockedTaskIds.has(t.task_id),
+                              baselineTask: t,
+                              proposedTask: null,
+                          }),
                 })),
             });
             continue;
@@ -101,6 +203,8 @@ export function computePlannerPlanDiff(
                     taskId: t.task_id ?? undefined,
                     title: t.title,
                     change: 'added',
+                    baselineTask: null,
+                    proposedTask: t,
                 })),
             });
             continue;
@@ -124,39 +228,80 @@ export function computePlannerPlanDiff(
             const bt = bTasks.get(tk);
             const pt = pTasks.get(tk);
             const tid = pt?.task_id ?? bt?.task_id ?? undefined;
-            const tLocked = tid != null && locks?.lockedTaskIds.has(tid) === true;
+            const tLocked = msLocked || (tid != null && locks?.lockedTaskIds.has(tid) === true);
 
             if (bt && !pt) {
+                const emptyTask: PlannedTask = {
+                    title: '',
+                    description: null,
+                    scope_weight: bt.scope_weight,
+                    priority: undefined,
+                    estimated_hours: null,
+                    checklist: [],
+                    labels: [],
+                };
                 taskRows.push({
                     key: tk,
                     taskId: tid,
                     title: bt.title,
-                    change: 'removed',
-                    locked: tLocked,
+                    change: tLocked ? 'unchanged' : 'removed',
+                    locked: tLocked || undefined,
+                    detail: tLocked ? 'Locked — server will skip edits' : undefined,
+                    fieldDiffs: tLocked ? undefined : computeTaskFieldDiffs(bt, emptyTask),
+                    baselineTask: bt,
+                    proposedTask: tLocked ? bt : null,
                 });
             } else if (!bt && pt) {
+                const emptyTask: PlannedTask = {
+                    title: '',
+                    description: null,
+                    scope_weight: pt.scope_weight,
+                    priority: undefined,
+                    estimated_hours: null,
+                    checklist: [],
+                    labels: [],
+                };
                 taskRows.push({
                     key: tk,
                     taskId: tid,
                     title: pt.title,
-                    change: 'added',
+                    change: tLocked ? 'unchanged' : 'added',
+                    locked: tLocked || undefined,
+                    detail: tLocked ? 'Locked — server will skip edits' : undefined,
+                    fieldDiffs: tLocked ? undefined : computeTaskFieldDiffs(emptyTask, pt),
+                    baselineTask: tLocked ? pt : null,
+                    proposedTask: pt,
                 });
             } else if (bt && pt) {
                 const modified = stableStringifyTask(bt) !== stableStringifyTask(pt);
+                const effectiveChange: TaskDiffRow['change'] =
+                    modified && !tLocked ? 'modified' : 'unchanged';
+                const fieldDiffs = modified ? computeTaskFieldDiffs(bt, pt) : [];
                 taskRows.push({
                     key: tk,
                     taskId: tid,
                     title: pt.title,
-                    change: modified ? 'modified' : 'unchanged',
+                    change: effectiveChange,
                     locked: tLocked && modified,
-                    detail: modified ? 'Fields differ from baseline' : undefined,
+                    detail: modified
+                        ? tLocked
+                            ? 'Locked — server will skip edits'
+                            : 'Fields differ from baseline'
+                        : undefined,
+                    fieldDiffs: effectiveChange === 'modified' ? fieldDiffs : undefined,
+                    baselineTask: bt,
+                    proposedTask: pt,
                 });
             }
         }
 
         const anyTaskChange = taskRows.some((r) => r.change !== 'unchanged');
         const sectionChange: MilestoneDiffSection['change'] =
-            msChanged || anyTaskChange ? 'modified' : 'unchanged';
+            msChanged || anyTaskChange
+                ? msLocked
+                    ? 'unchanged'
+                    : 'modified'
+                : 'unchanged';
 
         out.push({
             key,

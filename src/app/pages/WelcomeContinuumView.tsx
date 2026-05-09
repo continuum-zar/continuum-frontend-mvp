@@ -49,7 +49,9 @@ export function WelcomeContinuumView() {
   const projectQuery = useProject(isApiRoute ? routeProjectId : undefined);
   const membersQuery = useProjectMembers(isApiRoute ? routeProjectId : undefined);
   const user = useAuthStore((s) => s.user);
-  const isGlobalAdmin = user?.role?.toLowerCase() === "admin";
+  const normalizedGlobalRole = (user?.role || "").toLowerCase().replace(/\s+/g, "_");
+  const isGlobalAdminOrPm =
+    normalizedGlobalRole === "admin" || normalizedGlobalRole === "project_manager";
 
   const clientPillLabel = (() => {
     if (!isApiRoute) return "Client name will appear here";
@@ -79,9 +81,20 @@ export function WelcomeContinuumView() {
     projectQuery.isSuccess &&
     projectQuery.data != null;
 
+  const currentProjectMemberRole = (() => {
+    if (!user?.id || !membersQuery.data?.length) return null;
+    const userIdNum = Number(user.id);
+    if (!Number.isFinite(userIdNum)) return null;
+    const me = membersQuery.data.find((m) => m.userId === userIdNum);
+    if (!me?.role) return null;
+    return me.role.toLowerCase().replace(/\s+/g, "_");
+  })();
+  const isProjectAdminOrPm =
+    currentProjectMemberRole === "admin" || currentProjectMemberRole === "project_manager";
+
   const showAiPlannerRefine =
     canEditProject &&
-    isGlobalAdmin &&
+    (isGlobalAdminOrPm || isProjectAdminOrPm) &&
     projectQuery.data?.createdFromPlanner === true;
 
   return (
