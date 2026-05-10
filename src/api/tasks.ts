@@ -89,6 +89,7 @@ export async function updateTask(
         linked_repo?: string | null;
         linked_branch?: string | null;
         checklists?: TaskChecklistItemUpdate[];
+        dependencies?: number[] | null;
     }
 ): Promise<TaskAPIResponse> {
     const payload: Record<
@@ -100,6 +101,7 @@ export async function updateTask(
         | number
         | null
         | TaskChecklistItemUpdate[]
+        | number[]
         | TaskLinkedBranchesUpdate
         | undefined
     > = {};
@@ -139,6 +141,9 @@ export async function updateTask(
     }
     if (body.checklists !== undefined) {
         payload.checklists = body.checklists;
+    }
+    if (body.dependencies !== undefined) {
+        payload.dependencies = body.dependencies ?? [];
     }
 
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
@@ -180,6 +185,7 @@ export interface CreateTaskBody {
     milestone_id?: number | null;
     checklists?: Array<{ text: string; done?: boolean }> | null;
     labels?: string[] | null;
+    dependencies?: number[] | null;
 }
 
 /** Create a task. POST /tasks/ */
@@ -197,6 +203,14 @@ export async function fetchProjectTasks(projectId: number | string): Promise<Tas
         params: { project_id: projectId },
     });
     return (data.data ?? []).map(mapTask);
+}
+
+/** Raw task rows for planner refinement / locking (large limit). */
+export async function fetchProjectTasksRaw(projectId: number | string): Promise<TaskAPIResponse[]> {
+    const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>(`/tasks/`, {
+        params: { project_id: projectId, limit: 500, skip: 0 },
+    });
+    return data.data ?? [];
 }
 
 /** Paginated project tasks (`GET /tasks/?project_id=&limit=&skip=`). */

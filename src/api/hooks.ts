@@ -299,6 +299,7 @@ function isChecklistOnlyTaskUpdate(vars: {
     linked_repo?: string | null;
     linked_branch?: string | null;
     checklists?: TaskChecklistItemUpdate[];
+    dependencies?: number[] | null;
 }): boolean {
     if (vars.checklists === undefined) return false;
     return (
@@ -311,7 +312,8 @@ function isChecklistOnlyTaskUpdate(vars: {
         vars.estimated_hours === undefined &&
         vars.linked_branches === undefined &&
         vars.linked_repo === undefined &&
-        vars.linked_branch === undefined
+        vars.linked_branch === undefined &&
+        vars.dependencies === undefined
     );
 }
 
@@ -1034,6 +1036,7 @@ export function useUpdateTask() {
             linked_repo,
             linked_branch,
             checklists,
+            dependencies,
         }: {
             taskId: string | number;
             title?: string;
@@ -1047,6 +1050,7 @@ export function useUpdateTask() {
             linked_repo?: string | null;
             linked_branch?: string | null;
             checklists?: TaskChecklistItemUpdate[];
+            dependencies?: number[] | null;
         }) =>
             updateTask(taskId, {
                 title,
@@ -1060,6 +1064,7 @@ export function useUpdateTask() {
                 linked_repo,
                 linked_branch,
                 checklists,
+                dependencies,
             }),
         onMutate: async (variables) => {
             const tid = variables.taskId;

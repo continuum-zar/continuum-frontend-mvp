@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { isApiProjectId } from "../data/dashboardPlaceholderProjects";
-import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from "@/lib/workspacePaths";
+import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin, workspaceMyTasksHref } from "@/lib/workspacePaths";
 
 const TaskPanels = lazy(() =>
   import("../components/dashboard-placeholder/TaskPanels").then((m) => ({ default: m.TaskPanels }))
@@ -29,11 +29,11 @@ export function DashboardPlaceholderTaskView() {
 
   const handleBack = () => {
     if (searchParams.get("from") === "assigned") {
-      navigate(workspaceJoin("assigned"));
+      navigate(workspaceMyTasksHref("assigned"));
       return;
     }
     if (searchParams.get("from") === "created") {
-      navigate(workspaceJoin("created"));
+      navigate(workspaceMyTasksHref("created"));
       return;
     }
     const qs = new URLSearchParams(searchParams);

@@ -75,6 +75,7 @@ export interface TaskAPIResponse {
     linked_branch?: string | null;
     linked_branch_full_ref?: string | null;
     labels?: string[];
+    dependencies?: number[] | null;
 }
 
 /**
@@ -155,6 +156,7 @@ export interface Task {
     createdAtIso?: string | null;
     /** Repo/branch links for Kanban badges (from `linked_branches` or legacy fields). */
     linkedBranches?: TaskLinkedBranch[];
+    dependencyCount?: number;
 }
 
 export type ActivityType =

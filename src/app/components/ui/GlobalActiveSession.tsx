@@ -22,7 +22,7 @@ const formatTime = (seconds: number) => {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-export function GlobalActiveSession() {
+export function GlobalActiveSession({ showSessionChip = true }: { showSessionChip?: boolean } = {}) {
     const location = useLocation();
     const {
         sessionState,
@@ -43,10 +43,7 @@ export function GlobalActiveSession() {
     } = useTimeTracking();
 
     // Hide on full time views or if idle and modal is not open
-    if (
-        isTimeTrackingRoutePath(location.pathname) ||
-        (sessionState === 'idle' && !isLoggingModalOpen)
-    ) {
+    if (isTimeTrackingRoutePath(location.pathname) || (sessionState === 'idle' && !isLoggingModalOpen)) {
         return null;
     }
 
@@ -54,7 +51,7 @@ export function GlobalActiveSession() {
 
     return (
         <>
-            {sessionState !== 'idle' && (
+            {showSessionChip && sessionState !== 'idle' && (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -155,7 +152,7 @@ export function GlobalActiveSession() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={handleLogCancel} disabled={isSessionActionLoading}>Cancel</Button>
-                        <Button onClick={handleLogSubmit} disabled={isSessionActionLoading}>
+                        <Button onClick={() => void handleLogSubmit()} disabled={isSessionActionLoading}>
                             {isSessionActionLoading ? (
                                 <>
                                     <Loader2 className="mr-1 h-3 w-3 animate-spin" />

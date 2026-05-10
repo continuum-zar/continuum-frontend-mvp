@@ -30,7 +30,9 @@ import {
     useGeneratePlan,
     useGenerateArchitecture,
     useApprovePlan,
+    useApplyPlanRefinement,
     fetchFigmaBlueprint,
+    fetchRefinementSnapshot,
 } from '@/api/planner';
 import type {
     PlannerMessage,
@@ -40,7 +42,11 @@ import type {
     FigmaBlueprint,
     ProjectPlan,
     PlannedMilestone,
+    PlannerRefinementContext,
 } from '@/api/planner';
+import { PlannerRefinementReviewPanel } from '@/app/components/planner/PlannerRefinementReviewPanel';
+import { fetchPlannerLockMeta, type PlannerLockMeta } from '@/lib/plannerLockMeta';
+import { computePlannerPlanDiff, type MilestoneDiffSection } from '@/lib/plannerPlanDiff';
 import { PlannerConfidenceGauge } from '@/app/components/welcome/LiveProjectGauges';
 import {
     aiPlannerBotIconSrc,
@@ -78,6 +84,8 @@ export type AIProjectPlannerProps = {
     embedded?: boolean;
     /** When set (e.g. embedded shell), back navigation asks for confirmation before leaving. */
     onRequestNavigateAway?: (proceed: () => void) => void;
+    /** When set, planner runs in refinement mode for this planner-created project. */
+    refineProjectId?: number | null;
 };
 
 const PLAN_CARD_SHADOW =
@@ -225,9 +233,15 @@ function MilestoneCard({
 export function AIProjectPlanner({
     embedded = false,
     onRequestNavigateAway,
+    refineProjectId = null,
 }: AIProjectPlannerProps) {
     const navigate = useNavigate();
     const prefersReducedMotion = usePrefersReducedMotion();
+
+    const refinementPayload: PlannerRefinementContext | null = useMemo(() => {
+        if (refineProjectId == null || !Number.isFinite(refineProjectId)) return null;
+        return { project_id: refineProjectId };
+    }, [refineProjectId]);
 
     // Chat state
     const [messages, setMessages] = useState<PlannerMessage[]>([]);
@@ -260,6 +274,9 @@ export function AIProjectPlanner({
     // Plan state
     const [phase, setPhase] = useState<Phase>('chat');
     const [plan, setPlan] = useState<ProjectPlan | null>(null);
+    const [baselinePlan, setBaselinePlan] = useState<ProjectPlan | null>(null);
+    const [lockMeta, setLockMeta] = useState<PlannerLockMeta | null>(null);
+    const [diffSections, setDiffSections] = useState<MilestoneDiffSection[]>([]);
 
     // Refs
     const chatEndRef = useRef<HTMLDivElement>(null);
@@ -276,6 +293,40 @@ export function AIProjectPlanner({
     const generateMutation = useGeneratePlan();
     const architectureMutation = useGenerateArchitecture();
     const approveMutation = useApprovePlan();
+    const applyRefinementMutation = useApplyPlanRefinement();
+
+    useEffect(() => {
+        if (refinementPayload == null) {
+            setBaselinePlan(null);
+            setLockMeta(null);
+            return;
+        }
+        let cancelled = false;
+        void (async () => {
+            try {
+                const [snap, locks] = await Promise.all([
+                    fetchRefinementSnapshot(refinementPayload.project_id),
+                    fetchPlannerLockMeta(refinementPayload.project_id),
+                ]);
+                if (cancelled) return;
+                setBaselinePlan(snap);
+                setLockMeta(locks);
+            } catch {
+                if (!cancelled) {
+                    toast.error('Could not load this project for refinement.');
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [refinementPayload]);
+
+    /** Keep task-level diff in sync for refinement review (embedded under Generated Plan). */
+    useEffect(() => {
+        if (!refinementPayload || !baselinePlan || !lockMeta || !plan) return;
+        setDiffSections(computePlannerPlanDiff(baselinePlan, plan, lockMeta));
+    }, [refinementPayload, baselinePlan, lockMeta, plan]);
 
     const scrollToBottom = useCallback(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -346,6 +397,7 @@ export function AIProjectPlanner({
                     file_contents: fileContents,
                     figma_context: figmaContext,
                     signal: controller.signal,
+                    refinement: refinementPayload,
                 });
 
                 const assistantMsg: PlannerMessage = {
@@ -396,7 +448,7 @@ export function AIProjectPlanner({
                 }
             }
         },
-        [messages, fileContents, figmaContext, chatMutation],
+        [messages, fileContents, figmaContext, chatMutation, refinementPayload],
     );
 
     const handleSend = async () => {
@@ -522,6 +574,7 @@ export function AIProjectPlanner({
                 messages,
                 file_contents: fileContents,
                 figma_context: figmaContext,
+                refinement: refinementPayload,
             });
             setPlan(res.plan);
             setPlanConfidence(res.confidence);
@@ -538,6 +591,7 @@ export function AIProjectPlanner({
                 messages,
                 file_contents: fileContents,
                 figma_context: figmaContext,
+                refinement: refinementPayload,
             });
             setPlan((prev) =>
                 prev ? { ...prev, architecture: res.architecture } : prev,
@@ -550,10 +604,13 @@ export function AIProjectPlanner({
         messages,
         fileContents,
         figmaContext,
+        refinementPayload,
     ]);
 
-    const handleApprovePlan = async () => {
-        if (!plan || approveMutation.isPending) return;
+    const handlePrimaryPlanAction = async () => {
+        if (!plan) return;
+
+        if (approveMutation.isPending) return;
 
         setPhase('creating');
 
@@ -565,6 +622,31 @@ export function AIProjectPlanner({
             toast.success(
                 `Project created with ${res.milestone_count} milestones and ${res.task_count} tasks`,
             );
+            setPhase('complete');
+            setTimeout(() => navigate(projectMainHref(String(res.project_id))), 1500);
+        } catch {
+            setPhase('plan_review');
+        }
+    };
+
+    const handleConfirmApplyRefinement = async () => {
+        if (!plan || !refinementPayload || applyRefinementMutation.isPending) return;
+        setPhase('creating');
+        try {
+            const res = await applyRefinementMutation.mutateAsync({
+                project_id: refinementPayload.project_id,
+                plan,
+                figma_blueprint: figmaContext?.blueprint ?? null,
+            });
+            toast.success('Project refined', {
+                icon: (
+                    <Check
+                        className="size-5 shrink-0 text-[#0b191f]"
+                        strokeWidth={2.5}
+                        aria-hidden
+                    />
+                ),
+            });
             setPhase('complete');
             setTimeout(() => navigate(projectMainHref(String(res.project_id))), 1500);
         } catch {
@@ -614,6 +696,21 @@ export function AIProjectPlanner({
         messages.length > 0 &&
         (!readyToPlan || missingAreas.length > 0);
 
+    const isRefinementMode = refinementPayload != null;
+    const emptyStateTitle = isRefinementMode
+        ? 'Describe the plan changes you need'
+        : 'Start by describing your project';
+    const emptyStateBody = isRefinementMode
+        ? 'Tell me what to change in the current plan. You can also upload updated requirements or attach a Figma design.'
+        : 'Tell me about the software project you want to plan. You can also upload a project spec or requirements document.';
+    const generatingPlanLabel = isRefinementMode
+        ? 'Generating updated plan...'
+        : 'Generating your plan...';
+    const readyToGenerateLabel = isRefinementMode
+        ? 'Ready to generate updated plan'
+        : 'Ready to generate plan';
+    const generatePlanButtonLabel = isRefinementMode ? 'Generate updated plan' : 'Generate plan';
+
     return (
         <div
             className={
@@ -632,9 +729,12 @@ export function AIProjectPlanner({
                                 AI Project Planner
                             </h1>
                             <p className="font-['Satoshi',sans-serif] text-xs font-medium text-[#727d83]">
-                                {phase === 'plan_review' && 'Review the generated plan'}
-                                {phase === 'creating' && 'Creating your project...'}
-                                {phase === 'complete' && 'Project created successfully!'}
+                                {phase === 'plan_review' &&
+                                    (refinementPayload ? 'Review proposed changes' : 'Review the generated plan')}
+                                {phase === 'creating' &&
+                                    (refinementPayload ? 'Applying plan updates...' : 'Creating your project...')}
+                                {phase === 'complete' &&
+                                    (refinementPayload ? 'Plan updated!' : 'Project created successfully!')}
                             </p>
                         </div>
                     </div>
@@ -691,7 +791,7 @@ export function AIProjectPlanner({
                                                     Continuum
                                                 </p>
                                                 <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#595959]">
-                                                    Generating your plan...
+                                                    {generatingPlanLabel}
                                                 </p>
                                                 <p className="max-w-sm text-center font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#727d83]">
                                                     This can take a few minutes. Hang tight.
@@ -699,6 +799,11 @@ export function AIProjectPlanner({
                                             </div>
                                         ) : (
                                             <>
+                                        {refinementPayload && (!baselinePlan || !lockMeta) ? (
+                                            <div className="mx-9 mb-2 shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-950">
+                                                Loading current project plan for refinement…
+                                            </div>
+                                        ) : null}
                                         <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-9 py-6">
                                             <div className="mx-auto flex min-h-full max-w-[600px] flex-col gap-4">
                                                 {messages.length === 0 && (
@@ -713,12 +818,10 @@ export function AIProjectPlanner({
                                                         </div>
                                                         <div className="flex max-w-md flex-col gap-1 text-center leading-normal">
                                                             <p className="font-['Satoshi',sans-serif] text-[20px] font-bold leading-normal text-[#727D83]">
-                                                                Start by describing your project
+                                                                {emptyStateTitle}
                                                             </p>
                                                             <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal text-[#727D83]">
-                                                                Tell me about the software project you
-                                                                want to plan. You can also upload a
-                                                                project spec or requirements document.
+                                                                {emptyStateBody}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1062,21 +1165,21 @@ export function AIProjectPlanner({
                                         Confidence Index
                                     </p>
 
-                                    <div className="flex items-center gap-6">
+                                    <div className="flex min-w-0 items-center gap-6">
                                         <PlannerConfidenceGauge value={confidence} />
                                         <p
                                             className={cn(
-                                                "font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal",
+                                                "min-w-0 font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal",
                                                 readyToPlan
-                                                    ? 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-emerald-600'
+                                                    ? 'flex-1 text-emerald-600'
                                                     : 'max-w-[147px] text-[#eb4335]',
                                             )}
                                         >
                                             {readyToPlan ? (
-                                                <>
+                                                <span className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
                                                     <Check className="size-4 shrink-0" />
-                                                    Ready to generate plan
-                                                </>
+                                                    {readyToGenerateLabel}
+                                                </span>
                                             ) : (
                                                 'More details needed'
                                             )}
@@ -1164,7 +1267,7 @@ export function AIProjectPlanner({
                                     >
                                         {generateMutation.isPending
                                             ? 'Generating plan…'
-                                            : 'Generate plan'}
+                                            : generatePlanButtonLabel}
                                     </button>
                                     {!readyToPlan && confidence > 0 && (
                                         <p className="mt-2 text-center text-[10px] text-muted-foreground">
@@ -1189,7 +1292,12 @@ export function AIProjectPlanner({
                                     'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
                             }}
                         >
-                            <div className="mx-auto max-w-3xl space-y-8 px-9 py-10">
+                            <div
+                                className={cn(
+                                    'mx-auto space-y-8 px-9 py-10',
+                                    refinementPayload ? 'max-w-7xl' : 'max-w-3xl',
+                                )}
+                            >
                                 <div>
                                     <span className="mb-3 inline-flex rounded-full bg-[#edf0f3] px-3 py-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
                                         Generated Plan
@@ -1224,13 +1332,21 @@ export function AIProjectPlanner({
                                         onRegenerateArchitecture={
                                             handleGenerateOrRefreshArchitecture
                                         }
-                                        regenerateDisabled={approveMutation.isPending}
+                                        regenerateDisabled={
+                                            refinementPayload
+                                                ? applyRefinementMutation.isPending
+                                                : approveMutation.isPending
+                                        }
                                         regeneratePending={architectureMutation.isPending}
                                     />
                                 ) : (
                                     <PlannerArchitecturePlaceholder
                                         onGenerate={handleGenerateOrRefreshArchitecture}
-                                        disabled={approveMutation.isPending}
+                                        disabled={
+                                            refinementPayload
+                                                ? applyRefinementMutation.isPending
+                                                : approveMutation.isPending
+                                        }
                                         pending={architectureMutation.isPending}
                                     />
                                 )}
@@ -1270,50 +1386,74 @@ export function AIProjectPlanner({
                                     </div>
                                 )}
 
-                                <div className="grid grid-cols-3 gap-4">
-                                    {(
-                                        [
-                                            [String(plan.milestones.length), 'Milestones'],
-                                            [String(totalPlannedTasks), 'Tasks'],
-                                            [
-                                                planConfidence != null
-                                                    ? `${Math.round(planConfidence)}%`
-                                                    : '—',
-                                                'Confidence',
-                                            ],
-                                        ] as const
-                                    ).map(([value, label]) => (
-                                        <div
-                                            key={label}
-                                            className={cn(
-                                                'rounded-xl border border-[#edecea] bg-white p-5 text-center',
-                                                PLAN_CARD_SHADOW,
-                                            )}
-                                        >
-                                            <div className="font-['Satoshi',sans-serif] text-[28px] font-bold leading-none text-[#0b191f]">
-                                                {value}
-                                            </div>
-                                            <div className="mt-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
-                                                {label}
+                                {!refinementPayload ? (
+                                    <>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            {(
+                                                [
+                                                    [String(plan.milestones.length), 'Milestones'],
+                                                    [String(totalPlannedTasks), 'Tasks'],
+                                                    [
+                                                        planConfidence != null
+                                                            ? `${Math.round(planConfidence)}%`
+                                                            : '—',
+                                                        'Confidence',
+                                                    ],
+                                                ] as const
+                                            ).map(([value, label]) => (
+                                                <div
+                                                    key={label}
+                                                    className={cn(
+                                                        'rounded-xl border border-[#edecea] bg-white p-5 text-center',
+                                                        PLAN_CARD_SHADOW,
+                                                    )}
+                                                >
+                                                    <div className="font-['Satoshi',sans-serif] text-[28px] font-bold leading-none text-[#0b191f]">
+                                                        {value}
+                                                    </div>
+                                                    <div className="mt-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                                                        {label}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div>
+                                            <h3 className="mb-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                                                Milestones
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {plan.milestones.map((ms, i) => (
+                                                    <MilestoneCard
+                                                        key={ms.milestone_id ?? `m-${i}`}
+                                                        milestone={ms}
+                                                        index={i}
+                                                    />
+                                                ))}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
+                                    </>
+                                ) : null}
 
-                                <div>
-                                    <h3 className="mb-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                                        Milestones
-                                    </h3>
-                                    <div className="space-y-3">
-                                        {plan.milestones.map((ms, i) => (
-                                            <MilestoneCard
-                                                key={i}
-                                                milestone={ms}
-                                                index={i}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
+                                {refinementPayload ? (
+                                    !baselinePlan || !lockMeta ? (
+                                        <div className="flex items-center gap-3 rounded-xl border border-[#ebedee] bg-white px-5 py-8 text-[#606d76] shadow-sm">
+                                            <Loader2 className="size-6 shrink-0 animate-spin text-[#2E96F9]" />
+                                            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium">
+                                                Loading baseline comparison…
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <PlannerRefinementReviewPanel
+                                            sections={diffSections}
+                                            isApplying={applyRefinementMutation.isPending}
+                                            embedded
+                                            hideFooter
+                                            onBack={() => undefined}
+                                            onApply={() => undefined}
+                                        />
+                                    )
+                                ) : null}
 
                                 <div className="flex items-center justify-between border-t border-[#ebedee] pt-8">
                                     <button
@@ -1326,19 +1466,35 @@ export function AIProjectPlanner({
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={handleApprovePlan}
-                                        disabled={approveMutation.isPending}
+                                        onClick={() =>
+                                            refinementPayload
+                                                ? void handleConfirmApplyRefinement()
+                                                : void handlePrimaryPlanAction()
+                                        }
+                                        disabled={
+                                            refinementPayload
+                                                ? applyRefinementMutation.isPending ||
+                                                  !baselinePlan ||
+                                                  !lockMeta
+                                                : approveMutation.isPending
+                                        }
                                         className={cn(
                                             "inline-flex h-11 items-center gap-2 rounded-lg px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white shadow-sm transition-opacity disabled:opacity-60",
                                             'bg-gradient-to-br from-[#24b5f8] to-[#5521fe] hover:opacity-95',
                                         )}
                                     >
-                                        {approveMutation.isPending ? (
+                                        {refinementPayload ? (
+                                            applyRefinementMutation.isPending ? (
+                                                <Loader2 className="size-4 shrink-0 animate-spin" />
+                                            ) : (
+                                                <Check className="size-4 shrink-0" />
+                                            )
+                                        ) : approveMutation.isPending ? (
                                             <Loader2 className="size-4 shrink-0 animate-spin" />
                                         ) : (
                                             <Check className="size-4 shrink-0" />
                                         )}
-                                        Approve & Create Project
+                                        {refinementPayload ? 'Approve' : 'Approve & Create Project'}
                                     </button>
                                 </div>
                             </div>
@@ -1362,10 +1518,12 @@ export function AIProjectPlanner({
                                     <>
                                         <Loader2 className="mx-auto size-12 animate-spin text-[#2E96F9]" />
                                         <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]">
-                                            Creating your project...
+                                            {refinementPayload ? 'Applying updates…' : 'Creating your project...'}
                                         </h3>
                                         <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
-                                            Setting up milestones and tasks
+                                            {refinementPayload
+                                                ? 'Saving milestones and tasks'
+                                                : 'Setting up milestones and tasks'}
                                         </p>
                                     </>
                                 ) : (
@@ -1382,7 +1540,7 @@ export function AIProjectPlanner({
                                             <Check className="mx-auto size-16 text-emerald-500" />
                                         </motion.div>
                                         <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]">
-                                            Project created!
+                                            {refinementPayload ? 'Plan updated!' : 'Project created!'}
                                         </h3>
                                         <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
                                             Redirecting to your project board...

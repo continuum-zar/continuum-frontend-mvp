@@ -5,12 +5,16 @@ export type WorkSessionStatus = 'ACTIVE' | 'PAUSED';
 
 /** Active work session from GET /api/v1/work-sessions/active (and pause/resume responses). */
 export interface ActiveWorkSessionResponse {
-    id: string;
+    id: string | number;
+    user_id?: number;
     status: WorkSessionStatus;
     current_duration_seconds: number;
     project_id?: number;
     task_id?: number | null;
     note?: string | null;
+    started_at?: string;
+    last_resumed_at?: string | null;
+    duration_seconds?: number;
 }
 
 /** Alias for work session from API (active or create response). */
@@ -18,7 +22,7 @@ export type WorkSessionOut = ActiveWorkSessionResponse | WorkSessionCreateRespon
 
 /** Response from POST /api/v1/work-sessions (create) */
 export interface WorkSessionCreateResponse {
-    id: string;
+    id: string | number;
     status: WorkSessionStatus;
     current_duration_seconds: number;
     project_id?: number;
@@ -43,8 +47,8 @@ export interface WorkSessionStopBody {
  */
 export async function fetchActiveWorkSession(): Promise<ActiveWorkSessionResponse | null> {
     try {
-        const { data } = await api.get<ActiveWorkSessionResponse>('/work-sessions/active');
-        return data;
+        const { data } = await api.get<ActiveWorkSessionResponse | null>('/work-sessions/active');
+        return data ?? null;
     } catch (err: unknown) {
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status === 404) return null;

@@ -77,7 +77,7 @@ function WorkspaceLeftRailSkeleton() {
         <Skeleton className="h-3 w-24" />
       </div>
 
-      {/* Nav pills (Home, Invoice, Assigned, Created) */}
+      {/* Nav pills (Home, Invoice, My tasks, Productivity rhythm) */}
       <div className="flex items-center gap-[8px] pt-[8px]">
         {[0, 1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-[40px] w-[47px] rounded-[8px]" />

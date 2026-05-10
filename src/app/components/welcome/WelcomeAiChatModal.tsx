@@ -198,6 +198,7 @@ function mapGeneratedTaskToConfirmItem(
     labels: task.labels && task.labels.length > 0 ? task.labels : null,
     resources: task.resources ?? [],
     figma_node_ids: task.figma_node_ids ?? [],
+    dependency_indexes: task.dependency_indexes ?? [],
   };
 }
 
@@ -1050,6 +1051,11 @@ export function WelcomeAiChatModal({
                                                 <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#e7f2fc] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#2f6df6]">
                                                   <Link2 className="size-3" aria-hidden />
                                                   {task.resources.length} Figma resource{task.resources.length === 1 ? "" : "s"}
+                                                </span>
+                                              ) : null}
+                                              {task.dependency_indexes?.length ? (
+                                                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#f3f4f6] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]">
+                                                  Depends on {task.dependency_indexes.length} task{task.dependency_indexes.length === 1 ? "" : "s"}
                                                 </span>
                                               ) : null}
                                             </button>

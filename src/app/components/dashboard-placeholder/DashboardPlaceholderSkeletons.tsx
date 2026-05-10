@@ -7,7 +7,7 @@ type DashboardTaskListTableSkeletonProps = {
   rowCount?: number;
 };
 
-/** Table header + skeleton rows matching Created / Assigned dashboard task lists. */
+/** Table header + skeleton rows matching the unified My tasks (assigned / created) lists. */
 export function DashboardTaskListTableSkeleton({ rowCount = 8 }: DashboardTaskListTableSkeletonProps) {
   return (
     <>
