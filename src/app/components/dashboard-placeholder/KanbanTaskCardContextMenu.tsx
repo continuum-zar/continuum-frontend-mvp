@@ -17,6 +17,7 @@ import {
   ArrowRightLeft,
   ExternalLink,
   Link2,
+  Milestone,
   Pencil,
   Trash2,
   UserRoundPlus,
@@ -65,6 +66,14 @@ export type KanbanTaskCardContextMenuProps = {
   onAssignMember?: (userId: number) => void;
   /** Remove a single assignee without affecting others. */
   onUnassignMember?: (userId: number) => void;
+  /**
+   * Milestones on this project for “Move to milestone…” (omit when the project has none).
+   * Use `milestoneId: null` for “No milestone”.
+   */
+  milestoneMoveOptions?: { milestoneId: string | null; label: string }[];
+  /** Stored milestone id on the task (`null` or empty string = none). */
+  taskMilestoneId?: string | null;
+  onMoveTaskToMilestone?: (milestoneId: string | null) => void;
 };
 
 /** Radix positions context UI with `side: right` from the cursor; we shift the stack for completed tasks. */
@@ -176,6 +185,9 @@ export function KanbanTaskCardContextMenu({
   currentAssigneeId = null,
   onAssignMember,
   onUnassignMember,
+  milestoneMoveOptions,
+  taskMilestoneId = null,
+  onMoveTaskToMilestone,
 }: KanbanTaskCardContextMenuProps) {
   const assigneeIds =
     currentAssigneeIdsProp != null
@@ -187,6 +199,13 @@ export function KanbanTaskCardContextMenu({
     typeof onAssignMember === "function" &&
     typeof onUnassignMember === "function" &&
     (members?.length ?? 0) > 0;
+  const normalizedTaskMilestone =
+    taskMilestoneId != null && String(taskMilestoneId).trim() !== ""
+      ? String(taskMilestoneId)
+      : null;
+  const canMoveMilestone =
+    typeof onMoveTaskToMilestone === "function" &&
+    (milestoneMoveOptions?.length ?? 0) > 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const [cardHole, setCardHole] = useState<DOMRect | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -442,6 +461,52 @@ export function KanbanTaskCardContextMenu({
               ))}
             </ContextMenuSubContent>
           </ContextMenuSub>
+          {canMoveMilestone ? (
+            <ContextMenuSub>
+              <ContextMenuSubTrigger
+                className={cn(
+                  optionChipClassName,
+                  "data-[state=open]:bg-[#f5f7f8] data-[state=open]:text-[#0b191f] data-[state=open]:shadow-md",
+                )}
+                aria-label="Move this task to another milestone"
+              >
+                <Milestone className={optionIconClass} aria-hidden />
+                Move to milestone…
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent className={subShellClassName} sideOffset={8}>
+                <div className={assignMemberListClassName}>
+                  {milestoneMoveOptions?.map((opt) => {
+                    const isNone = opt.milestoneId === null;
+                    const isCurrent =
+                      (isNone && normalizedTaskMilestone === null) ||
+                      (!isNone && opt.milestoneId === normalizedTaskMilestone);
+                    return (
+                      <ContextMenuItem
+                        key={opt.milestoneId ?? "__none__"}
+                        className={optionChipClassName}
+                        disabled={isCurrent}
+                        aria-label={
+                          isNone
+                            ? "Remove task from milestone"
+                            : `Move task to milestone ${opt.label}`
+                        }
+                        onSelect={() => {
+                          if (!isCurrent) onMoveTaskToMilestone?.(opt.milestoneId);
+                        }}
+                      >
+                        <span className="truncate">{opt.label}</span>
+                        {isCurrent ? (
+                          <span className={cn(satoshi, "ml-auto text-xs font-normal text-[#727d83]")}>
+                            Current
+                          </span>
+                        ) : null}
+                      </ContextMenuItem>
+                    );
+                  })}
+                </div>
+              </ContextMenuSubContent>
+            </ContextMenuSub>
+          ) : null}
           <ContextMenuItem
             className={optionChipClassName}
             onSelect={() => {
