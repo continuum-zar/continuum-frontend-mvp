@@ -638,7 +638,15 @@ export function AIProjectPlanner({
                 plan,
                 figma_blueprint: figmaContext?.blueprint ?? null,
             });
-            toast.success('Plan updated');
+            toast.success('Project refined', {
+                icon: (
+                    <Check
+                        className="size-5 shrink-0 text-[#0b191f]"
+                        strokeWidth={2.5}
+                        aria-hidden
+                    />
+                ),
+            });
             setPhase('complete');
             setTimeout(() => navigate(projectMainHref(String(res.project_id))), 1500);
         } catch {
