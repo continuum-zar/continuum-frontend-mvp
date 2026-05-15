@@ -34,7 +34,10 @@ import {
   useProjectTasksInfinite,
   useUpdateProjectKanbanBoard,
   useUpdateTaskStatus,
+  getApiErrorMessage,
+  invalidateProjectTaskLists,
 } from "@/api/hooks";
+import { patchTaskMilestone, updateTaskStatus } from "@/api/tasks";
 import { useAuthStore } from "@/store/authStore";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { reorderKanbanColumns } from "@/lib/kanbanColumnReorder";
@@ -168,6 +171,15 @@ export function GetStartedKanbanLive({
     return m;
   }, [milestonesQuery.data]);
 
+  const milestonePickerRows = useMemo(() => {
+    const rows = milestonesQuery.data ?? [];
+    if (rows.length === 0) return undefined;
+    return [
+      { milestoneId: null as string | null, label: "No milestone" },
+      ...rows.map((m) => ({ milestoneId: m.id, label: m.name })),
+    ];
+  }, [milestonesQuery.data]);
+
   const [columns, setColumns] = useState<KanbanColumnConfig[]>(() => [...DEFAULT_KANBAN_COLUMNS]);
   const [taskColumnPreference, setTaskColumnPreference] = useState<Record<string, string>>({});
 
@@ -252,6 +264,7 @@ export function GetStartedKanbanLive({
   const [newColumnStatus, setNewColumnStatus] = useState<TaskStatus>("todo");
   const [boardColumnSearchOpen, setBoardColumnSearchOpen] = useState<Record<string, boolean>>({});
   const [boardColumnSearchQuery, setBoardColumnSearchQuery] = useState<Record<string, string>>({});
+  const [columnBulkMovePending, setColumnBulkMovePending] = useState(false);
 
   const handleMoveToColumn = (taskId: string, targetColumnId: string) => {
     const targetCol = columns.find((c) => c.id === targetColumnId);
@@ -272,6 +285,158 @@ export function GetStartedKanbanLive({
           pendingMoveRef.current.delete(taskId);
         },
       },
+    );
+  };
+
+  const handleMoveAllTasksInColumn = useCallback(
+    async (sourceColumnId: string, targetColumnId: string) => {
+      if (sourceColumnId === targetColumnId || columnBulkMovePending) return;
+      const tasks = columnTasks[sourceColumnId] ?? [];
+      if (tasks.length === 0) return;
+      const targetCol = columns.find((c) => c.id === targetColumnId);
+      if (!targetCol) return;
+
+      setColumnBulkMovePending(true);
+      const toastId = toast.loading(`Moving ${tasks.length} task${tasks.length === 1 ? "" : "s"}…`);
+      try {
+        setTaskColumnPreference((prev) => {
+          const next = { ...prev };
+          for (const t of tasks) next[t.id] = targetColumnId;
+          return next;
+        });
+        const settled = await Promise.allSettled(
+          tasks.map((t) => updateTaskStatus(t.id, targetCol.id)),
+        );
+        const failed = settled.filter((r) => r.status === "rejected").length;
+        const ok = settled.length - failed;
+        invalidateProjectTaskLists(queryClient, projectId);
+        toast.dismiss(toastId);
+        if (failed === 0) {
+          toast.success(`Moved ${ok} task${ok === 1 ? "" : "s"} to ${targetCol.title}`);
+        } else if (ok === 0) {
+          const rejected = settled.find(
+            (r): r is PromiseRejectedResult => r.status === "rejected",
+          );
+          toast.error(
+            rejected
+              ? getApiErrorMessage(rejected.reason, "Could not move tasks")
+              : "Could not move tasks",
+          );
+        } else {
+          toast.error(`${failed} of ${tasks.length} tasks failed to move`);
+        }
+      } catch (e) {
+        toast.dismiss(toastId);
+        toast.error(getApiErrorMessage(e, "Failed to move tasks"));
+      } finally {
+        setColumnBulkMovePending(false);
+      }
+    },
+    [columnBulkMovePending, columnTasks, columns, projectId, queryClient],
+  );
+
+  const handleMoveAllTasksInColumnToMilestone = useCallback(
+    async (columnId: string, milestoneId: string | null) => {
+      if (columnBulkMovePending) return;
+      const tasks = columnTasks[columnId] ?? [];
+      const apiMid = milestoneId === null ? null : Number(milestoneId);
+      const toUpdate = tasks.filter((t) => {
+        const mid = t.milestoneId?.trim() ? t.milestoneId : null;
+        if (milestoneId === null) return mid !== null;
+        return mid !== milestoneId;
+      });
+      if (toUpdate.length === 0) {
+        toast.info("All tasks in this list already use that milestone");
+        return;
+      }
+
+      const destLabel =
+        milestoneId === null
+          ? "no milestone"
+          : milestonePickerRows?.find((o) => o.milestoneId === milestoneId)?.label ?? "milestone";
+
+      setColumnBulkMovePending(true);
+      const toastId = toast.loading(
+        `Updating ${toUpdate.length} task${toUpdate.length === 1 ? "" : "s"}…`,
+      );
+      try {
+        const settled = await Promise.allSettled(
+          toUpdate.map((t) => patchTaskMilestone(t.id, apiMid)),
+        );
+        const failed = settled.filter((r) => r.status === "rejected").length;
+        const ok = settled.length - failed;
+        invalidateProjectTaskLists(queryClient, projectId);
+        toast.dismiss(toastId);
+        if (failed === 0) {
+          toast.success(`Moved ${ok} task${ok === 1 ? "" : "s"} to ${destLabel}`);
+        } else if (ok === 0) {
+          const rejected = settled.find(
+            (r): r is PromiseRejectedResult => r.status === "rejected",
+          );
+          toast.error(
+            rejected
+              ? getApiErrorMessage(rejected.reason, "Could not update milestones")
+              : "Could not update milestones",
+          );
+        } else {
+          toast.error(`${failed} of ${toUpdate.length} tasks failed to update`);
+        }
+      } catch (e) {
+        toast.dismiss(toastId);
+        toast.error(getApiErrorMessage(e, "Failed to update milestones"));
+      } finally {
+        setColumnBulkMovePending(false);
+      }
+    },
+    [columnBulkMovePending, columnTasks, milestonePickerRows, projectId, queryClient],
+  );
+
+  const handleMoveTaskToMilestone = useCallback(
+    async (taskId: string, milestoneId: string | null) => {
+      try {
+        await patchTaskMilestone(taskId, milestoneId === null ? null : Number(milestoneId));
+        toast.success(milestoneId ? "Task moved to milestone" : "Task removed from milestone");
+        invalidateProjectTaskLists(queryClient, projectId);
+      } catch (e) {
+        toast.error(getApiErrorMessage(e, "Failed to update milestone"));
+      }
+    },
+    [projectId, queryClient],
+  );
+
+  const renderColumnKebabMenu = (col: KanbanColumnConfig) => {
+    const tasksInCol = columnTasks[col.id] ?? [];
+    const milestoneBulkOpts =
+      milestonePickerRows == null
+        ? undefined
+        : milestonePickerRows.map((opt) => {
+            const allMatch =
+              tasksInCol.length > 0 &&
+              tasksInCol.every((t) => {
+                const mid = t.milestoneId?.trim() ? t.milestoneId : null;
+                return opt.milestoneId === null ? mid === null : mid === opt.milestoneId;
+              });
+            return { ...opt, disabled: tasksInCol.length === 0 || allMatch };
+          });
+
+    return (
+      <KanbanColumnHeaderKebabMenu
+        column={col}
+        onAddList={() => setAddColumnOpen(true)}
+        onRequestDeleteList={
+          isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
+        }
+        moveTasksTargetColumns={columns
+          .filter((c) => c.id !== col.id)
+          .map((c) => ({ id: c.id, label: c.title }))}
+        onMoveAllTasksToColumn={(targetId) => void handleMoveAllTasksInColumn(col.id, targetId)}
+        tasksInColumnCount={tasksInCol.length}
+        isMoveTasksPending={columnBulkMovePending}
+        moveTasksToMilestoneOptions={milestoneBulkOpts}
+        onMoveAllTasksToMilestone={(mid) =>
+          void handleMoveAllTasksInColumnToMilestone(col.id, mid)
+        }
+      />
     );
   };
 
@@ -425,6 +590,9 @@ export function GetStartedKanbanLive({
         onCopyLink={() => void copyTaskLink()}
         onDelete={() => setTaskPendingDelete(task)}
         onMoveToColumn={(columnId) => handleMoveToColumn(task.id, columnId)}
+        milestoneMoveOptions={milestonePickerRows}
+        taskMilestoneId={task.milestoneId || null}
+        onMoveTaskToMilestone={(milestoneId) => void handleMoveTaskToMilestone(task.id, milestoneId)}
       >
         <div
           className={cn(
@@ -637,15 +805,7 @@ export function GetStartedKanbanLive({
         showCreateTask={showCreateTask}
         onCreateTask={() => setCreateTaskOpen(true)}
         createIconSrc={imgVector11}
-        kebabMenu={
-          <KanbanColumnHeaderKebabMenu
-            column={col}
-            onAddList={() => setAddColumnOpen(true)}
-            onRequestDeleteList={
-              isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
-            }
-          />
-        }
+        kebabMenu={renderColumnKebabMenu(col)}
       />
     );
   };
@@ -668,15 +828,7 @@ export function GetStartedKanbanLive({
             draggingId={draggingId}
             dragOverCol={dragOverCol}
             cardPointerDown={cardPointerDown}
-            columnKebabMenu={(col) => (
-              <KanbanColumnHeaderKebabMenu
-                column={col}
-                onAddList={() => setAddColumnOpen(true)}
-                onRequestDeleteList={
-                  isDefaultKanbanColumn(col) ? undefined : () => setColumnPendingDelete(col)
-                }
-              />
-            )}
+            columnKebabMenu={(col) => renderColumnKebabMenu(col)}
           />
         </Suspense>
       ) : view === "gantt" ? (

@@ -133,11 +133,10 @@ function invalidateDerivedTaskLists(queryClient: QueryClient) {
     void queryClient.invalidateQueries({ queryKey: [...projectKeys.all, 'created-tasks'] });
 }
 
-function invalidateProjectTaskLists(queryClient: QueryClient, projectId: number | string) {
+/** Invalidate paginated and non-paginated task queries for a project (e.g. after bulk move). */
+export function invalidateProjectTaskLists(queryClient: QueryClient, projectId: number | string) {
     void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
     void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(projectId) });
-    void queryClient.invalidateQueries({ queryKey: projectKeys.milestones(projectId) });
-    void queryClient.invalidateQueries({ queryKey: projectKeys.list() });
 }
 
 /** Refetch board/list task queries only (not milestones or project list). */

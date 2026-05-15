@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { KanbanTaskCardContextMenu } from "./KanbanTaskCardContextMenu";
@@ -19,6 +19,9 @@ function renderMenu(
     onMoveToColumn: (columnId: string) => void;
     currentColumnId: string;
     currentColumnKind: "todo" | "in-progress" | "done";
+    milestoneMoveOptions: { milestoneId: string | null; label: string }[];
+    taskMilestoneId: string | null;
+    onMoveTaskToMilestone: (milestoneId: string | null) => void;
   }> = {},
 ) {
   const onOpenTask = overrides.onOpenTask ?? vi.fn();
@@ -38,6 +41,9 @@ function renderMenu(
       onCopyLink={onCopyLink}
       onDelete={onDelete}
       onMoveToColumn={onMoveToColumn}
+      milestoneMoveOptions={overrides.milestoneMoveOptions}
+      taskMilestoneId={overrides.taskMilestoneId}
+      onMoveTaskToMilestone={overrides.onMoveTaskToMilestone}
     >
       <div data-testid="kanban-card">Example task card</div>
     </KanbanTaskCardContextMenu>,
@@ -93,5 +99,43 @@ describe("KanbanTaskCardContextMenu", () => {
     await user.click(screen.getByRole("menuitem", { name: /copy link/i }));
 
     expect(onCopyLink).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not show Move to milestone when no milestone options are provided", async () => {
+    const user = userEvent.setup();
+    renderMenu();
+
+    await user.pointer({ keys: "[MouseRight>]", target: screen.getByTestId("kanban-card") });
+    await screen.findByRole("menu");
+
+    expect(
+      screen.queryByRole("menuitem", { name: /move this task to another milestone/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("invokes onMoveTaskToMilestone when a milestone is chosen", async () => {
+    const user = userEvent.setup();
+    const onMoveTaskToMilestone = vi.fn();
+    renderMenu({
+      milestoneMoveOptions: [
+        { milestoneId: null, label: "No milestone" },
+        { milestoneId: "99", label: "Sprint A" },
+      ],
+      taskMilestoneId: null,
+      onMoveTaskToMilestone,
+    });
+
+    await user.pointer({ keys: "[MouseRight>]", target: screen.getByTestId("kanban-card") });
+    await screen.findByRole("menu");
+
+    const trigger = screen.getByRole("menuitem", {
+      name: /move this task to another milestone/i,
+    });
+    await user.hover(trigger);
+    const dest = await screen.findByRole("menuitem", { name: /move task to milestone sprint a/i });
+    fireEvent.click(dest);
+
+    expect(onMoveTaskToMilestone).toHaveBeenCalledTimes(1);
+    expect(onMoveTaskToMilestone).toHaveBeenCalledWith("99");
   });
 });

@@ -90,6 +90,8 @@ export async function updateTask(
         linked_branch?: string | null;
         checklists?: TaskChecklistItemUpdate[];
         dependencies?: number[] | null;
+        /** Move task to another project (requires membership on both projects). */
+        project_id?: number;
     }
 ): Promise<TaskAPIResponse> {
     const payload: Record<
@@ -144,6 +146,9 @@ export async function updateTask(
     }
     if (body.dependencies !== undefined) {
         payload.dependencies = body.dependencies ?? [];
+    }
+    if (body.project_id !== undefined) {
+        payload.project_id = body.project_id;
     }
 
     const { data } = await api.put<TaskAPIResponse>(`/tasks/${taskId}`, payload);
@@ -237,6 +242,17 @@ export async function updateTaskStatus(
     const backendStatus = status === 'in-progress' ? 'in_progress' : status;
     const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/status`, {
         status: backendStatus,
+    });
+    return data;
+}
+
+/** Link or unlink task milestone. PATCH /tasks/{id}/milestone */
+export async function patchTaskMilestone(
+    taskId: number | string,
+    milestoneId: number | null,
+): Promise<TaskAPIResponse> {
+    const { data } = await api.patch<TaskAPIResponse>(`/tasks/${taskId}/milestone`, {
+        milestone_id: milestoneId,
     });
     return data;
 }
