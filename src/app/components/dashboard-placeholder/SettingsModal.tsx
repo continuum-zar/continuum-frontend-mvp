@@ -17,6 +17,7 @@ import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import { DiscordIntegrationModal } from "./DiscordIntegrationModal";
 import { FeedbackModal } from "./FeedbackModal";
 import { GithubIntegrationModal } from "./GithubIntegrationModal";
+import { AdminStatusPanel } from "./settings/AdminStatusPanel";
 import { DiscordTriggersSection } from "./settings/DiscordTriggersSection";
 import {
   Select,
@@ -51,10 +52,6 @@ const GMAIL_COMPOSE_HREF = `https://mail.google.com/mail/?view=cm&fs=1&to=${enco
 const outlineActionClass =
   "inline-flex h-10 shrink-0 items-center rounded-[8px] border border-[#ebedee] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none ring-offset-2 transition-colors hover:bg-[#f9f9f9] focus-visible:ring-2 focus-visible:ring-ring";
 
-/** Same look as outline chevron actions; no navigation until wired up. */
-const placeholderActionClass =
-  "inline-flex h-10 shrink-0 cursor-default items-center gap-1 rounded-[8px] border border-[#ebedee] bg-white py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring";
-
 const placeholderLinkClass =
   "cursor-default border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] underline decoration-solid underline-offset-2 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring";
 
@@ -64,6 +61,7 @@ export type SettingsSection =
   | "invoice"
   | "integrations"
   | "support"
+  | "status"
   | "waitlist";
 
 type SettingsModalProps = {
@@ -90,6 +88,7 @@ const SECTION_TITLE: Record<SettingsSection, string> = {
   invoice: "Invoice",
   integrations: "Integrations",
   support: "Support & legal",
+  status: "System Status",
   waitlist: "Waitlist",
 };
 
@@ -199,11 +198,18 @@ export function SettingsModal({
       setSection("general");
       return;
     }
+    if (tourSection === "status" && !isGlobalAdmin) {
+      setSection("general");
+      return;
+    }
     setSection(tourSection ?? "general");
   }, [open, tourSection, isGlobalAdmin]);
 
   useEffect(() => {
     if (section === "waitlist" && !isGlobalAdmin) {
+      setSection("general");
+    }
+    if (section === "status" && !isGlobalAdmin) {
       setSection("general");
     }
   }, [section, isGlobalAdmin]);
@@ -357,7 +363,8 @@ export function SettingsModal({
                   onClick={() => setSection(item.id)}
                   className={cn(
                     "flex h-10 w-full items-center rounded-[8px] px-4 py-2 text-left font-['Satoshi',sans-serif] text-[16px] font-medium transition-colors",
-                    section === item.id
+                    section === item.id ||
+                      (item.id === "support" && section === "status")
                       ? "border border-[#ededed] bg-white text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                       : "text-[#606d76] hover:bg-[rgba(255,255,255,0.6)]",
                   )}
@@ -766,6 +773,8 @@ export function SettingsModal({
                 </div>
               )}
 
+              {section === "status" && isGlobalAdmin && <AdminStatusPanel />}
+
               {section === "support" && (
                 <div className="flex flex-col gap-4 pt-6">
                   <div className="flex items-start justify-between gap-4">
@@ -787,15 +796,21 @@ export function SettingsModal({
                     </a>
                   </div>
 
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                      Status page
-                    </p>
-                    <button type="button" className={placeholderActionClass} aria-disabled="true">
-                      System uptime
-                      <ChevronRight className="size-6 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
-                    </button>
-                  </div>
+                  {isGlobalAdmin && (
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                        Status page
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setSection("status")}
+                        className={cn(outlineActionClass, "gap-1")}
+                      >
+                        System uptime
+                        <ChevronRight className="size-6 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between gap-4">
                     <p
