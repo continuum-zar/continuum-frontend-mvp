@@ -57,7 +57,7 @@ import { useAuthStore } from '@/store/authStore';
 import { DashboardAnalyticsCharts } from '../components/dashboard-charts/DashboardAnalyticsCharts';
 import { ProductivityRhythmHeatmapCard } from '../components/dashboard-charts/ProductivityRhythmHeatmapCard';
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
-import { getCurrentHeatmapHour, getTodayHeatmapDayLabel } from '@/lib/productivityRhythmLiveCell';
+import { getCurrentHeatmapHour, getTodayHeatmapDayLabel, HEATMAP_DAY_LABELS } from '@/lib/productivityRhythmLiveCell';
 import { projectPresenceEventsStreamUrl, type ProjectPresenceEvent } from '@/api/projectPresenceEvents';
 import {
   Bar,
@@ -212,8 +212,10 @@ export function Dashboard({
   const rhythmChartData = useMemo(() => {
     const dh = rhythmResponse?.day_hour;
     if (!dh) return [];
-    const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri'] as const;
-    const dayLabels: Record<string, string> = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri' };
+    const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+    const dayLabels: Record<string, string> = Object.fromEntries(
+      dayOrder.map((key, i) => [key, HEATMAP_DAY_LABELS[i] ?? key]),
+    );
     return dayOrder.map((dayKey) => {
       const row: Record<string, string | number> = { day: dayLabels[dayKey] ?? dayKey };
       const dayData = dh[dayKey] ?? {};
@@ -340,9 +342,6 @@ export function Dashboard({
     if (!s) return null;
     if (String(s.project_id ?? '') !== selectedProject) {
       return 'You have an active timer on another project. Pick that project in the dropdown above to see your live marker on the heatmap.';
-    }
-    if (getTodayHeatmapDayLabel() == null) {
-      return 'This heatmap only includes Monday–Friday. Your timer is still running; the live marker appears on weekdays.';
     }
     return null;
   }, [myActiveWorkSession, user, selectedProject, effectiveRole]);
