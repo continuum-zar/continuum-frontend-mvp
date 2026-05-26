@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, Navigate, useParams } from 'react-router';
 import { Copy, Check, ArrowLeft, Terminal, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -8,6 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app
 import { Badge } from '@/app/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
 import { WORKSPACE_BASE } from '@/lib/workspacePaths';
+
+const CLAUDE_BRAND_LOGO = '/assets/brand-assets/Claude.svg';
+const CURSOR_BRAND_LOGO = '/assets/brand-assets/cursor-logo.svg';
 
 const MCP_PUBLIC_URL = import.meta.env.VITE_MCP_PUBLIC_URL?.replace(/\/+$/, '') || '';
 
@@ -350,9 +353,36 @@ function ClaudeCodePanels({ apiBaseUrl }: { apiBaseUrl: string }) {
     );
 }
 
+function parseClientKind(clientParam: string | undefined): ClientKind | null {
+    if (clientParam === 'cursor' || clientParam === 'claude-code') return clientParam;
+    return null;
+}
+
+const CLIENT_SETUP_META: Record<ClientKind, { title: string; description: string; logoSrc: string }> = {
+    cursor: {
+        title: 'Cursor MCP',
+        description:
+            'Connect Cursor to Continuum for tasks and to Figma for design context your AI planner can turn into work.',
+        logoSrc: CURSOR_BRAND_LOGO,
+    },
+    'claude-code': {
+        title: 'Claude Code',
+        description:
+            'Connect Claude Code to Continuum for tasks and to Figma for design context your AI planner can turn into work.',
+        logoSrc: CLAUDE_BRAND_LOGO,
+    },
+};
+
 export function McpSetup() {
+    const { client: clientParam } = useParams<{ client: string }>();
+    const client = parseClientKind(clientParam);
+
+    if (!client) {
+        return <Navigate to="/mcp-setup/cursor" replace />;
+    }
+
     const apiBaseUrl = `${window.location.origin}/api/v1`;
-    const [client, setClient] = useState<ClientKind>('cursor');
+    const meta = CLIENT_SETUP_META[client];
 
     return (
         <div className="min-h-svh bg-background">
@@ -365,30 +395,25 @@ export function McpSetup() {
                     Back to workspace
                 </Link>
 
-                <div className="mb-8">
-                    <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                        MCP Setup
-                    </h1>
-                    <p className="mt-1.5 text-sm text-muted-foreground">
-                        Connect your coding agent to Continuum for tasks and to Figma for design context your AI planner can turn into work.
-                    </p>
+                <div className="mb-8 flex items-start gap-3">
+                    <img src={meta.logoSrc} alt="" aria-hidden className="mt-1 size-8 shrink-0" />
+                    <div>
+                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{meta.title}</h1>
+                        <p className="mt-1.5 text-sm text-muted-foreground">{meta.description}</p>
+                    </div>
                 </div>
 
-                <Tabs value={client} onValueChange={(value) => setClient(value as ClientKind)}>
-                    <TabsList className="mb-4">
-                        <TabsTrigger value="cursor">Cursor</TabsTrigger>
-                        <TabsTrigger value="claude-code">Claude Code</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="cursor">
-                        <CursorPanels apiBaseUrl={apiBaseUrl} />
-                    </TabsContent>
-
-                    <TabsContent value="claude-code">
-                        <ClaudeCodePanels apiBaseUrl={apiBaseUrl} />
-                    </TabsContent>
-                </Tabs>
+                {client === 'cursor' ? (
+                    <CursorPanels apiBaseUrl={apiBaseUrl} />
+                ) : (
+                    <ClaudeCodePanels apiBaseUrl={apiBaseUrl} />
+                )}
             </div>
         </div>
     );
+}
+
+/** Legacy path: redirect to Cursor setup. */
+export function McpSetupRedirect() {
+    return <Navigate to="/mcp-setup/cursor" replace />;
 }

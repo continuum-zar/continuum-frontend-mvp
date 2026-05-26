@@ -1288,7 +1288,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       type="button"
                       onClick={() => void handleCopyCursorMcpUrl()}
                       disabled={!cursorMcpShareUrl}
-                      aria-label={mcpLinkCopied ? 'URL copied to clipboard' : 'Copy Cursor MCP task URL'}
+                      aria-label={mcpLinkCopied ? 'URL copied to clipboard' : 'Copy MCP task URL'}
                       className={`inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-[#ebedee] bg-white px-5 text-[14px] font-medium text-[#0b191f] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-50`}
                     >
                       {mcpLinkCopied ? (
@@ -1304,7 +1304,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     className="max-w-xs border-0 bg-black text-balance text-white shadow-md"
                     arrowClassName="bg-black fill-black"
                   >
-                    {`Copies the Cursor MCP task page link. For full agent integration (checklists, status changes), configure the Continuum MCP server in Cursor.`}
+                    {`Copies the MCP task page link for this task. For full agent integration (checklists, status changes), configure the Continuum MCP server in Cursor or Claude Code from Settings → Integrations.`}
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>

@@ -32,6 +32,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 const BRAND_LOGO = {
   github: "/assets/brand-assets/github-logo.svg",
   cursor: "/assets/brand-assets/cursor-logo.svg",
+  claude: "/assets/brand-assets/Claude.svg",
   discord: "/assets/brand-assets/discord-logo.svg",
 } as const;
 
@@ -716,10 +717,11 @@ export function SettingsModal({
                       />
                       <div className="flex min-w-0 flex-col gap-1">
                         <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                          MCP integration
+                          Cursor MCP
                         </p>
                         <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
-                          Connect Cursor or Claude Code to Continuum so your AI agent can pull tasks, update checklists, and change statuses.
+                          Connect Cursor to Continuum so your AI agent can pull tasks, update checklists, and change
+                          statuses.
                         </p>
                       </div>
                     </div>
@@ -729,7 +731,7 @@ export function SettingsModal({
                           type="button"
                           onClick={() => {
                             handleOpenChange(false);
-                            navigate("/mcp-setup");
+                            navigate("/mcp-setup/cursor");
                           }}
                           className={cn(outlineActionClass, "gap-1")}
                         >
@@ -737,7 +739,43 @@ export function SettingsModal({
                           <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent>Open MCP setup</TooltipContent>
+                      <TooltipContent>Open Cursor MCP setup</TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-4 border-t border-[#ebedee] pt-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <img
+                        src={BRAND_LOGO.claude}
+                        alt=""
+                        aria-hidden
+                        className="mt-0.5 size-6 shrink-0"
+                      />
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                          Claude Code
+                        </p>
+                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                          Connect Claude Code to Continuum so your AI agent can pull tasks, update checklists, and
+                          change statuses.
+                        </p>
+                      </div>
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleOpenChange(false);
+                            navigate("/mcp-setup/claude-code");
+                          }}
+                          className={cn(outlineActionClass, "gap-1")}
+                        >
+                          Setup
+                          <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Open Claude Code MCP setup</TooltipContent>
                     </Tooltip>
                   </div>
                 </div>

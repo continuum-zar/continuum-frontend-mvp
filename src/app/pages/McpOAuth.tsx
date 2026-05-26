@@ -12,6 +12,21 @@ import { Check, XCircle } from 'lucide-react';
 const MCP_OAUTH_SESSION_KEY = 'continuum-mcp-oauth-completed';
 const MCP_OAUTH_CLIENT_LABEL_KEY = 'continuum-mcp-oauth-client-label';
 const REDIRECT_FALLBACK_MS = 10_000;
+/** Brief “returning to…” state before manual handoff for http(s) callbacks (Claude Code). */
+const MANUAL_HANDOFF_PENDING_MS = 2_000;
+
+/**
+ * http(s) redirect URIs (e.g. Claude Code `http://localhost:PORT/callback`) navigate the
+ * browser away from Continuum and show the client’s plain callback page if we auto-redirect.
+ */
+export function usesBrowserNavigableRedirect(redirectUri: string): boolean {
+    try {
+        const scheme = new URL(redirectUri).protocol.replace(':', '');
+        return scheme === 'http' || scheme === 'https';
+    } catch {
+        return false;
+    }
+}
 
 /** Matches `DashboardPlaceholderHome` / `WorkspaceShellSkeleton` workspace shell. */
 const PLACEHOLDER_PAGE_GRADIENT =
@@ -352,15 +367,27 @@ function McpOAuthInner() {
                 setFallbackRedirectUrl(redirectUrl);
                 setPhase('success-pending-redirect');
 
-                fallbackTimerRef.current = setTimeout(() => {
-                    if (cancelled) return;
-                    console.warn(
-                        `[McpOAuth] no navigation detected after ${REDIRECT_FALLBACK_MS}ms; showing manual handoff`
-                    );
-                    setPhase('success-stalled');
-                }, REDIRECT_FALLBACK_MS);
+                const manualHandoff = usesBrowserNavigableRedirect(redirect_uri!);
 
-                window.location.assign(redirectUrl);
+                if (manualHandoff) {
+                    fallbackTimerRef.current = setTimeout(() => {
+                        if (cancelled) return;
+                        console.info(
+                            `[McpOAuth] manual handoff for http(s) redirect after ${MANUAL_HANDOFF_PENDING_MS}ms`
+                        );
+                        setPhase('success-stalled');
+                    }, MANUAL_HANDOFF_PENDING_MS);
+                } else {
+                    fallbackTimerRef.current = setTimeout(() => {
+                        if (cancelled) return;
+                        console.warn(
+                            `[McpOAuth] no navigation detected after ${REDIRECT_FALLBACK_MS}ms; showing manual handoff`
+                        );
+                        setPhase('success-stalled');
+                    }, REDIRECT_FALLBACK_MS);
+
+                    window.location.assign(redirectUrl);
+                }
             } catch (e: unknown) {
                 if (cancelled) return;
                 if (isCancel(e)) {
