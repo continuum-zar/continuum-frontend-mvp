@@ -716,10 +716,10 @@ export function SettingsModal({
                       />
                       <div className="flex min-w-0 flex-col gap-1">
                         <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
-                          Cursor MCP
+                          MCP integration
                         </p>
                         <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
-                          Connect Cursor to Continuum so your AI agent can pull tasks, update checklists, and change statuses.
+                          Connect Cursor or Claude Code to Continuum so your AI agent can pull tasks, update checklists, and change statuses.
                         </p>
                       </div>
                     </div>
@@ -737,7 +737,7 @@ export function SettingsModal({
                           <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent>Open Cursor MCP setup</TooltipContent>
+                      <TooltipContent>Open MCP setup</TooltipContent>
                     </Tooltip>
                   </div>
                 </div>
