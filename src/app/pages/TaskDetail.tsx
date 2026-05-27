@@ -104,6 +104,25 @@ function formatLoggedHoursSum(hours: number): string {
   return new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(hours);
 }
 
+/**
+ * Task URLs must include `?project=` (and related sprint params) or the workspace shell
+ * renders the static Get started mock (`TaskPanels`) instead of real `TaskDetail`.
+ */
+function buildTaskWorkspaceHref(
+  targetTaskId: number | string,
+  searchParams: URLSearchParams,
+  projectId?: number | string | null,
+): string {
+  const params = new URLSearchParams(searchParams);
+  params.delete('edit');
+  const project =
+    params.get('project') ?? (projectId != null && projectId !== '' ? String(projectId) : null);
+  if (project) params.set('project', project);
+  const qs = params.toString();
+  const path = workspaceJoin('task', String(targetTaskId));
+  return qs ? `${path}?${qs}` : path;
+}
+
 const SCOPE_OPTIONS: { value: ScopeWeight; label: string }[] = [
   { value: 'XS', label: 'Extra Small (XS)' },
   { value: 'S', label: 'Small (S)' },
@@ -900,6 +919,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     [projectTasks, taskId, dependencySearch],
   );
 
+  const taskWorkspaceProjectId =
+    searchParams.get('project') ?? task?.project_id ?? state.projectId ?? null;
+
   const handleUpdateTask = async () => {
     if (!taskId) return;
     setEditingTitle(false);
@@ -1208,7 +1230,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   {selectedDependencies.map((depId) => {
                     const dep = projectTasks.find((t) => Number(t.id) === depId);
                     const depLabel = dep?.title ?? `Task #${depId}`;
-                    const depHref = workspaceJoin('task', String(depId));
+                    const depHref = buildTaskWorkspaceHref(depId, searchParams, taskWorkspaceProjectId);
                     return (
                       <span
                         key={depId}
