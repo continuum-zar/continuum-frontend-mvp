@@ -31,6 +31,9 @@ const CursorMcpTask = lazy(() =>
 );
 const McpOAuth = lazy(() => import("./pages/McpOAuth").then((m) => ({ default: m.McpOAuth })));
 const McpSetup = lazy(() => import("./pages/McpSetup").then((m) => ({ default: m.McpSetup })));
+const McpSetupRedirect = lazy(() =>
+  import("./pages/McpSetup").then((m) => ({ default: m.McpSetupRedirect }))
+);
 const DashboardPlaceholder = lazy(() =>
   import("./pages/DashboardPlaceholder").then((m) => ({ default: m.DashboardPlaceholder }))
 );
@@ -197,6 +200,16 @@ const appRoutes = [
   },
   {
     path: "/mcp-setup",
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<RouteSkeleton />}>
+          <McpSetupRedirect />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/mcp-setup/:client",
     element: (
       <AuthGuard>
         <Suspense fallback={<RouteSkeleton />}>

@@ -10,7 +10,23 @@ import { isAxiosError, isCancel } from 'axios';
 import { Check, XCircle } from 'lucide-react';
 
 const MCP_OAUTH_SESSION_KEY = 'continuum-mcp-oauth-completed';
+const MCP_OAUTH_CLIENT_LABEL_KEY = 'continuum-mcp-oauth-client-label';
 const REDIRECT_FALLBACK_MS = 10_000;
+/** Brief “returning to…” state before manual handoff for http(s) callbacks (Claude Code). */
+const MANUAL_HANDOFF_PENDING_MS = 2_000;
+
+/**
+ * http(s) redirect URIs (e.g. Claude Code `http://localhost:PORT/callback`) navigate the
+ * browser away from Continuum and show the client’s plain callback page if we auto-redirect.
+ */
+export function usesBrowserNavigableRedirect(redirectUri: string): boolean {
+    try {
+        const scheme = new URL(redirectUri).protocol.replace(':', '');
+        return scheme === 'http' || scheme === 'https';
+    } catch {
+        return false;
+    }
+}
 
 /** Matches `DashboardPlaceholderHome` / `WorkspaceShellSkeleton` workspace shell. */
 const PLACEHOLDER_PAGE_GRADIENT =
@@ -107,6 +123,19 @@ function ContinuumConnectingStatus({
     );
 }
 
+/** Display name for the MCP client that initiated this consent flow. */
+function formatClientName(raw: string | null | undefined): string {
+    const trimmed = raw?.trim();
+    if (!trimmed) return 'Cursor';
+    if (!/[-_]/.test(trimmed) && /[A-Z]/.test(trimmed)) return trimmed;
+    return trimmed
+        .replace(/[-_]+/g, ' ')
+        .split(' ')
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+}
+
 function logRedirectUrlSafe(redirectUrl: string) {
     try {
         const u = new URL(redirectUrl);
@@ -143,7 +172,7 @@ function buildOAuthError(error: unknown): OAuthError {
                 <>
                     <p className="mb-2">Something unexpected stopped authorization.</p>
                     <ul className="list-disc pl-4 space-y-1 text-sm">
-                        <li>Go back to Cursor and start the Continuum connection again.</li>
+                        <li>Go back to your editor and start the Continuum connection again.</li>
                         <li>If this keeps happening, contact your workspace admin.</li>
                     </ul>
                 </>
@@ -158,7 +187,7 @@ function buildOAuthError(error: unknown): OAuthError {
                 <>
                     <p className="mb-2">The authorization request did not finish in time.</p>
                     <ul className="list-disc pl-4 space-y-1 text-sm">
-                        <li>Check your network connection, then try reconnecting from Cursor.</li>
+                        <li>Check your network connection, then try reconnecting from your editor.</li>
                         <li>If you are on a slow network, wait a moment and try again.</li>
                     </ul>
                 </>
@@ -174,7 +203,7 @@ function buildOAuthError(error: unknown): OAuthError {
                     <p className="mb-2">We could not reach Continuum to complete the handoff.</p>
                     <ul className="list-disc pl-4 space-y-1 text-sm">
                         <li>Confirm you are online and that VPN or firewall rules allow this site.</li>
-                        <li>Try reconnecting from Cursor after refreshing this page.</li>
+                        <li>Try reconnecting from your editor after refreshing this page.</li>
                     </ul>
                 </>
             ),
@@ -191,7 +220,7 @@ function buildOAuthError(error: unknown): OAuthError {
                 <>
                     <p className="mb-2">{detail}</p>
                     <ul className="list-disc pl-4 space-y-1 text-sm">
-                        <li>Sign in to Continuum in this browser, then return to Cursor and connect again.</li>
+                        <li>Sign in to Continuum in this browser, then return to your editor and connect again.</li>
                         <li>If you use multiple accounts, ensure you are signed into the correct one.</li>
                     </ul>
                 </>
@@ -206,7 +235,7 @@ function buildOAuthError(error: unknown): OAuthError {
                 <>
                     <p className="mb-2">{detail}</p>
                     <ul className="list-disc pl-4 space-y-1 text-sm">
-                        <li>Wait a minute and try reconnecting from Cursor.</li>
+                        <li>Wait a minute and try reconnecting from your editor.</li>
                         <li>If the problem continues, contact support with the time you tried.</li>
                     </ul>
                 </>
@@ -220,7 +249,7 @@ function buildOAuthError(error: unknown): OAuthError {
             <>
                 <p className="mb-2">{detail}</p>
                 <ul className="list-disc pl-4 space-y-1 text-sm">
-                    <li>Close this window and start the connection again from Cursor.</li>
+                    <li>Close this window and start the connection again from your editor.</li>
                     <li>Ask an admin to confirm MCP OAuth is enabled for your workspace.</li>
                 </ul>
             </>
@@ -233,10 +262,10 @@ function missingParamsError(missing: string[]): OAuthError {
         title: 'Missing OAuth parameters',
         description: (
             <>
-                <p className="mb-2">This page needs a full redirect from Cursor. Missing: {missing.join(', ')}.</p>
+                <p className="mb-2">This page needs a full redirect from your editor. Missing: {missing.join(', ')}.</p>
                 <ul className="list-disc pl-4 space-y-1 text-sm">
-                    <li>Close this tab and use Cursor&apos;s Continuum integration to connect again.</li>
-                    <li>Do not bookmark this page; always start from Cursor.</li>
+                    <li>Close this tab and start the connection from your editor&apos;s Continuum MCP integration.</li>
+                    <li>Do not bookmark this page; always start from your editor.</li>
                 </ul>
             </>
         ),
@@ -244,8 +273,10 @@ function missingParamsError(missing: string[]): OAuthError {
 }
 
 /**
- * OAuth consent handoff for Cursor MCP: backend redirects here from /api/v1/oauth/authorize
- * with PKCE params; we POST /oauth/consent with the logged-in user's JWT and redirect to Cursor.
+ * OAuth consent handoff for MCP clients (Cursor, Claude Code, ...): backend redirects here from
+ * /api/v1/oauth/authorize with PKCE params; we POST /oauth/consent with the logged-in user's JWT
+ * and redirect back to the client. The client's display name is read from the consent response
+ * so the success copy matches whichever editor initiated the flow.
  */
 function McpOAuthInner() {
     const [searchParams] = useSearchParams();
@@ -254,6 +285,7 @@ function McpOAuthInner() {
         'loading' | 'success-pending-redirect' | 'success-stalled' | 'revisit-success'
     >('loading');
     const [fallbackRedirectUrl, setFallbackRedirectUrl] = useState<string | null>(null);
+    const [clientLabel, setClientLabel] = useState<string>('Cursor');
     const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -271,6 +303,8 @@ function McpOAuthInner() {
 
         if (missing.length > 0) {
             if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(MCP_OAUTH_SESSION_KEY)) {
+                const storedLabel = sessionStorage.getItem(MCP_OAUTH_CLIENT_LABEL_KEY);
+                if (storedLabel) setClientLabel(storedLabel);
                 setPhase('revisit-success');
                 return;
             }
@@ -284,7 +318,7 @@ function McpOAuthInner() {
         (async () => {
             console.info('[McpOAuth] starting POST /oauth/consent');
             try {
-                const { data } = await api.post<{ redirect_url: string }>(
+                const { data } = await api.post<{ redirect_url: string; client_name?: string | null }>(
                     '/oauth/consent',
                     {
                         client_id,
@@ -302,6 +336,8 @@ function McpOAuthInner() {
                     return;
                 }
 
+                setClientLabel(formatClientName(data?.client_name));
+
                 const redirectUrl = data?.redirect_url?.trim();
                 if (!redirectUrl) {
                     console.error('[McpOAuth] consent response missing redirect_url', data);
@@ -311,7 +347,7 @@ function McpOAuthInner() {
                             <>
                                 <p className="mb-2">The server did not return a redirect address.</p>
                                 <ul className="list-disc pl-4 space-y-1 text-sm">
-                                    <li>Try reconnecting from Cursor.</li>
+                                    <li>Try reconnecting from your editor.</li>
                                     <li>If this repeats, report it to Continuum support.</li>
                                 </ul>
                             </>
@@ -323,6 +359,7 @@ function McpOAuthInner() {
                 logRedirectUrlSafe(redirectUrl);
                 try {
                     sessionStorage.setItem(MCP_OAUTH_SESSION_KEY, String(Date.now()));
+                    sessionStorage.setItem(MCP_OAUTH_CLIENT_LABEL_KEY, formatClientName(data?.client_name));
                 } catch {
                     /* ignore quota / private mode */
                 }
@@ -330,15 +367,27 @@ function McpOAuthInner() {
                 setFallbackRedirectUrl(redirectUrl);
                 setPhase('success-pending-redirect');
 
-                fallbackTimerRef.current = setTimeout(() => {
-                    if (cancelled) return;
-                    console.warn(
-                        `[McpOAuth] no navigation detected after ${REDIRECT_FALLBACK_MS}ms; showing manual handoff`
-                    );
-                    setPhase('success-stalled');
-                }, REDIRECT_FALLBACK_MS);
+                const manualHandoff = usesBrowserNavigableRedirect(redirect_uri!);
 
-                window.location.assign(redirectUrl);
+                if (manualHandoff) {
+                    fallbackTimerRef.current = setTimeout(() => {
+                        if (cancelled) return;
+                        console.info(
+                            `[McpOAuth] manual handoff for http(s) redirect after ${MANUAL_HANDOFF_PENDING_MS}ms`
+                        );
+                        setPhase('success-stalled');
+                    }, MANUAL_HANDOFF_PENDING_MS);
+                } else {
+                    fallbackTimerRef.current = setTimeout(() => {
+                        if (cancelled) return;
+                        console.warn(
+                            `[McpOAuth] no navigation detected after ${REDIRECT_FALLBACK_MS}ms; showing manual handoff`
+                        );
+                        setPhase('success-stalled');
+                    }, REDIRECT_FALLBACK_MS);
+
+                    window.location.assign(redirectUrl);
+                }
             } catch (e: unknown) {
                 if (cancelled) return;
                 if (isCancel(e)) {
@@ -384,7 +433,7 @@ function McpOAuthInner() {
                     <div className="space-y-2">
                         <h1 className={phTitle}>Already connected</h1>
                         <p className={phBody}>
-                            Cursor was linked to Continuum in this browser session. You can close this tab.
+                            {clientLabel} was linked to Continuum in this browser session. You can close this tab.
                         </p>
                     </div>
                     <Button
@@ -408,12 +457,12 @@ function McpOAuthInner() {
                     <div className="space-y-2">
                         <h1 className={phTitle}>Success</h1>
                         <p className={phBody}>
-                            Continuum authorized Cursor. If your editor did not open automatically, use the button below
-                            to finish the handoff. You may close this window afterward.
+                            Continuum authorized {clientLabel}. If your editor did not open automatically, use the button
+                            below to finish the handoff. You may close this window afterward.
                         </p>
                     </div>
                     <div className="flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
-                        <PlaceholderGradientButtonLink href={fallbackRedirectUrl}>Continue to Cursor</PlaceholderGradientButtonLink>
+                        <PlaceholderGradientButtonLink href={fallbackRedirectUrl}>Continue to {clientLabel}</PlaceholderGradientButtonLink>
                         <Button
                             type="button"
                             variant="outline"
@@ -433,7 +482,7 @@ function McpOAuthInner() {
             <McpOAuthShell>
                 <ContinuumConnectingStatus
                     leading={<PlannerSuccessCheck />}
-                    subtitle="Success, returning to Cursor…"
+                    subtitle={`Success, returning to ${clientLabel}…`}
                     hint="If nothing happens in a few seconds, we will show a link to continue manually."
                 />
             </McpOAuthShell>
@@ -443,7 +492,7 @@ function McpOAuthInner() {
     return (
         <McpOAuthShell>
             <ContinuumConnectingStatus
-                subtitle="Connecting Cursor to Continuum…"
+                subtitle="Connecting your editor to Continuum…"
                 progressLine="Verifying your account, Completing authorization, Preparing handoff"
             />
         </McpOAuthShell>
