@@ -4,6 +4,7 @@ import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
 import { projectSprintHref } from '@/app/data/dashboardPlaceholderProjects';
+import { workspaceJoin } from '@/lib/workspacePaths';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
 import { shouldPauseTaskDetailChecklistSyncFromServer } from '@/lib/taskDetailChecklistSync';
 import {
@@ -1206,12 +1207,22 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <div className="flex flex-wrap gap-2">
                   {selectedDependencies.map((depId) => {
                     const dep = projectTasks.find((t) => Number(t.id) === depId);
+                    const depLabel = dep?.title ?? `Task #${depId}`;
+                    const depHref = workspaceJoin('task', String(depId));
                     return (
                       <span
                         key={depId}
                         className="inline-flex items-center gap-1.5 rounded-[16px] border border-[#cdd2d5] bg-white px-4 py-1.5 text-[13px] font-medium text-[#606d76]"
                       >
-                        {dep?.title ?? `Task #${depId}`}
+                        <a
+                          href={depHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-sm hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/30"
+                          title={`Open ${depLabel} in a new tab`}
+                        >
+                          {depLabel}
+                        </a>
                         <button
                           type="button"
                           className="inline-flex size-4 items-center justify-center rounded-full hover:text-[#0b191f]"
@@ -1220,6 +1231,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                             setSelectedDependencies(next);
                             if (taskId) updateTaskMutation.mutate({ taskId, dependencies: next });
                           }}
+                          aria-label={`Remove dependency ${depLabel}`}
                         >
                           <X size={10} />
                         </button>
