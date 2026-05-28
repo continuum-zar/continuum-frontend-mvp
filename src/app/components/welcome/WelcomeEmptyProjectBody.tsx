@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { parseApiUtcDateTime } from "@/lib/parseApiUtcDateTime";
 import { playRepoIndexingCompleteSound } from "@/lib/playRepoIndexingCompleteSound";
 import { consumeGithubOAuthReopenWelcomeLinkRepoModal } from "@/lib/githubOAuthReturn";
-import { ArrowRightLeft, Download, ExternalLink, FileText, GitCommit, Link2, Loader2, RefreshCw, X } from "lucide-react";
+import { ArrowRightLeft, BookOpen, Download, ExternalLink, FileText, GitCommit, Layers3, Link2, Loader2, RefreshCw, X } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
 import { STALE_SHORT_MS, STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
@@ -40,6 +40,7 @@ import type { Repository } from "@/types/repository";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 import { AddResourceModal } from "./AddResourceModal";
+import { ProjectResourceMarkdownViewer } from "./ProjectResourceMarkdownViewer";
 import { WelcomeLinkRepositoryModal } from "./WelcomeLinkRepositoryModal";
 import {
   COMMIT_GAUGE_IN_PROGRESS,
@@ -470,13 +471,92 @@ function triggerBlobDownload(blob: Blob, filename: string) {
 
 function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: number }) {
   const isLink = att.kind === "link";
+  const isPlannerArtifact = att.kind === "plan" || att.kind === "architecture";
   const deleteMutation = useDeleteProjectAttachment(projectId);
   const [downloading, setDownloading] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const handleRemove = () => {
     if (!window.confirm("Remove this resource from the project?")) return;
     deleteMutation.mutate(att.id);
   };
+
+  if (isPlannerArtifact) {
+    const isArchitecture = att.kind === "architecture";
+    const accentLabel = isArchitecture ? "Architecture" : "Plan";
+    const accentSubtitle = isArchitecture
+      ? "Generated system architecture"
+      : "Generated project plan";
+    const Icon = isArchitecture ? Layers3 : BookOpen;
+    return (
+      <>
+        <div className="flex w-full items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setViewerOpen(true)}
+            className="group flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#dbeafe] bg-[#f8fbff] pr-2 text-left outline-none transition-colors hover:border-[#bfdbfe] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40"
+          >
+            <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#dbeafe]">
+              <Icon className="size-4 text-[#1d4ed8]" strokeWidth={1.75} />
+            </div>
+            <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#dbeafe] px-4 py-1.5">
+              <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f] group-hover:text-[#1d4ed8]">
+                {accentLabel} · {att.filename}
+              </p>
+              <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">
+                {accentSubtitle}
+              </p>
+            </div>
+          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                disabled={downloading || deleteMutation.isPending}
+                className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-[#606d76] transition-colors hover:bg-[#edf0f3] hover:text-[#0b191f] disabled:opacity-50"
+                aria-label="Download"
+                onClick={async () => {
+                  setDownloading(true);
+                  try {
+                    const { blob, filename } = await downloadProjectAttachment(att.id);
+                    triggerBlobDownload(blob, filename || att.filename);
+                  } catch (err) {
+                    toast.error(getApiErrorMessage(err, "Failed to download file"));
+                  } finally {
+                    setDownloading(false);
+                  }
+                }}
+              >
+                <Download className="size-4" strokeWidth={1.75} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Download resource</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex shrink-0 self-center text-[#606d76] disabled:opacity-50"
+                aria-label="Remove"
+                disabled={deleteMutation.isPending}
+                onClick={handleRemove}
+              >
+                <X className="size-4" strokeWidth={1.75} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Remove resource</TooltipContent>
+          </Tooltip>
+        </div>
+        <ProjectResourceMarkdownViewer
+          open={viewerOpen}
+          onOpenChange={setViewerOpen}
+          attachmentId={att.id}
+          title={`${accentLabel} · ${att.filename}`}
+          suggestedFilename={att.filename}
+        />
+      </>
+    );
+  }
 
   if (isLink) {
     const linkHref = getAttachmentLinkHref(att);
