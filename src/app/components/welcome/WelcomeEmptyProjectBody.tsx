@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { parseApiUtcDateTime } from "@/lib/parseApiUtcDateTime";
 import { playRepoIndexingCompleteSound } from "@/lib/playRepoIndexingCompleteSound";
 import { consumeGithubOAuthReopenWelcomeLinkRepoModal } from "@/lib/githubOAuthReturn";
-import { ArrowRightLeft, BookOpen, Download, ExternalLink, FileText, GitCommit, Layers3, Link2, Loader2, RefreshCw, X } from "lucide-react";
+import { ArrowRightLeft, Download, ExternalLink, FileText, GitCommit, Link2, Loader2, RefreshCw, X } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
 import { STALE_SHORT_MS, STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
@@ -482,30 +482,26 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
   };
 
   if (isPlannerArtifact) {
-    const isArchitecture = att.kind === "architecture";
-    const accentLabel = isArchitecture ? "Architecture" : "Plan";
-    const accentSubtitle = isArchitecture
-      ? "Generated system architecture"
-      : "Generated project plan";
-    const Icon = isArchitecture ? Layers3 : BookOpen;
     return (
       <>
         <div className="flex w-full items-center gap-2">
           <button
             type="button"
             onClick={() => setViewerOpen(true)}
-            className="group flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#dbeafe] bg-[#f8fbff] pr-2 text-left outline-none transition-colors hover:border-[#bfdbfe] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40"
+            className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2 text-left outline-none transition-colors hover:bg-[#fafafa] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40"
           >
-            <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#dbeafe]">
-              <Icon className="size-4 text-[#1d4ed8]" strokeWidth={1.75} />
+            <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
+              <FileText className="size-4 text-[#606d76]" strokeWidth={1.75} />
             </div>
-            <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#dbeafe] px-4 py-1.5">
-              <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f] group-hover:text-[#1d4ed8]">
-                {accentLabel} · {att.filename}
+            <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
+              <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+                {att.filename}
               </p>
-              <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">
-                {accentSubtitle}
-              </p>
+              {att.size ? (
+                <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">
+                  {att.size}
+                </p>
+              ) : null}
             </div>
           </button>
           <Tooltip>
@@ -551,7 +547,7 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
           open={viewerOpen}
           onOpenChange={setViewerOpen}
           attachmentId={att.id}
-          title={`${accentLabel} · ${att.filename}`}
+          title={att.filename}
           suggestedFilename={att.filename}
         />
       </>
