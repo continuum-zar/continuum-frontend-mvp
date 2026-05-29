@@ -21,123 +21,57 @@ const api = axios.create({
     // 30s is plenty for normal REST calls even on slow 4G; 90s hung forever on dropped TCP sockets before failing.
     // Slow LLM / wiki-scan / planner endpoints pass `{ timeout: ... }` on the call site.
     timeout: 30_000,
+    // Send cookies so the backend's HttpOnly refresh-token cookie reaches /auth/* endpoints.
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-/** Same shape as zustand persist `partialize` for `auth-storage`. */
-function readAuthTokensFromStorage(): {
-    accessToken: string | null;
-    refreshToken: string | null;
-} {
-    const tokens = localStorage.getItem('auth-storage');
-    if (!tokens) {
-        return { accessToken: null, refreshToken: null };
-    }
-    try {
-        const { state } = JSON.parse(tokens) as {
-            state?: { accessToken?: string | null; refreshToken?: string | null };
-        };
-        return {
-            accessToken: state?.accessToken ?? null,
-            refreshToken: state?.refreshToken ?? null,
-        };
-    } catch {
-        return { accessToken: null, refreshToken: null };
-    }
-}
-
 /**
- * Backend expects `refresh_token` as a query parameter (OpenAPI: no request body).
- * @see continuum-backend Postman + tests using `params={"refresh_token": ...}`.
+ * Refresh tokens via HttpOnly cookie. The backend reads the refresh token from
+ * the cookie set on login; no token is sent from the client.
  */
-async function postRefresh(refreshToken: string) {
-    return axios.post<{ access_token: string; refresh_token: string; token_type?: string }>(
+async function postRefresh() {
+    return axios.post<{ access_token: string; token_type?: string }>(
         `${apiBaseURL}/auth/refresh-token`,
         null,
         {
-            params: { refresh_token: refreshToken },
+            withCredentials: true,
             timeout: 30_000,
         }
     );
 }
 
 const AUTH_REFRESH_LOCK_NAME = 'continuum-auth-refresh';
-const STORAGE_MUTEX_KEY = 'continuum-auth-refresh-mutex';
-const STORAGE_MUTEX_TTL_MS = 120_000;
-
-function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
- * Cross-tab mutex when Web Locks API is unavailable (older browsers).
- * Uses compare-then-set with a microtask yield so only one tab holds the mutex.
+ * Serialize refresh across tabs via the Web Locks API when available.
+ * Without it, tabs may both refresh — backends supporting refresh-token rotation
+ * handle this fine; each tab ends up with its own in-memory access token.
  */
-async function withStorageMutex<T>(fn: () => Promise<T>): Promise<T> {
-    if (typeof localStorage === 'undefined') {
-        return fn();
-    }
-    const deadline = Date.now() + STORAGE_MUTEX_TTL_MS;
-    while (Date.now() < deadline) {
-        const raw = localStorage.getItem(STORAGE_MUTEX_KEY);
-        if (raw) {
-            const ts = parseInt(raw.split('|')[0]!, 10);
-            const age = Date.now() - ts;
-            if (!Number.isNaN(age) && age >= 0 && age < STORAGE_MUTEX_TTL_MS) {
-                await sleep(50);
-                continue;
-            }
-            localStorage.removeItem(STORAGE_MUTEX_KEY);
-        }
-        const id = `${Date.now()}|${Math.random().toString(36).slice(2)}`;
-        localStorage.setItem(STORAGE_MUTEX_KEY, id);
-        await sleep(0);
-        if (localStorage.getItem(STORAGE_MUTEX_KEY) === id) {
-            try {
-                return await fn();
-            } finally {
-                if (localStorage.getItem(STORAGE_MUTEX_KEY) === id) {
-                    localStorage.removeItem(STORAGE_MUTEX_KEY);
-                }
-            }
-        }
-    }
-    return fn();
-}
-
-/**
- * Serialize refresh across tabs (Web Locks API, or localStorage mutex fallback).
- * If another tab already refreshed, re-read storage and skip a second rotation.
- */
-async function refreshTokensCoordinated(snapshotBefore: {
-    accessToken: string | null;
-    refreshToken: string | null;
-}): Promise<{ access_token: string; refresh_token: string }> {
-    const run = async (): Promise<{ access_token: string; refresh_token: string }> => {
-        const latest = readAuthTokensFromStorage();
-        if (
-            latest.accessToken &&
-            latest.accessToken !== snapshotBefore.accessToken
-        ) {
-            return {
-                access_token: latest.accessToken,
-                refresh_token: latest.refreshToken ?? '',
-            };
-        }
-        const rt = latest.refreshToken;
-        if (!rt) {
-            throw new Error('No refresh token');
-        }
-        const response = await postRefresh(rt);
-        return response.data;
+async function refreshAccessTokenCoordinated(): Promise<string> {
+    const run = async (): Promise<string> => {
+        const response = await postRefresh();
+        return response.data.access_token;
     };
 
     if (typeof navigator !== 'undefined' && navigator.locks) {
         return navigator.locks.request(AUTH_REFRESH_LOCK_NAME, () => run());
     }
-    return withStorageMutex(run);
+    return run();
+}
+
+/**
+ * Attempts a silent refresh on app boot. Returns the new access token on success,
+ * or `null` if there's no valid refresh cookie (i.e. the user must log in).
+ */
+export async function silentRefresh(): Promise<string | null> {
+    try {
+        return await refreshAccessTokenCoordinated();
+    } catch {
+        return null;
+    }
 }
 
 let isRefreshing = false;
@@ -157,19 +91,13 @@ const processQueue = (error: unknown, token: string | null = null) => {
     failedQueue = [];
 };
 
-// Request interceptor to add the bearer token
+// Request interceptor: attach the in-memory access token from the auth store.
 api.interceptors.request.use(
-    (config) => {
-        const tokens = localStorage.getItem('auth-storage');
-        if (tokens) {
-            try {
-                const { state } = JSON.parse(tokens);
-                if (state.accessToken) {
-                    config.headers.Authorization = `Bearer ${state.accessToken}`;
-                }
-            } catch (e) {
-                console.error('Error parsing auth tokens from localStorage', e);
-            }
+    async (config) => {
+        const { useAuthStore } = await import('../store/authStore');
+        const accessToken = useAuthStore.getState().accessToken;
+        if (accessToken) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
         }
         return config;
     },
@@ -178,17 +106,17 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor to handle token refresh
+// Response interceptor: on 401, try a cookie-based refresh once, then retry the request.
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
-        // If error is 401 and not already retried
         if (
             error.response?.status === 401 &&
             !originalRequest._retry &&
-            originalRequest.url !== '/auth/logout'
+            originalRequest.url !== '/auth/logout' &&
+            originalRequest.url !== '/auth/refresh-token'
         ) {
             if (isRefreshing) {
                 return new Promise(function (resolve, reject) {
@@ -206,34 +134,21 @@ api.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
 
-            const tokens = localStorage.getItem('auth-storage');
-            if (tokens) {
-                try {
-                    const snapshotBefore = readAuthTokensFromStorage();
-                    const refreshToken = snapshotBefore.refreshToken;
+            try {
+                const accessToken = await refreshAccessTokenCoordinated();
+                const { useAuthStore } = await import('../store/authStore');
+                useAuthStore.getState().setAccessToken(accessToken);
 
-                    if (refreshToken) {
-                        const { useAuthStore } = await import('../store/authStore');
+                processQueue(null, accessToken);
 
-                        const data = await refreshTokensCoordinated(snapshotBefore);
-                        const { access_token, refresh_token } = data;
-
-                        useAuthStore.getState().setTokens(access_token, refresh_token);
-
-                        processQueue(null, access_token);
-
-                        originalRequest.headers.Authorization = `Bearer ${access_token}`;
-                        return api(originalRequest);
-                    }
-                } catch (refreshError) {
-                    processQueue(refreshError, null);
-                    const { useAuthStore } = await import('../store/authStore');
-                    useAuthStore.getState().logout();
-                    return Promise.reject(refreshError);
-                } finally {
-                    isRefreshing = false;
-                }
-            } else {
+                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                return api(originalRequest);
+            } catch (refreshError) {
+                processQueue(refreshError, null);
+                const { useAuthStore } = await import('../store/authStore');
+                useAuthStore.getState().logout();
+                return Promise.reject(refreshError);
+            } finally {
                 isRefreshing = false;
             }
         }
