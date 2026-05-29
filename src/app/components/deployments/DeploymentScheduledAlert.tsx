@@ -90,9 +90,18 @@ export function DeploymentScheduledAlert() {
     let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
 
-    const openStream = () => {
+    const openStream = async () => {
       if (cancelled) return;
-      const url = deploymentEventsStreamUrl(accessToken);
+      let url: string;
+      try {
+        url = await deploymentEventsStreamUrl();
+      } catch (err) {
+        // Couldn't mint a ticket (offline / 401). Stay quiet; the next auth
+        // event will re-run this effect and retry.
+        console.debug("[DeploymentScheduledAlert] failed to mint SSE ticket", err);
+        return;
+      }
+      if (cancelled) return;
       es = new EventSource(url);
       es.addEventListener("message", handleMessage as EventListener);
       // Silence the noisy "connection was interrupted" log on HMR/navigation —

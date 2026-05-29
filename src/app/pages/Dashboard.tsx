@@ -254,8 +254,8 @@ export function Dashboard({
     if (typeof window === 'undefined' || !hasProjectSelected || effectiveRole === 'Client' || !isAuthenticated || !accessToken) {
       return;
     }
-    const url = projectPresenceEventsStreamUrl(selectedProject, accessToken);
-    const es = new EventSource(url);
+    let cancelled = false;
+    let es: EventSource | null = null;
     const onMessage = (ev: MessageEvent<string>) => {
       try {
         const data = JSON.parse(ev.data) as Partial<ProjectPresenceEvent>;
@@ -267,10 +267,24 @@ export function Dashboard({
         // Ignore malformed payloads and keep stream alive.
       }
     };
-    es.addEventListener('message', onMessage as EventListener);
+    void (async () => {
+      let url: string;
+      try {
+        url = await projectPresenceEventsStreamUrl(selectedProject);
+      } catch (err) {
+        console.debug('[Dashboard] failed to mint SSE ticket for presence stream', err);
+        return;
+      }
+      if (cancelled) return;
+      es = new EventSource(url);
+      es.addEventListener('message', onMessage as EventListener);
+    })();
     return () => {
-      es.removeEventListener('message', onMessage as EventListener);
-      es.close();
+      cancelled = true;
+      if (es) {
+        es.removeEventListener('message', onMessage as EventListener);
+        es.close();
+      }
     };
   }, [selectedProject, hasProjectSelected, effectiveRole, accessToken, isAuthenticated, queryClient]);
 
