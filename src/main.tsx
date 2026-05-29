@@ -45,22 +45,3 @@ createRoot(document.getElementById("root")!).render(
     <QueryDevtoolsGate />
   </QueryClientProvider>
 );
-
-/**
- * Sarina (accent) loads at idle so it stays off the critical path. Satoshi is
- * already in index.css. Import is cached; subsequent `import()` calls are free.
- */
-if (typeof window !== "undefined") {
-  type IdleHandle = number;
-  const win = window as Window & {
-    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => IdleHandle;
-  };
-  const load = () => {
-    void import("./styles/load-decorative-fonts");
-  };
-  if (typeof win.requestIdleCallback === "function") {
-    win.requestIdleCallback(load, { timeout: 2_000 });
-  } else {
-    window.setTimeout(load, 1_500);
-  }
-}
