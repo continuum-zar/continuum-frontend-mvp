@@ -311,8 +311,8 @@ export function BuildRunDrawer({
 
   useEffect(() => {
     if (!shouldStream || !runId) return;
-    const url = agentRunEventsStreamUrl(taskId, runId, accessToken!);
-    const es = new EventSource(url);
+    let cancelled = false;
+    let es: EventSource | null = null;
 
     const handleMessage = (e: MessageEvent) => {
       try {
@@ -340,16 +340,30 @@ export function BuildRunDrawer({
       }
     };
 
-    es.addEventListener("message", handleMessage as EventListener);
-    es.onerror = () => {
-      // Network blip / page navigation. The browser closes the stream and
-      // we'll re-open when the modal re-mounts. Avoid noisy logging.
-      es.close();
-    };
+    void (async () => {
+      let url: string;
+      try {
+        url = await agentRunEventsStreamUrl(taskId, runId);
+      } catch (err) {
+        console.debug("[BuildRunDrawer] failed to mint SSE ticket", err);
+        return;
+      }
+      if (cancelled) return;
+      es = new EventSource(url);
+      es.addEventListener("message", handleMessage as EventListener);
+      es.onerror = () => {
+        // Network blip / page navigation. The browser closes the stream and
+        // we'll re-open when the modal re-mounts. Avoid noisy logging.
+        es?.close();
+      };
+    })();
 
     return () => {
-      es.removeEventListener("message", handleMessage as EventListener);
-      es.close();
+      cancelled = true;
+      if (es) {
+        es.removeEventListener("message", handleMessage as EventListener);
+        es.close();
+      }
     };
   }, [shouldStream, runId, taskId, accessToken]);
 

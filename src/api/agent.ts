@@ -1,4 +1,5 @@
 import api, { resolveApiBaseURL } from '@/lib/api';
+import { getSseTicket } from '@/api/sseTicket';
 import type {
   AgentRun,
   AgentRunDetail,
@@ -51,16 +52,18 @@ export async function cancelAgentRun(
 /**
  * SSE stream URL for a single agent run.
  *
- * EventSource cannot send custom headers, so the backend accepts the JWT via
- * an `access_token` query parameter (same pattern as deployment events).
+ * EventSource cannot send custom headers, so we mint a short-lived single-use
+ * ticket via `POST /events/sse-ticket` and pass it via `?ticket=` rather
+ * than embedding the JWT in the URL (avoids leaks into access logs and
+ * browser history).
  */
-export function agentRunEventsStreamUrl(
+export async function agentRunEventsStreamUrl(
   taskId: number | string,
   runId: string,
-  accessToken: string,
-): string {
+): Promise<string> {
   const base = resolveApiBaseURL().replace(/\/$/, '');
-  const qs = new URLSearchParams({ access_token: accessToken }).toString();
+  const ticket = await getSseTicket();
+  const qs = new URLSearchParams({ ticket }).toString();
   const path = `${base}/tasks/${taskId}/agent/runs/${runId}/events`;
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return `${path}?${qs}`;
