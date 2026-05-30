@@ -72,8 +72,8 @@ export function DeploymentScheduledAlert() {
 
   useEffect(() => {
     // Only connect once /users/me has confirmed the token + resolved the user.
-    // Avoids opening the stream with a stale localStorage token on refresh and
-    // stops the SSE from racing with the main data fetches on the critical path.
+    // Avoids opening the stream before silent-refresh has populated the in-memory
+    // access token and stops the SSE from racing with the main data fetches.
     if (!isInitialized || !isAuthenticated || !accessToken || !user) {
       setOpen(false);
       return;

@@ -84,12 +84,6 @@ export function MobileDesktopOnlyScreen() {
 export function MobileDesktopOnlyGate({ children }: { children: React.ReactNode }) {
   const showDesktopOnly = useSyncDesktopOnlyViewport();
 
-  React.useEffect(() => {
-    if (showDesktopOnly) {
-      void import("@/styles/load-decorative-fonts");
-    }
-  }, [showDesktopOnly]);
-
   if (showDesktopOnly) {
     return <MobileDesktopOnlyScreen />;
   }

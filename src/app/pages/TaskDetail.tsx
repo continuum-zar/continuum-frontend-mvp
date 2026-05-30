@@ -4,6 +4,7 @@ import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
 import { projectSprintHref } from '@/app/data/dashboardPlaceholderProjects';
+import { workspaceJoin } from '@/lib/workspacePaths';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
 import { shouldPauseTaskDetailChecklistSyncFromServer } from '@/lib/taskDetailChecklistSync';
 import {
@@ -101,6 +102,25 @@ function scopeLabel(s: string): string {
 function formatLoggedHoursSum(hours: number): string {
   if (!Number.isFinite(hours) || hours < 0) return '0';
   return new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(hours);
+}
+
+/**
+ * Task URLs must include `?project=` (and related sprint params) or the workspace shell
+ * renders the static Get started mock (`TaskPanels`) instead of real `TaskDetail`.
+ */
+function buildTaskWorkspaceHref(
+  targetTaskId: number | string,
+  searchParams: URLSearchParams,
+  projectId?: number | string | null,
+): string {
+  const params = new URLSearchParams(searchParams);
+  params.delete('edit');
+  const project =
+    params.get('project') ?? (projectId != null && projectId !== '' ? String(projectId) : null);
+  if (project) params.set('project', project);
+  const qs = params.toString();
+  const path = workspaceJoin('task', String(targetTaskId));
+  return qs ? `${path}?${qs}` : path;
 }
 
 const SCOPE_OPTIONS: { value: ScopeWeight; label: string }[] = [
@@ -899,6 +919,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     [projectTasks, taskId, dependencySearch],
   );
 
+  const taskWorkspaceProjectId =
+    searchParams.get('project') ?? task?.project_id ?? state.projectId ?? null;
+
   const handleUpdateTask = async () => {
     if (!taskId) return;
     setEditingTitle(false);
@@ -1206,12 +1229,22 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <div className="flex flex-wrap gap-2">
                   {selectedDependencies.map((depId) => {
                     const dep = projectTasks.find((t) => Number(t.id) === depId);
+                    const depLabel = dep?.title ?? `Task #${depId}`;
+                    const depHref = buildTaskWorkspaceHref(depId, searchParams, taskWorkspaceProjectId);
                     return (
                       <span
                         key={depId}
                         className="inline-flex items-center gap-1.5 rounded-[16px] border border-[#cdd2d5] bg-white px-4 py-1.5 text-[13px] font-medium text-[#606d76]"
                       >
-                        {dep?.title ?? `Task #${depId}`}
+                        <a
+                          href={depHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-sm hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/30"
+                          title={`Open ${depLabel} in a new tab`}
+                        >
+                          {depLabel}
+                        </a>
                         <button
                           type="button"
                           className="inline-flex size-4 items-center justify-center rounded-full hover:text-[#0b191f]"
@@ -1220,6 +1253,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                             setSelectedDependencies(next);
                             if (taskId) updateTaskMutation.mutate({ taskId, dependencies: next });
                           }}
+                          aria-label={`Remove dependency ${depLabel}`}
                         >
                           <X size={10} />
                         </button>
@@ -1288,7 +1322,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       type="button"
                       onClick={() => void handleCopyCursorMcpUrl()}
                       disabled={!cursorMcpShareUrl}
-                      aria-label={mcpLinkCopied ? 'URL copied to clipboard' : 'Copy Cursor MCP task URL'}
+                      aria-label={mcpLinkCopied ? 'URL copied to clipboard' : 'Copy MCP task URL'}
                       className={`inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-[#ebedee] bg-white px-5 text-[14px] font-medium text-[#0b191f] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-50`}
                     >
                       {mcpLinkCopied ? (
@@ -1304,7 +1338,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     className="max-w-xs border-0 bg-black text-balance text-white shadow-md"
                     arrowClassName="bg-black fill-black"
                   >
-                    {`Copies the Cursor MCP task page link. For full agent integration (checklists, status changes), configure the Continuum MCP server in Cursor.`}
+                    {`Copies the MCP task page link for this task. For full agent integration (checklists, status changes), configure the Continuum MCP server in Cursor or Claude Code from Settings → Integrations.`}
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>

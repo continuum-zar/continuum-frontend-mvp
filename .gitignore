@@ -1,5 +1,10 @@
 node_modules/
 dist/
+
+# Cypress runtime artifacts
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
 .env
 .env.*
 !.env.example
