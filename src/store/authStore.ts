@@ -120,8 +120,8 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
         if (!accessToken) {
             set({ isLoading: true });
             try {
-                const refreshed = await silentRefresh();
-                if (!refreshed) {
+                const result = await silentRefresh();
+                if (result.kind === 'unauthenticated') {
                     set({
                         user: null,
                         isAuthenticated: false,
@@ -130,7 +130,14 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
                     });
                     return;
                 }
-                set({ accessToken: refreshed, isAuthenticated: true });
+                if (result.kind === 'transient') {
+                    // Don't log the user out on a rate-limit / network blip — leave
+                    // auth state alone and let the next action retry. Mark
+                    // initialized so the loader doesn't hang forever.
+                    set({ isLoading: false, isInitialized: true });
+                    return;
+                }
+                set({ accessToken: result.token, isAuthenticated: true });
             } catch {
                 set({
                     user: null,
