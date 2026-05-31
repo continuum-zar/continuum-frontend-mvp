@@ -1,5 +1,9 @@
 import api from '@/lib/api';
-import type { ReviewRun, ReviewRunListResponse } from '@/types/reviewRun';
+import type {
+  ReviewRun,
+  ReviewRunDetail,
+  ReviewRunListResponse,
+} from '@/types/reviewRun';
 
 export async function startReview(
   taskId: number | string,
@@ -11,11 +15,12 @@ export async function startReview(
   return data;
 }
 
+/** Returns the review snapshot + persisted event timeline. */
 export async function fetchReview(
   taskId: number | string,
   reviewId: string,
-): Promise<ReviewRun> {
-  const { data } = await api.get<ReviewRun>(
+): Promise<ReviewRunDetail> {
+  const { data } = await api.get<ReviewRunDetail>(
     `/tasks/${taskId}/agent/reviews/${reviewId}`,
   );
   return data;

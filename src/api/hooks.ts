@@ -2016,6 +2016,7 @@ export function useCancelAgentRun(taskId: number | string) {
 import { fetchReview, listReviewsForRun, startReview } from './review';
 import type {
     ReviewRun,
+    ReviewRunDetail,
     ReviewRunListResponse,
 } from '@/types/reviewRun';
 import { isReviewRunTerminal } from '@/types/reviewRun';
@@ -2028,13 +2029,13 @@ export const reviewRunKeys = {
         [...reviewRunKeys.all, 'task', String(taskId), 'review', reviewId] as const,
 };
 
-/** Poll a single review every 3s until it reaches a terminal state. */
+/** Poll a single review (with its event timeline) every 1.5s while non-terminal. */
 export function useReviewRun(
     taskId: number | string | undefined | null,
     reviewId: string | undefined | null,
     options?: { enabled?: boolean },
 ) {
-    return useQuery<ReviewRun>({
+    return useQuery<ReviewRunDetail>({
         queryKey:
             taskId != null && taskId !== '' && reviewId
                 ? reviewRunKeys.detail(taskId, reviewId)
@@ -2047,9 +2048,9 @@ export function useReviewRun(
             !!reviewId,
         staleTime: STALE_SHORT_MS,
         refetchInterval: (query) => {
-            const data = query.state.data as ReviewRun | undefined;
-            if (!data) return 3_000;
-            return isReviewRunTerminal(data.status) ? false : 3_000;
+            const data = query.state.data as ReviewRunDetail | undefined;
+            if (!data) return 1_500;
+            return isReviewRunTerminal(data.status) ? false : 1_500;
         },
         refetchOnWindowFocus: false,
     });

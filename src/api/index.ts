@@ -394,6 +394,10 @@ export {
 } from './hooks';
 export type {
     ReviewRun,
+    ReviewRunDetail,
+    ReviewRunEvent,
+    ReviewEventKind,
+    ReviewPhase,
     ReviewRunListResponse,
     ReviewRunStatus,
     ReviewVerdict,
@@ -401,4 +405,8 @@ export type {
     ReviewIssue,
     ReviewIssueSeverity,
 } from '@/types/reviewRun';
-export { isReviewRunTerminal, REVIEW_RUN_TERMINAL_STATUSES } from '@/types/reviewRun';
+export {
+    isReviewRunActive,
+    isReviewRunTerminal,
+    REVIEW_RUN_TERMINAL_STATUSES,
+} from '@/types/reviewRun';

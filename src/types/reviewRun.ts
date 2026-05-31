@@ -54,3 +54,31 @@ export const REVIEW_RUN_TERMINAL_STATUSES: ReadonlySet<ReviewRunStatus> = new Se
 export function isReviewRunTerminal(status: ReviewRunStatus): boolean {
   return REVIEW_RUN_TERMINAL_STATUSES.has(status);
 }
+
+export function isReviewRunActive(status: ReviewRunStatus): boolean {
+  return status === 'queued' || status === 'running';
+}
+
+export type ReviewEventKind = 'status' | 'error' | 'message';
+
+export type ReviewPhase =
+  | 'started'
+  | 'minting_token'
+  | 'fetching_diff'
+  | 'diff_loaded'
+  | 'calling_llm'
+  | 'verdict_received'
+  | 'posting_comment'
+  | 'completed';
+
+export interface ReviewRunEvent {
+  /** Monotonic per-review sequence; sort by this for chronological order. */
+  seq: number;
+  kind: ReviewEventKind;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ReviewRunDetail extends ReviewRun {
+  events: ReviewRunEvent[];
+}
