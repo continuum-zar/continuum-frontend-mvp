@@ -74,7 +74,7 @@ export function DeploymentScheduledAlert() {
     // Only connect once /users/me has confirmed the token + resolved the user.
     // Avoids opening the stream with a stale localStorage token on refresh and
     // stops the SSE from racing with the main data fetches on the critical path.
-    if (!isInitialized || !isAuthenticated || !accessToken || !user) {
+    if (!isInitialized || !isAuthenticated || !user) {
       setOpen(false);
       return;
     }
@@ -93,7 +93,8 @@ export function DeploymentScheduledAlert() {
     const openStream = () => {
       if (cancelled) return;
       const url = deploymentEventsStreamUrl(accessToken);
-      es = new EventSource(url);
+      // withCredentials sends the HttpOnly access cookie (Continuum #1301).
+      es = new EventSource(url, { withCredentials: true });
       es.addEventListener("message", handleMessage as EventListener);
       // Silence the noisy "connection was interrupted" log on HMR/navigation —
       // the browser cancels in-flight requests during refresh, which is not an

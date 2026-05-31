@@ -51,22 +51,23 @@ export async function cancelAgentRun(
 /**
  * SSE stream URL for a single agent run.
  *
- * EventSource cannot send custom headers, so the backend accepts the JWT via
- * an `access_token` query parameter (same pattern as deployment events).
+ * Cookie-authed users (post Continuum #1301) authenticate via the HttpOnly access
+ * cookie when EventSource has ``withCredentials: true``. Legacy users still pass the
+ * JWT via ``access_token`` query param. Pass ``null`` for the cookie-only path.
  */
 export function agentRunEventsStreamUrl(
   taskId: number | string,
   runId: string,
-  accessToken: string,
+  accessToken: string | null,
 ): string {
   const base = resolveApiBaseURL().replace(/\/$/, '');
-  const qs = new URLSearchParams({ access_token: accessToken }).toString();
   const path = `${base}/tasks/${taskId}/agent/runs/${runId}/events`;
+  const qs = accessToken ? `?${new URLSearchParams({ access_token: accessToken }).toString()}` : '';
   if (path.startsWith('http://') || path.startsWith('https://')) {
-    return `${path}?${qs}`;
+    return `${path}${qs}`;
   }
   if (typeof window === 'undefined') {
-    return `${path}?${qs}`;
+    return `${path}${qs}`;
   }
-  return `${window.location.origin}${path}?${qs}`;
+  return `${window.location.origin}${path}${qs}`;
 }

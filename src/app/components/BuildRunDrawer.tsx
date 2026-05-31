@@ -307,12 +307,13 @@ export function BuildRunDrawer({
   // Open the SSE stream while the modal is open and the run is non-terminal.
   const status = detail?.status;
   const shouldStream =
-    open && !!runId && !!accessToken && (status == null || isAgentRunActive(status));
+    open && !!runId && (status == null || isAgentRunActive(status));
 
   useEffect(() => {
     if (!shouldStream || !runId) return;
-    const url = agentRunEventsStreamUrl(taskId, runId, accessToken!);
-    const es = new EventSource(url);
+    const url = agentRunEventsStreamUrl(taskId, runId, accessToken ?? null);
+    // withCredentials sends the HttpOnly access cookie (Continuum #1301).
+    const es = new EventSource(url, { withCredentials: true });
 
     const handleMessage = (e: MessageEvent) => {
       try {

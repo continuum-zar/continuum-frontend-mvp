@@ -17,17 +17,22 @@ export interface ProjectPresenceEvent {
 
 /**
  * SSE stream URL for per-project work-session presence updates.
- * EventSource cannot send custom headers; pass JWT via `access_token` query param.
+ *
+ * See ``projectTaskEventsStreamUrl`` for the cookie/query-param migration story.
+ * Pass ``null`` for ``accessToken`` on cookie-authed clients.
  */
-export function projectPresenceEventsStreamUrl(projectId: number | string, accessToken: string): string {
+export function projectPresenceEventsStreamUrl(
+  projectId: number | string,
+  accessToken: string | null,
+): string {
   const base = resolveApiBaseURL().replace(/\/$/, "");
-  const qs = new URLSearchParams({ access_token: accessToken }).toString();
   const path = `${base}/projects/${projectId}/presence-events/stream`;
+  const qs = accessToken ? `?${new URLSearchParams({ access_token: accessToken }).toString()}` : "";
   if (path.startsWith("http://") || path.startsWith("https://")) {
-    return `${path}?${qs}`;
+    return `${path}${qs}`;
   }
   if (typeof window === "undefined") {
-    return `${path}?${qs}`;
+    return `${path}${qs}`;
   }
-  return `${window.location.origin}${path}?${qs}`;
+  return `${window.location.origin}${path}${qs}`;
 }

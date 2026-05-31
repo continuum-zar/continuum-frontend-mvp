@@ -249,11 +249,13 @@ export function Dashboard({
   });
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !hasProjectSelected || effectiveRole === 'Client' || !isAuthenticated || !accessToken) {
+    if (typeof window === 'undefined' || !hasProjectSelected || effectiveRole === 'Client' || !isAuthenticated) {
       return;
     }
     const url = projectPresenceEventsStreamUrl(selectedProject, accessToken);
-    const es = new EventSource(url);
+    // withCredentials sends the HttpOnly access cookie (Continuum #1301); query
+    // param fallback covers users who haven't re-logged-in since the migration.
+    const es = new EventSource(url, { withCredentials: true });
     const onMessage = (ev: MessageEvent<string>) => {
       try {
         const data = JSON.parse(ev.data) as Partial<ProjectPresenceEvent>;

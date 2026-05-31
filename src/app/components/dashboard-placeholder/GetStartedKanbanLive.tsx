@@ -191,9 +191,12 @@ export function GetStartedKanbanLive({
   }, [projectId]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !isAuthenticated || !accessToken) return;
+    if (typeof window === "undefined" || !isAuthenticated) return;
     const url = projectTaskEventsStreamUrl(projectId, accessToken);
-    const es = new EventSource(url);
+    // withCredentials sends the HttpOnly access cookie (Continuum #1301). The query
+    // param is the legacy fallback for users who haven't re-logged-in since the
+    // cookie migration.
+    const es = new EventSource(url, { withCredentials: true });
     const onMessage = (ev: MessageEvent<string>) => {
       try {
         const data = JSON.parse(ev.data) as { type?: string; project_id?: number };

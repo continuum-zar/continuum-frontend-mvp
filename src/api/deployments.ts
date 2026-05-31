@@ -25,17 +25,21 @@ export async function invalidateAllSessions(): Promise<InvalidateSessionsRespons
 }
 
 /**
- * Browser EventSource cannot send Authorization headers; backend accepts `access_token` query.
+ * SSE stream URL for deployment notifications.
+ *
+ * Cookie-authed users (post Continuum #1301) authenticate via the HttpOnly access
+ * cookie when EventSource has ``withCredentials: true``. Legacy users still pass the
+ * JWT via ``access_token`` query param. Pass ``null`` for cookie-only.
  */
-export function deploymentEventsStreamUrl(accessToken: string): string {
+export function deploymentEventsStreamUrl(accessToken: string | null): string {
   const base = resolveApiBaseURL().replace(/\/$/, "");
-  const qs = new URLSearchParams({ access_token: accessToken }).toString();
   const path = `${base}/events/stream`;
+  const qs = accessToken ? `?${new URLSearchParams({ access_token: accessToken }).toString()}` : "";
   if (path.startsWith("http://") || path.startsWith("https://")) {
-    return `${path}?${qs}`;
+    return `${path}${qs}`;
   }
   if (typeof window === "undefined") {
-    return `${path}?${qs}`;
+    return `${path}${qs}`;
   }
-  return `${window.location.origin}${path}?${qs}`;
+  return `${window.location.origin}${path}${qs}`;
 }
