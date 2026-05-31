@@ -12,11 +12,12 @@ import {
   GitCommit,
   GitPullRequest,
   Loader2,
-  ScanSearch,
   Square,
   Terminal,
   X,
 } from "lucide-react";
+
+import { ReviewIcon, SpinnerIcon } from "./review/icons";
 
 import {
   agentRunEventsStreamUrl,
@@ -677,17 +678,17 @@ export function BuildRunDrawer({
                         ? "A review is already running."
                         : undefined
                   }
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-[#24B5F8]/50 bg-[#24B5F8]/10 px-3 text-[13px] font-medium text-[#0369a1] hover:bg-[#24B5F8]/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 text-[13px] font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {reviewInFlight || startReviewMutation.isPending ? (
-                    <Loader2 size={13} className="animate-spin" />
+                    <SpinnerIcon size={13} />
                   ) : (
-                    <ScanSearch size={13} />
+                    <ReviewIcon size={13} />
                   )}
                   {review && isReviewRunTerminal(review.status)
                     ? "Re-review"
                     : reviewInFlight
-                      ? "Reviewing…"
+                      ? "Reviewing"
                       : "Review"}
                 </button>
               ) : null}

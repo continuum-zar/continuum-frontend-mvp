@@ -1,19 +1,6 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import {
-  AlertCircle,
-  CheckCircle2,
-  CircleDot,
-  ExternalLink,
-  FileSearch,
-  GitPullRequest,
-  Loader2,
-  MessageSquareText,
-  ScanSearch,
-  Sparkles,
-  X,
-} from "lucide-react";
 
 import { useReviewRun } from "@/api";
 import {
@@ -26,6 +13,19 @@ import {
   type ReviewVerdict,
 } from "@/types/reviewRun";
 
+import {
+  AlertCircleIcon,
+  CheckCircleIcon,
+  CloseIcon,
+  CommentIcon,
+  DocumentIcon,
+  DotIcon,
+  ExternalLinkIcon,
+  KeyIcon,
+  PullRequestIcon,
+  ReviewIcon,
+  SpinnerIcon,
+} from "./review/icons";
 import {
   Dialog,
   DialogClose,
@@ -50,11 +50,11 @@ const STATUS_LABEL: Record<ReviewRunStatus, string> = {
 };
 
 const STATUS_TONE: Record<ReviewRunStatus, string> = {
-  queued: "bg-[#f0f3f5] text-[#0b191f]",
-  running: "bg-[#24B5F8]/15 text-[#0b191f]",
-  succeeded: "bg-[#10b981]/15 text-[#065f46]",
-  failed: "bg-[#f87171]/15 text-[#991b1b]",
-  cancelled: "bg-[#fde68a]/40 text-[#92400e]",
+  queued: "bg-muted text-foreground",
+  running: "bg-muted text-foreground",
+  succeeded: "bg-[var(--success)]/10 text-[var(--success)]",
+  failed: "bg-[var(--destructive)]/10 text-[var(--destructive)]",
+  cancelled: "bg-[var(--warning)]/10 text-[var(--warning)]",
 };
 
 const PHASE_LABEL: Record<ReviewPhase, string> = {
@@ -62,7 +62,7 @@ const PHASE_LABEL: Record<ReviewPhase, string> = {
   minting_token: "Authenticating with GitHub",
   fetching_diff: "Fetching diff from GitHub",
   diff_loaded: "Diff loaded",
-  calling_llm: "Analysing diff against task requirements…",
+  calling_llm: "Analysing diff against task requirements",
   verdict_received: "Verdict received",
   posting_comment: "Posting review",
   completed: "Completed",
@@ -74,8 +74,8 @@ const VERDICT_LABEL: Record<ReviewVerdict, string> = {
 };
 
 const VERDICT_TONE: Record<ReviewVerdict, string> = {
-  ready_to_merge: "bg-[#10b981]/15 text-[#065f46]",
-  issues_found: "bg-[#fde68a]/40 text-[#92400e]",
+  ready_to_merge: "bg-[var(--success)]/10 text-[var(--success)]",
+  issues_found: "bg-[var(--warning)]/10 text-[var(--warning)]",
 };
 
 function StatusPill({ status }: { status: ReviewRunStatus }) {
@@ -86,9 +86,7 @@ function StatusPill({ status }: { status: ReviewRunStatus }) {
         STATUS_TONE[status],
       )}
     >
-      {isReviewRunActive(status) ? (
-        <Loader2 size={11} className="animate-spin" aria-hidden />
-      ) : null}
+      {isReviewRunActive(status) ? <SpinnerIcon size={11} /> : null}
       {STATUS_LABEL[status]}
     </span>
   );
@@ -103,9 +101,9 @@ function VerdictPill({ verdict }: { verdict: ReviewVerdict }) {
       )}
     >
       {verdict === "ready_to_merge" ? (
-        <CheckCircle2 size={11} aria-hidden />
+        <CheckCircleIcon size={11} />
       ) : (
-        <AlertCircle size={11} aria-hidden />
+        <AlertCircleIcon size={11} />
       )}
       {VERDICT_LABEL[verdict]}
     </span>
@@ -125,21 +123,22 @@ function formatTime(iso: string): string {
 }
 
 function phaseIcon(phase: string) {
+  const cls = "text-muted-foreground";
   switch (phase) {
     case "minting_token":
-      return <Sparkles size={14} className="text-[#0369a1]" aria-hidden />;
+      return <KeyIcon size={14} className={cls} />;
     case "fetching_diff":
     case "diff_loaded":
-      return <FileSearch size={14} className="text-[#0369a1]" aria-hidden />;
+      return <DocumentIcon size={14} className={cls} />;
     case "calling_llm":
     case "verdict_received":
-      return <ScanSearch size={14} className="text-[#0369a1]" aria-hidden />;
+      return <ReviewIcon size={14} className={cls} />;
     case "posting_comment":
-      return <MessageSquareText size={14} className="text-[#0369a1]" aria-hidden />;
+      return <CommentIcon size={14} className={cls} />;
     case "completed":
-      return <CheckCircle2 size={14} className="text-[#065f46]" aria-hidden />;
+      return <CheckCircleIcon size={14} className="text-[var(--success)]" />;
     default:
-      return <CircleDot size={14} className="text-[#727d83]" aria-hidden />;
+      return <DotIcon size={14} className={cls} />;
   }
 }
 
@@ -151,13 +150,13 @@ function renderEvent(ev: ReviewRunEvent) {
     const where = String(payload.where ?? "");
     const msg = String(payload.message ?? "Unknown error");
     return (
-      <div className="rounded-[8px] border border-[#f87171]/40 bg-[#f87171]/10 px-3 py-2">
-        <div className="flex items-center gap-2 text-[12px] font-medium text-[#991b1b]">
-          <AlertCircle size={13} />
+      <div className="rounded-[8px] border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-3 py-2">
+        <div className="flex items-center gap-2 text-[12px] font-medium text-[var(--destructive)]">
+          <AlertCircleIcon size={13} />
           {where ? `Error in ${where}` : "Error"}
-          {ts ? <span className="ml-auto font-normal text-[#727d83]">{ts}</span> : null}
+          {ts ? <span className="ml-auto font-normal text-muted-foreground">{ts}</span> : null}
         </div>
-        <p className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-[#7f1d1d]">
+        <p className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-[var(--destructive)]">
           {msg}
         </p>
       </div>
@@ -168,7 +167,6 @@ function renderEvent(ev: ReviewRunEvent) {
     const phase = String(payload.phase ?? "");
     const label = (PHASE_LABEL as Record<string, string>)[phase] ?? phase;
 
-    // Per-phase extra detail line.
     let detail: string | null = null;
     if (phase === "diff_loaded") {
       const files = Number(payload.file_count ?? 0);
@@ -198,23 +196,22 @@ function renderEvent(ev: ReviewRunEvent) {
     }
 
     return (
-      <div className="rounded-[8px] border border-[#ebedee] bg-white px-3 py-2">
-        <div className="flex items-center gap-2 text-[12px] font-medium text-[#0b191f]">
+      <div className="rounded-[8px] border border-border bg-card px-3 py-2">
+        <div className="flex items-center gap-2 text-[12px] font-medium text-foreground">
           {phaseIcon(phase)}
           <span>{label}</span>
-          {ts ? <span className="ml-auto font-normal text-[#727d83]">{ts}</span> : null}
+          {ts ? <span className="ml-auto font-normal text-muted-foreground">{ts}</span> : null}
         </div>
         {detail ? (
-          <p className="mt-0.5 pl-[22px] text-[12px] text-[#606d76]">{detail}</p>
+          <p className="mt-0.5 pl-[22px] text-[12px] text-muted-foreground">{detail}</p>
         ) : null}
       </div>
     );
   }
 
-  // free-form "message" — render whatever's in payload.message
   const msg = String(payload.message ?? "");
   return (
-    <div className="rounded-[8px] border border-[#e9e9e9] bg-white px-3 py-2 text-[12px] text-[#606d76]">
+    <div className="rounded-[8px] border border-border bg-card px-3 py-2 text-[12px] text-muted-foreground">
       {msg || ev.kind}
     </div>
   );
@@ -251,27 +248,27 @@ export function ReviewRunDrawer({
           {/* Header */}
           <div className="z-[3] flex shrink-0 items-center gap-3 border-b border-border bg-muted/40 px-5 py-3">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-medium text-[#0b191f]">
+              <p className="truncate text-[14px] font-medium text-foreground">
                 Continuum review {reviewId ? `· ${reviewId.slice(0, 8)}` : ""}
               </p>
-              <p className="truncate text-[12px] text-[#727d83]">
+              <p className="truncate text-[12px] text-muted-foreground">
                 {review
                   ? `Build ${review.build_run_id.slice(0, 8)} · ${
                       review.delivery_target === "github_pr_comment"
                         ? "Posts to PR"
                         : "Posts to task"
                     }`
-                  : "Loading…"}
+                  : "Loading"}
               </p>
             </div>
             {status ? <StatusPill status={status} /> : null}
             <DialogClose asChild>
               <button
                 type="button"
-                className="inline-flex size-8 items-center justify-center rounded-md text-[#606d76] hover:bg-[#f0f3f5] hover:text-[#0b191f]"
+                className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="Close"
               >
-                <X className="size-4" strokeWidth={2} />
+                <CloseIcon size={16} />
               </button>
             </DialogClose>
           </div>
@@ -279,13 +276,13 @@ export function ReviewRunDrawer({
           {/* Feed */}
           <div className="z-[1] flex-1 overflow-y-auto px-5 py-4">
             {reviewQuery.isLoading && !review ? (
-              <div className="flex items-center gap-2 text-[13px] text-[#727d83]">
-                <Loader2 size={14} className="animate-spin" />
-                Loading review…
+              <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                <SpinnerIcon size={14} />
+                Loading review
               </div>
             ) : !review?.events?.length ? (
-              <p className="text-[13px] text-[#727d83]">
-                Waiting for the reviewer to start…
+              <p className="text-[13px] text-muted-foreground">
+                Waiting for the reviewer to start
               </p>
             ) : (
               <ul className="flex flex-col gap-2.5">
@@ -299,11 +296,11 @@ export function ReviewRunDrawer({
 
             {/* Terminal extras */}
             {isTerminal && review?.status === "succeeded" && review.summary ? (
-              <div className="mt-4 rounded-[10px] border border-[#24B5F8]/30 bg-[#24B5F8]/5 p-4">
-                <p className="mb-1 text-[12px] font-medium uppercase tracking-wide text-[#0369a1]">
+              <div className="mt-4 rounded-[10px] border border-border bg-muted/40 p-4">
+                <p className="mb-1 text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
                   Review summary
                 </p>
-                <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-[#0b191f]">
+                <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-foreground">
                   {review.summary}
                 </p>
               </div>
@@ -311,38 +308,38 @@ export function ReviewRunDrawer({
 
             {isTerminal && review?.status === "succeeded" && issueCount > 0 ? (
               <div className="mt-4">
-                <p className="mb-2 text-[12px] font-medium uppercase tracking-wide text-[#606d76]">
+                <p className="mb-2 text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
                   Issues ({issueCount})
                 </p>
                 <ul className="flex flex-col gap-2">
                   {review.issues.map((i, idx) => (
                     <li
                       key={`${i.title}-${idx}`}
-                      className="rounded-[8px] border border-[#ebedee] bg-white px-3 py-2"
+                      className="rounded-[8px] border border-border bg-card px-3 py-2"
                     >
-                      <div className="flex items-center gap-2 text-[12px] font-medium text-[#0b191f]">
+                      <div className="flex items-center gap-2 text-[12px] font-medium text-foreground">
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
                             i.severity === "critical"
-                              ? "bg-[#f87171]/20 text-[#991b1b]"
+                              ? "bg-[var(--destructive)]/15 text-[var(--destructive)]"
                               : i.severity === "major"
-                                ? "bg-[#fbbf24]/20 text-[#92400e]"
-                                : "bg-[#e0e7ef] text-[#475569]",
+                                ? "bg-[var(--warning)]/15 text-[var(--warning)]"
+                                : "bg-muted text-muted-foreground",
                           )}
                         >
                           {i.severity}
                         </span>
                         <span>{i.title}</span>
                         {i.file ? (
-                          <span className="ml-auto truncate text-[11px] font-normal text-[#727d83]">
+                          <span className="ml-auto truncate text-[11px] font-normal text-muted-foreground">
                             {i.file}
                             {i.line ? `:${i.line}` : ""}
                           </span>
                         ) : null}
                       </div>
                       {i.detail ? (
-                        <p className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-[#3c4a52]">
+                        <p className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-muted-foreground">
                           {i.detail}
                         </p>
                       ) : null}
@@ -353,7 +350,7 @@ export function ReviewRunDrawer({
             ) : null}
 
             {isTerminal && review?.status === "failed" && review.error ? (
-              <div className="mt-4 rounded-[8px] border border-[#f87171]/40 bg-[#f87171]/10 p-3 text-[13px] text-[#991b1b]">
+              <div className="mt-4 rounded-[8px] border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 p-3 text-[13px] text-[var(--destructive)]">
                 <p className="font-medium">Review failed</p>
                 <p className="mt-1 whitespace-pre-wrap leading-relaxed">
                   {review.error}
@@ -364,23 +361,23 @@ export function ReviewRunDrawer({
 
           {/* Footer */}
           <div className="z-[3] flex shrink-0 items-center justify-between gap-3 border-t border-border bg-muted/40 px-5 py-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-3 text-[12px] text-[#727d83]">
+            <div className="flex min-w-0 flex-wrap items-center gap-3 text-[12px] text-muted-foreground">
               {review?.verdict ? <VerdictPill verdict={review.verdict} /> : null}
               {review?.github_comment_url ? (
                 <a
                   href={review.github_comment_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-[#0369a1] hover:underline"
+                  className="inline-flex items-center gap-1 text-foreground hover:underline"
                 >
-                  <GitPullRequest size={12} aria-hidden />
+                  <PullRequestIcon size={12} />
                   View on PR
-                  <ExternalLink size={10} aria-hidden />
+                  <ExternalLinkIcon size={10} />
                 </a>
               ) : null}
               {review?.task_comment_id ? (
                 <span className="inline-flex items-center gap-1">
-                  <MessageSquareText size={12} aria-hidden />
+                  <CommentIcon size={12} />
                   Comment posted on task
                 </span>
               ) : null}
@@ -389,7 +386,7 @@ export function ReviewRunDrawer({
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="inline-flex h-9 items-center rounded-[8px] border border-[#ebedee] bg-white px-3 text-[13px] font-medium text-[#0b191f] hover:bg-[#f9fafb]"
+                  className="inline-flex h-9 items-center rounded-[8px] border border-border bg-card px-3 text-[13px] font-medium text-foreground hover:bg-muted"
                 >
                   Close
                 </button>
