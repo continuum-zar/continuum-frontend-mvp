@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { isAxiosError } from 'axios';
 import api from '../lib/api';
 import { TIME_RECORDING_STORAGE_KEY } from '../lib/timeRecordingTimerStorage';
-import { AuthState, AuthResponse } from '../types/auth';
+import { AuthState, AuthResponse, CookieAuthResponse } from '../types/auth';
 import { RegisterPayload, User } from '../types/user';
 
 interface AuthActions {
@@ -12,6 +12,7 @@ interface AuthActions {
     logout: () => Promise<void>;
     checkAuth: (force?: boolean) => Promise<void>;
     setTokens: (accessToken: string, refreshToken: string) => void;
+    setCsrfToken: (csrfToken: string) => void;
     clearError: () => void;
 }
 
@@ -24,6 +25,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             accessToken: null,
             refreshToken: null,
+            csrfToken: null,
             isLoading: false,
             isInitialized: false,
             error: null,
@@ -31,13 +33,17 @@ export const useAuthStore = create<AuthStore>()(
             login: async (credentials) => {
                 set({ isLoading: true, error: null });
                 try {
-                    const response = await api.post<AuthResponse>('/auth/login', credentials);
-                    const { access_token, refresh_token } = response.data;
-
+                    // Cookie-based login: backend sets HttpOnly access + refresh cookies
+                    // and returns only the CSRF token (echoed via X-CSRF-Token on writes).
+                    const response = await api.post<CookieAuthResponse>(
+                        '/auth/cookie-login',
+                        credentials,
+                    );
                     set({
-                        accessToken: access_token,
-                        refreshToken: refresh_token,
-                        isAuthenticated: true
+                        accessToken: null,
+                        refreshToken: null,
+                        csrfToken: response.data.csrf_token,
+                        isAuthenticated: true,
                     });
 
                     // Fetch user info after login
@@ -47,16 +53,19 @@ export const useAuthStore = create<AuthStore>()(
                         set({
                             accessToken: null,
                             refreshToken: null,
+                            csrfToken: null,
                             isAuthenticated: false,
                             user: null,
                             isInitialized: true,
-                            isLoading: false
+                            isLoading: false,
                         });
                         throw err;
                     }
                 } catch (error) {
                     set({
-                        error: isAxiosError(error) ? (error.response?.data?.message || 'Login failed') : 'Login failed',
+                        error: isAxiosError(error)
+                            ? (error.response?.data?.message || 'Login failed')
+                            : 'Login failed',
                         isLoading: false,
                     });
                     throw error;
@@ -66,13 +75,18 @@ export const useAuthStore = create<AuthStore>()(
             register: async (payload) => {
                 set({ isLoading: true, error: null });
                 try {
+                    // /auth/register still returns body tokens (legacy shape) — register flow
+                    // hasn't been migrated to cookies yet because it carries side-effects
+                    // (email verification flows). The next login will upgrade the user to
+                    // cookie auth automatically.
                     const response = await api.post<AuthResponse>('/auth/register', payload);
                     const { access_token, refresh_token } = response.data;
 
                     set({
                         accessToken: access_token,
                         refreshToken: refresh_token,
-                        isAuthenticated: true
+                        csrfToken: null,
+                        isAuthenticated: true,
                     });
 
                     // Fetch user info after registration
@@ -82,16 +96,19 @@ export const useAuthStore = create<AuthStore>()(
                         set({
                             accessToken: null,
                             refreshToken: null,
+                            csrfToken: null,
                             isAuthenticated: false,
                             user: null,
                             isInitialized: true,
-                            isLoading: false
+                            isLoading: false,
                         });
                         throw err;
                     }
                 } catch (error) {
                     set({
-                        error: isAxiosError(error) ? (error.response?.data?.message || 'Registration failed') : 'Registration failed',
+                        error: isAxiosError(error)
+                            ? (error.response?.data?.message || 'Registration failed')
+                            : 'Registration failed',
                         isLoading: false,
                     });
                     throw error;
@@ -110,9 +127,10 @@ export const useAuthStore = create<AuthStore>()(
                         isAuthenticated: false,
                         accessToken: null,
                         refreshToken: null,
+                        csrfToken: null,
                         isLoading: false,
                         isInitialized: true,
-                        error: null
+                        error: null,
                     });
                     localStorage.removeItem('auth-storage');
                     try {
@@ -124,10 +142,12 @@ export const useAuthStore = create<AuthStore>()(
             },
 
             checkAuth: async (force = false) => {
-                const { accessToken, isLoading } = get();
+                const { accessToken, csrfToken, isLoading } = get();
 
-                // If no token, we are effectively "checked" and not authenticated
-                if (!accessToken) {
+                // If we have neither a legacy bearer token nor a CSRF token (cookie session
+                // indicator), there is no point asking the server — short-circuit to
+                // "initialized but not authenticated."
+                if (!accessToken && !csrfToken) {
                     set({ isInitialized: true, isAuthenticated: false, user: null });
                     return;
                 }
@@ -142,17 +162,21 @@ export const useAuthStore = create<AuthStore>()(
                         user: response.data,
                         isAuthenticated: true,
                         isLoading: false,
-                        isInitialized: true
+                        isInitialized: true,
                     });
                 } catch (error) {
-                    if (isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
+                    if (
+                        isAxiosError(error) &&
+                        (error.response?.status === 401 || error.response?.status === 403)
+                    ) {
                         set({
                             user: null,
                             isAuthenticated: false,
                             accessToken: null,
                             refreshToken: null,
+                            csrfToken: null,
                             isLoading: false,
-                            isInitialized: true
+                            isInitialized: true,
                         });
                     } else {
                         set({ isLoading: false, isInitialized: true });
@@ -169,6 +193,10 @@ export const useAuthStore = create<AuthStore>()(
                 });
             },
 
+            setCsrfToken: (csrfToken) => {
+                set({ csrfToken, isAuthenticated: true });
+            },
+
             clearError: () => set({ error: null }),
         }),
         {
@@ -177,7 +205,8 @@ export const useAuthStore = create<AuthStore>()(
             partialize: (state) => ({
                 accessToken: state.accessToken,
                 refreshToken: state.refreshToken,
+                csrfToken: state.csrfToken,
             }),
-        }
-    )
+        },
+    ),
 );

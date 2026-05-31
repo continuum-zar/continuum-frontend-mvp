@@ -21,10 +21,35 @@ const api = axios.create({
     // 30s is plenty for normal REST calls even on slow 4G; 90s hung forever on dropped TCP sockets before failing.
     // Slow LLM / wiki-scan / planner endpoints pass `{ timeout: ... }` on the call site.
     timeout: 30_000,
+    // Send/receive the HttpOnly auth cookies that /auth/cookie-login issues.
+    // Frontend and backend are deployed on different roots on Railway, so the browser
+    // requires this opt-in plus SameSite=None;Secure on the cookies themselves.
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
 });
+
+const CSRF_COOKIE_NAME = 'continuum_csrf';
+const CSRF_HEADER_NAME = 'X-CSRF-Token';
+
+/** Read a cookie value by name from `document.cookie`. Returns null if not present. */
+function readCookie(name: string): string | null {
+    if (typeof document === 'undefined') return null;
+    const target = `${name}=`;
+    const cookies = document.cookie.split('; ');
+    for (const c of cookies) {
+        if (c.startsWith(target)) {
+            return decodeURIComponent(c.slice(target.length));
+        }
+    }
+    return null;
+}
+
+/** True iff the browser currently holds a CSRF cookie (= we have a cookie session). */
+function hasCookieSession(): boolean {
+    return readCookie(CSRF_COOKIE_NAME) !== null;
+}
 
 /** Same shape as zustand persist `partialize` for `auth-storage`. */
 function readAuthTokensFromStorage(): {
@@ -49,10 +74,24 @@ function readAuthTokensFromStorage(): {
 }
 
 /**
- * Backend expects `refresh_token` as a query parameter (OpenAPI: no request body).
- * @see continuum-backend Postman + tests using `params={"refresh_token": ...}`.
+ * Cookie-based refresh: POST /auth/refresh with no body. Browser sends the HttpOnly
+ * refresh cookie automatically (scoped to /api/v1/auth). Response sets new access +
+ * refresh cookies and returns the new CSRF token.
  */
-async function postRefresh(refreshToken: string) {
+async function postCookieRefresh() {
+    return axios.post<{ csrf_token: string }>(
+        `${apiBaseURL}/auth/refresh`,
+        null,
+        { withCredentials: true, timeout: 30_000 }
+    );
+}
+
+/**
+ * Legacy refresh: query-param refresh token from localStorage. Kept for users who
+ * logged in before the cookie migration; will be removed once the backend
+ * `LEGACY_REFRESH_ENABLED` flag flips to false.
+ */
+async function postLegacyRefresh(refreshToken: string) {
     return axios.post<{ access_token: string; refresh_token: string; token_type?: string }>(
         `${apiBaseURL}/auth/refresh-token`,
         null,
@@ -107,31 +146,27 @@ async function withStorageMutex<T>(fn: () => Promise<T>): Promise<T> {
     return fn();
 }
 
+type RefreshResult =
+    | { kind: 'cookie'; csrf_token: string }
+    | { kind: 'legacy'; access_token: string; refresh_token: string };
+
 /**
  * Serialize refresh across tabs (Web Locks API, or localStorage mutex fallback).
- * If another tab already refreshed, re-read storage and skip a second rotation.
+ * Cookie session is preferred; legacy localStorage tokens are the fallback for users
+ * who haven't logged in since the cookie migration.
  */
-async function refreshTokensCoordinated(snapshotBefore: {
-    accessToken: string | null;
-    refreshToken: string | null;
-}): Promise<{ access_token: string; refresh_token: string }> {
-    const run = async (): Promise<{ access_token: string; refresh_token: string }> => {
-        const latest = readAuthTokensFromStorage();
-        if (
-            latest.accessToken &&
-            latest.accessToken !== snapshotBefore.accessToken
-        ) {
-            return {
-                access_token: latest.accessToken,
-                refresh_token: latest.refreshToken ?? '',
-            };
+async function refreshTokensCoordinated(): Promise<RefreshResult> {
+    const run = async (): Promise<RefreshResult> => {
+        if (hasCookieSession()) {
+            const response = await postCookieRefresh();
+            return { kind: 'cookie', csrf_token: response.data.csrf_token };
         }
-        const rt = latest.refreshToken;
-        if (!rt) {
+        const { refreshToken } = readAuthTokensFromStorage();
+        if (!refreshToken) {
             throw new Error('No refresh token');
         }
-        const response = await postRefresh(rt);
-        return response.data;
+        const response = await postLegacyRefresh(refreshToken);
+        return { kind: 'legacy', ...response.data };
     };
 
     if (typeof navigator !== 'undefined' && navigator.locks) {
@@ -142,33 +177,48 @@ async function refreshTokensCoordinated(snapshotBefore: {
 
 let isRefreshing = false;
 let failedQueue: Array<{
-    resolve: (token: string) => void;
+    resolve: () => void;
     reject: (error: unknown) => void;
 }> = [];
 
-const processQueue = (error: unknown, token: string | null = null) => {
+const processQueue = (error: unknown) => {
     failedQueue.forEach((prom) => {
         if (error) {
             prom.reject(error);
         } else {
-            prom.resolve(token!);
+            prom.resolve();
         }
     });
     failedQueue = [];
 };
 
-// Request interceptor to add the bearer token
+// Request interceptor: attach CSRF header always, attach Bearer header only as legacy fallback.
 api.interceptors.request.use(
     (config) => {
-        const tokens = localStorage.getItem('auth-storage');
-        if (tokens) {
-            try {
-                const { state } = JSON.parse(tokens);
-                if (state.accessToken) {
-                    config.headers.Authorization = `Bearer ${state.accessToken}`;
+        // Double-submit CSRF: backend's CsrfMiddleware compares this header to the cookie.
+        // Cookie is JS-readable (NOT HttpOnly); only sent for state-changing methods, but
+        // attaching it unconditionally keeps the interceptor simple — backend ignores it
+        // on safe methods anyway.
+        const csrf = readCookie(CSRF_COOKIE_NAME);
+        if (csrf) {
+            config.headers[CSRF_HEADER_NAME] = csrf;
+        }
+
+        // Legacy: callers who logged in before the cookie migration still have a Bearer
+        // token in localStorage. The backend continues to accept Authorization: Bearer
+        // until LEGACY_REFRESH_ENABLED is flipped. New cookie sessions take precedence
+        // server-side, so sending both is harmless.
+        if (!csrf) {
+            const tokens = localStorage.getItem('auth-storage');
+            if (tokens) {
+                try {
+                    const { state } = JSON.parse(tokens);
+                    if (state.accessToken) {
+                        config.headers.Authorization = `Bearer ${state.accessToken}`;
+                    }
+                } catch (e) {
+                    console.error('Error parsing auth tokens from localStorage', e);
                 }
-            } catch (e) {
-                console.error('Error parsing auth tokens from localStorage', e);
             }
         }
         return config;
@@ -178,62 +228,50 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor to handle token refresh
+// Response interceptor: on 401, attempt one refresh and replay the request.
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
-        // If error is 401 and not already retried
         if (
             error.response?.status === 401 &&
             !originalRequest._retry &&
-            originalRequest.url !== '/auth/logout'
+            originalRequest.url !== '/auth/logout' &&
+            originalRequest.url !== '/auth/refresh' &&
+            originalRequest.url !== '/auth/refresh-token'
         ) {
             if (isRefreshing) {
-                return new Promise(function (resolve, reject) {
+                return new Promise<void>(function (resolve, reject) {
                     failedQueue.push({ resolve, reject });
                 })
-                    .then((token) => {
-                        originalRequest.headers.Authorization = `Bearer ${token}`;
-                        return api(originalRequest);
-                    })
-                    .catch((err) => {
-                        return Promise.reject(err);
-                    });
+                    .then(() => api(originalRequest))
+                    .catch((err) => Promise.reject(err));
             }
 
             originalRequest._retry = true;
             isRefreshing = true;
 
-            const tokens = localStorage.getItem('auth-storage');
-            if (tokens) {
-                try {
-                    const snapshotBefore = readAuthTokensFromStorage();
-                    const refreshToken = snapshotBefore.refreshToken;
+            try {
+                const result = await refreshTokensCoordinated();
+                const { useAuthStore } = await import('../store/authStore');
 
-                    if (refreshToken) {
-                        const { useAuthStore } = await import('../store/authStore');
-
-                        const data = await refreshTokensCoordinated(snapshotBefore);
-                        const { access_token, refresh_token } = data;
-
-                        useAuthStore.getState().setTokens(access_token, refresh_token);
-
-                        processQueue(null, access_token);
-
-                        originalRequest.headers.Authorization = `Bearer ${access_token}`;
-                        return api(originalRequest);
-                    }
-                } catch (refreshError) {
-                    processQueue(refreshError, null);
-                    const { useAuthStore } = await import('../store/authStore');
-                    useAuthStore.getState().logout();
-                    return Promise.reject(refreshError);
-                } finally {
-                    isRefreshing = false;
+                if (result.kind === 'cookie') {
+                    useAuthStore.getState().setCsrfToken(result.csrf_token);
+                } else {
+                    useAuthStore
+                        .getState()
+                        .setTokens(result.access_token, result.refresh_token);
                 }
-            } else {
+
+                processQueue(null);
+                return api(originalRequest);
+            } catch (refreshError) {
+                processQueue(refreshError);
+                const { useAuthStore } = await import('../store/authStore');
+                useAuthStore.getState().logout();
+                return Promise.reject(refreshError);
+            } finally {
                 isRefreshing = false;
             }
         }
