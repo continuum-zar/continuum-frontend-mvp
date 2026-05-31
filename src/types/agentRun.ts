@@ -1,3 +1,5 @@
+import type { ReviewRun } from './reviewRun';
+
 export type AgentRunMode = 'direct_push' | 'open_pr';
 
 export type AgentRunStatus =
@@ -49,6 +51,12 @@ export interface AgentRun {
   cost_usd: number | null;
   created_at: string;
   updated_at: string;
+  /**
+   * Latest review attached to this build run, if any. Populated on detail
+   * GETs (not on list responses) so the drawer can render a verdict without
+   * an extra fetch.
+   */
+  latest_review?: ReviewRun | null;
 }
 
 export interface AgentRunDetail extends AgentRun {
