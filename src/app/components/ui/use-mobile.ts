@@ -18,10 +18,12 @@ export const DESKTOP_ONLY_MIN_WIDTH = 960;
  * Minimum viewport height (px) for `MobileDesktopOnlyGate` to allow the app.
  * Below this height, the desktop-only message is shown.
  *
- * Same CSS-pixel note as `DESKTOP_ONLY_MIN_WIDTH`. 720px still clears phones in
- * portrait while avoiding false blocks from browser chrome on short displays.
+ * Same CSS-pixel note as `DESKTOP_ONLY_MIN_WIDTH`. Kept at 600 so that common
+ * 1366x768 / 1280x800 laptops — whose usable viewport drops to ~640-680px once
+ * browser chrome and OS bars are subtracted — are not falsely blocked. Phones
+ * in landscape (~390-430px tall) are still caught.
  */
-export const DESKTOP_ONLY_MIN_HEIGHT = 720;
+export const DESKTOP_ONLY_MIN_HEIGHT = 600;
 
 /**
  * Matches when the desktop-only gate should show: viewport narrower than
