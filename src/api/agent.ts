@@ -1,4 +1,5 @@
 import api, { resolveApiBaseURL } from '@/lib/api';
+import { getSseTicket } from '@/api/sseTicket';
 import type {
   AgentRun,
   AgentRunDetail,
@@ -51,23 +52,24 @@ export async function cancelAgentRun(
 /**
  * SSE stream URL for a single agent run.
  *
- * Cookie-authed users (post Continuum #1301) authenticate via the HttpOnly access
- * cookie when EventSource has ``withCredentials: true``. Legacy users still pass the
- * JWT via ``access_token`` query param. Pass ``null`` for the cookie-only path.
+ * EventSource cannot send custom headers, so we mint a short-lived single-use
+ * ticket via `POST /events/sse-ticket` and pass it via `?ticket=` rather
+ * than embedding the JWT in the URL (avoids leaks into access logs and
+ * browser history).
  */
-export function agentRunEventsStreamUrl(
+export async function agentRunEventsStreamUrl(
   taskId: number | string,
   runId: string,
-  accessToken: string | null,
-): string {
+): Promise<string> {
   const base = resolveApiBaseURL().replace(/\/$/, '');
+  const ticket = await getSseTicket();
+  const qs = new URLSearchParams({ ticket }).toString();
   const path = `${base}/tasks/${taskId}/agent/runs/${runId}/events`;
-  const qs = accessToken ? `?${new URLSearchParams({ access_token: accessToken }).toString()}` : '';
   if (path.startsWith('http://') || path.startsWith('https://')) {
-    return `${path}${qs}`;
+    return `${path}?${qs}`;
   }
   if (typeof window === 'undefined') {
-    return `${path}${qs}`;
+    return `${path}?${qs}`;
   }
-  return `${window.location.origin}${path}${qs}`;
+  return `${window.location.origin}${path}?${qs}`;
 }

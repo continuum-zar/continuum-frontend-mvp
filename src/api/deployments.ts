@@ -1,5 +1,6 @@
 import api from "@/lib/api";
 import { resolveApiBaseURL } from "@/lib/api";
+import { getSseTicket } from "@/api/sseTicket";
 
 export type DeploymentScheduleResponse = {
   scheduled_at: string;
@@ -25,21 +26,22 @@ export async function invalidateAllSessions(): Promise<InvalidateSessionsRespons
 }
 
 /**
- * SSE stream URL for deployment notifications.
+ * Resolve the SSE URL for the deployment-events stream.
  *
- * Cookie-authed users (post Continuum #1301) authenticate via the HttpOnly access
- * cookie when EventSource has ``withCredentials: true``. Legacy users still pass the
- * JWT via ``access_token`` query param. Pass ``null`` for cookie-only.
+ * Browsers can't send Authorization headers on EventSource, so we mint a
+ * short-lived single-use ticket via `POST /events/sse-ticket` and pass that
+ * via `?ticket=` instead of putting the JWT in the URL.
  */
-export function deploymentEventsStreamUrl(accessToken: string | null): string {
+export async function deploymentEventsStreamUrl(): Promise<string> {
   const base = resolveApiBaseURL().replace(/\/$/, "");
+  const ticket = await getSseTicket();
+  const qs = new URLSearchParams({ ticket }).toString();
   const path = `${base}/events/stream`;
-  const qs = accessToken ? `?${new URLSearchParams({ access_token: accessToken }).toString()}` : "";
   if (path.startsWith("http://") || path.startsWith("https://")) {
-    return `${path}${qs}`;
+    return `${path}?${qs}`;
   }
   if (typeof window === "undefined") {
-    return `${path}${qs}`;
+    return `${path}?${qs}`;
   }
-  return `${window.location.origin}${path}${qs}`;
+  return `${window.location.origin}${path}?${qs}`;
 }

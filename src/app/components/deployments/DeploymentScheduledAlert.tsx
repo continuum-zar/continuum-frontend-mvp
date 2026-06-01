@@ -72,9 +72,9 @@ export function DeploymentScheduledAlert() {
 
   useEffect(() => {
     // Only connect once /users/me has confirmed the token + resolved the user.
-    // Avoids opening the stream with a stale localStorage token on refresh and
-    // stops the SSE from racing with the main data fetches on the critical path.
-    if (!isInitialized || !isAuthenticated || !user) {
+    // Avoids opening the stream before silent-refresh has populated the in-memory
+    // access token and stops the SSE from racing with the main data fetches.
+    if (!isInitialized || !isAuthenticated || !accessToken || !user) {
       setOpen(false);
       return;
     }
@@ -90,11 +90,19 @@ export function DeploymentScheduledAlert() {
     let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
 
-    const openStream = () => {
+    const openStream = async () => {
       if (cancelled) return;
-      const url = deploymentEventsStreamUrl(accessToken);
-      // withCredentials sends the HttpOnly access cookie (Continuum #1301).
-      es = new EventSource(url, { withCredentials: true });
+      let url: string;
+      try {
+        url = await deploymentEventsStreamUrl();
+      } catch (err) {
+        // Couldn't mint a ticket (offline / 401). Stay quiet; the next auth
+        // event will re-run this effect and retry.
+        console.debug("[DeploymentScheduledAlert] failed to mint SSE ticket", err);
+        return;
+      }
+      if (cancelled) return;
+      es = new EventSource(url);
       es.addEventListener("message", handleMessage as EventListener);
       // Silence the noisy "connection was interrupted" log on HMR/navigation —
       // the browser cancels in-flight requests during refresh, which is not an

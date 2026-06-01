@@ -191,12 +191,9 @@ export function GetStartedKanbanLive({
   }, [projectId]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !isAuthenticated) return;
-    const url = projectTaskEventsStreamUrl(projectId, accessToken);
-    // withCredentials sends the HttpOnly access cookie (Continuum #1301). The query
-    // param is the legacy fallback for users who haven't re-logged-in since the
-    // cookie migration.
-    const es = new EventSource(url, { withCredentials: true });
+    if (typeof window === "undefined" || !isAuthenticated || !accessToken) return;
+    let cancelled = false;
+    let es: EventSource | null = null;
     const onMessage = (ev: MessageEvent<string>) => {
       try {
         const data = JSON.parse(ev.data) as { type?: string; project_id?: number };
@@ -208,14 +205,28 @@ export function GetStartedKanbanLive({
         /* ignore malformed */
       }
     };
-    es.addEventListener("message", onMessage as EventListener);
-    es.onerror = () => {
-      console.debug("[GetStartedKanbanLive] project task-events stream closed or errored");
-      es.close();
-    };
+    void (async () => {
+      let url: string;
+      try {
+        url = await projectTaskEventsStreamUrl(projectId);
+      } catch (err) {
+        console.debug("[GetStartedKanbanLive] failed to mint SSE ticket", err);
+        return;
+      }
+      if (cancelled) return;
+      es = new EventSource(url);
+      es.addEventListener("message", onMessage as EventListener);
+      es.onerror = () => {
+        console.debug("[GetStartedKanbanLive] project task-events stream closed or errored");
+        es?.close();
+      };
+    })();
     return () => {
-      es.removeEventListener("message", onMessage as EventListener);
-      es.close();
+      cancelled = true;
+      if (es) {
+        es.removeEventListener("message", onMessage as EventListener);
+        es.close();
+      }
     };
   }, [projectId, accessToken, isAuthenticated, queryClient]);
 

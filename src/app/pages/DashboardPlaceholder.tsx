@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
-import { Flag, Loader2, Timer } from "lucide-react";
+import { Flag, Timer } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 const GetStartedKanbanLive = lazy(() =>
@@ -34,6 +34,7 @@ import { taskPriorityFlagClass, type TaskPriority } from "@/types/task";
 import { CreateTaskModal } from "../components/CreateTaskModal";
 import { CreateMilestoneModal } from "../components/dashboard-placeholder/CreateMilestoneModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
+import { KanbanBoardSkeleton } from "../components/dashboard-placeholder/DashboardPlaceholderSkeletons";
 import { NotificationBell } from "../components/notifications/NotificationBell";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
@@ -49,9 +50,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/too
 
 function LiveKanbanSuspenseFallback() {
   return (
-    <div className="relative z-[1] flex min-h-0 min-w-0 w-full flex-1 flex-col items-center justify-center bg-white">
-      <Loader2 className="size-8 animate-spin text-[#606d76]" aria-hidden />
-      <span className="sr-only">Loading board…</span>
+    <div className="relative z-[1] flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden bg-white pt-4">
+      <KanbanBoardSkeleton />
     </div>
   );
 }
