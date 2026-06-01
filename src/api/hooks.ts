@@ -2009,3 +2009,85 @@ export function useCancelAgentRun(taskId: number | string) {
         },
     });
 }
+
+// ---------------------------------------------------------------------------
+// Review agent (post-build automated review)
+// ---------------------------------------------------------------------------
+import { fetchReview, listReviewsForRun, startReview } from './review';
+import type {
+    ReviewRun,
+    ReviewRunDetail,
+    ReviewRunListResponse,
+} from '@/types/reviewRun';
+import { isReviewRunTerminal } from '@/types/reviewRun';
+
+export const reviewRunKeys = {
+    all: ['review-runs'] as const,
+    forRun: (taskId: number | string, runId: string) =>
+        [...reviewRunKeys.all, 'task', String(taskId), 'run', runId] as const,
+    detail: (taskId: number | string, reviewId: string) =>
+        [...reviewRunKeys.all, 'task', String(taskId), 'review', reviewId] as const,
+};
+
+/** Poll a single review (with its event timeline) every 1.5s while non-terminal. */
+export function useReviewRun(
+    taskId: number | string | undefined | null,
+    reviewId: string | undefined | null,
+    options?: { enabled?: boolean },
+) {
+    return useQuery<ReviewRunDetail>({
+        queryKey:
+            taskId != null && taskId !== '' && reviewId
+                ? reviewRunKeys.detail(taskId, reviewId)
+                : reviewRunKeys.all,
+        queryFn: () => fetchReview(taskId!, reviewId!),
+        enabled:
+            (options?.enabled ?? true) &&
+            taskId != null &&
+            taskId !== '' &&
+            !!reviewId,
+        staleTime: STALE_SHORT_MS,
+        refetchInterval: (query) => {
+            const data = query.state.data as ReviewRunDetail | undefined;
+            if (!data) return 1_500;
+            return isReviewRunTerminal(data.status) ? false : 1_500;
+        },
+        refetchOnWindowFocus: false,
+    });
+}
+
+export function useReviewsForRun(
+    taskId: number | string | undefined | null,
+    runId: string | undefined | null,
+    options?: { enabled?: boolean },
+) {
+    return useQuery<ReviewRunListResponse>({
+        queryKey:
+            taskId != null && taskId !== '' && runId
+                ? reviewRunKeys.forRun(taskId, runId)
+                : reviewRunKeys.all,
+        queryFn: () => listReviewsForRun(taskId!, runId!),
+        enabled:
+            (options?.enabled ?? true) &&
+            taskId != null &&
+            taskId !== '' &&
+            !!runId,
+        staleTime: STALE_SHORT_MS,
+        refetchOnWindowFocus: false,
+    });
+}
+
+export function useStartReview(taskId: number | string, runId: string) {
+    const queryClient = useQueryClient();
+    return useMutation<ReviewRun, unknown, void>({
+        mutationFn: () => startReview(taskId, runId),
+        onSuccess: (review) => {
+            queryClient.setQueryData(reviewRunKeys.detail(taskId, review.id), review);
+            queryClient.invalidateQueries({ queryKey: reviewRunKeys.forRun(taskId, runId) });
+            toast.success('Review started — checking diff against requirements');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to start review'));
+        },
+    });
+}

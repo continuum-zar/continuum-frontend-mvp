@@ -69,11 +69,12 @@ import { TaskLinkedBranchesSection } from '../components/TaskLinkedBranchesSecti
 import { AssignMemberModal } from '../components/AssignMemberModal';
 import { BuildTaskModal } from '../components/BuildTaskModal';
 import { BuildRunDrawer } from '../components/BuildRunDrawer';
+import { ReviewRunDrawer } from '../components/ReviewRunDrawer';
 import { LogTimeModal } from '../components/dashboard-placeholder/LogTimeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
-import { useTaskAgentRuns } from '@/api';
-import { isAgentRunActive } from '@/types/agentRun';
+import { useAgentRun, useStartReview, useTaskAgentRuns } from '@/api';
+import { isAgentRunActive, isAgentRunTerminal } from '@/types/agentRun';
 
 /* ─── helpers ─── */
 
@@ -509,6 +510,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [buildModalOpen, setBuildModalOpen] = useState(false);
   const [buildDrawerRunId, setBuildDrawerRunId] = useState<string | null>(null);
   const [buildDrawerOpen, setBuildDrawerOpen] = useState(false);
+  const [reviewDrawerReviewId, setReviewDrawerReviewId] = useState<string | null>(null);
+  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
@@ -540,8 +543,33 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     return list.find((r) => isAgentRunActive(r.status)) ?? null;
   }, [taskAgentRunsQuery.data]);
 
-  // Sync ?build=<runId> on the URL with the drawer state so refresh keeps the
-  // live view open.
+  // The most-recent terminal build: if it succeeded with reviewable
+  // artefacts (PR url for open_pr / commit sha for direct_push), the
+  // primary action flips from "Build" to "Review".
+  const latestTerminalBuild = useMemo(() => {
+    const list = taskAgentRunsQuery.data?.runs ?? [];
+    return list.find((r) => isAgentRunTerminal(r.status)) ?? null;
+  }, [taskAgentRunsQuery.data]);
+
+  const reviewableBuild = useMemo(() => {
+    if (!latestTerminalBuild || latestTerminalBuild.status !== 'succeeded') return null;
+    const hasPrereq =
+      (latestTerminalBuild.mode === 'open_pr' && !!latestTerminalBuild.pr_url) ||
+      (latestTerminalBuild.mode === 'direct_push' && !!latestTerminalBuild.commit_sha);
+    return hasPrereq ? latestTerminalBuild : null;
+  }, [latestTerminalBuild]);
+
+  // Detail GET on the reviewable build surfaces latest_review (if any) so we
+  // can decide between starting a new review and opening the existing one.
+  const reviewableBuildDetailQuery = useAgentRun(
+    taskId,
+    reviewableBuild?.id ?? null,
+    { enabled: !!reviewableBuild },
+  );
+  const existingReviewId = reviewableBuildDetailQuery.data?.latest_review?.id ?? null;
+
+  // Sync ?build=<runId> and ?review=<reviewId> on the URL with the drawer
+  // state so refresh keeps the live view open.
   useEffect(() => {
     const urlRun = searchParams.get('build');
     if (urlRun && urlRun !== buildDrawerRunId) {
@@ -549,6 +577,13 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       setBuildDrawerOpen(true);
     } else if (!urlRun && buildDrawerOpen && buildDrawerRunId == null) {
       setBuildDrawerOpen(false);
+    }
+    const urlReview = searchParams.get('review');
+    if (urlReview && urlReview !== reviewDrawerReviewId) {
+      setReviewDrawerReviewId(urlReview);
+      setReviewDrawerOpen(true);
+    } else if (!urlReview && reviewDrawerOpen && reviewDrawerReviewId == null) {
+      setReviewDrawerOpen(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -576,6 +611,42 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     [searchParams, setSearchParams],
   );
 
+  const openReviewDrawer = useCallback(
+    (reviewId: string) => {
+      setReviewDrawerReviewId(reviewId);
+      setReviewDrawerOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.set('review', reviewId);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const closeReviewDrawer = useCallback(
+    (open: boolean) => {
+      setReviewDrawerOpen(open);
+      if (!open) {
+        const next = new URLSearchParams(searchParams);
+        next.delete('review');
+        setSearchParams(next, { replace: true });
+      }
+    },
+    [searchParams, setSearchParams],
+  );
+
+  // Start a review for the latest succeeded build (or reopen the existing one).
+  const startReviewMutation = useStartReview(taskId ?? '', reviewableBuild?.id ?? '');
+  const handleOpenReview = useCallback(() => {
+    if (!reviewableBuild) return;
+    if (existingReviewId) {
+      openReviewDrawer(existingReviewId);
+      return;
+    }
+    startReviewMutation.mutate(undefined, {
+      onSuccess: (r) => openReviewDrawer(r.id),
+    });
+  }, [reviewableBuild, existingReviewId, openReviewDrawer, startReviewMutation]);
+
   const handleOpenBuildModal = useCallback(() => {
     if (taskLinkedBranchCount === 0) {
       toast.error('Link at least one repository and branch before starting a build.');
@@ -585,8 +656,21 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       openBuildDrawer(activeAgentRun.id);
       return;
     }
+    if (reviewableBuild) {
+      // Hard swap: once a build has succeeded and is reviewable, the primary
+      // action becomes Review. The user reviews (or reopens the verdict) before
+      // running anything new.
+      handleOpenReview();
+      return;
+    }
     setBuildModalOpen(true);
-  }, [taskLinkedBranchCount, activeAgentRun, openBuildDrawer]);
+  }, [
+    taskLinkedBranchCount,
+    activeAgentRun,
+    openBuildDrawer,
+    reviewableBuild,
+    handleOpenReview,
+  ]);
 
   const handleCopyCursorMcpUrl = useCallback(async () => {
     if (!cursorMcpShareUrl) return;
@@ -1346,15 +1430,33 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     <button
                       type="button"
                       onClick={handleOpenBuildModal}
-                      disabled={taskLinkedBranchCount === 0}
+                      disabled={
+                        taskLinkedBranchCount === 0 || startReviewMutation.isPending
+                      }
                       aria-label={
                         activeAgentRun
                           ? 'Open the live build view'
-                          : 'Start an agentic build for this task'
+                          : reviewableBuild
+                            ? existingReviewId
+                              ? 'Open the review for the latest build'
+                              : 'Start a review of the latest build'
+                            : 'Start an agentic build for this task'
                       }
-                      className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-[#ebedee] bg-white px-5 text-[14px] font-medium text-[#0b191f] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-50`}
+                      className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border px-5 text-[14px] font-medium shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                        reviewableBuild && !activeAgentRun
+                          ? 'border-[#24B5F8]/40 bg-[#24B5F8]/10 text-[#0369a1] hover:bg-[#24B5F8]/20'
+                          : 'border-[#ebedee] bg-white text-[#0b191f] hover:bg-[#f9fafb]'
+                      }`}
                     >
-                      {activeAgentRun ? 'View live build' : 'Build'}
+                      {activeAgentRun
+                        ? 'View live build'
+                        : reviewableBuild
+                          ? startReviewMutation.isPending
+                            ? 'Starting review…'
+                            : existingReviewId
+                              ? 'View review'
+                              : 'Review'
+                          : 'Build'}
                       {activeAgentRun ? (
                         <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-[#24B5F8]">
                           <span className="absolute inline-flex h-2 w-2 rounded-full bg-[#24B5F8] opacity-75 motion-safe:animate-ping" />
@@ -1371,7 +1473,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       ? 'Link at least one repo + branch under Development to enable Build.'
                       : activeAgentRun
                         ? 'A build is already running for this task. Click to open the live view.'
-                        : 'Lets the Continuum agent implement this task autonomously: clones the repo, edits files, runs tests, then commits or opens a PR.'}
+                        : reviewableBuild
+                          ? existingReviewId
+                            ? 'Open the live review view for this build.'
+                            : 'Run an automated review of the build diff against this task’s requirements. Posts the verdict on the PR.'
+                          : 'Lets the Continuum agent implement this task autonomously: clones the repo, edits files, runs tests, then commits or opens a PR.'}
                   </TooltipContent>
                 </Tooltip>
                 <button
@@ -1764,6 +1870,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
           onOpenChange={closeBuildDrawer}
           taskId={taskId}
           runId={buildDrawerRunId}
+        />
+      ) : null}
+      {taskId ? (
+        <ReviewRunDrawer
+          open={reviewDrawerOpen}
+          onOpenChange={closeReviewDrawer}
+          taskId={taskId}
+          reviewId={reviewDrawerReviewId}
         />
       ) : null}
       {dependencyModalOpen ? (
