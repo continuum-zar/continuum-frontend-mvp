@@ -10,7 +10,7 @@ import { getApiErrorMessage, sendWaitlistInviteEmail, updateCurrentUserProfile }
 import { useProjects } from "@/api/hooks";
 import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
-import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { workspaceJoin } from "@/lib/workspacePaths";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
@@ -241,7 +241,7 @@ export function SettingsModal({
           ? user.email.slice(0, 2).toUpperCase()
           : "?"
       : "?";
-  const avatarBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#e19c02";
+  const avatarBg = user ? memberAvatarBackground(Number(user.id)) : "#e19c02";
   const showAdminReleaseNotesLink = isGlobalAdmin;
 
   const handleSave = async () => {

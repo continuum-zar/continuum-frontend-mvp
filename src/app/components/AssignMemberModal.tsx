@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, Search, X } from "lucide-react";
 
 import { useProjectMembers, useSetTaskAssignees } from "@/api/hooks";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 
 import {
@@ -14,15 +15,6 @@ import {
   DialogPortal,
 } from "./ui/dialog";
 import { cn } from "./ui/utils";
-
-const AVATAR_BGS = [
-  "bg-[#e19c02]",
-  "bg-[#f5c542]",
-  "bg-[#3b82f6]",
-  "bg-[#8b5cf6]",
-  "bg-[#10b981]",
-  "bg-[#f17173]",
-];
 
 function memberDisplayLines(m: Member): { primary: string; secondary: string } {
   const email = m.email?.trim() ?? "";
@@ -219,7 +211,7 @@ export function AssignMemberModal({
                   >
                     {sortedFiltered.map((m) => {
                       const { primary, secondary } = memberDisplayLines(m);
-                      const bg = AVATAR_BGS[m.id % AVATAR_BGS.length];
+                      const bg = memberAvatarBackground(m.userId);
                       const isAssigned = draftSet.has(m.userId);
                       const rowId = `assign-member-${m.id}`;
                       const assignBusy = setAssigneesMutation.isPending || !taskId;
@@ -229,10 +221,8 @@ export function AssignMemberModal({
                           className="flex w-full flex-wrap items-center gap-4 sm:flex-nowrap"
                         >
                           <div
-                            className={cn(
-                              "flex size-8 shrink-0 items-center justify-center rounded-full border border-background text-xs font-medium text-white",
-                              bg,
-                            )}
+                            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-background text-xs font-medium text-white"
+                            style={{ backgroundColor: bg }}
                             aria-hidden
                           >
                             {m.initials}

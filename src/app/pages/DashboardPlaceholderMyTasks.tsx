@@ -8,7 +8,7 @@ import { workspaceJoin, type WorkspaceMyTasksScope, workspaceMyTasksHref } from 
 import { useAssignedToMeTasks, useCreatedByMeTasks } from "@/api/hooks";
 import { fetchMembers, projectKeys } from "@/api/projects";
 import { useAuthStore } from "@/store/authStore";
-import { memberAvatarBackground, memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 import { taskPriorityFlagClass, type TaskAPIResponse } from "@/types/task";
 import { STALE_REFERENCE_MS, LONG_GC_MS } from "@/lib/queryDefaults";
@@ -82,7 +82,7 @@ export function DashboardPlaceholderMyTasks() {
     () => userInitials(user?.first_name, user?.last_name, user?.email),
     [user?.first_name, user?.last_name, user?.email]
   );
-  const assigneeBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#e19c02";
+  const assigneeBg = user ? memberAvatarBackground(Number(user.id)) : "#e19c02";
 
   const {
     data: assignedTasks = [],

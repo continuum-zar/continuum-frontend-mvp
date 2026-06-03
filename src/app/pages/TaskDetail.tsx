@@ -75,6 +75,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/too
 import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
 import { useAgentRun, useStartReview, useTaskAgentRuns } from '@/api';
 import { isAgentRunActive, isAgentRunTerminal } from '@/types/agentRun';
+import { memberAvatarBackground } from '@/lib/memberAvatar';
 
 /* ─── helpers ─── */
 
@@ -131,8 +132,6 @@ const SCOPE_OPTIONS: { value: ScopeWeight; label: string }[] = [
   { value: 'L', label: 'Large (L)' },
   { value: 'XL', label: 'Extra Large (XL)' },
 ];
-
-const AVATAR_COLORS = ['#E8A303', '#EE7F84', '#7157E7', '#4A9FF8', '#10b981', '#f17173'];
 
 /** Task sidebar: initial rows and each “Show more” step for Comments + Activity. */
 const TASK_DETAIL_FEED_PAGE = 3;
@@ -225,7 +224,7 @@ function TaskCommentAvatar({ author }: { author: CommentAuthorAPI }) {
   return (
     <div
       className="flex size-[40px] shrink-0 items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
-      style={{ backgroundColor: AVATAR_COLORS[author.id % AVATAR_COLORS.length] }}
+      style={{ backgroundColor: memberAvatarBackground(author.id) }}
     >
       {commentAuthorInitials(author)}
     </div>
@@ -1372,7 +1371,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           <div className="relative">
                             <div
                               className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
-                              style={{ backgroundColor: AVATAR_COLORS[m.id % AVATAR_COLORS.length] }}
+                              style={{ backgroundColor: memberAvatarBackground(m.userId) }}
                               title={m.name}
                             >
                               {m.initials}
@@ -1384,7 +1383,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                         ) : (
                           <div
                             className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
-                            style={{ backgroundColor: AVATAR_COLORS[0] }}
+                            style={{ backgroundColor: memberAvatarBackground(uid) }}
                             title={`User #${uid}`}
                           >
                             U{uid}
