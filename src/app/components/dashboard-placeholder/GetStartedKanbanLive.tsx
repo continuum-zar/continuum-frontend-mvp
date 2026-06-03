@@ -632,7 +632,7 @@ export function GetStartedKanbanLive({
               ) : null}
             </div>
             <div
-              className="flex w-full items-center gap-[4px] px-[2px]"
+              className="relative h-[2px] w-full shrink-0 overflow-hidden bg-[#ebedee]"
               role="progressbar"
               aria-valuenow={checklistPct}
               aria-valuemin={0}
@@ -640,10 +640,9 @@ export function GetStartedKanbanLive({
               aria-label="Checklist progress"
             >
               <div
-                className="h-px bg-[#0b191f]"
+                className="absolute inset-y-0 left-0 bg-[#08090A]"
                 style={{ width: `${checklistPct}%` }}
               />
-              <div className="h-px flex-1 min-w-0 bg-[#ebedee]" />
             </div>
             <div className="content-stretch relative flex w-full shrink-0 flex-wrap items-center justify-between gap-2">
               <div className="content-stretch relative flex min-w-0 shrink-0 items-center">
