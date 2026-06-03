@@ -181,7 +181,8 @@ export interface CreateTaskBody {
     title: string;
     project_id: number;
     description?: string | null;
-    status?: 'todo' | 'in_progress' | 'done';
+    /** Accepts the default kinds or a kanban column id (custom columns persist as the status string). */
+    status?: string;
     scope_weight?: ScopeWeight;
     priority?: TaskPriority;
     due_date?: string | null;

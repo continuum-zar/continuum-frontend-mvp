@@ -45,7 +45,8 @@ export type SprintKanbanListViewProps = {
   members: Member[];
   projectId: number;
   milestoneId: string | null;
-  onCreateTask: () => void;
+  /** Called with the column id of the section whose "+" was clicked, so the new task lands in that column. */
+  onCreateTask: (columnId: string) => void;
   /** Drag-and-drop between sections — same behavior as board view. */
   draggingId: string | null;
   dragOverCol: string | null;
@@ -356,12 +357,12 @@ export function SprintKanbanListView({
     </KanbanColumnSearchControls>
   );
 
-  const createTaskControl = (
+  const createTaskControl = (col: KanbanColumnConfig) => (
     <button
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        onCreateTask();
+        onCreateTask(col.id);
       }}
       className="content-stretch flex shrink-0 cursor-pointer items-center overflow-clip rounded-[6px] border-0 bg-transparent p-[5px]"
       aria-label="Create task"
@@ -385,7 +386,7 @@ export function SprintKanbanListView({
         const headerRight = (
           <>
             {searchAndKebab(col)}
-            {col.taskStatus === "todo" ? createTaskControl : null}
+            {col.taskStatus === "todo" ? createTaskControl(col) : null}
           </>
         );
         const emptyTail =

@@ -254,6 +254,11 @@ export function GetStartedKanbanLive({
   }, [filtered, columns, taskColumnPreference]);
 
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [createTaskColumnId, setCreateTaskColumnId] = useState<string | null>(null);
+  const openCreateTaskInColumn = useCallback((columnId: string) => {
+    setCreateTaskColumnId(columnId);
+    setCreateTaskOpen(true);
+  }, []);
   const [taskPendingDelete, setTaskPendingDelete] = useState<Task | null>(null);
   const [columnPendingDelete, setColumnPendingDelete] = useState<KanbanColumnConfig | null>(null);
   const [addColumnOpen, setAddColumnOpen] = useState(false);
@@ -769,7 +774,7 @@ export function GetStartedKanbanLive({
         }}
         searchIconSrc={imgLucideSearch1}
         showCreateTask={showCreateTask}
-        onCreateTask={() => setCreateTaskOpen(true)}
+        onCreateTask={() => openCreateTaskInColumn(col.id)}
         createIconSrc={imgVector11}
         kebabMenu={renderColumnKebabMenu(col)}
       />
@@ -790,7 +795,7 @@ export function GetStartedKanbanLive({
             members={members}
             projectId={projectId}
             milestoneId={milestoneId}
-            onCreateTask={() => setCreateTaskOpen(true)}
+            onCreateTask={openCreateTaskInColumn}
             draggingId={draggingId}
             dragOverCol={dragOverCol}
             cardPointerDown={cardPointerDown}
@@ -898,9 +903,13 @@ export function GetStartedKanbanLive({
       )}
       <CreateTaskLiveModal
         open={createTaskOpen}
-        onOpenChange={setCreateTaskOpen}
+        onOpenChange={(next) => {
+          setCreateTaskOpen(next);
+          if (!next) setCreateTaskColumnId(null);
+        }}
         projectId={projectId}
         milestoneId={milestoneId}
+        defaultColumnId={createTaskColumnId}
       />
       <Dialog
         open={addColumnOpen}

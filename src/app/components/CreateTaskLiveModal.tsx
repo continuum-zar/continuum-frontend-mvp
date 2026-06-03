@@ -37,6 +37,8 @@ type CreateTaskLiveModalProps = {
   onOpenChange: (open: boolean) => void;
   projectId: number;
   milestoneId?: string | null;
+  /** Kanban column the user clicked "Create task" from — sent verbatim as the new task's status. */
+  defaultColumnId?: string | null;
 };
 
 const SCOPE_OPTIONS: { value: ScopeWeight; label: string }[] = [
@@ -58,6 +60,7 @@ export function CreateTaskLiveModal({
   onOpenChange,
   projectId,
   milestoneId,
+  defaultColumnId,
 }: CreateTaskLiveModalProps) {
   const createTaskMutation = useCreateTask();
   const { data: members } = useProjectMembers(projectId, { enabled: open });
@@ -174,7 +177,7 @@ export function CreateTaskLiveModal({
         title: title.trim(),
         project_id: projectId,
         description: description.trim() || null,
-        status: "todo",
+        status: defaultColumnId ?? "todo",
         priority,
         scope_weight: scope,
         due_date: null,
