@@ -213,7 +213,7 @@ function EfficiencyGauge({ hps }: { hps: number }) {
   const endPt = smArcPoint(1);
 
   return (
-    <div className="relative h-[81.592px] w-[82.864px] shrink-0">
+    <div className="relative h-[90px] w-[82.864px] shrink-0">
       <div className="absolute top-0 left-0 h-[66.484px] w-[82.864px]">
         <div style={{ ...smCircleBase, background: effGrad }} />
         <Cap cx={startPt.x} cy={startPt.y} size={SM_STROKE} color="#1ED760" />
@@ -230,12 +230,10 @@ function EfficiencyGauge({ hps }: { hps: number }) {
           <img alt="" className="block size-full max-w-none" src={imgGaugeIndicator} />
         </div>
       </div>
-      <p className="absolute top-[66px] left-[11.86px] z-[1] font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] text-[#0b191f] opacity-50">
-        0
-      </p>
-      <p className="absolute top-[66px] left-[69.86px] z-[1] -translate-x-full text-right font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] text-[#0b191f] opacity-50">
-        3
-      </p>
+      <div className="pointer-events-none absolute top-[74px] left-[11.86px] right-[13px] z-[1] flex justify-between font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] text-[#0b191f] opacity-50">
+        <span>0</span>
+        <span>3</span>
+      </div>
     </div>
   );
 }
