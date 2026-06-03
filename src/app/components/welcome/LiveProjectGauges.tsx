@@ -208,7 +208,7 @@ function efficiencyZoneLabel(hps: number): string {
   return "Danger Zone";
 }
 
-function EfficiencyGauge({ hps }: { hps: number }) {
+export function EfficiencyGauge({ hps }: { hps: number }) {
   const effGrad = `conic-gradient(from ${SM_CSS_START}deg at 50% 50%, #1ED760 0deg, #FBBC05 ${SM_SWEEP / 2}deg, #EB4335 ${SM_SWEEP}deg, transparent ${SM_SWEEP}deg 360deg)`;
   const frac = Math.max(0, Math.min(1, hps / 3));
   const dot = smArcPoint(frac);
@@ -245,7 +245,7 @@ function EfficiencyGauge({ hps }: { hps: number }) {
    Tasks Completed gauge
    ================================================================ */
 
-function TasksGauge({ completed, total }: { completed: number; total: number }) {
+export function TasksGauge({ completed, total }: { completed: number; total: number }) {
   const pct = total > 0 ? Math.max(0, Math.min(100, (completed / total) * 100)) : 0;
   const fillDeg = (pct / 100) * SM_SWEEP;
   const fillColor = "#1ED760";
@@ -341,7 +341,7 @@ const COMMIT_GREEN = COMMIT_GAUGE_SHIPPED;
 const COMMIT_YELLOW = COMMIT_GAUGE_IN_PROGRESS;
 const COMMIT_GREY = COMMIT_GAUGE_TRIVIAL;
 
-function CommitsGauge({
+export function CommitsGauge({
   structural,
   incremental,
   trivial,
