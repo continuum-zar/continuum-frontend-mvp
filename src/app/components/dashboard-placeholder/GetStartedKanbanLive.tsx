@@ -698,42 +698,49 @@ export function GetStartedKanbanLive({
     children: ReactNode,
     header: ReactNode,
     isColumnDragSource = false,
-  ) => (
-    <div
-      data-kanban-col={columnId}
-      className={cn(
-        "content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200",
-        isColumnDragSource && "opacity-0",
-      )}
-      style={{
-        flexGrow: 1,
-        flexShrink: 0,
-        flexBasis: "350px",
-        width: "350px",
-        minWidth: "350px",
-        backgroundImage:
-          "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
-      }}
-    >
-      <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
-        {header}
-      </div>
+  ) => {
+    const isDropTarget = dragOverCol === columnId && draggingId !== null;
+    return (
       <div
-        className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto py-4"
+        data-kanban-col={columnId}
+        className={cn(
+          "content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200",
+          isColumnDragSource && "opacity-0",
+          isDropTarget && "bg-[#eef4f8]",
+        )}
         style={{
-          maskImage:
-            "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
-          WebkitMaskImage:
-            "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+          flexGrow: 1,
+          flexShrink: 0,
+          flexBasis: "350px",
+          width: "350px",
+          minWidth: "350px",
+          backgroundImage:
+            "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
         }}
       >
-        {dragOverCol === columnId && draggingId !== null && (
-          <div className="h-[152px] w-full shrink-0 rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
-        )}
-        {children}
+        {isDropTarget ? (
+          <div
+            className="pointer-events-none absolute inset-x-[16px] top-0 h-[3px] rounded-full bg-primary"
+            aria-hidden
+          />
+        ) : null}
+        <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
+          {header}
+        </div>
+        <div
+          className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto py-4"
+          style={{
+            maskImage:
+              "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+          }}
+        >
+          {children}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const boardColumnIconSrc = (kind: KanbanColumnConfig["kind"]) => {
     if (kind === "in-progress") return imgLucideSquircleDashed;

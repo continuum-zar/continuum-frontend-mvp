@@ -296,7 +296,7 @@ export function SprintKanbanListView({
             >
               {dragOverCol === col.id && draggingId !== null ? (
                 <div
-                  className="h-[52px] w-full shrink-0 rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.55)]"
+                  className="pointer-events-none absolute inset-x-0 top-0 h-[3px] rounded-full bg-primary"
                   aria-hidden
                 />
               ) : null}
