@@ -34,6 +34,7 @@ const imgLucideFolderCog = mcpAsset("5cad83cc-0f0b-48f5-9afd-c5124c0169e6");
 const imgLucideShare = mcpAsset("00b88546-c39b-453e-aa9d-34f496edd586");
 const imgLucideChevronDown = mcpAsset("72ab3ac0-aebf-4278-859f-4205108fb16c");
 const imgLucideInfo = mcpAsset("f597ed55-c78f-481a-a433-abcd6a07d507");
+const imgVector8 = mcpAsset("1acc14a4-997e-4b19-b81a-91ef21ff09c2");
 const imgLucidePlus1 = mcpAsset("1da1cc85-0c45-4470-a43f-e9a9f1a1e4f5");
 const imgVector15 = mcpAsset("41d4c7e7-e987-4d3e-b39f-b0a8c1791b01");
 
@@ -218,13 +219,18 @@ export function WelcomeContinuumView() {
                 </div>
               </div>
             </div>
+            <div className="h-0 relative shrink-0 w-full" data-node-id="8:3553">
+              <div className="absolute inset-[-0.57px_0]">
+                <img alt="" className="block max-w-none size-full" src={imgVector8} />
+              </div>
+            </div>
             <div
-              className="relative min-h-0 w-full min-w-0 flex-1 self-stretch overflow-x-clip overflow-y-auto"
+              className="relative -mt-[16px] min-h-0 w-full min-w-0 flex-1 self-stretch overflow-x-clip overflow-y-auto"
               style={{
                 maskImage:
-                  "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+                  "linear-gradient(to bottom, black 0, black calc(100% - 16px), transparent 100%)",
                 WebkitMaskImage:
-                  "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+                  "linear-gradient(to bottom, black 0, black calc(100% - 16px), transparent 100%)",
               }}
             >
             {isWelcomeDemo ? (
