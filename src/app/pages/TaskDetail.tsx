@@ -490,6 +490,14 @@ function NamedSectionChecklistItems({
               placeholder="Item"
               className={`min-w-0 flex-1 border-0 bg-transparent text-[13px] outline-none ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
             />
+            <button
+              type="button"
+              onClick={() => onItemsChange(items.filter((_, i) => i !== itemIdx))}
+              aria-label="Remove checklist item"
+              className="inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+            >
+              <X size={12} strokeWidth={2} aria-hidden />
+            </button>
           </div>
         );
       })}
@@ -1401,11 +1409,24 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           />
                         ) : (
                           <p
-                            className={`min-w-0 flex-1 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
+                            className={`min-w-0 flex-1 break-words font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
                           >
                             {item.text}
                           </p>
                         )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            saveChecklists(localChecklists.filter((_, i) => i !== idx));
+                            if (editingChecklistIdx === idx) setEditingChecklistIdx(null);
+                          }}
+                          onDoubleClick={(e) => e.stopPropagation()}
+                          aria-label="Remove checklist item"
+                          className="inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                        >
+                          <X size={12} strokeWidth={2} aria-hidden />
+                        </button>
                       </div>
                     );
                   })}
