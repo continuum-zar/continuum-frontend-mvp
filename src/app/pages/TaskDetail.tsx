@@ -20,7 +20,6 @@ import {
   Loader2,
   Plus,
   Tag,
-  Trash2,
   UserRoundPlus,
   X,
 } from 'lucide-react';
@@ -1489,9 +1488,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   onClick={() => setDeleteConfirmOpen(true)}
                   disabled={deleteTaskMutation.isPending}
                   aria-label="Delete this task"
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-[#fecaca] bg-white px-5 text-[14px] font-medium text-[#b91c1c] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#fef2f2] hover:border-[#fca5a5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b91c1c]/30 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-12 items-center justify-center rounded-[12px] bg-[#dc2626] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Trash2 size={16} className="shrink-0" aria-hidden />
                   {deleteTaskMutation.isPending ? 'Deleting…' : 'Delete'}
                 </button>
                 <div className="flex flex-wrap items-center justify-end gap-3">
@@ -1967,7 +1965,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 handleConfirmDelete();
               }}
               disabled={deleteTaskMutation.isPending}
-              className="bg-[#b91c1c] text-white hover:bg-[#991b1b] focus-visible:ring-[#b91c1c]/40"
+              className="bg-[#dc2626] text-white hover:bg-[#b91c1c] focus-visible:ring-[#dc2626]/30"
             >
               {deleteTaskMutation.isPending ? 'Deleting…' : 'Delete task'}
             </AlertDialogAction>
