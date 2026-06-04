@@ -455,12 +455,33 @@ export function CreateTaskLiveModal({
     return m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q);
   });
 
+  const hasUnsavedContent =
+    title.trim() !== "" ||
+    description.trim() !== "" ||
+    checklists.some((c) => c.text.trim() !== "") ||
+    sections.some(
+      (s) => s.name.trim() !== "" || (s.items ?? []).some((it) => it.text.trim() !== ""),
+    ) ||
+    tags.length > 0 ||
+    estimatedHours != null ||
+    assignedUserIds.length > 0 ||
+    selectedDependencyIds.length > 0;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogPortal>
         <DialogOverlay className="bg-black/25" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
+          onPointerDownOutside={(e) => {
+            if (hasUnsavedContent) {
+              e.preventDefault();
+              toast("You have unsaved changes", { id: "create-task-dirty" });
+            }
+          }}
+          onInteractOutside={(e) => {
+            if (hasUnsavedContent) e.preventDefault();
+          }}
           className={cn(
             "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
             "fixed top-1/2 left-1/2 z-50 flex max-h-[min(886px,90vh)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
