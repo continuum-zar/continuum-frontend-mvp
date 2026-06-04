@@ -20,6 +20,7 @@ import {
   Loader2,
   Plus,
   Tag,
+  Trash2,
   UserRoundPlus,
   X,
 } from 'lucide-react';
@@ -45,6 +46,7 @@ import {
   useTaskCommentsInfinite,
   useCreateTaskComment,
   useSetTaskAssignees,
+  useDeleteTask,
 } from '@/api';
 import { getApiErrorMessage, useTaskLoggedHoursTotal } from '@/api/hooks';
 import type { Attachment } from '@/types/attachment';
@@ -68,6 +70,16 @@ import {
 } from '../components/AddTaskResourceModal';
 import { TaskLinkedBranchesSection } from '../components/TaskLinkedBranchesSection';
 import { AssignMemberModal } from '../components/AssignMemberModal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/app/components/ui/alert-dialog';
 import { BuildTaskModal } from '../components/BuildTaskModal';
 import { BuildRunDrawer } from '../components/BuildRunDrawer';
 import { ReviewRunDrawer } from '../components/ReviewRunDrawer';
@@ -504,6 +516,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [pendingUploadRows, setPendingUploadRows] = useState<TaskResourcePendingUploadRow[]>([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const setAssigneesMutation = useSetTaskAssignees();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [dependencyModalOpen, setDependencyModalOpen] = useState(false);
   const [dependencySearch, setDependencySearch] = useState('');
   const [selectedDependencies, setSelectedDependencies] = useState<number[]>([]);
@@ -1022,6 +1035,17 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     setAssigneesMutation.mutate({ taskId, userIds: assigneeUserIds.filter((id) => id !== uid) });
   };
 
+  const deleteTaskMutation = useDeleteTask(task?.project_id ?? null);
+  const handleConfirmDelete = () => {
+    if (!taskId || deleteTaskMutation.isPending) return;
+    deleteTaskMutation.mutate(taskId, {
+      onSuccess: () => {
+        setDeleteConfirmOpen(false);
+        handleNavigateBack();
+      },
+    });
+  };
+
   const handlePostComment = () => {
     const trimmed = commentDraft.trim();
     if (!trimmed || !taskId) return;
@@ -1459,7 +1483,18 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
 
             {/* ─── Update Task button ─── */}
             <div className="border-t border-[#ebedee] pt-5">
-              <div className="flex flex-wrap items-center justify-end gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={deleteTaskMutation.isPending}
+                  aria-label="Delete this task"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-[#fecaca] bg-white px-5 text-[14px] font-medium text-[#b91c1c] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#fef2f2] hover:border-[#fca5a5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b91c1c]/30 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Trash2 size={16} className="shrink-0" aria-hidden />
+                  {deleteTaskMutation.isPending ? 'Deleting…' : 'Delete'}
+                </button>
+                <div className="flex flex-wrap items-center justify-end gap-3">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -1552,6 +1587,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 >
                   {updateTaskMutation.isPending ? 'Saving…' : 'Update Task'}
                 </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1909,6 +1945,35 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         taskId={taskId}
         currentAssigneeIds={assigneeUserIds}
       />
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(next) => {
+          if (deleteTaskMutation.isPending) return;
+          setDeleteConfirmOpen(next);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this task?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes &ldquo;{task.title}&rdquo; and its checklist, comments, time logs, and linked branches. This action can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteTaskMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
+              disabled={deleteTaskMutation.isPending}
+              className="bg-[#b91c1c] text-white hover:bg-[#991b1b] focus-visible:ring-[#b91c1c]/40"
+            >
+              {deleteTaskMutation.isPending ? 'Deleting…' : 'Delete task'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <LogTimeModal
         open={logTimeOpen}
         onOpenChange={setLogTimeOpen}
