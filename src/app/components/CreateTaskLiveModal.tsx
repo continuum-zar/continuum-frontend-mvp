@@ -469,7 +469,7 @@ export function CreateTaskLiveModal({
           <DialogPrimitive.Title className="sr-only">Create Task</DialogPrimitive.Title>
 
           {/* ─── Header ─── */}
-          <div className="z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
             <DialogClose asChild>
               <button
                 type="button"
@@ -479,7 +479,7 @@ export function CreateTaskLiveModal({
                 <ArrowLeft size={20} className="text-[#606d76]" />
               </button>
             </DialogClose>
-            <p className="pointer-events-none absolute left-1/2 top-[25px] -translate-x-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+            <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
               Create Task
             </p>
             <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />

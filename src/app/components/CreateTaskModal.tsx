@@ -347,7 +347,7 @@ export function CreateTaskModal({
         >
           <DialogPrimitive.Title className="sr-only">{headerTitle}</DialogPrimitive.Title>
 
-          <div className="z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
             <button
               type="button"
               className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
@@ -358,7 +358,7 @@ export function CreateTaskModal({
                 <img alt="" className="block size-full max-w-none" src={imgLucideArrowLeft} />
               </span>
             </button>
-            <div className="pointer-events-none absolute left-1/2 top-[25px] flex -translate-x-1/2 flex-col items-center gap-3">
+            <div className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3">
               <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
                 {headerTitle}
               </p>
