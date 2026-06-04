@@ -385,3 +385,28 @@ export type {
     StartAgentRunBody,
 } from '@/types/agentRun';
 export { isAgentRunActive, isAgentRunTerminal, AGENT_RUN_TERMINAL_STATUSES } from '@/types/agentRun';
+export { startReview, fetchReview, listReviewsForRun } from './review';
+export {
+    reviewRunKeys,
+    useReviewRun,
+    useReviewsForRun,
+    useStartReview,
+} from './hooks';
+export type {
+    ReviewRun,
+    ReviewRunDetail,
+    ReviewRunEvent,
+    ReviewEventKind,
+    ReviewPhase,
+    ReviewRunListResponse,
+    ReviewRunStatus,
+    ReviewVerdict,
+    ReviewDeliveryTarget,
+    ReviewIssue,
+    ReviewIssueSeverity,
+} from '@/types/reviewRun';
+export {
+    isReviewRunActive,
+    isReviewRunTerminal,
+    REVIEW_RUN_TERMINAL_STATUSES,
+} from '@/types/reviewRun';

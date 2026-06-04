@@ -4,6 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   CircleDot,
@@ -16,10 +17,14 @@ import {
   X,
 } from "lucide-react";
 
+import { ReviewIcon, SpinnerIcon } from "./review/icons";
+
 import {
   agentRunEventsStreamUrl,
   useAgentRun,
   useCancelAgentRun,
+  useReviewRun,
+  useStartReview,
 } from "@/api";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -30,6 +35,11 @@ import {
   type AgentRunEvent,
   type AgentRunStatus,
 } from "@/types/agentRun";
+import {
+  isReviewRunTerminal,
+  type ReviewRun,
+  type ReviewVerdict,
+} from "@/types/reviewRun";
 
 import {
   Dialog,
@@ -267,6 +277,110 @@ function EventCard({ ev }: { ev: MergedEvent }) {
   }
 }
 
+const VERDICT_LABEL: Record<ReviewVerdict, string> = {
+  ready_to_merge: "Ready to merge",
+  issues_found: "Issues found",
+};
+
+const VERDICT_TONE: Record<ReviewVerdict, string> = {
+  ready_to_merge: "bg-[#10b981]/15 text-[#065f46]",
+  issues_found: "bg-[#fde68a]/40 text-[#92400e]",
+};
+
+function VerdictPill({ verdict }: { verdict: ReviewVerdict }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium",
+        VERDICT_TONE[verdict],
+      )}
+    >
+      {verdict === "ready_to_merge" ? (
+        <CheckCircle2 size={11} aria-hidden />
+      ) : (
+        <AlertCircle size={11} aria-hidden />
+      )}
+      {VERDICT_LABEL[verdict]}
+    </span>
+  );
+}
+
+function ReviewSummary({
+  review,
+  pending,
+}: {
+  review: ReviewRun | null;
+  pending: boolean;
+}) {
+  // Pending / running — no terminal result yet.
+  if (!review || (pending && !isReviewRunTerminal(review?.status ?? "queued"))) {
+    return (
+      <div className="flex items-center gap-2 text-[12px] text-[#606d76]">
+        <Loader2 size={12} className="animate-spin" />
+        Reviewing diff against task requirements…
+      </div>
+    );
+  }
+
+  if (review.status === "failed") {
+    return (
+      <div className="flex flex-col gap-1 text-[12px]">
+        <div className="flex items-center gap-2 text-[#991b1b]">
+          <AlertCircle size={12} />
+          <span className="font-medium">Review failed</span>
+        </div>
+        {review.error ? (
+          <p className="whitespace-pre-wrap leading-relaxed text-[#727d83]">
+            {review.error}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (review.status === "cancelled") {
+    return (
+      <p className="text-[12px] text-[#727d83]">Review was cancelled.</p>
+    );
+  }
+
+  // Succeeded
+  const issueCount = review.issues?.length ?? 0;
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {review.verdict ? <VerdictPill verdict={review.verdict} /> : null}
+        {issueCount > 0 ? (
+          <span className="text-[12px] text-[#606d76]">
+            {issueCount} issue{issueCount === 1 ? "" : "s"}
+          </span>
+        ) : null}
+        {review.delivery_target === "github_pr_comment" && review.github_comment_url ? (
+          <a
+            href={review.github_comment_url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-[12px] font-medium text-[#0369a1] hover:underline"
+          >
+            View review on PR
+            <ExternalLink size={10} aria-hidden />
+          </a>
+        ) : null}
+        {review.delivery_target === "task_comment" && review.task_comment_id ? (
+          <span className="text-[12px] text-[#727d83]">
+            Posted as comment on this task
+          </span>
+        ) : null}
+      </div>
+      {review.summary ? (
+        <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-[#3c4a52]">
+          {review.summary}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function StatusPill({ status }: { status: AgentRunStatus }) {
   const tone = STATUS_TONE[status];
   return (
@@ -391,6 +505,48 @@ export function BuildRunDrawer({
   const isTerminal = status ? isAgentRunTerminal(status) : false;
   const isActive = status ? isAgentRunActive(status) : false;
 
+  // ---- Review agent --------------------------------------------------------
+  // Track the most-recently-started review for this open of the drawer; fall
+  // back to whatever the backend says the latest review is.
+  const [startedReviewId, setStartedReviewId] = useState<string | null>(null);
+  useEffect(() => {
+    setStartedReviewId(null);
+  }, [runId]);
+
+  const effectiveReviewId =
+    startedReviewId ?? detail?.latest_review?.id ?? null;
+  const reviewQuery = useReviewRun(taskId, effectiveReviewId, {
+    enabled: open && !!effectiveReviewId,
+  });
+  // Prefer the freshly-polled row; fall back to the one we got in the detail
+  // payload so the UI shows the verdict even before the first poll lands.
+  const review: ReviewRun | null =
+    reviewQuery.data ?? detail?.latest_review ?? null;
+  const reviewInFlight =
+    !!review && !isReviewRunTerminal(review.status);
+
+  const startReviewMutation = useStartReview(taskId, runId ?? "");
+  const handleStartReview = useCallback(() => {
+    if (!runId) return;
+    startReviewMutation.mutate(undefined, {
+      onSuccess: (r) => setStartedReviewId(r.id),
+    });
+  }, [runId, startReviewMutation]);
+
+  // Review prerequisites mirror the backend's enqueue check.
+  const reviewPrereqOk = !!detail && (
+    (detail.mode === "open_pr" && !!detail.pr_url) ||
+    (detail.mode === "direct_push" && !!detail.commit_sha)
+  );
+  const canStartReview =
+    !!runId &&
+    isTerminal &&
+    status === "succeeded" &&
+    reviewPrereqOk &&
+    !reviewInFlight &&
+    !startReviewMutation.isPending;
+  const showReviewArea = isTerminal && status === "succeeded";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
@@ -467,6 +623,17 @@ export function BuildRunDrawer({
             ) : null}
           </div>
 
+          {/* Review summary banner — sits between the feed and the footer
+              so users see the verdict alongside the build outcome. */}
+          {showReviewArea && (review || reviewInFlight || startReviewMutation.isPending) ? (
+            <div className="z-[3] shrink-0 border-t border-border bg-white px-5 py-3">
+              <ReviewSummary
+                review={review}
+                pending={reviewInFlight || startReviewMutation.isPending}
+              />
+            </div>
+          ) : null}
+
           {/* Footer */}
           <div className="z-[3] flex shrink-0 items-center justify-between gap-3 border-t border-border bg-muted/40 px-5 py-3">
             <div className="flex min-w-0 flex-wrap items-center gap-3 text-[12px] text-[#727d83]">
@@ -509,6 +676,34 @@ export function BuildRunDrawer({
                     <Square size={13} />
                   )}
                   Cancel run
+                </button>
+              ) : null}
+              {showReviewArea ? (
+                <button
+                  type="button"
+                  onClick={handleStartReview}
+                  disabled={!canStartReview}
+                  title={
+                    !reviewPrereqOk
+                      ? detail?.mode === "open_pr"
+                        ? "No PR URL on this run."
+                        : "No commit on this run."
+                      : reviewInFlight
+                        ? "A review is already running."
+                        : undefined
+                  }
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 text-[13px] font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {reviewInFlight || startReviewMutation.isPending ? (
+                    <SpinnerIcon size={13} />
+                  ) : (
+                    <ReviewIcon size={13} />
+                  )}
+                  {review && isReviewRunTerminal(review.status)
+                    ? "Re-review"
+                    : reviewInFlight
+                      ? "Reviewing"
+                      : "Review"}
                 </button>
               ) : null}
               <DialogClose asChild>

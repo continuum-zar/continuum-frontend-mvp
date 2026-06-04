@@ -85,7 +85,10 @@ import {
     addTaskLabel,
     removeTaskLabel,
     type TaskChecklistItemUpdate,
+    type TaskCommentsPageResult,
 } from './tasks';
+import type { CommentAPIResponse } from '@/types/comment';
+import type { AttachmentAPIResponse } from '@/types/attachment';
 import { fetchLoggedHours, createLoggedHour, sumLoggedHoursForTask } from './loggedHours';
 import type { CreateLoggedHourBody } from './loggedHours';
 import { createRepositoryBranch } from './repositoryBranchCreate';
@@ -103,6 +106,7 @@ import {
     type ScopeWeight,
     type TaskPriority,
     type TaskLinkedBranch,
+    type TaskSection,
 } from '@/types/task';
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
@@ -137,6 +141,91 @@ function invalidateDerivedTaskLists(queryClient: QueryClient) {
 export function invalidateProjectTaskLists(queryClient: QueryClient, projectId: number | string) {
     void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
     void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(projectId) });
+}
+
+type ProjectTasksPage = { tasks: Task[]; total: number; skip: number; limit: number };
+
+/** Prepend a task to the first page of `tasksInfinite` + the flat `tasks` cache (used for optimistic create). */
+function insertTaskIntoProjectCaches(queryClient: QueryClient, projectId: number | string, row: Task) {
+    queryClient.setQueryData<Task[]>(projectKeys.tasks(projectId), (old) =>
+        old ? [row, ...old] : old,
+    );
+    queryClient.setQueryData<InfiniteData<ProjectTasksPage>>(
+        projectKeys.tasksInfinite(projectId),
+        (old) => {
+            if (!old?.pages?.length) return old;
+            const [first, ...rest] = old.pages;
+            return {
+                ...old,
+                pages: [
+                    { ...first, tasks: [row, ...first.tasks], total: first.total + 1 },
+                    ...rest,
+                ],
+            };
+        },
+    );
+}
+
+/** Remove a task from `tasksInfinite` + flat `tasks` caches by id (used for optimistic delete). */
+function removeTaskFromProjectCaches(
+    queryClient: QueryClient,
+    projectId: number | string,
+    taskId: number | string,
+) {
+    const tid = String(taskId);
+    queryClient.setQueryData<Task[]>(projectKeys.tasks(projectId), (old) =>
+        old?.filter((t) => t.id !== tid) ?? old,
+    );
+    queryClient.setQueryData<InfiniteData<ProjectTasksPage>>(
+        projectKeys.tasksInfinite(projectId),
+        (old) => {
+            if (!old?.pages?.length) return old;
+            return {
+                ...old,
+                pages: old.pages.map((p) => ({
+                    ...p,
+                    tasks: p.tasks.filter((t) => t.id !== tid),
+                    total: Math.max(0, (p.total ?? 0) - 1),
+                })),
+            };
+        },
+    );
+}
+
+/** Adjust a count field on a Task in board caches (used to bump comment/attachment counts). */
+function adjustTaskCountInProjectCaches(
+    queryClient: QueryClient,
+    projectId: number | string,
+    taskId: number | string,
+    field: 'comments' | 'attachments',
+    delta: number,
+) {
+    const tid = String(taskId);
+    const patch = (t: Task): Task =>
+        t.id === tid ? { ...t, [field]: Math.max(0, (t[field] ?? 0) + delta) } : t;
+    queryClient.setQueryData<Task[]>(projectKeys.tasks(projectId), (old) => old?.map(patch) ?? old);
+    queryClient.setQueryData<InfiniteData<ProjectTasksPage>>(
+        projectKeys.tasksInfinite(projectId),
+        (old) => {
+            if (!old?.pages?.length) return old;
+            return {
+                ...old,
+                pages: old.pages.map((p) => ({ ...p, tasks: p.tasks.map(patch) })),
+            };
+        },
+    );
+}
+
+/** Bump `attachment_count` or `comment_count` on the cached task detail. */
+function adjustTaskCountOnDetail(
+    queryClient: QueryClient,
+    taskId: number | string,
+    field: 'attachment_count' | 'comment_count',
+    delta: number,
+) {
+    queryClient.setQueryData<TaskAPIResponse>(taskDetailKey(taskId), (old) =>
+        old ? { ...old, [field]: Math.max(0, (old[field] ?? 0) + delta) } : old,
+    );
 }
 
 /** Refetch board/list task queries only (not milestones or project list). */
@@ -298,9 +387,10 @@ function isChecklistOnlyTaskUpdate(vars: {
     linked_repo?: string | null;
     linked_branch?: string | null;
     checklists?: TaskChecklistItemUpdate[];
+    sections?: TaskSection[] | null;
     dependencies?: number[] | null;
 }): boolean {
-    if (vars.checklists === undefined) return false;
+    if (vars.checklists === undefined && vars.sections === undefined) return false;
     return (
         vars.title === undefined &&
         vars.description === undefined &&
@@ -616,7 +706,10 @@ export function useCreateTask() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (body: CreateTaskBody) => createTask(body),
-        onSuccess: (_data, body) => {
+        onSuccess: (data, body) => {
+            const row = mapTask(data);
+            insertTaskIntoProjectCaches(queryClient, body.project_id, row);
+            queryClient.setQueryData(taskDetailKey(data.id), data);
             invalidateProjectTaskLists(queryClient, body.project_id);
             invalidateDerivedTaskLists(queryClient);
             toast.success('Task created');
@@ -1035,6 +1128,7 @@ export function useUpdateTask() {
             linked_repo,
             linked_branch,
             checklists,
+            sections,
             dependencies,
         }: {
             taskId: string | number;
@@ -1049,6 +1143,7 @@ export function useUpdateTask() {
             linked_repo?: string | null;
             linked_branch?: string | null;
             checklists?: TaskChecklistItemUpdate[];
+            sections?: TaskSection[] | null;
             dependencies?: number[] | null;
         }) =>
             updateTask(taskId, {
@@ -1063,6 +1158,7 @@ export function useUpdateTask() {
                 linked_repo,
                 linked_branch,
                 checklists,
+                sections,
                 dependencies,
             }),
         onMutate: async (variables) => {
@@ -1240,6 +1336,20 @@ export function useCreateAndLinkTaskBranch() {
                 );
             }
         },
+        onMutate: async ({ taskId, repository, branchName }) => {
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(taskId) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
+            if (!prevDetail) return {};
+            const trimmed = branchName.trim();
+            const optimisticLink: TaskLinkedBranch = {
+                linked_repo: repositoryLinkedName(repository),
+                linked_branch: trimmed,
+                linked_branch_full_ref: `refs/heads/${trimmed}`,
+            };
+            const next = [...getTaskLinkedBranches(prevDetail), optimisticLink];
+            optimisticApplyLinkedBranches(queryClient, taskId, next);
+            return { prevDetail };
+        },
         onSuccess: (data, { taskId, projectId, repository }) => {
             if (taskId && data) queryClient.setQueryData(taskDetailKey(taskId), data);
             void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
@@ -1255,7 +1365,14 @@ export function useCreateAndLinkTaskBranch() {
             });
             toast.success('Branch created and linked');
         },
-        onError: (err: unknown) => {
+        onError: (err: unknown, variables, ctx) => {
+            if (ctx?.prevDetail != null) {
+                optimisticApplyLinkedBranches(
+                    queryClient,
+                    variables.taskId,
+                    getTaskLinkedBranches(ctx.prevDetail),
+                );
+            }
             const status = axios.isAxiosError(err) ? err.response?.status : undefined;
             if (status === 409) {
                 toast.error('That branch already exists. Pick another name or link it with “Add branch link”.');
@@ -1546,6 +1663,18 @@ export function useDeleteTask(projectId: number | string | undefined | null) {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (taskId: number | string) => deleteTask(taskId),
+        onMutate: async (taskId) => {
+            const detailPid = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId))?.project_id;
+            const pid = projectId != null && projectId !== '' ? projectId : detailPid;
+            if (pid == null) return {};
+            await queryClient.cancelQueries({ queryKey: projectKeys.tasksInfinite(pid) });
+            const prevInfinite = queryClient.getQueryData<InfiniteData<ProjectTasksPage>>(
+                projectKeys.tasksInfinite(pid),
+            );
+            const prevFlat = queryClient.getQueryData<Task[]>(projectKeys.tasks(pid));
+            removeTaskFromProjectCaches(queryClient, pid, taskId);
+            return { pid, prevInfinite, prevFlat };
+        },
         onSuccess: (_data, taskId) => {
             if (projectId != null && projectId !== '') {
                 invalidateProjectTaskLists(queryClient, projectId);
@@ -1556,7 +1685,15 @@ export function useDeleteTask(projectId: number | string | undefined | null) {
             void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             toast.success('Task deleted');
         },
-        onError: (err) => {
+        onError: (err, _taskId, ctx) => {
+            if (ctx?.pid != null) {
+                if (ctx.prevInfinite !== undefined) {
+                    queryClient.setQueryData(projectKeys.tasksInfinite(ctx.pid), ctx.prevInfinite);
+                }
+                if (ctx.prevFlat !== undefined) {
+                    queryClient.setQueryData(projectKeys.tasks(ctx.pid), ctx.prevFlat);
+                }
+            }
             toast.error(getApiErrorMessage(err, 'Failed to delete task'));
         },
     });
@@ -1566,15 +1703,31 @@ export function useAddTaskLabel(taskId: number | string | undefined | null) {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (label: string) => addTaskLabel(taskId!, label),
-        onSuccess: () => {
+        onMutate: async (label) => {
+            if (taskId == null || taskId === '') return {};
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(taskId) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
+            if (!prevDetail) return {};
+            const trimmed = label.trim();
+            const next = [...new Set([...(prevDetail.labels ?? []), trimmed])];
+            queryClient.setQueryData<TaskAPIResponse>(taskDetailKey(taskId), { ...prevDetail, labels: next });
+            return { prevDetail };
+        },
+        onSuccess: (data) => {
             if (taskId != null && taskId !== '') {
+                queryClient.setQueryData<TaskAPIResponse>(taskDetailKey(taskId), (old) =>
+                    old ? { ...old, labels: data.labels } : old,
+                );
                 void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             }
             invalidateTasksForCachedTaskProject(queryClient, taskId);
             invalidateDerivedTaskLists(queryClient);
             toast.success('Label added');
         },
-        onError: (err) => {
+        onError: (err, _label, ctx) => {
+            if (ctx?.prevDetail != null && taskId != null && taskId !== '') {
+                queryClient.setQueryData(taskDetailKey(taskId), ctx.prevDetail);
+            }
             toast.error(getApiErrorMessage(err, 'Failed to add label'));
         },
     });
@@ -1584,15 +1737,30 @@ export function useRemoveTaskLabel(taskId: number | string | undefined | null) {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (label: string) => removeTaskLabel(taskId!, label),
-        onSuccess: () => {
+        onMutate: async (label) => {
+            if (taskId == null || taskId === '') return {};
+            await queryClient.cancelQueries({ queryKey: taskDetailKey(taskId) });
+            const prevDetail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
+            if (!prevDetail) return {};
+            const next = (prevDetail.labels ?? []).filter((l) => l !== label);
+            queryClient.setQueryData<TaskAPIResponse>(taskDetailKey(taskId), { ...prevDetail, labels: next });
+            return { prevDetail };
+        },
+        onSuccess: (data) => {
             if (taskId != null && taskId !== '') {
+                queryClient.setQueryData<TaskAPIResponse>(taskDetailKey(taskId), (old) =>
+                    old ? { ...old, labels: data.labels } : old,
+                );
                 void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             }
             invalidateTasksForCachedTaskProject(queryClient, taskId);
             invalidateDerivedTaskLists(queryClient);
             toast.success('Label removed');
         },
-        onError: (err) => {
+        onError: (err, _label, ctx) => {
+            if (ctx?.prevDetail != null && taskId != null && taskId !== '') {
+                queryClient.setQueryData(taskDetailKey(taskId), ctx.prevDetail);
+            }
             toast.error(getApiErrorMessage(err, 'Failed to remove label'));
         },
     });
@@ -1630,16 +1798,81 @@ export function useTaskCommentsInfinite(taskId: number | string | undefined | nu
 
 export function useCreateTaskComment(taskId: number | string | undefined | null) {
     const queryClient = useQueryClient();
+    const user = useAuthStore((s) => s.user);
     return useMutation({
         mutationFn: (content: string) => createTaskComment(taskId!, content),
-        onSuccess: () => {
-            if (taskId != null && taskId !== '') {
-                queryClient.invalidateQueries({ queryKey: taskCommentsKey(taskId!) });
-                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId!) });
-            }
+        onMutate: async (content) => {
+            if (taskId == null || taskId === '') return {};
+            const flatKey = taskCommentsKey(taskId);
+            const infiniteKey = [...taskCommentsKey(taskId), 'infinite'] as const;
+            await queryClient.cancelQueries({ queryKey: flatKey });
+            await queryClient.cancelQueries({ queryKey: infiniteKey });
+            const prevFlat = queryClient.getQueryData<CommentAPIResponse[]>(flatKey);
+            const prevInfinite = queryClient.getQueryData<InfiniteData<TaskCommentsPageResult>>(infiniteKey);
+            const tempId = -Date.now();
+            const userIdNum = user?.id != null && /^\d+$/.test(String(user.id)) ? Number(user.id) : 0;
+            const displayName =
+                user != null
+                    ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.email
+                    : 'You';
+            const temp: CommentAPIResponse = {
+                id: tempId,
+                content,
+                author: { id: userIdNum, display_name: displayName },
+                created_at: new Date().toISOString(),
+            };
+            queryClient.setQueryData<CommentAPIResponse[]>(flatKey, (old) =>
+                old ? [temp, ...old] : [temp],
+            );
+            queryClient.setQueryData<InfiniteData<TaskCommentsPageResult>>(infiniteKey, (old) => {
+                if (!old?.pages?.length) return old;
+                const [first, ...rest] = old.pages;
+                return {
+                    ...old,
+                    pages: [
+                        { ...first, comments: [temp, ...first.comments], total: (first.total ?? 0) + 1 },
+                        ...rest,
+                    ],
+                };
+            });
+            adjustTaskCountOnDetail(queryClient, taskId, 'comment_count', 1);
+            const pid = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId))?.project_id;
+            if (pid != null) adjustTaskCountInProjectCaches(queryClient, pid, taskId, 'comments', 1);
+            return { tempId, prevFlat, prevInfinite, pid };
+        },
+        onSuccess: (data, _content, ctx) => {
+            if (taskId == null || taskId === '') return;
+            const flatKey = taskCommentsKey(taskId);
+            const infiniteKey = [...taskCommentsKey(taskId), 'infinite'] as const;
+            const tempId = ctx?.tempId;
+            const replace = (c: CommentAPIResponse) => (tempId != null && c.id === tempId ? data : c);
+            queryClient.setQueryData<CommentAPIResponse[]>(flatKey, (old) => old?.map(replace) ?? old);
+            queryClient.setQueryData<InfiniteData<TaskCommentsPageResult>>(infiniteKey, (old) => {
+                if (!old?.pages?.length) return old;
+                return {
+                    ...old,
+                    pages: old.pages.map((p) => ({ ...p, comments: p.comments.map(replace) })),
+                };
+            });
+            void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             toast.success('Comment posted');
         },
-        onError: (err) => {
+        onError: (err, _content, ctx) => {
+            if (taskId != null && taskId !== '') {
+                if (ctx?.prevFlat !== undefined) {
+                    queryClient.setQueryData(taskCommentsKey(taskId), ctx.prevFlat);
+                }
+                if (ctx?.prevInfinite !== undefined) {
+                    queryClient.setQueryData(
+                        [...taskCommentsKey(taskId), 'infinite'] as const,
+                        ctx.prevInfinite,
+                    );
+                }
+                adjustTaskCountOnDetail(queryClient, taskId, 'comment_count', -1);
+                if (ctx?.pid != null) {
+                    adjustTaskCountInProjectCaches(queryClient, ctx.pid, taskId, 'comments', -1);
+                }
+            }
             toast.error(getApiErrorMessage(err, 'Failed to post comment'));
         },
     });
@@ -1660,16 +1893,51 @@ export function useTaskAttachments(taskId: number | string | undefined | null) {
 
 export function useUploadAttachment(taskId: number | string | undefined | null) {
     const queryClient = useQueryClient();
+    const user = useAuthStore((s) => s.user);
     return useMutation({
         mutationFn: (file: File) => uploadTaskAttachment(taskId!, file),
-        onSuccess: () => {
-            if (taskId != null && taskId !== '') {
-                queryClient.invalidateQueries({ queryKey: taskAttachmentsKey(taskId!) });
-                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId!) });
-            }
+        onMutate: async (file) => {
+            if (taskId == null || taskId === '') return {};
+            const key = taskAttachmentsKey(taskId);
+            await queryClient.cancelQueries({ queryKey: key });
+            const prevList = queryClient.getQueryData<AttachmentAPIResponse[]>(key);
+            const tempId = -Date.now();
+            const userIdNum = user?.id != null && /^\d+$/.test(String(user.id)) ? Number(user.id) : 0;
+            const temp: AttachmentAPIResponse = {
+                id: tempId,
+                original_filename: file.name,
+                file_size: file.size,
+                mime_type: file.type || 'application/octet-stream',
+                created_at: new Date().toISOString(),
+                uploaded_by: { id: userIdNum, display_name: user ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() : undefined },
+            };
+            queryClient.setQueryData<AttachmentAPIResponse[]>(key, (old) =>
+                old ? [temp, ...old] : [temp],
+            );
+            adjustTaskCountOnDetail(queryClient, taskId, 'attachment_count', 1);
+            const pid = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId))?.project_id;
+            if (pid != null) adjustTaskCountInProjectCaches(queryClient, pid, taskId, 'attachments', 1);
+            return { tempId, prevList, pid };
+        },
+        onSuccess: (data, _file, ctx) => {
+            if (taskId == null || taskId === '') return;
+            const tempId = ctx?.tempId;
+            queryClient.setQueryData<AttachmentAPIResponse[]>(taskAttachmentsKey(taskId), (old) =>
+                old?.map((a) => (tempId != null && a.id === tempId ? data : a)) ?? old,
+            );
+            void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             toast.success('Attachment uploaded successfully');
         },
-        onError: (err) => {
+        onError: (err, _file, ctx) => {
+            if (taskId != null && taskId !== '') {
+                if (ctx?.prevList !== undefined) {
+                    queryClient.setQueryData(taskAttachmentsKey(taskId), ctx.prevList);
+                }
+                adjustTaskCountOnDetail(queryClient, taskId, 'attachment_count', -1);
+                if (ctx?.pid != null) {
+                    adjustTaskCountInProjectCaches(queryClient, ctx.pid, taskId, 'attachments', -1);
+                }
+            }
             toast.error(getApiErrorMessage(err, 'Failed to upload attachment'));
         },
     });
@@ -1677,17 +1945,57 @@ export function useUploadAttachment(taskId: number | string | undefined | null) 
 
 export function useAddAttachmentLink(taskId: number | string | undefined | null) {
     const queryClient = useQueryClient();
+    const user = useAuthStore((s) => s.user);
     return useMutation({
         mutationFn: (payload: { url: string; name?: string | null }) =>
             addTaskAttachmentLink(taskId!, payload),
-        onSuccess: () => {
-            if (taskId != null && taskId !== '') {
-                queryClient.invalidateQueries({ queryKey: taskAttachmentsKey(taskId!) });
-                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId!) });
-            }
+        onMutate: async (payload) => {
+            if (taskId == null || taskId === '') return {};
+            const key = taskAttachmentsKey(taskId);
+            await queryClient.cancelQueries({ queryKey: key });
+            const prevList = queryClient.getQueryData<AttachmentAPIResponse[]>(key);
+            const tempId = -Date.now();
+            const userIdNum = user?.id != null && /^\d+$/.test(String(user.id)) ? Number(user.id) : 0;
+            const display = (payload.name ?? '').trim() || payload.url;
+            const temp: AttachmentAPIResponse = {
+                id: tempId,
+                original_filename: display,
+                display_name: payload.name ?? null,
+                file_size: 0,
+                mime_type: 'text/uri-list',
+                url: payload.url,
+                is_link: true,
+                attachment_type: 'link',
+                created_at: new Date().toISOString(),
+                uploaded_by: { id: userIdNum, display_name: user ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() : undefined },
+            };
+            queryClient.setQueryData<AttachmentAPIResponse[]>(key, (old) =>
+                old ? [temp, ...old] : [temp],
+            );
+            adjustTaskCountOnDetail(queryClient, taskId, 'attachment_count', 1);
+            const pid = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId))?.project_id;
+            if (pid != null) adjustTaskCountInProjectCaches(queryClient, pid, taskId, 'attachments', 1);
+            return { tempId, prevList, pid };
+        },
+        onSuccess: (data, _payload, ctx) => {
+            if (taskId == null || taskId === '') return;
+            const tempId = ctx?.tempId;
+            queryClient.setQueryData<AttachmentAPIResponse[]>(taskAttachmentsKey(taskId), (old) =>
+                old?.map((a) => (tempId != null && a.id === tempId ? data : a)) ?? old,
+            );
+            void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             toast.success('Link added');
         },
-        onError: (err) => {
+        onError: (err, _payload, ctx) => {
+            if (taskId != null && taskId !== '') {
+                if (ctx?.prevList !== undefined) {
+                    queryClient.setQueryData(taskAttachmentsKey(taskId), ctx.prevList);
+                }
+                adjustTaskCountOnDetail(queryClient, taskId, 'attachment_count', -1);
+                if (ctx?.pid != null) {
+                    adjustTaskCountInProjectCaches(queryClient, ctx.pid, taskId, 'attachments', -1);
+                }
+            }
             toast.error(getApiErrorMessage(err, 'Failed to add link'));
         },
     });
@@ -1697,14 +2005,36 @@ export function useDeleteAttachment(taskId: number | string | undefined | null) 
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (attachmentId: number | string) => deleteAttachment(attachmentId),
+        onMutate: async (attachmentId) => {
+            if (taskId == null || taskId === '') return {};
+            const key = taskAttachmentsKey(taskId);
+            await queryClient.cancelQueries({ queryKey: key });
+            const prevList = queryClient.getQueryData<AttachmentAPIResponse[]>(key);
+            const aidStr = String(attachmentId);
+            queryClient.setQueryData<AttachmentAPIResponse[]>(key, (old) =>
+                old?.filter((a) => String(a.id) !== aidStr) ?? old,
+            );
+            adjustTaskCountOnDetail(queryClient, taskId, 'attachment_count', -1);
+            const pid = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId))?.project_id;
+            if (pid != null) adjustTaskCountInProjectCaches(queryClient, pid, taskId, 'attachments', -1);
+            return { prevList, pid };
+        },
         onSuccess: () => {
             if (taskId != null && taskId !== '') {
-                queryClient.invalidateQueries({ queryKey: taskAttachmentsKey(taskId!) });
-                queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId!) });
+                void queryClient.invalidateQueries({ queryKey: taskTimelineKey(taskId) });
             }
             toast.success('Attachment deleted successfully');
         },
-        onError: (err) => {
+        onError: (err, _attachmentId, ctx) => {
+            if (taskId != null && taskId !== '') {
+                if (ctx?.prevList !== undefined) {
+                    queryClient.setQueryData(taskAttachmentsKey(taskId), ctx.prevList);
+                }
+                adjustTaskCountOnDetail(queryClient, taskId, 'attachment_count', 1);
+                if (ctx?.pid != null) {
+                    adjustTaskCountInProjectCaches(queryClient, ctx.pid, taskId, 'attachments', 1);
+                }
+            }
             toast.error(getApiErrorMessage(err, 'Failed to delete attachment'));
         },
     });
@@ -2006,6 +2336,88 @@ export function useCancelAgentRun(taskId: number | string) {
         },
         onError: (err) => {
             toast.error(getApiErrorMessage(err, 'Failed to cancel build'));
+        },
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Review agent (post-build automated review)
+// ---------------------------------------------------------------------------
+import { fetchReview, listReviewsForRun, startReview } from './review';
+import type {
+    ReviewRun,
+    ReviewRunDetail,
+    ReviewRunListResponse,
+} from '@/types/reviewRun';
+import { isReviewRunTerminal } from '@/types/reviewRun';
+
+export const reviewRunKeys = {
+    all: ['review-runs'] as const,
+    forRun: (taskId: number | string, runId: string) =>
+        [...reviewRunKeys.all, 'task', String(taskId), 'run', runId] as const,
+    detail: (taskId: number | string, reviewId: string) =>
+        [...reviewRunKeys.all, 'task', String(taskId), 'review', reviewId] as const,
+};
+
+/** Poll a single review (with its event timeline) every 1.5s while non-terminal. */
+export function useReviewRun(
+    taskId: number | string | undefined | null,
+    reviewId: string | undefined | null,
+    options?: { enabled?: boolean },
+) {
+    return useQuery<ReviewRunDetail>({
+        queryKey:
+            taskId != null && taskId !== '' && reviewId
+                ? reviewRunKeys.detail(taskId, reviewId)
+                : reviewRunKeys.all,
+        queryFn: () => fetchReview(taskId!, reviewId!),
+        enabled:
+            (options?.enabled ?? true) &&
+            taskId != null &&
+            taskId !== '' &&
+            !!reviewId,
+        staleTime: STALE_SHORT_MS,
+        refetchInterval: (query) => {
+            const data = query.state.data as ReviewRunDetail | undefined;
+            if (!data) return 1_500;
+            return isReviewRunTerminal(data.status) ? false : 1_500;
+        },
+        refetchOnWindowFocus: false,
+    });
+}
+
+export function useReviewsForRun(
+    taskId: number | string | undefined | null,
+    runId: string | undefined | null,
+    options?: { enabled?: boolean },
+) {
+    return useQuery<ReviewRunListResponse>({
+        queryKey:
+            taskId != null && taskId !== '' && runId
+                ? reviewRunKeys.forRun(taskId, runId)
+                : reviewRunKeys.all,
+        queryFn: () => listReviewsForRun(taskId!, runId!),
+        enabled:
+            (options?.enabled ?? true) &&
+            taskId != null &&
+            taskId !== '' &&
+            !!runId,
+        staleTime: STALE_SHORT_MS,
+        refetchOnWindowFocus: false,
+    });
+}
+
+export function useStartReview(taskId: number | string, runId: string) {
+    const queryClient = useQueryClient();
+    return useMutation<ReviewRun, unknown, void>({
+        mutationFn: () => startReview(taskId, runId),
+        onSuccess: (review) => {
+            queryClient.setQueryData(reviewRunKeys.detail(taskId, review.id), review);
+            queryClient.invalidateQueries({ queryKey: reviewRunKeys.forRun(taskId, runId) });
+            toast.success('Review started — checking diff against requirements');
+        },
+        onError: (err) => {
+            toast.error(getApiErrorMessage(err, 'Failed to start review'));
         },
     });
 }

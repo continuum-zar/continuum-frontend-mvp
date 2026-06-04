@@ -7,7 +7,7 @@ import type { PlannerNavigationGuardProps } from "@/app/components/planner/Plann
 import { getApiErrorMessage, useAllTasks, useProjectMilestones, useProjects } from "@/api/hooks";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import { useAuthStore } from "@/store/authStore";
-import { memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Project } from "@/types/project";
 
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "../ui/popover";
@@ -671,7 +671,7 @@ export function DashboardLeftRail({
           ? user.email.slice(0, 2).toUpperCase()
           : "?"
       : "?";
-  const profileAvatarBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#f0f3f5";
+  const profileAvatarBg = user ? memberAvatarBackground(Number(user.id)) : "#f0f3f5";
 
   const settingsTourSection = useWorkspaceTourStore((s) => s.settingsPanelSection);
   const tourSettingsModalOpen = useWorkspaceTourStore((s) => s.tourSettingsModalOpen);

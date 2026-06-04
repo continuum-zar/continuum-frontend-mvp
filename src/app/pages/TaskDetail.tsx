@@ -16,6 +16,7 @@ import {
   Download,
   FileText,
   Flag,
+  GripVertical,
   Link2,
   Loader2,
   Plus,
@@ -44,6 +45,8 @@ import {
   useProjectTasks,
   useTaskCommentsInfinite,
   useCreateTaskComment,
+  useSetTaskAssignees,
+  useDeleteTask,
 } from '@/api';
 import { getApiErrorMessage, useTaskLoggedHoursTotal } from '@/api/hooks';
 import type { Attachment } from '@/types/attachment';
@@ -58,6 +61,7 @@ import {
   type TaskPriority,
   type TaskTimelineEntry,
   type TaskAPIResponse,
+  type TaskSection,
 } from '@/types/task';
 import type { CommentAuthorAPI } from '@/types/comment';
 import type { Member } from '@/types/member';
@@ -67,13 +71,26 @@ import {
 } from '../components/AddTaskResourceModal';
 import { TaskLinkedBranchesSection } from '../components/TaskLinkedBranchesSection';
 import { AssignMemberModal } from '../components/AssignMemberModal';
+import { useChecklistItemDrag, reorderChecklistItems } from '@/lib/useChecklistItemDrag';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/app/components/ui/alert-dialog';
 import { BuildTaskModal } from '../components/BuildTaskModal';
 import { BuildRunDrawer } from '../components/BuildRunDrawer';
+import { ReviewRunDrawer } from '../components/ReviewRunDrawer';
 import { LogTimeModal } from '../components/dashboard-placeholder/LogTimeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
-import { useTaskAgentRuns } from '@/api';
-import { isAgentRunActive } from '@/types/agentRun';
+import { useAgentRun, useStartReview, useTaskAgentRuns } from '@/api';
+import { isAgentRunActive, isAgentRunTerminal } from '@/types/agentRun';
+import { memberAvatarBackground } from '@/lib/memberAvatar';
 
 /* ─── helpers ─── */
 
@@ -130,8 +147,6 @@ const SCOPE_OPTIONS: { value: ScopeWeight; label: string }[] = [
   { value: 'L', label: 'Large (L)' },
   { value: 'XL', label: 'Extra Large (XL)' },
 ];
-
-const AVATAR_COLORS = ['#E8A303', '#EE7F84', '#7157E7', '#4A9FF8', '#10b981', '#f17173'];
 
 /** Task sidebar: initial rows and each “Show more” step for Comments + Activity. */
 const TASK_DETAIL_FEED_PAGE = 3;
@@ -224,7 +239,7 @@ function TaskCommentAvatar({ author }: { author: CommentAuthorAPI }) {
   return (
     <div
       className="flex size-[40px] shrink-0 items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
-      style={{ backgroundColor: AVATAR_COLORS[author.id % AVATAR_COLORS.length] }}
+      style={{ backgroundColor: memberAvatarBackground(author.id) }}
     >
       {commentAuthorInitials(author)}
     </div>
@@ -426,6 +441,100 @@ function TaskNotFound() {
   );
 }
 
+type NamedChecklistItem = { id?: string; text: string; done: boolean };
+
+/** Render the items of a single named checklist section with drag-handle reordering. */
+function NamedSectionChecklistItems({
+  items,
+  onItemsChange,
+}: {
+  items: NamedChecklistItem[];
+  onItemsChange: (next: NamedChecklistItem[]) => void;
+}) {
+  const drag = useChecklistItemDrag((from, to) => onItemsChange(reorderChecklistItems(items, from, to)));
+  const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
+  const [pendingFocusIdx, setPendingFocusIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (pendingFocusIdx === null) return;
+    const el = inputRefs.current.get(pendingFocusIdx);
+    if (el) {
+      el.focus();
+      setPendingFocusIdx(null);
+    }
+  }, [pendingFocusIdx, items]);
+
+  const addItemAndFocus = () => {
+    const next = [...items, { text: '', done: false }];
+    onItemsChange(next);
+    setPendingFocusIdx(next.length - 1);
+  };
+
+  return (
+    <div className="space-y-2">
+      {items.map((item, itemIdx) => {
+        const isDragging = drag.draggingIdx === itemIdx;
+        const isTarget =
+          drag.draggingIdx !== null && drag.draggingIdx !== itemIdx && drag.overIdx === itemIdx;
+        return (
+          <div
+            key={itemIdx}
+            data-checklist-row
+            className={`group/row flex items-start gap-2 rounded-md -mx-1 px-1 py-0.5 ${isDragging ? 'opacity-40' : ''} ${isTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
+          >
+            <button
+              type="button"
+              onPointerDown={drag.onHandlePointerDown(itemIdx)}
+              aria-label="Reorder checklist item"
+              className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
+            >
+              <GripVertical size={14} strokeWidth={2} aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={() => onItemsChange(items.map((it, i) => (i === itemIdx ? { ...it, done: !it.done } : it)))}
+              aria-pressed={item.done}
+              className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+            >
+              {item.done ? <Check size={13} className="text-white" /> : null}
+            </button>
+            <input
+              ref={(el) => {
+                if (el) inputRefs.current.set(itemIdx, el);
+                else inputRefs.current.delete(itemIdx);
+              }}
+              type="text"
+              value={item.text}
+              onChange={(e) => onItemsChange(items.map((it, i) => (i === itemIdx ? { ...it, text: e.target.value } : it)))}
+              onBlur={() => {
+                if (!item.text.trim()) onItemsChange(items.filter((_, i) => i !== itemIdx));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  addItemAndFocus();
+                }
+              }}
+              placeholder="Item"
+              className={`min-w-0 flex-1 border-0 bg-transparent text-[13px] outline-none ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
+            />
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => onItemsChange(items.filter((_, i) => i !== itemIdx))}
+              aria-label="Remove checklist item"
+              className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+            >
+              <X size={12} strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ─── main component ─── */
 
 export interface TaskDetailProps {
@@ -455,6 +564,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const checklistDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const checklistPendingRef = useRef<Array<{ id?: string; text: string; done: boolean }> | null>(null);
   const checklistInflightRef = useRef(false);
+  const sectionsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sectionsPendingRef = useRef<TaskSection[] | null>(null);
   const { data: attachments } = useTaskAttachments(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
   const timelineQuery = useTaskTimelineInfinite(taskId);
@@ -495,6 +606,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [localChecklists, setLocalChecklists] = useState<Array<{ id?: string; text: string; done: boolean }>>([]);
   const [editingChecklistIdx, setEditingChecklistIdx] = useState<number | null>(null);
   const [checklistDraft, setChecklistDraft] = useState('');
+  const [localSections, setLocalSections] = useState<TaskSection[]>([]);
+  /** Track which section's name input is being actively edited (so its draft doesn't get clobbered by server sync). */
+  const [editingSectionNameIdx, setEditingSectionNameIdx] = useState<number | null>(null);
   const [addingTag, setAddingTag] = useState(false);
   const [tagDraft, setTagDraft] = useState('New tag');
   const [addingEffort, setAddingEffort] = useState(false);
@@ -502,6 +616,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [resourceModalOpen, setResourceModalOpen] = useState(false);
   const [pendingUploadRows, setPendingUploadRows] = useState<TaskResourcePendingUploadRow[]>([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const setAssigneesMutation = useSetTaskAssignees();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [dependencyModalOpen, setDependencyModalOpen] = useState(false);
   const [dependencySearch, setDependencySearch] = useState('');
   const [selectedDependencies, setSelectedDependencies] = useState<number[]>([]);
@@ -509,6 +625,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [buildModalOpen, setBuildModalOpen] = useState(false);
   const [buildDrawerRunId, setBuildDrawerRunId] = useState<string | null>(null);
   const [buildDrawerOpen, setBuildDrawerOpen] = useState(false);
+  const [reviewDrawerReviewId, setReviewDrawerReviewId] = useState<string | null>(null);
+  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
@@ -540,8 +658,33 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     return list.find((r) => isAgentRunActive(r.status)) ?? null;
   }, [taskAgentRunsQuery.data]);
 
-  // Sync ?build=<runId> on the URL with the drawer state so refresh keeps the
-  // live view open.
+  // The most-recent terminal build: if it succeeded with reviewable
+  // artefacts (PR url for open_pr / commit sha for direct_push), the
+  // primary action flips from "Build" to "Review".
+  const latestTerminalBuild = useMemo(() => {
+    const list = taskAgentRunsQuery.data?.runs ?? [];
+    return list.find((r) => isAgentRunTerminal(r.status)) ?? null;
+  }, [taskAgentRunsQuery.data]);
+
+  const reviewableBuild = useMemo(() => {
+    if (!latestTerminalBuild || latestTerminalBuild.status !== 'succeeded') return null;
+    const hasPrereq =
+      (latestTerminalBuild.mode === 'open_pr' && !!latestTerminalBuild.pr_url) ||
+      (latestTerminalBuild.mode === 'direct_push' && !!latestTerminalBuild.commit_sha);
+    return hasPrereq ? latestTerminalBuild : null;
+  }, [latestTerminalBuild]);
+
+  // Detail GET on the reviewable build surfaces latest_review (if any) so we
+  // can decide between starting a new review and opening the existing one.
+  const reviewableBuildDetailQuery = useAgentRun(
+    taskId,
+    reviewableBuild?.id ?? null,
+    { enabled: !!reviewableBuild },
+  );
+  const existingReviewId = reviewableBuildDetailQuery.data?.latest_review?.id ?? null;
+
+  // Sync ?build=<runId> and ?review=<reviewId> on the URL with the drawer
+  // state so refresh keeps the live view open.
   useEffect(() => {
     const urlRun = searchParams.get('build');
     if (urlRun && urlRun !== buildDrawerRunId) {
@@ -549,6 +692,13 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       setBuildDrawerOpen(true);
     } else if (!urlRun && buildDrawerOpen && buildDrawerRunId == null) {
       setBuildDrawerOpen(false);
+    }
+    const urlReview = searchParams.get('review');
+    if (urlReview && urlReview !== reviewDrawerReviewId) {
+      setReviewDrawerReviewId(urlReview);
+      setReviewDrawerOpen(true);
+    } else if (!urlReview && reviewDrawerOpen && reviewDrawerReviewId == null) {
+      setReviewDrawerOpen(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -576,6 +726,42 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     [searchParams, setSearchParams],
   );
 
+  const openReviewDrawer = useCallback(
+    (reviewId: string) => {
+      setReviewDrawerReviewId(reviewId);
+      setReviewDrawerOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.set('review', reviewId);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const closeReviewDrawer = useCallback(
+    (open: boolean) => {
+      setReviewDrawerOpen(open);
+      if (!open) {
+        const next = new URLSearchParams(searchParams);
+        next.delete('review');
+        setSearchParams(next, { replace: true });
+      }
+    },
+    [searchParams, setSearchParams],
+  );
+
+  // Start a review for the latest succeeded build (or reopen the existing one).
+  const startReviewMutation = useStartReview(taskId ?? '', reviewableBuild?.id ?? '');
+  const handleOpenReview = useCallback(() => {
+    if (!reviewableBuild) return;
+    if (existingReviewId) {
+      openReviewDrawer(existingReviewId);
+      return;
+    }
+    startReviewMutation.mutate(undefined, {
+      onSuccess: (r) => openReviewDrawer(r.id),
+    });
+  }, [reviewableBuild, existingReviewId, openReviewDrawer, startReviewMutation]);
+
   const handleOpenBuildModal = useCallback(() => {
     if (taskLinkedBranchCount === 0) {
       toast.error('Link at least one repository and branch before starting a build.');
@@ -585,8 +771,21 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       openBuildDrawer(activeAgentRun.id);
       return;
     }
+    if (reviewableBuild) {
+      // Hard swap: once a build has succeeded and is reviewable, the primary
+      // action becomes Review. The user reviews (or reopens the verdict) before
+      // running anything new.
+      handleOpenReview();
+      return;
+    }
     setBuildModalOpen(true);
-  }, [taskLinkedBranchCount, activeAgentRun, openBuildDrawer]);
+  }, [
+    taskLinkedBranchCount,
+    activeAgentRun,
+    openBuildDrawer,
+    reviewableBuild,
+    handleOpenReview,
+  ]);
 
   const handleCopyCursorMcpUrl = useCallback(async () => {
     if (!cursorMcpShareUrl) return;
@@ -647,6 +846,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const tagInputRef = useRef<HTMLInputElement>(null);
   const effortInputRef = useRef<HTMLInputElement>(null);
   const checklistInputRef = useRef<HTMLInputElement>(null);
+  const checklistClickTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     checklistInflightRef.current = false;
@@ -654,6 +854,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     if (checklistDebounceRef.current != null) {
       clearTimeout(checklistDebounceRef.current);
       checklistDebounceRef.current = null;
+    }
+    sectionsPendingRef.current = null;
+    if (sectionsDebounceRef.current != null) {
+      clearTimeout(sectionsDebounceRef.current);
+      sectionsDebounceRef.current = null;
     }
   }, [taskId]);
 
@@ -670,6 +875,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       });
       if (!pauseChecklistSync) {
         setLocalChecklists(task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : []);
+      }
+      if (editingSectionNameIdx === null) {
+        setLocalSections(Array.isArray(task.sections) ? [...task.sections] : []);
       }
       // Keep drafts in sync so "Update" does not send empty description/title when the user never opened edit mode.
       if (!editingTitle) setTitleDraft(task.title ?? '');
@@ -775,8 +983,94 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
           },
         );
       }
+      if (sectionsDebounceRef.current != null) {
+        clearTimeout(sectionsDebounceRef.current);
+        sectionsDebounceRef.current = null;
+      }
+      const pendingSections = sectionsPendingRef.current;
+      sectionsPendingRef.current = null;
+      if (pendingSections != null && taskId) {
+        updateTaskMutation.mutate({ taskId, sections: pendingSections });
+      }
     };
   }, [taskId, updateTaskMutation]);
+
+  /* ─ sections (debounced PUT, mirrors the checklist pattern) ─ */
+  const saveSections = useCallback(
+    (next: TaskSection[]) => {
+      setLocalSections(next);
+      sectionsPendingRef.current = next;
+      if (sectionsDebounceRef.current != null) clearTimeout(sectionsDebounceRef.current);
+      sectionsDebounceRef.current = window.setTimeout(() => {
+        sectionsDebounceRef.current = null;
+        const pending = sectionsPendingRef.current;
+        sectionsPendingRef.current = null;
+        if (pending != null && taskId) {
+          updateTaskMutation.mutate({ taskId, sections: pending });
+        }
+      }, TASK_DETAIL_CHECKLIST_DEBOUNCE_MS);
+    },
+    [taskId, updateTaskMutation],
+  );
+
+  const newSectionId = () =>
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? `sec-${crypto.randomUUID()}`
+      : `sec-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  const addSection = (type: TaskSection['type']) => {
+    const defaultName = type === 'checklist' ? 'New checklist section' : 'New section';
+    const base = { id: newSectionId(), name: defaultName };
+    const created: TaskSection =
+      type === 'checklist' ? { ...base, type: 'checklist', items: [] } : { ...base, type: 'plain_text', text: '' };
+    const next = [...localSections, created];
+    setEditingSectionNameIdx(next.length - 1);
+    saveSections(next);
+  };
+
+  const renameSection = (idx: number, name: string) => {
+    const next = localSections.map((s, i) => (i === idx ? { ...s, name } : s));
+    setLocalSections(next);
+  };
+
+  const commitSectionName = (idx: number) => {
+    const section = localSections[idx];
+    if (!section) {
+      setEditingSectionNameIdx(null);
+      return;
+    }
+    const trimmed = section.name.trim();
+    setEditingSectionNameIdx(null);
+    if (!trimmed) {
+      saveSections(localSections.filter((_, i) => i !== idx));
+      return;
+    }
+    if (trimmed !== section.name) {
+      saveSections(localSections.map((s, i) => (i === idx ? { ...s, name: trimmed } : s)));
+    } else {
+      saveSections(localSections);
+    }
+  };
+
+  const removeSection = (idx: number) => {
+    saveSections(localSections.filter((_, i) => i !== idx));
+  };
+
+  const updateChecklistSection = (
+    idx: number,
+    updater: (items: Array<{ id?: string; text: string; done: boolean }>) => Array<{ id?: string; text: string; done: boolean }>,
+  ) => {
+    const next = localSections.map((s, i) => {
+      if (i !== idx || s.type !== 'checklist') return s;
+      return { ...s, items: updater(s.items ?? []) };
+    });
+    saveSections(next);
+  };
+
+  const updatePlainTextSection = (idx: number, text: string) => {
+    const next = localSections.map((s, i) => (i === idx && s.type === 'plain_text' ? { ...s, text } : s));
+    saveSections(next);
+  };
 
   const addChecklistItem = () => {
     const next = [...localChecklists, { text: 'New checklist', done: false }];
@@ -803,6 +1097,41 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     }, 0);
   };
 
+  /** Single click toggles the checkbox; a follow-up second click within 250ms cancels and starts editing instead. */
+  const handleChecklistRowClick = (idx: number) => {
+    if (editingChecklistIdx === idx) return;
+    if (checklistClickTimerRef.current != null) {
+      window.clearTimeout(checklistClickTimerRef.current);
+      checklistClickTimerRef.current = null;
+      return;
+    }
+    checklistClickTimerRef.current = window.setTimeout(() => {
+      checklistClickTimerRef.current = null;
+      toggleChecklist(idx);
+    }, 250);
+  };
+
+  const handleChecklistRowDoubleClick = (idx: number) => {
+    if (checklistClickTimerRef.current != null) {
+      window.clearTimeout(checklistClickTimerRef.current);
+      checklistClickTimerRef.current = null;
+    }
+    startEditChecklist(idx);
+  };
+
+  const defaultChecklistDrag = useChecklistItemDrag((from, to) => {
+    saveChecklists(reorderChecklistItems(localChecklists, from, to));
+  });
+
+  useEffect(() => {
+    return () => {
+      if (checklistClickTimerRef.current != null) {
+        window.clearTimeout(checklistClickTimerRef.current);
+        checklistClickTimerRef.current = null;
+      }
+    };
+  }, []);
+
   const saveChecklistEdit = () => {
     if (editingChecklistIdx === null) return;
     const trimmed = checklistDraft.trim();
@@ -814,6 +1143,22 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       saveChecklists(next);
     }
     setEditingChecklistIdx(null);
+  };
+
+  /** Commit the current edit (or drop the row if empty) and immediately add a new empty row in edit mode. */
+  const saveChecklistEditAndAddNew = () => {
+    if (editingChecklistIdx === null) return;
+    const trimmed = checklistDraft.trim();
+    const committed = trimmed
+      ? localChecklists.map((c, i) => (i === editingChecklistIdx ? { ...c, text: trimmed } : c))
+      : localChecklists.filter((_, i) => i !== editingChecklistIdx);
+    const next = [...committed, { text: '', done: false }];
+    saveChecklists(next);
+    setEditingChecklistIdx(next.length - 1);
+    setChecklistDraft('');
+    setTimeout(() => {
+      checklistInputRef.current?.focus();
+    }, 0);
   };
 
   /* ─ tags (labels) ─ */
@@ -897,6 +1242,23 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     setPriority(newPriority);
     setPriorityDropdownOpen(false);
     if (taskId) updateTaskMutation.mutate({ taskId, priority: newPriority });
+  };
+
+  /** Remove a single assignee inline — saves to the backend immediately (optimistic, with toast on success/error). */
+  const handleRemoveAssignee = (uid: number) => {
+    if (!taskId || setAssigneesMutation.isPending) return;
+    setAssigneesMutation.mutate({ taskId, userIds: assigneeUserIds.filter((id) => id !== uid) });
+  };
+
+  const deleteTaskMutation = useDeleteTask(task?.project_id ?? null);
+  const handleConfirmDelete = () => {
+    if (!taskId || deleteTaskMutation.isPending) return;
+    deleteTaskMutation.mutate(taskId, {
+      onSuccess: () => {
+        setDeleteConfirmOpen(false);
+        handleNavigateBack();
+      },
+    });
   };
 
   const handlePostComment = () => {
@@ -1029,8 +1391,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <p className="text-[16px] font-medium text-[#0b191f]">Checklist</p>
                 <button
                   type="button"
-                  onClick={addChecklistItem}
-                  className="flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white shadow-sm"
+                  onClick={() => addSection('checklist')}
+                  aria-label="Add named checklist section"
+                  className="flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] hover:text-[#0b191f]"
                 >
                   <Plus size={16} />
                 </button>
@@ -1039,37 +1402,164 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <p className="text-[13px] text-[#727d83]">No checklist items yet</p>
               ) : (
                 <div className="space-y-2">
-                  {localChecklists.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-4">
-                      <button
-                        type="button"
-                        onClick={() => toggleChecklist(idx)}
-                        className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+                  {localChecklists.map((item, idx) => {
+                    const isEditing = editingChecklistIdx === idx;
+                    const isDragging = defaultChecklistDrag.draggingIdx === idx;
+                    const isDragTarget =
+                      defaultChecklistDrag.draggingIdx !== null &&
+                      defaultChecklistDrag.draggingIdx !== idx &&
+                      defaultChecklistDrag.overIdx === idx;
+                    return (
+                      <div
+                        key={idx}
+                        data-checklist-row
+                        className={`group/row flex items-start gap-2 rounded-md -mx-1 px-1 py-0.5 ${isEditing ? '' : 'cursor-pointer select-none hover:bg-[#f3f5f7]'} ${isDragging ? 'opacity-40' : ''} ${isDragTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
+                        onClick={isEditing ? undefined : () => handleChecklistRowClick(idx)}
+                        onDoubleClick={isEditing ? undefined : () => handleChecklistRowDoubleClick(idx)}
                       >
-                        {item.done ? <Check size={13} className="text-white" /> : null}
-                      </button>
-                      {editingChecklistIdx === idx ? (
-                        <input
-                          ref={checklistInputRef}
-                          type="text"
-                          value={checklistDraft}
-                          onChange={(e) => setChecklistDraft(e.target.value)}
-                          onBlur={saveChecklistEdit}
-                          onKeyDown={(e) => { if (e.key === 'Enter') saveChecklistEdit(); if (e.key === 'Escape') setEditingChecklistIdx(null); }}
-                          className="min-w-0 flex-1 border-0 bg-transparent font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none"
-                        />
-                      ) : (
-                        <p
-                          className={`min-w-0 flex-1 cursor-text font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
-                          onClick={() => startEditChecklist(idx)}
+                        <button
+                          type="button"
+                          onPointerDown={defaultChecklistDrag.onHandlePointerDown(idx)}
+                          onClick={(e) => e.stopPropagation()}
+                          onDoubleClick={(e) => e.stopPropagation()}
+                          aria-label="Reorder checklist item"
+                          className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
                         >
-                          {item.text}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                          <GripVertical size={14} strokeWidth={2} aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChecklistRowClick(idx);
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            handleChecklistRowDoubleClick(idx);
+                          }}
+                          aria-pressed={item.done}
+                          className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+                        >
+                          {item.done ? <Check size={13} className="text-white" /> : null}
+                        </button>
+                        {isEditing ? (
+                          <input
+                            ref={checklistInputRef}
+                            type="text"
+                            value={checklistDraft}
+                            onChange={(e) => setChecklistDraft(e.target.value)}
+                            onBlur={saveChecklistEdit}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                saveChecklistEditAndAddNew();
+                              }
+                              if (e.key === 'Escape') setEditingChecklistIdx(null);
+                            }}
+                            className="min-w-0 flex-1 border-0 bg-transparent font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none"
+                          />
+                        ) : (
+                          <p
+                            className={`min-w-0 flex-1 break-words font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
+                          >
+                            {item.text}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            saveChecklists(localChecklists.filter((_, i) => i !== idx));
+                            if (editingChecklistIdx === idx) setEditingChecklistIdx(null);
+                          }}
+                          onDoubleClick={(e) => e.stopPropagation()}
+                          aria-label="Remove checklist item"
+                          className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                        >
+                          <X size={12} strokeWidth={2} aria-hidden />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
+              <button
+                type="button"
+                onClick={addChecklistItem}
+                className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+              >
+                <Plus size={12} /> Add item
+              </button>
+            </section>
+
+            {/* ─── Named checklist sections (created via the Checklist + button) ─── */}
+            <section className="space-y-4">
+              {localSections.map((section, sIdx) => (
+                <div key={section.id ?? `sec-${sIdx}`} className="group/section space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    {editingSectionNameIdx === sIdx ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        value={section.name}
+                        onChange={(e) => renameSection(sIdx, e.target.value)}
+                        onBlur={() => commitSectionName(sIdx)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                          if (e.key === 'Escape') setEditingSectionNameIdx(null);
+                        }}
+                        placeholder="Checklist title"
+                        className="flex-1 border-0 bg-transparent text-[16px] font-medium leading-none text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                        aria-label="Checklist title"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setEditingSectionNameIdx(sIdx)}
+                        className="flex-1 cursor-text border-0 bg-transparent p-0 text-left text-[16px] font-medium leading-none text-[#0b191f]"
+                        aria-label={`Rename ${section.name}`}
+                      >
+                        {section.name || 'Untitled checklist'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeSection(sIdx)}
+                      className="inline-flex size-7 items-center justify-center rounded-[6px] text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/section:opacity-100"
+                      aria-label={`Delete checklist ${section.name}`}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  {section.type === 'checklist' && (section.items ?? []).length > 0 ? (
+                    <NamedSectionChecklistItems
+                      items={section.items ?? []}
+                      onItemsChange={(next) => updateChecklistSection(sIdx, () => next)}
+                    />
+                  ) : null}
+                  {section.type === 'checklist' ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateChecklistSection(sIdx, (items) => [...items, { text: '', done: false }])
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+                    >
+                      <Plus size={12} /> Add item
+                    </button>
+                  ) : (
+                    <textarea
+                      value={section.text ?? ''}
+                      onChange={(e) => updatePlainTextSection(sIdx, e.target.value)}
+                      placeholder="Plain text…"
+                      rows={3}
+                      className="min-h-[72px] w-full resize-y rounded-[6px] border border-[#ebedee] bg-[#fafbfc] p-2 text-[13px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus:border-[#0b191f]/20"
+                    />
+                  )}
+                </div>
+              ))}
             </section>
 
             {/* ─── Tags ─── */}
@@ -1079,7 +1569,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <button
                   type="button"
                   onClick={startAddTag}
-                  className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                  className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] hover:text-[#0b191f]"
                 >
                   <Tag size={14} />
                 </button>
@@ -1265,13 +1755,13 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             </section>
 
             {/* ─── Assigned To ─── */}
-            <section className="space-y-4 pb-2">
+            <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-[16px] font-medium text-[#0b191f]">Assigned to</p>
                 <button
                   type="button"
                   onClick={() => setAssignModalOpen(true)}
-                  className="inline-flex size-10 items-center justify-center rounded-[12px] border border-[#ebedee] bg-white text-[#0b191f] shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                  className="inline-flex size-10 items-center justify-center rounded-[12px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] hover:text-[#0b191f]"
                 >
                   <UserRoundPlus size={16} />
                 </button>
@@ -1282,30 +1772,35 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 ) : (
                   assigneeUserIds.map((uid) => {
                     const m = members?.find((mem) => mem.userId === uid);
+                    const displayName = m?.name ?? `User #${uid}`;
                     return (
                       <div key={uid} className="flex items-center gap-2">
-                        {m ? (
-                          <div className="relative">
-                            <div
-                              className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
-                              style={{ backgroundColor: AVATAR_COLORS[m.id % AVATAR_COLORS.length] }}
-                              title={m.name}
-                            >
-                              {m.initials}
-                            </div>
-                            <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-white bg-black">
-                              <Check size={10} className="text-white" aria-hidden />
-                            </div>
-                          </div>
-                        ) : (
+                        <div className="group/avatar relative">
                           <div
                             className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
-                            style={{ backgroundColor: AVATAR_COLORS[0] }}
-                            title={`User #${uid}`}
+                            style={{ backgroundColor: memberAvatarBackground(m?.userId ?? uid) }}
+                            title={displayName}
                           >
-                            U{uid}
+                            {m ? m.initials : `U${uid}`}
                           </div>
-                        )}
+                          {m ? (
+                            <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-white bg-black transition-opacity group-hover/avatar:opacity-0 group-focus-within/avatar:opacity-0">
+                              <Check size={10} className="text-white" aria-hidden />
+                            </div>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveAssignee(uid);
+                            }}
+                            disabled={setAssigneesMutation.isPending}
+                            aria-label={`Remove ${displayName} from this task`}
+                            className="absolute -top-1 -right-1 inline-flex size-[18px] items-center justify-center rounded-full border-2 border-white bg-[#0b191f] text-white opacity-0 shadow-[0px_1px_2px_0px_rgba(14,14,34,0.18)] transition-opacity hover:bg-[#1a2d36] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/40 group-hover/avatar:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <X size={10} strokeWidth={2.5} aria-hidden />
+                          </button>
+                        </div>
                       </div>
                     );
                   })
@@ -1315,7 +1810,17 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
 
             {/* ─── Update Task button ─── */}
             <div className="border-t border-[#ebedee] pt-5">
-              <div className="flex flex-wrap items-center justify-end gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={deleteTaskMutation.isPending}
+                  aria-label="Delete this task"
+                  className="inline-flex h-12 items-center justify-center rounded-[12px] bg-[#dc2626] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deleteTaskMutation.isPending ? 'Deleting…' : 'Delete'}
+                </button>
+                <div className="flex flex-wrap items-center justify-end gap-3">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -1346,15 +1851,33 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     <button
                       type="button"
                       onClick={handleOpenBuildModal}
-                      disabled={taskLinkedBranchCount === 0}
+                      disabled={
+                        taskLinkedBranchCount === 0 || startReviewMutation.isPending
+                      }
                       aria-label={
                         activeAgentRun
                           ? 'Open the live build view'
-                          : 'Start an agentic build for this task'
+                          : reviewableBuild
+                            ? existingReviewId
+                              ? 'Open the review for the latest build'
+                              : 'Start a review of the latest build'
+                            : 'Start an agentic build for this task'
                       }
-                      className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-[#ebedee] bg-white px-5 text-[14px] font-medium text-[#0b191f] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-50`}
+                      className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border px-5 text-[14px] font-medium shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                        reviewableBuild && !activeAgentRun
+                          ? 'border-[#24B5F8]/40 bg-[#24B5F8]/10 text-[#0369a1] hover:bg-[#24B5F8]/20'
+                          : 'border-[#ebedee] bg-white text-[#0b191f] hover:bg-[#f9fafb]'
+                      }`}
                     >
-                      {activeAgentRun ? 'View live build' : 'Build'}
+                      {activeAgentRun
+                        ? 'View live build'
+                        : reviewableBuild
+                          ? startReviewMutation.isPending
+                            ? 'Starting review…'
+                            : existingReviewId
+                              ? 'View review'
+                              : 'Review'
+                          : 'Build'}
                       {activeAgentRun ? (
                         <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-[#24B5F8]">
                           <span className="absolute inline-flex h-2 w-2 rounded-full bg-[#24B5F8] opacity-75 motion-safe:animate-ping" />
@@ -1371,7 +1894,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       ? 'Link at least one repo + branch under Development to enable Build.'
                       : activeAgentRun
                         ? 'A build is already running for this task. Click to open the live view.'
-                        : 'Lets the Continuum agent implement this task autonomously: clones the repo, edits files, runs tests, then commits or opens a PR.'}
+                        : reviewableBuild
+                          ? existingReviewId
+                            ? 'Open the live review view for this build.'
+                            : 'Run an automated review of the build diff against this task’s requirements. Posts the verdict on the PR.'
+                          : 'Lets the Continuum agent implement this task autonomously: clones the repo, edits files, runs tests, then commits or opens a PR.'}
                   </TooltipContent>
                 </Tooltip>
                 <button
@@ -1386,6 +1913,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 >
                   {updateTaskMutation.isPending ? 'Saving…' : 'Update Task'}
                 </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1402,7 +1930,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <button
                 type="button"
                 onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb]"
               >
                 <span className="text-[16px] font-medium text-[#0b191f]">{statusLabelFromBoard(status, boardColumns)}</span>
                 <ChevronDown size={16} />
@@ -1433,7 +1961,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <button
                 type="button"
                 onClick={() => setPriorityDropdownOpen(!priorityDropdownOpen)}
-                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb]"
               >
                 <span className="flex items-center gap-2 text-[16px] font-medium text-[#0b191f]">
                   <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
@@ -1468,7 +1996,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <button
                 type="button"
                 onClick={() => setScopeDropdownOpen(!scopeDropdownOpen)}
-                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb]"
               >
                 <span className="text-[16px] font-medium text-[#0b191f]">{scopeLabel(scope)}</span>
                 <ChevronDown size={16} />
@@ -1743,6 +2271,35 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         taskId={taskId}
         currentAssigneeIds={assigneeUserIds}
       />
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(next) => {
+          if (deleteTaskMutation.isPending) return;
+          setDeleteConfirmOpen(next);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this task?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes &ldquo;{task.title}&rdquo; and its checklist, comments, time logs, and linked branches. This action can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteTaskMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
+              disabled={deleteTaskMutation.isPending}
+              className="bg-[#dc2626] text-white hover:bg-[#b91c1c] focus-visible:ring-[#dc2626]/30"
+            >
+              {deleteTaskMutation.isPending ? 'Deleting…' : 'Delete task'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <LogTimeModal
         open={logTimeOpen}
         onOpenChange={setLogTimeOpen}
@@ -1764,6 +2321,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
           onOpenChange={closeBuildDrawer}
           taskId={taskId}
           runId={buildDrawerRunId}
+        />
+      ) : null}
+      {taskId ? (
+        <ReviewRunDrawer
+          open={reviewDrawerOpen}
+          onOpenChange={closeReviewDrawer}
+          taskId={taskId}
+          reviewId={reviewDrawerReviewId}
         />
       ) : null}
       {dependencyModalOpen ? (

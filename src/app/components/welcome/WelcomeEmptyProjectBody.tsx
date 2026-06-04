@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import type { Attachment } from "@/types/attachment";
 import type { Member } from "@/types/member";
 import type { Repository } from "@/types/repository";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 import { AddResourceModal } from "./AddResourceModal";
@@ -60,16 +61,6 @@ const imgLucideGitBranch = mcpAsset("1638b448-769f-4e9f-b1e0-f8bd6e479808");
 const imgLucideUsers = mcpAsset("4202e9d8-d2e7-4542-8b8e-eafd6dcf6d0d");
 const imgLucideInfo = mcpAsset("f597ed55-c78f-481a-a433-abcd6a07d507");
 
-/** Matches WelcomeShareProjectModal / welcome Members card avatar palette */
-const TEAM_AVATAR_BGS = [
-  "bg-[#e19c02]",
-  "bg-[#f5c542]",
-  "bg-[#3b82f6]",
-  "bg-[#8b5cf6]",
-  "bg-[#10b981]",
-  "bg-[#f17173]",
-] as const;
-
 function projectMemberRoleLabel(role: string): string {
   const k = (role || "").toLowerCase().replace(/\s+/g, "_");
   if (k === "project_manager" || k === "projectmanager") return "Project Manager";
@@ -87,7 +78,7 @@ function LiveTeamMemberCard({
   totalHours: number | null;
   tasksCompleted: number | null;
 }) {
-  const bg = TEAM_AVATAR_BGS[member.id % TEAM_AVATAR_BGS.length];
+  const bg = memberAvatarBackground(member.userId);
   const roleLine = projectMemberRoleLabel(member.role);
   const fmt = (n: number | null) =>
     n === null ? "…" : String(Math.round(Number(n)));
@@ -96,7 +87,8 @@ function LiveTeamMemberCard({
       <div className="flex h-10 w-full min-w-0 items-center">
         <div className="flex min-w-0 items-center gap-2">
           <div
-            className={`flex size-[35px] shrink-0 items-center justify-center rounded-full font-['Satoshi',sans-serif] text-[13px] font-medium leading-[0.4] text-white ${bg}`}
+            className="flex size-[35px] shrink-0 items-center justify-center rounded-full font-['Satoshi',sans-serif] text-[13px] font-medium leading-[0.4] text-white"
+            style={{ backgroundColor: bg }}
           >
             {member.initials}
           </div>

@@ -72,12 +72,7 @@ const SprintKanbanListView = lazy(() =>
 );
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
-const imgVector13 = mcpAsset("c1ddd3b4-d26b-4a92-b752-d84ba0208f8a");
-const imgFrame308 = mcpAsset("5b22b8e9-bd31-437e-a559-232247be56a0");
 const imgLucideSearch1 = mcpAsset("c5ee61c3-f628-42e7-b456-58f9c49a5cfe");
-/** Plus icon — To-do column “Create task” (same asset as mock Get started kanban, DashboardPlaceholder). */
-const imgVector11 = mcpAsset("4912f83a-d378-4c38-9bf2-ce38aa20cc19");
-const imgVector12 = mcpAsset("64e38728-fa1b-4a8c-97d3-cbb7f586a27c");
 const imgLucideSquircleDashed = mcpAsset("e2efeca9-31cd-4cf9-ac56-b2799ee8a450");
 const imgLucideCircleCheckBig = mcpAsset("244bb570-3aed-481d-8cf9-f067c69c50b0");
 
@@ -271,6 +266,11 @@ export function GetStartedKanbanLive({
   }, [filtered, columns, taskColumnPreference]);
 
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [createTaskColumnId, setCreateTaskColumnId] = useState<string | null>(null);
+  const openCreateTaskInColumn = useCallback((columnId: string) => {
+    setCreateTaskColumnId(columnId);
+    setCreateTaskOpen(true);
+  }, []);
   const [taskPendingDelete, setTaskPendingDelete] = useState<Task | null>(null);
   const [columnPendingDelete, setColumnPendingDelete] = useState<KanbanColumnConfig | null>(null);
   const [addColumnOpen, setAddColumnOpen] = useState(false);
@@ -558,7 +558,6 @@ export function GetStartedKanbanLive({
     };
     const checklistPct =
       checklistTotal > 0 ? Math.min(100, Math.round((checklistDone / checklistTotal) * 100)) : 0;
-    const progressFraction = checklistTotal > 0 ? checklistPct / 100 : 0;
     const assigneeUserIds = (task.assignees ?? [])
       .map((s) => Number(s))
       .filter((n) => Number.isFinite(n));
@@ -620,81 +619,53 @@ export function GetStartedKanbanLive({
         >
           {isDragging ? (
             <div
-              className="flex min-h-[184px] w-full shrink-0 flex-col items-center justify-center rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)] px-4 py-6"
+              className="flex min-h-[152px] w-full shrink-0 flex-col items-center justify-center rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)] px-3 py-4"
               aria-label="Original column — drop here to keep this task in this list"
             />
           ) : (
         <div
-          className="border-border bg-white content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] border border-solid shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full"
+          className="border-border bg-white content-stretch flex flex-col items-start overflow-clip relative rounded-[8px] border border-solid shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full"
         >
-          <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full">
-            <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">
-              <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full">
-                <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full">
-                  <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]">
-                    {task.title}
-                  </p>
-                  <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]">
-                    <Flag
-                      size={16}
-                      className={taskPriorityFlagClass(task.priority)}
-                      aria-label={`Priority: ${taskPriorityLabel(task.priority)}`}
-                    />
-                  </div>
-                </div>
+          <div className="content-stretch flex flex-col gap-[16px] items-start p-[14px] relative shrink-0 w-full">
+            <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
+              <div className="content-stretch flex gap-[12px] items-start justify-between relative shrink-0 w-full">
+                <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[16px] tracking-[-0.16px]">
+                  {task.title}
+                </p>
+                <Flag
+                  size={14}
+                  className={cn("shrink-0", taskPriorityFlagClass(task.priority))}
+                  aria-label={`Priority: ${taskPriorityLabel(task.priority)}`}
+                />
               </div>
               {descPreview ? (
-                <>
-                  <div className="h-0 relative shrink-0 w-full">
-                    <div className="absolute inset-[-0.57px_0]">
-                      <img alt="" className="block max-w-none size-full" src={imgVector13} />
-                    </div>
-                  </div>
-                  <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
-                    <p
-                      className="font-['Satoshi:Medium',sans-serif] line-clamp-2 leading-[normal] not-italic relative shrink-0 w-full text-[#606d76] text-[16px]"
-                      title={descTruncated ? desc : undefined}
-                    >
-                      {descPreview}
-                    </p>
-                  </div>
-                </>
+                <p
+                  className="font-['Satoshi:Medium',sans-serif] line-clamp-2 leading-[normal] not-italic relative shrink-0 w-full text-[#606d76] text-[14px]"
+                  title={descTruncated ? desc : undefined}
+                >
+                  {descPreview}
+                </p>
               ) : null}
             </div>
-            <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
+            <div
+              className="relative h-[2px] w-full shrink-0 overflow-hidden bg-[#ebedee]"
+              role="progressbar"
+              aria-valuenow={checklistPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Checklist progress"
+            >
               <div
-                className="relative w-full py-[3px]"
-                role="progressbar"
-                aria-valuenow={checklistPct}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label="Checklist progress"
-              >
-                <div className="relative mx-[6px] h-2 overflow-hidden rounded-[4px] bg-[#e4e8eb]">
-                  <div
-                    className="absolute inset-y-0 left-0 rounded-[4px] bg-[#0b191f]"
-                    style={{ width: `${checklistPct}%` }}
-                  />
-                </div>
-                <div
-                  className="pointer-events-none absolute top-1/2 z-[1] size-[12px] -translate-x-1/2 -translate-y-1/2"
-                  style={{
-                    left: `calc(6px + (100% - 12px) * ${progressFraction})`,
-                  }}
-                  aria-hidden
-                >
-                  <div className="absolute inset-[-33.33%]">
-                    <img alt="" className="block max-w-none size-full" src={imgFrame308} />
-                  </div>
-                </div>
-              </div>
+                className="absolute inset-y-0 left-0 bg-[#08090A]"
+                style={{ width: `${checklistPct}%` }}
+              />
             </div>
-            <div className="content-stretch relative flex w-full shrink-0 flex-wrap items-end justify-between gap-2">
+            <div className="content-stretch relative flex w-full shrink-0 flex-wrap items-center justify-between gap-2">
               <div className="content-stretch relative flex min-w-0 shrink-0 items-center">
                 <KanbanAssigneeAvatars
                   assigneeUserIds={assigneeUserIds}
                   memberByUserId={memberByUserId}
-                  sizePx={24}
+                  sizePx={18}
                   variant="card"
                 />
               </div>
@@ -734,49 +705,54 @@ export function GetStartedKanbanLive({
     );
   }
 
-  const columnHeaderDivider = (
-    <div className="h-0 relative w-full shrink-0">
-      <div className="absolute inset-[-0.57px_0]">
-        <img alt="" className="block max-w-none size-full" src={imgVector12} />
-      </div>
-    </div>
-  );
-
   const colWrap = (
     columnId: string,
     children: ReactNode,
     header: ReactNode,
     isColumnDragSource = false,
-  ) => (
-    <div
-      data-kanban-col={columnId}
-      className={cn(
-        "content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200",
-        dragOverCol === columnId ? "border-2 border-dashed border-[#cdd2d5]" : "",
-        isColumnDragSource && "opacity-0",
-      )}
-      style={{
-        flexGrow: 1,
-        flexShrink: 0,
-        flexBasis: "350px",
-        width: "350px",
-        minWidth: "350px",
-        backgroundImage:
-          "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
-      }}
-    >
-      <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
-        {header}
-        {columnHeaderDivider}
-      </div>
-      <div className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pt-4">
-        {dragOverCol === columnId && draggingId !== null && (
-          <div className="h-[184px] w-full shrink-0 rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
+  ) => {
+    const isDropTarget = dragOverCol === columnId && draggingId !== null;
+    return (
+      <div
+        data-kanban-col={columnId}
+        className={cn(
+          "content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200",
+          isColumnDragSource && "opacity-0",
+          isDropTarget && "bg-[#eef4f8]",
         )}
-        {children}
+        style={{
+          flexGrow: 1,
+          flexShrink: 0,
+          flexBasis: "350px",
+          width: "350px",
+          minWidth: "350px",
+          backgroundImage:
+            "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
+        }}
+      >
+        {isDropTarget ? (
+          <div
+            className="pointer-events-none absolute inset-x-[16px] top-0 h-[3px] rounded-full bg-primary"
+            aria-hidden
+          />
+        ) : null}
+        <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
+          {header}
+        </div>
+        <div
+          className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto py-4"
+          style={{
+            maskImage:
+              "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+          }}
+        >
+          {children}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const boardColumnIconSrc = (kind: KanbanColumnConfig["kind"]) => {
     if (kind === "in-progress") return imgLucideSquircleDashed;
@@ -817,8 +793,7 @@ export function GetStartedKanbanLive({
         }}
         searchIconSrc={imgLucideSearch1}
         showCreateTask={showCreateTask}
-        onCreateTask={() => setCreateTaskOpen(true)}
-        createIconSrc={imgVector11}
+        onCreateTask={() => openCreateTaskInColumn(col.id)}
         kebabMenu={renderColumnKebabMenu(col)}
       />
     );
@@ -838,7 +813,7 @@ export function GetStartedKanbanLive({
             members={members}
             projectId={projectId}
             milestoneId={milestoneId}
-            onCreateTask={() => setCreateTaskOpen(true)}
+            onCreateTask={openCreateTaskInColumn}
             draggingId={draggingId}
             dragOverCol={dragOverCol}
             cardPointerDown={cardPointerDown}
@@ -946,9 +921,13 @@ export function GetStartedKanbanLive({
       )}
       <CreateTaskLiveModal
         open={createTaskOpen}
-        onOpenChange={setCreateTaskOpen}
+        onOpenChange={(next) => {
+          setCreateTaskOpen(next);
+          if (!next) setCreateTaskColumnId(null);
+        }}
         projectId={projectId}
         milestoneId={milestoneId}
+        defaultColumnId={createTaskColumnId}
       />
       <Dialog
         open={addColumnOpen}

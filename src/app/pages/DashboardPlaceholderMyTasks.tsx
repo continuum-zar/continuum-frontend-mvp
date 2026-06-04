@@ -8,7 +8,7 @@ import { workspaceJoin, type WorkspaceMyTasksScope, workspaceMyTasksHref } from 
 import { useAssignedToMeTasks, useCreatedByMeTasks } from "@/api/hooks";
 import { fetchMembers, projectKeys } from "@/api/projects";
 import { useAuthStore } from "@/store/authStore";
-import { memberAvatarBackground, memberAvatarBackgroundFromKey } from "@/lib/memberAvatar";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 import { taskPriorityFlagClass, type TaskAPIResponse } from "@/types/task";
 import { STALE_REFERENCE_MS, LONG_GC_MS } from "@/lib/queryDefaults";
@@ -82,7 +82,7 @@ export function DashboardPlaceholderMyTasks() {
     () => userInitials(user?.first_name, user?.last_name, user?.email),
     [user?.first_name, user?.last_name, user?.email]
   );
-  const assigneeBg = user ? memberAvatarBackgroundFromKey(user.id || user.email) : "#e19c02";
+  const assigneeBg = user ? memberAvatarBackground(Number(user.id)) : "#e19c02";
 
   const {
     data: assignedTasks = [],
@@ -280,7 +280,15 @@ export function DashboardPlaceholderMyTasks() {
                   <span />
                 </div>
               </div>
-              <div className="scrollbar-none relative z-0 min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 overscroll-y-contain">
+              <div
+                className="scrollbar-none relative z-0 min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 py-4 overscroll-y-contain"
+                style={{
+                  maskImage:
+                    "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+                  WebkitMaskImage:
+                    "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+                }}
+              >
                 {scope === "assigned"
                   ? tasks.map((row) => (
                       <div

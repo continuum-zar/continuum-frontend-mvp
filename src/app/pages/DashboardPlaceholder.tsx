@@ -1,7 +1,9 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
+import { createPortal } from "react-dom";
 import { Flag, Timer } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 
 const GetStartedKanbanLive = lazy(() =>
   import("../components/dashboard-placeholder/GetStartedKanbanLive").then((m) => ({
@@ -47,6 +49,22 @@ import {
 } from "../components/welcome/welcomeModalAssets";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
+import {
+  COMMIT_GAUGE_IN_PROGRESS,
+  COMMIT_GAUGE_SHIPPED,
+  COMMIT_GAUGE_TRIVIAL,
+  CommitsGauge,
+  EfficiencyGauge,
+  TasksGauge,
+} from "@/app/components/welcome/LiveProjectGauges";
+
+function efficiencyZoneLabel(hps: number): string {
+  if (hps < 1) return "Safe Zone";
+  if (hps < 2) return "Caution Zone";
+  return "Danger Zone";
+}
+import { fetchClassificationBreakdown, fetchProjectHealth } from "@/api/dashboard";
+import { STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
 
 function LiveKanbanSuspenseFallback() {
   return (
@@ -310,12 +328,61 @@ function SprintBoardHeaderHealthPill({
   milestoneParam,
   milestones,
   milestonesLoading,
+  liveProjectId,
 }: {
   isLiveBoard: boolean;
   milestoneParam: string | null;
   milestones: Milestone[] | undefined;
   milestonesLoading: boolean;
+  liveProjectId: number | null;
 }) {
+  const [hoverOpen, setHoverOpen] = useState(false);
+  const [panelTop, setPanelTop] = useState<number | null>(null);
+  const [panelCenterX, setPanelCenterX] = useState<number | null>(null);
+  const triggerRef = useRef<HTMLDivElement | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
+  const cancelClose = useCallback(() => {
+    if (closeTimerRef.current != null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+  const scheduleClose = useCallback(() => {
+    cancelClose();
+    closeTimerRef.current = window.setTimeout(() => setHoverOpen(false), 120);
+  }, [cancelClose]);
+  const openNow = useCallback(() => {
+    cancelClose();
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setPanelTop(rect.bottom + 4);
+      setPanelCenterX(rect.left + rect.width / 2);
+    }
+    setHoverOpen(true);
+  }, [cancelClose]);
+  useEffect(() => () => cancelClose(), [cancelClose]);
+
+  const milestone = useMemo(
+    () => (milestoneParam == null ? undefined : milestones?.find((x) => x.id === milestoneParam)),
+    [milestoneParam, milestones],
+  );
+
+  // No sprint-scoped endpoints for efficiency / commits yet; reuse project-level signals
+  // and lazy-fetch only after the hover opens.
+  const gaugesEnabled = hoverOpen && liveProjectId != null && milestone != null;
+  const healthQuery = useQuery({
+    queryKey: ["projects", liveProjectId, "health"],
+    queryFn: () => fetchProjectHealth(liveProjectId!),
+    enabled: gaugesEnabled,
+    staleTime: STALE_TIME_DATA_MS,
+  });
+  const classificationQuery = useQuery({
+    queryKey: ["projects", liveProjectId, "classification-breakdown"],
+    queryFn: () => fetchClassificationBreakdown(liveProjectId!),
+    enabled: gaugesEnabled,
+    staleTime: STALE_TIME_DATA_MS,
+  });
+
   const staticClassName =
     "bg-[#d7fede] content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0";
   if (!isLiveBoard || milestoneParam == null) {
@@ -333,8 +400,7 @@ function SprintBoardHeaderHealthPill({
       </div>
     );
   }
-  const m = milestones?.find((x) => x.id === milestoneParam);
-  if (!m) {
+  if (!milestone) {
     return (
       <div className={`${base} bg-[#f0f3f5]`} data-node-id="7:846">
         <Timer aria-hidden className="relative shrink-0 size-4 text-[#606d76]" strokeWidth={1.5} data-name="lucide/timer" />
@@ -344,21 +410,165 @@ function SprintBoardHeaderHealthPill({
       </div>
     );
   }
-  const pct = m.progress?.completion_percentage ?? 0;
+  const pct = milestone.progress?.completion_percentage ?? 0;
   const { label, bgClass, textClass } = sprintHealthFromCompletionPct(pct);
+  const completedWeight =
+    milestone.progress?.completed_weight ?? milestone.progress?.completed_tasks ?? 0;
+  const totalWeight =
+    milestone.progress?.total_weight ?? milestone.progress?.total_tasks ?? 0;
   return (
-    <div className={`${base} ${bgClass}`} data-node-id="7:846">
-      <Timer
-        aria-hidden
-        className={`relative shrink-0 size-4 ${textClass}`}
-        strokeWidth={1.5}
-        data-name="lucide/timer"
-      />
-      <p
-        className={`font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 ${textClass} text-[14px] whitespace-nowrap`}
+    <>
+      <div
+        ref={triggerRef}
+        className={`${base} ${bgClass} cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1466ff]/40`}
+        data-node-id="7:846"
+        tabIndex={0}
+        aria-label={`${label}. Hover to view sprint gauges.`}
+        onPointerEnter={openNow}
+        onPointerLeave={scheduleClose}
+        onFocus={openNow}
+        onBlur={scheduleClose}
       >
-        {label}
-      </p>
+        <Timer
+          aria-hidden
+          className={`relative shrink-0 size-4 ${textClass}`}
+          strokeWidth={1.5}
+          data-name="lucide/timer"
+        />
+        <p
+          className={`font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 ${textClass} text-[14px] whitespace-nowrap`}
+        >
+          {label}
+        </p>
+      </div>
+      {hoverOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <SprintGaugesHoverPanel
+            topPx={panelTop}
+            centerXPx={panelCenterX}
+            hpsRatio={healthQuery.data?.hps_ratio ?? 0}
+            completedWeight={completedWeight}
+            totalWeight={totalWeight}
+            structuralCommits={classificationQuery.data?.structural ?? 0}
+            incrementalCommits={classificationQuery.data?.incremental ?? 0}
+            trivialCommits={classificationQuery.data?.trivial ?? 0}
+            onPointerEnter={openNow}
+            onPointerLeave={scheduleClose}
+          />,
+          document.body,
+        )}
+    </>
+  );
+}
+
+/**
+ * Hover panel for the sprint status pill. Mirrors the project-level gauge set
+ * (efficiency, tasks, commits) but uses a pill-shaped, space-between layout
+ * per Figma. Portaled to body and pinned to the top of the viewport so it
+ * doesn't get clipped by the header overflow.
+ */
+const SPRINT_GAUGES_PANEL_WIDTH = 815;
+const SPRINT_GAUGES_VIEWPORT_MARGIN = 16;
+
+function SprintGaugesHoverPanel({
+  topPx,
+  centerXPx,
+  hpsRatio,
+  completedWeight,
+  totalWeight,
+  structuralCommits,
+  incrementalCommits,
+  trivialCommits,
+  onPointerEnter,
+  onPointerLeave,
+}: {
+  topPx: number | null;
+  centerXPx: number | null;
+  hpsRatio: number;
+  completedWeight: number;
+  totalWeight: number;
+  structuralCommits: number;
+  incrementalCommits: number;
+  trivialCommits: number;
+  onPointerEnter: () => void;
+  onPointerLeave: () => void;
+}) {
+  const effLabel = efficiencyZoneLabel(hpsRatio);
+  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : SPRINT_GAUGES_PANEL_WIDTH;
+  const minLeft = SPRINT_GAUGES_VIEWPORT_MARGIN + SPRINT_GAUGES_PANEL_WIDTH / 2;
+  const maxLeft = viewportWidth - SPRINT_GAUGES_VIEWPORT_MARGIN - SPRINT_GAUGES_PANEL_WIDTH / 2;
+  const fallbackCenter = viewportWidth / 2;
+  const rawCenter = centerXPx ?? fallbackCenter;
+  const left = Math.max(minLeft, Math.min(maxLeft, rawCenter));
+  return (
+    <div
+      className="pointer-events-none fixed z-[60]"
+      style={{ top: topPx ?? 88, left, transform: "translateX(-50%)" }}
+      role="tooltip"
+    >
+      <div
+        className="pointer-events-auto flex h-[129.59px] w-[815px] max-w-[calc(100vw-2rem)] shrink-0 items-center justify-between rounded-[999px] border border-[#ebedee] bg-white px-12 py-6 shadow-[0px_41.205px_11.537px_0px_rgba(26,59,84,0),0px_26.371px_10.713px_0px_rgba(26,59,84,0.01),0px_14.834px_9.065px_0px_rgba(26,59,84,0.05),0px_6.593px_6.593px_0px_rgba(26,59,84,0.09),0px_1.648px_3.296px_0px_rgba(26,59,84,0.1)]"
+        onPointerEnter={onPointerEnter}
+        onPointerLeave={onPointerLeave}
+      >
+        <div className="flex shrink-0 items-center gap-6">
+          <EfficiencyGauge hps={hpsRatio} />
+          <div className="flex w-[122px] shrink-0 flex-col items-start gap-1">
+            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-[#0b191f]">
+              Efficiency Rate
+            </p>
+            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-[#727d83]">
+              {effLabel}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-6">
+          <TasksGauge completed={completedWeight} total={totalWeight} />
+          <div className="flex w-[124px] shrink-0 flex-col items-start gap-1">
+            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-[#0b191f]">
+              Tasks Completed
+            </p>
+            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] whitespace-nowrap text-[#727d83]">
+              of {Math.round(totalWeight)} Total Points
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-6">
+          <CommitsGauge
+            structural={structuralCommits}
+            incremental={incrementalCommits}
+            trivial={trivialCommits}
+          />
+          <div className="flex shrink-0 flex-col items-start gap-1">
+            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-[#0b191f]">
+              Commits
+            </p>
+            <div className="flex flex-col items-start">
+              <div className="flex items-center gap-1.5">
+                <div className="size-1 rounded-full" style={{ backgroundColor: COMMIT_GAUGE_SHIPPED }} />
+                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-[#727d83]">
+                  Shipped {structuralCommits}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="size-1 rounded-full" style={{ backgroundColor: COMMIT_GAUGE_IN_PROGRESS }} />
+                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-[#727d83]">
+                  In Progress {incrementalCommits}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="size-1 rounded-full" style={{ backgroundColor: COMMIT_GAUGE_TRIVIAL }} />
+                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-[#727d83]">
+                  Trivial {trivialCommits}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -797,6 +1007,7 @@ export function DashboardPlaceholder() {
                     milestoneParam={milestoneParam}
                     milestones={liveMilestonesQuery.data}
                     milestonesLoading={!secondarySprintMetaReady || liveMilestonesQuery.isLoading}
+                    liveProjectId={liveProjectId}
                   />
                   <div className="bg-[#f0f3f5] content-stretch flex gap-[2px] h-[32px] items-center p-[2px] relative rounded-[8px] shrink-0 w-[251px]" data-node-id="7:2868">
                     <Tooltip>

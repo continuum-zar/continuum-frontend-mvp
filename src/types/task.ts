@@ -32,6 +32,25 @@ export function taskPriorityFlagClass(priority?: TaskPriority | null): string {
     return TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.flagColorClass ?? 'text-[#606d76]';
 }
 
+/** A user-defined section beneath the default checklist. Either checklist items or plain text. */
+export type TaskSection =
+    | {
+          id?: string;
+          name: string;
+          type: 'checklist';
+          items: Array<{ id?: string; text: string; done: boolean }>;
+          /** Always null/absent for `type: "checklist"`; kept optional for round-trip tolerance. */
+          text?: string | null;
+      }
+    | {
+          id?: string;
+          name: string;
+          type: 'plain_text';
+          text: string;
+          /** Always null/absent for `type: "plain_text"`; kept optional for round-trip tolerance. */
+          items?: null;
+      };
+
 /** One Git repo + branch pair linked to a task (GET/PUT task payloads). */
 export interface TaskLinkedBranch {
     id?: number;
@@ -59,6 +78,7 @@ export interface TaskAPIResponse {
     scope_weight?: ScopeWeight | null;
     priority?: TaskPriority | null;
     checklists?: Array<{ id?: string; text: string; done: boolean }> | null;
+    sections?: TaskSection[] | null;
     created_at?: string;
     updated_at?: string | null;
     attachment_count?: number;
