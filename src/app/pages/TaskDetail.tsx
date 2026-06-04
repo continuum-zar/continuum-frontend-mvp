@@ -1345,11 +1345,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             {/* ─── Named checklist sections (created via the Checklist + button) ─── */}
             <section className="space-y-4">
               {localSections.map((section, sIdx) => (
-                <div
-                  key={section.id ?? `sec-${sIdx}`}
-                  className="space-y-3 rounded-[8px] border border-[#ebedee] bg-white p-4"
-                >
-                  <div className="flex items-center gap-2">
+                <div key={section.id ?? `sec-${sIdx}`} className="group/section space-y-4">
+                  <div className="flex items-center justify-between gap-2">
                     {editingSectionNameIdx === sIdx ? (
                       <input
                         type="text"
@@ -1361,9 +1358,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                           if (e.key === 'Escape') setEditingSectionNameIdx(null);
                         }}
-                        placeholder="Section name"
+                        placeholder="Checklist title"
                         className="flex-1 border-0 bg-transparent text-[16px] font-medium leading-none text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
-                        aria-label="Section name"
+                        aria-label="Checklist title"
                       />
                     ) : (
                       <button
@@ -1372,76 +1369,64 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                         className="flex-1 cursor-text border-0 bg-transparent p-0 text-left text-[16px] font-medium leading-none text-[#0b191f]"
                         aria-label={`Rename ${section.name}`}
                       >
-                        {section.name || 'Untitled section'}
+                        {section.name || 'Untitled checklist'}
                       </button>
                     )}
                     <button
                       type="button"
                       onClick={() => removeSection(sIdx)}
-                      className="inline-flex size-7 items-center justify-center rounded-[6px] text-[#727d83] transition-colors hover:bg-[#f3f5f7] hover:text-[#b91c1c]"
-                      aria-label={`Delete section ${section.name}`}
+                      className="inline-flex size-7 items-center justify-center rounded-[6px] text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/section:opacity-100"
+                      aria-label={`Delete checklist ${section.name}`}
                     >
                       <X size={14} />
                     </button>
                   </div>
-                  {section.type === 'checklist' ? (
+                  {section.type === 'checklist' && (section.items ?? []).length > 0 ? (
                     <div className="space-y-2">
-                      {(section.items ?? []).length === 0 ? (
-                        <p className="text-[13px] text-[#727d83]">No items yet</p>
-                      ) : (
-                        (section.items ?? []).map((item, itemIdx) => (
-                          <div key={itemIdx} className="flex items-center gap-4">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateChecklistSection(sIdx, (items) =>
-                                  items.map((it, i) => (i === itemIdx ? { ...it, done: !it.done } : it)),
-                                )
+                      {(section.items ?? []).map((item, itemIdx) => (
+                        <div key={itemIdx} className="flex items-center gap-4">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateChecklistSection(sIdx, (items) =>
+                                items.map((it, i) => (i === itemIdx ? { ...it, done: !it.done } : it)),
+                              )
+                            }
+                            aria-pressed={item.done}
+                            className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+                          >
+                            {item.done ? <Check size={13} className="text-white" /> : null}
+                          </button>
+                          <input
+                            type="text"
+                            value={item.text}
+                            onChange={(e) =>
+                              updateChecklistSection(sIdx, (items) =>
+                                items.map((it, i) => (i === itemIdx ? { ...it, text: e.target.value } : it)),
+                              )
+                            }
+                            onBlur={() => {
+                              if (!item.text.trim()) {
+                                updateChecklistSection(sIdx, (items) => items.filter((_, i) => i !== itemIdx));
                               }
-                              aria-pressed={item.done}
-                              className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
-                            >
-                              {item.done ? <Check size={13} className="text-white" /> : null}
-                            </button>
-                            <input
-                              type="text"
-                              value={item.text}
-                              onChange={(e) =>
-                                updateChecklistSection(sIdx, (items) =>
-                                  items.map((it, i) => (i === itemIdx ? { ...it, text: e.target.value } : it)),
-                                )
-                              }
-                              onBlur={() => {
-                                if (!item.text.trim()) {
-                                  updateChecklistSection(sIdx, (items) => items.filter((_, i) => i !== itemIdx));
-                                }
-                              }}
-                              placeholder="Item"
-                              className={`min-w-0 flex-1 border-0 bg-transparent text-[13px] outline-none ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateChecklistSection(sIdx, (items) => items.filter((_, i) => i !== itemIdx))
-                              }
-                              className="inline-flex size-6 items-center justify-center rounded-[6px] text-[#727d83] transition-colors hover:bg-[#f3f5f7] hover:text-[#b91c1c]"
-                              aria-label="Remove item"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ))
-                      )}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateChecklistSection(sIdx, (items) => [...items, { text: '', done: false }])
-                        }
-                        className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
-                      >
-                        <Plus size={12} /> Add item
-                      </button>
+                            }}
+                            placeholder="Item"
+                            className={`min-w-0 flex-1 border-0 bg-transparent text-[13px] outline-none ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
+                          />
+                        </div>
+                      ))}
                     </div>
+                  ) : null}
+                  {section.type === 'checklist' ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateChecklistSection(sIdx, (items) => [...items, { text: '', done: false }])
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+                    >
+                      <Plus size={12} /> Add item
+                    </button>
                   ) : (
                     <textarea
                       value={section.text ?? ''}
