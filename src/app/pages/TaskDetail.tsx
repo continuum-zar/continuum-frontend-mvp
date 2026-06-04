@@ -1145,7 +1145,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <button
                   type="button"
                   onClick={addChecklistItem}
-                  className="flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white shadow-sm"
+                  className="flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] hover:text-[#0b191f]"
                 >
                   <Plus size={16} />
                 </button>
@@ -1210,7 +1210,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <button
                   type="button"
                   onClick={startAddTag}
-                  className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                  className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] hover:text-[#0b191f]"
                 >
                   <Tag size={14} />
                 </button>
@@ -1402,7 +1402,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <button
                   type="button"
                   onClick={() => setAssignModalOpen(true)}
-                  className="inline-flex size-10 items-center justify-center rounded-[12px] border border-[#ebedee] bg-white text-[#0b191f] shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                  className="inline-flex size-10 items-center justify-center rounded-[12px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] hover:text-[#0b191f]"
                 >
                   <UserRoundPlus size={16} />
                 </button>
@@ -1555,7 +1555,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <button
                 type="button"
                 onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb]"
               >
                 <span className="text-[16px] font-medium text-[#0b191f]">{statusLabelFromBoard(status, boardColumns)}</span>
                 <ChevronDown size={16} />
@@ -1586,7 +1586,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <button
                 type="button"
                 onClick={() => setPriorityDropdownOpen(!priorityDropdownOpen)}
-                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb]"
               >
                 <span className="flex items-center gap-2 text-[16px] font-medium text-[#0b191f]">
                   <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
@@ -1621,7 +1621,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <button
                 type="button"
                 onClick={() => setScopeDropdownOpen(!scopeDropdownOpen)}
-                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb]"
               >
                 <span className="text-[16px] font-medium text-[#0b191f]">{scopeLabel(scope)}</span>
                 <ChevronDown size={16} />
