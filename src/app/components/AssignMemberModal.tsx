@@ -218,7 +218,14 @@ export function AssignMemberModal({
                       return (
                         <li
                           key={m.id}
-                          className="flex w-full flex-wrap items-center gap-4 sm:flex-nowrap"
+                          onClick={() => {
+                            if (assignBusy) return;
+                            toggleMember(m.userId, !isAssigned);
+                          }}
+                          className={cn(
+                            "flex w-full flex-wrap items-center gap-4 rounded-md p-1 -m-1 sm:flex-nowrap",
+                            assignBusy ? "cursor-not-allowed" : "cursor-pointer hover:bg-muted/40",
+                          )}
                         >
                           <div
                             className="flex size-8 shrink-0 items-center justify-center rounded-full border border-background text-xs font-medium text-white"
@@ -247,7 +254,10 @@ export function AssignMemberModal({
                               aria-checked={isAssigned}
                               aria-labelledby={`${rowId}-label`}
                               disabled={assignBusy}
-                              onClick={() => toggleMember(m.userId, !isAssigned)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleMember(m.userId, !isAssigned);
+                              }}
                               className={cn(
                                 "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40",
                                 isAssigned
@@ -265,7 +275,10 @@ export function AssignMemberModal({
                                 type="button"
                                 className="shrink-0 font-['Inter',sans-serif] text-[13px] font-medium text-[#727d83] transition-colors hover:text-[#0b191f] disabled:pointer-events-none disabled:opacity-50"
                                 disabled={assignBusy}
-                                onClick={() => handleUnassignOne(m.userId)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUnassignOne(m.userId);
+                                }}
                               >
                                 Unassign
                               </button>
