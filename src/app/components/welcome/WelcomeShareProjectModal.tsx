@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useAddMember, useProjectMembers } from "@/api/hooks";
 import { projectMainHref } from "@/app/data/dashboardPlaceholderProjects";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 
 import {
@@ -74,15 +75,6 @@ const MEMBER_ROWS = [
 ] as const;
 
 const ROLE_OPTIONS = ["Developer", "Client", "Project Manager"] as const;
-
-const AVATAR_BGS = [
-  "bg-[#e19c02]",
-  "bg-[#f5c542]",
-  "bg-[#3b82f6]",
-  "bg-[#8b5cf6]",
-  "bg-[#10b981]",
-  "bg-[#f17173]",
-];
 
 function normalizeRole(r: string): ProjectMemberRoleValue {
   const k = (r || "").toLowerCase().replace(/\s+/g, "_");
@@ -291,7 +283,7 @@ export function WelcomeShareProjectModal({
                     ) : isLive ? (
                       liveMembers.map((m) => {
                         const { primary, secondary } = memberDisplayLines(m);
-                        const bg = AVATAR_BGS[m.id % AVATAR_BGS.length];
+                        const bg = memberAvatarBackground(m.userId);
                         const rVal = normalizeRole(m.role);
                         return (
                           <div
@@ -299,10 +291,8 @@ export function WelcomeShareProjectModal({
                             className="flex w-full items-center gap-2 overflow-hidden rounded-[8px] pr-2"
                           >
                             <div
-                              className={cn(
-                                "flex size-8 shrink-0 items-center justify-center rounded-[999px] border-[1.333px] border-solid border-white text-white",
-                                bg,
-                              )}
+                              className="flex size-8 shrink-0 items-center justify-center rounded-[999px] border-[1.333px] border-solid border-white text-white"
+                              style={{ backgroundColor: bg }}
                               aria-hidden
                             >
                               <span className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-[0.4]">
