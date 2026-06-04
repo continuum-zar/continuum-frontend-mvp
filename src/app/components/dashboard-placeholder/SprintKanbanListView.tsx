@@ -137,7 +137,7 @@ export function SprintKanbanListView({
           />
         ) : (
         <div
-          className="list-kanban-drag-surface bg-white content-stretch flex w-full gap-[24px] border-b border-[#ebedee] border-solid px-[16px] py-[6px] text-left transition-colors hover:bg-[#fafbfc]"
+          className="list-kanban-drag-surface bg-white flex w-full items-center gap-[24px] border-b border-[#ebedee] border-solid px-[16px] py-[6px] text-left transition-colors hover:bg-[#fafbfc]"
         >
         <div className="content-stretch flex w-[380px] shrink-0 flex-col gap-1.5">
           <div className="flex min-w-0 items-center gap-[8px]">
