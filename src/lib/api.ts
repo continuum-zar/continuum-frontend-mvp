@@ -49,13 +49,17 @@ function readAuthTokensFromStorage(): {
 }
 
 /**
- * Backend expects `refresh_token` in the JSON request body.
+ * Backend expects `refresh_token` as a query parameter (OpenAPI: no request body).
+ * @see continuum-backend Postman + tests using `params={"refresh_token": ...}`.
  */
 async function postRefresh(refreshToken: string) {
     return axios.post<{ access_token: string; refresh_token: string; token_type?: string }>(
         `${apiBaseURL}/auth/refresh-token`,
-        { refresh_token: refreshToken },
-        { timeout: 30_000 },
+        null,
+        {
+            params: { refresh_token: refreshToken },
+            timeout: 30_000,
+        }
     );
 }
 
