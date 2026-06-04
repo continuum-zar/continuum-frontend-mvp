@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   Flag,
+  GitBranch,
   GripVertical,
   Plus,
   Tag,
@@ -22,7 +23,9 @@ import {
   DialogPortal,
 } from "./ui/dialog";
 import { cn } from "./ui/utils";
-import { useCreateTask, useProjectMembers } from "@/api/hooks";
+import { useCreateTask, useProjectMembers, useProjectTasks } from "@/api/hooks";
+import { setTaskAssignees } from "@/api/tasks";
+import { toast } from "sonner";
 import { formatEstimatedEffortLabel } from "@/api";
 import {
   TASK_PRIORITY_OPTIONS,
@@ -106,6 +109,7 @@ export function CreateTaskLiveModal({
 }: CreateTaskLiveModalProps) {
   const createTaskMutation = useCreateTask();
   const { data: members } = useProjectMembers(projectId, { enabled: open });
+  const { data: projectTasks } = useProjectTasks(open ? projectId : null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -123,13 +127,18 @@ export function CreateTaskLiveModal({
   const [priorityOpen, setPriorityOpen] = useState(false);
   const [scope, setScope] = useState<ScopeWeight>("M");
   const [scopeOpen, setScopeOpen] = useState(false);
-  const [assignedTo, setAssignedTo] = useState<number | null>(null);
+  const [assignedUserIds, setAssignedUserIds] = useState<number[]>([]);
   const [assignOpen, setAssignOpen] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
+  const [selectedDependencyIds, setSelectedDependencyIds] = useState<number[]>([]);
+  const [dependencyPickerOpen, setDependencyPickerOpen] = useState(false);
+  const [dependencySearch, setDependencySearch] = useState("");
 
   const titleRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
   const effortInputRef = useRef<HTMLInputElement>(null);
+  const dependencyPickerRef = useRef<HTMLDivElement>(null);
+  const assignDropdownRef = useRef<HTMLDivElement>(null);
   const descriptionTextareaRef = useAutosizeTextarea(description, {
     minPx: 72,
     maxPx: 400,
@@ -151,9 +160,12 @@ export function CreateTaskLiveModal({
     setPriorityOpen(false);
     setScope("M");
     setScopeOpen(false);
-    setAssignedTo(null);
+    setAssignedUserIds([]);
     setAssignOpen(false);
     setMemberSearch("");
+    setSelectedDependencyIds([]);
+    setDependencyPickerOpen(false);
+    setDependencySearch("");
   }, []);
 
   const handleOpenChange = (next: boolean) => {
@@ -178,6 +190,34 @@ export function CreateTaskLiveModal({
       setPendingFocusChecklistId(null);
     }
   }, [pendingFocusChecklistId, checklists]);
+
+  useEffect(() => {
+    if (!dependencyPickerOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const root = dependencyPickerRef.current;
+      if (!root) return;
+      if (!root.contains(e.target as Node)) {
+        setDependencyPickerOpen(false);
+        setDependencySearch("");
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [dependencyPickerOpen]);
+
+  useEffect(() => {
+    if (!assignOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const root = assignDropdownRef.current;
+      if (!root) return;
+      if (!root.contains(e.target as Node)) {
+        setAssignOpen(false);
+        setMemberSearch("");
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [assignOpen]);
 
   const updateChecklistText = useCallback((id: string, text: string) => {
     setChecklists((prev) => prev.map((r) => (r.id === id ? { ...r, text } : r)));
@@ -356,7 +396,7 @@ export function CreateTaskLiveModal({
         scope_weight: scope,
         due_date: null,
         estimated_hours: estimatedHours,
-        assigned_to: assignedTo,
+        assigned_to: assignedUserIds[0] ?? null,
         milestone_id: milestoneId ? Number(milestoneId) : null,
         checklists: checklists
           .filter((c) => c.text.trim())
@@ -370,9 +410,17 @@ export function CreateTaskLiveModal({
           })
           .filter((s): s is TaskSection => s !== null),
         labels: tags.length > 0 ? tags : null,
+        dependencies: selectedDependencyIds.length > 0 ? selectedDependencyIds : null,
       },
       {
-        onSuccess: () => {
+        onSuccess: async (created) => {
+          if (assignedUserIds.length > 1 && created?.id != null) {
+            try {
+              await setTaskAssignees(created.id, assignedUserIds);
+            } catch {
+              toast.error("Task created, but assigning all members failed");
+            }
+          }
           reset();
           onOpenChange(false);
         },
@@ -380,9 +428,26 @@ export function CreateTaskLiveModal({
     );
   };
 
-  const assignedMember = assignedTo != null
-    ? (members ?? []).find((m) => m.userId === assignedTo)
-    : undefined;
+  const assignedSet = new Set(assignedUserIds);
+  const assignedMembers = assignedUserIds
+    .map((uid) => (members ?? []).find((m) => m.userId === uid))
+    .filter((m): m is NonNullable<typeof m> => m != null);
+
+  const toggleAssignee = (userId: number) => {
+    setAssignedUserIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
+    );
+  };
+
+  const dependencyOptions = (projectTasks ?? []).filter((t) => {
+    const q = dependencySearch.trim().toLowerCase();
+    if (!q) return true;
+    return t.title.toLowerCase().includes(q);
+  });
+  const selectedDependencyTasks = selectedDependencyIds.map((id) => {
+    const match = (projectTasks ?? []).find((t) => Number(t.id) === id);
+    return { id, title: match?.title ?? `Task #${id}` };
+  });
 
   const filteredMembers = (members ?? []).filter((m) => {
     if (!memberSearch.trim()) return true;
@@ -666,7 +731,7 @@ export function CreateTaskLiveModal({
               {DIVIDER}
 
               {/* ── Assigned to ── */}
-              <div className="flex w-full flex-col gap-4">
+              <div ref={assignDropdownRef} className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
                   <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
                     Assigned to
@@ -693,36 +758,41 @@ export function CreateTaskLiveModal({
                       />
                     </div>
                     <div className="scrollbar-hide max-h-[180px] overflow-y-auto">
-                      {filteredMembers.map((m) => (
-                        <button
-                          key={m.userId}
-                          type="button"
-                          onClick={() => {
-                            setAssignedTo(assignedTo === m.userId ? null : m.userId);
-                            setAssignOpen(false);
-                            setMemberSearch("");
-                          }}
-                          className={cn(
-                            "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[#f5f7f8]",
-                            assignedTo === m.userId && "bg-[#f0f8ff]",
-                          )}
-                        >
-                          <div
-                            className="flex size-[28px] shrink-0 items-center justify-center rounded-full"
-                            style={{ backgroundColor: memberAvatarBackground(m.userId) }}
+                      {filteredMembers.map((m) => {
+                        const checked = assignedSet.has(m.userId);
+                        return (
+                          <button
+                            key={m.userId}
+                            type="button"
+                            onClick={() => toggleAssignee(m.userId)}
+                            className={cn(
+                              "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[#f5f7f8]",
+                              checked && "bg-[#f0f8ff]",
+                            )}
                           >
-                            <span className="font-['Satoshi',sans-serif] text-[10px] font-medium text-white">
-                              {m.initials}
+                            <div
+                              className="flex size-[28px] shrink-0 items-center justify-center rounded-full"
+                              style={{ backgroundColor: memberAvatarBackground(m.userId) }}
+                            >
+                              <span className="font-['Satoshi',sans-serif] text-[10px] font-medium text-white">
+                                {m.initials}
+                              </span>
+                            </div>
+                            <span className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] text-[#0b191f]">
+                              {m.name}
                             </span>
-                          </div>
-                          <span className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] text-[#0b191f]">
-                            {m.name}
-                          </span>
-                          {assignedTo === m.userId && (
-                            <Check size={16} className="shrink-0 text-[#24B5F8]" />
-                          )}
-                        </button>
-                      ))}
+                            <div
+                              className={cn(
+                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black transition-colors",
+                                checked ? "bg-[#24B5F8]" : "bg-white",
+                              )}
+                              aria-hidden
+                            >
+                              {checked && <Check className="size-[13px] text-white" strokeWidth={2.5} />}
+                            </div>
+                          </button>
+                        );
+                      })}
                       {filteredMembers.length === 0 && (
                         <p className="px-3 py-4 text-center font-['Satoshi',sans-serif] text-[13px] text-[#a3aab0]">
                           No members found
@@ -732,30 +802,150 @@ export function CreateTaskLiveModal({
                   </div>
                 )}
 
-                {assignedMember && !assignOpen && (
-                  <div className="flex items-center gap-3">
-                    <div className="relative inline-flex shrink-0">
-                      <div
-                        className="flex size-[36px] items-center justify-center rounded-full border-[1.5px] border-solid border-white"
-                        style={{ backgroundColor: memberAvatarBackground(assignedMember.userId) }}
-                      >
-                        <span className="font-['Satoshi',sans-serif] text-[13.5px] font-medium leading-none text-white">
-                          {assignedMember.initials}
+                {assignedMembers.length > 0 && !assignOpen && (
+                  <div className="flex w-full flex-wrap items-center gap-3">
+                    {assignedMembers.map((m) => (
+                      <div key={m.userId} className="group flex items-center gap-2">
+                        <div className="relative inline-flex shrink-0">
+                          <div
+                            className="flex size-[36px] items-center justify-center rounded-full border-[1.5px] border-solid border-white"
+                            style={{ backgroundColor: memberAvatarBackground(m.userId) }}
+                          >
+                            <span className="font-['Satoshi',sans-serif] text-[13.5px] font-medium leading-none text-white">
+                              {m.initials}
+                            </span>
+                          </div>
+                          <span className="absolute -right-px -bottom-px flex size-[12px] items-center justify-center rounded-full border-[1.5px] border-solid border-white bg-black">
+                            <Check size={7} className="text-white" strokeWidth={3} />
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => toggleAssignee(m.userId)}
+                            aria-label={`Remove ${m.name} from this task`}
+                            className="absolute -top-1 -right-1 inline-flex size-[18px] items-center justify-center rounded-full border-2 border-white bg-[#0b191f] text-white opacity-0 shadow-[0px_1px_2px_0px_rgba(14,14,34,0.18)] transition-opacity hover:bg-[#1a2d36] focus-visible:opacity-100 group-hover:opacity-100"
+                          >
+                            <X size={10} strokeWidth={2.5} aria-hidden />
+                          </button>
+                        </div>
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                          {m.name}
                         </span>
                       </div>
-                      <span className="absolute -right-px -bottom-px flex size-[12px] items-center justify-center rounded-full border-[1.5px] border-solid border-white bg-black">
-                        <Check size={7} className="text-white" strokeWidth={3} />
-                      </span>
-                    </div>
-                    <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
-                      {assignedMember.name}
-                    </span>
+                    ))}
                   </div>
                 )}
-                {!assignedMember && !assignOpen && (
+                {assignedMembers.length === 0 && !assignOpen && (
                   <p className="font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
                     No one assigned
                   </p>
+                )}
+              </div>
+
+              {DIVIDER}
+
+              {/* ── Dependencies ── */}
+              <div ref={dependencyPickerRef} className="flex w-full flex-col gap-4">
+                <div className="flex w-full items-center justify-between">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    Dependencies
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDependencyPickerOpen((v) => !v);
+                      setDependencySearch("");
+                    }}
+                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    aria-label="Add dependency"
+                    aria-expanded={dependencyPickerOpen}
+                  >
+                    <GitBranch size={16} className="text-[#0b191f]" />
+                  </button>
+                </div>
+
+                {dependencyPickerOpen && (
+                  <div className="rounded-[8px] border border-solid border-[#ebedee] bg-white shadow-lg">
+                    <div className="flex items-center gap-2 border-b border-solid border-[#f0f0f0] px-3 py-2">
+                      <input
+                        type="text"
+                        value={dependencySearch}
+                        onChange={(e) => setDependencySearch(e.target.value)}
+                        placeholder="Search tasks..."
+                        className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] text-[#0b191f] outline-none placeholder:text-[#a3aab0]"
+                      />
+                    </div>
+                    <div className="scrollbar-hide max-h-[200px] overflow-y-auto">
+                      {dependencyOptions.map((t) => {
+                        const optId = Number(t.id);
+                        const checked = Number.isFinite(optId) && selectedDependencyIds.includes(optId);
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => {
+                              if (!Number.isFinite(optId)) return;
+                              setSelectedDependencyIds((prev) =>
+                                checked ? prev.filter((id) => id !== optId) : [...prev, optId],
+                              );
+                            }}
+                            className={cn(
+                              "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[#f5f7f8]",
+                              checked && "bg-[#f0f8ff]",
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black transition-colors",
+                                checked ? "bg-[#24B5F8]" : "bg-white",
+                              )}
+                              aria-hidden
+                            >
+                              {checked && <Check className="size-[13px] text-white" strokeWidth={2.5} />}
+                            </div>
+                            <span className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] text-[#0b191f]">
+                              {t.title}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      {dependencyOptions.length === 0 && (
+                        <p className="px-3 py-4 text-center font-['Satoshi',sans-serif] text-[13px] text-[#a3aab0]">
+                          {projectTasks == null ? "Loading tasks..." : "No tasks found"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {selectedDependencyTasks.length > 0 ? (
+                  <div className="flex w-full flex-wrap content-start items-start gap-2">
+                    {selectedDependencyTasks.map((dep) => (
+                      <span
+                        key={dep.id}
+                        className="group inline-flex max-w-full items-center gap-1.5 rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5"
+                      >
+                        <p className="min-w-0 truncate font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76]">
+                          {dep.title}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedDependencyIds((prev) => prev.filter((id) => id !== dep.id))
+                          }
+                          className="ml-0.5 inline-flex items-center justify-center border-0 bg-transparent p-0 text-[#606d76] hover:text-red-500"
+                          aria-label={`Remove dependency ${dep.title}`}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  !dependencyPickerOpen && (
+                    <p className="font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
+                      No dependencies
+                    </p>
+                  )
                 )}
               </div>
 
