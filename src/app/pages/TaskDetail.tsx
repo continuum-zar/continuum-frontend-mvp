@@ -44,6 +44,7 @@ import {
   useProjectTasks,
   useTaskCommentsInfinite,
   useCreateTaskComment,
+  useSetTaskAssignees,
 } from '@/api';
 import { getApiErrorMessage, useTaskLoggedHoursTotal } from '@/api/hooks';
 import type { Attachment } from '@/types/attachment';
@@ -502,6 +503,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [resourceModalOpen, setResourceModalOpen] = useState(false);
   const [pendingUploadRows, setPendingUploadRows] = useState<TaskResourcePendingUploadRow[]>([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const setAssigneesMutation = useSetTaskAssignees();
   const [dependencyModalOpen, setDependencyModalOpen] = useState(false);
   const [dependencySearch, setDependencySearch] = useState('');
   const [selectedDependencies, setSelectedDependencies] = useState<number[]>([]);
@@ -1014,6 +1016,12 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     if (taskId) updateTaskMutation.mutate({ taskId, priority: newPriority });
   };
 
+  /** Remove a single assignee inline — saves to the backend immediately (optimistic, with toast on success/error). */
+  const handleRemoveAssignee = (uid: number) => {
+    if (!taskId || setAssigneesMutation.isPending) return;
+    setAssigneesMutation.mutate({ taskId, userIds: assigneeUserIds.filter((id) => id !== uid) });
+  };
+
   const handlePostComment = () => {
     const trimmed = commentDraft.trim();
     if (!trimmed || !taskId) return;
@@ -1413,30 +1421,35 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 ) : (
                   assigneeUserIds.map((uid) => {
                     const m = members?.find((mem) => mem.userId === uid);
+                    const displayName = m?.name ?? `User #${uid}`;
                     return (
                       <div key={uid} className="flex items-center gap-2">
-                        {m ? (
-                          <div className="relative">
-                            <div
-                              className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
-                              style={{ backgroundColor: memberAvatarBackground(m.userId) }}
-                              title={m.name}
-                            >
-                              {m.initials}
-                            </div>
-                            <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-white bg-black">
-                              <Check size={10} className="text-white" aria-hidden />
-                            </div>
-                          </div>
-                        ) : (
+                        <div className="group/avatar relative">
                           <div
                             className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
-                            style={{ backgroundColor: memberAvatarBackground(uid) }}
-                            title={`User #${uid}`}
+                            style={{ backgroundColor: memberAvatarBackground(m?.userId ?? uid) }}
+                            title={displayName}
                           >
-                            U{uid}
+                            {m ? m.initials : `U${uid}`}
                           </div>
-                        )}
+                          {m ? (
+                            <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-white bg-black transition-opacity group-hover/avatar:opacity-0 group-focus-within/avatar:opacity-0">
+                              <Check size={10} className="text-white" aria-hidden />
+                            </div>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveAssignee(uid);
+                            }}
+                            disabled={setAssigneesMutation.isPending}
+                            aria-label={`Remove ${displayName} from this task`}
+                            className="absolute -top-1 -right-1 inline-flex size-[18px] items-center justify-center rounded-full border-2 border-white bg-[#0b191f] text-white opacity-0 shadow-[0px_1px_2px_0px_rgba(14,14,34,0.18)] transition-opacity hover:bg-[#1a2d36] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/40 group-hover/avatar:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <X size={10} strokeWidth={2.5} aria-hidden />
+                          </button>
+                        </div>
                       </div>
                     );
                   })
