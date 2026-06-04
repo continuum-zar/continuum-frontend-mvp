@@ -73,8 +73,6 @@ const SprintKanbanListView = lazy(() =>
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgLucideSearch1 = mcpAsset("c5ee61c3-f628-42e7-b456-58f9c49a5cfe");
-/** Plus icon — To-do column “Create task” (same asset as mock Get started kanban, DashboardPlaceholder). */
-const imgVector11 = mcpAsset("4912f83a-d378-4c38-9bf2-ce38aa20cc19");
 const imgLucideSquircleDashed = mcpAsset("e2efeca9-31cd-4cf9-ac56-b2799ee8a450");
 const imgLucideCircleCheckBig = mcpAsset("244bb570-3aed-481d-8cf9-f067c69c50b0");
 
@@ -782,7 +780,6 @@ export function GetStartedKanbanLive({
         searchIconSrc={imgLucideSearch1}
         showCreateTask={showCreateTask}
         onCreateTask={() => openCreateTaskInColumn(col.id)}
-        createIconSrc={imgVector11}
         kebabMenu={renderColumnKebabMenu(col)}
       />
     );
