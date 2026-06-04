@@ -730,6 +730,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const tagInputRef = useRef<HTMLInputElement>(null);
   const effortInputRef = useRef<HTMLInputElement>(null);
   const checklistInputRef = useRef<HTMLInputElement>(null);
+  const checklistClickTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     checklistInflightRef.current = false;
@@ -885,6 +886,37 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       checklistInputRef.current?.select();
     }, 0);
   };
+
+  /** Single click toggles the checkbox; a follow-up second click within 250ms cancels and starts editing instead. */
+  const handleChecklistRowClick = (idx: number) => {
+    if (editingChecklistIdx === idx) return;
+    if (checklistClickTimerRef.current != null) {
+      window.clearTimeout(checklistClickTimerRef.current);
+      checklistClickTimerRef.current = null;
+      return;
+    }
+    checklistClickTimerRef.current = window.setTimeout(() => {
+      checklistClickTimerRef.current = null;
+      toggleChecklist(idx);
+    }, 250);
+  };
+
+  const handleChecklistRowDoubleClick = (idx: number) => {
+    if (checklistClickTimerRef.current != null) {
+      window.clearTimeout(checklistClickTimerRef.current);
+      checklistClickTimerRef.current = null;
+    }
+    startEditChecklist(idx);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (checklistClickTimerRef.current != null) {
+        window.clearTimeout(checklistClickTimerRef.current);
+        checklistClickTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const saveChecklistEdit = () => {
     if (editingChecklistIdx === null) return;
@@ -1122,35 +1154,51 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <p className="text-[13px] text-[#727d83]">No checklist items yet</p>
               ) : (
                 <div className="space-y-2">
-                  {localChecklists.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-4">
-                      <button
-                        type="button"
-                        onClick={() => toggleChecklist(idx)}
-                        className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+                  {localChecklists.map((item, idx) => {
+                    const isEditing = editingChecklistIdx === idx;
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex items-center gap-4 rounded-md -mx-1 px-1 py-0.5 ${isEditing ? '' : 'cursor-pointer select-none hover:bg-[#f3f5f7]'}`}
+                        onClick={isEditing ? undefined : () => handleChecklistRowClick(idx)}
+                        onDoubleClick={isEditing ? undefined : () => handleChecklistRowDoubleClick(idx)}
                       >
-                        {item.done ? <Check size={13} className="text-white" /> : null}
-                      </button>
-                      {editingChecklistIdx === idx ? (
-                        <input
-                          ref={checklistInputRef}
-                          type="text"
-                          value={checklistDraft}
-                          onChange={(e) => setChecklistDraft(e.target.value)}
-                          onBlur={saveChecklistEdit}
-                          onKeyDown={(e) => { if (e.key === 'Enter') saveChecklistEdit(); if (e.key === 'Escape') setEditingChecklistIdx(null); }}
-                          className="min-w-0 flex-1 border-0 bg-transparent font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none"
-                        />
-                      ) : (
-                        <p
-                          className={`min-w-0 flex-1 cursor-text font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
-                          onClick={() => startEditChecklist(idx)}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChecklistRowClick(idx);
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            handleChecklistRowDoubleClick(idx);
+                          }}
+                          aria-pressed={item.done}
+                          className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
                         >
-                          {item.text}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                          {item.done ? <Check size={13} className="text-white" /> : null}
+                        </button>
+                        {isEditing ? (
+                          <input
+                            ref={checklistInputRef}
+                            type="text"
+                            value={checklistDraft}
+                            onChange={(e) => setChecklistDraft(e.target.value)}
+                            onBlur={saveChecklistEdit}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveChecklistEdit(); if (e.key === 'Escape') setEditingChecklistIdx(null); }}
+                            className="min-w-0 flex-1 border-0 bg-transparent font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none"
+                          />
+                        ) : (
+                          <p
+                            className={`min-w-0 flex-1 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
+                          >
+                            {item.text}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>
