@@ -334,7 +334,7 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
               </div>
             </section>
 
-            <section className="space-y-4 pb-2">
+            <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-[16px] font-medium text-[#0b191f]">Assigned to</p>
                 <button

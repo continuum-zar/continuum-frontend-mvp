@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 import { cn } from "@/app/components/ui/utils";
 import { kanbanColumnAutoSortInfo, type KanbanColumnConfig } from "./kanbanBoardTypes";
@@ -24,8 +24,6 @@ export type KanbanBoardColumnHeaderProps = {
   onCreateTask: () => void;
   /** Kebab menu (column options). */
   kebabMenu: ReactNode;
-  /** Plus / create asset (same as existing board control). */
-  createIconSrc: string;
 };
 
 /**
@@ -45,7 +43,6 @@ export function KanbanBoardColumnHeader({
   showCreateTask,
   onCreateTask,
   kebabMenu,
-  createIconSrc,
 }: KanbanBoardColumnHeaderProps) {
   const containerRef = useKanbanColumnSearchDismiss(searchOpen, onSearchClose);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -101,23 +98,6 @@ export function KanbanBoardColumnHeader({
             </button>
           )}
           {kebabMenu}
-          {showCreateTask ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCreateTask();
-              }}
-              className="content-stretch flex shrink-0 cursor-pointer items-center overflow-clip border-0 bg-transparent p-[5px] relative rounded-[6px]"
-              aria-label="Create task"
-            >
-              <div className="relative shrink-0 size-[14px]">
-                <div className="absolute inset-[-5.36%]">
-                  <img alt="" className="block max-w-none size-full" src={createIconSrc} />
-                </div>
-              </div>
-            </button>
-          ) : null}
         </div>
       </div>
       {searchOpen ? (
@@ -131,6 +111,20 @@ export function KanbanBoardColumnHeader({
           className="h-8 w-full min-w-0 rounded-[8px] border border-[#e9e9e9] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-[#0b191f]/10"
           aria-label="Filter tasks in this column"
         />
+      ) : null}
+      {showCreateTask ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCreateTask();
+          }}
+          className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] border border-dashed border-[#cdd2d5] bg-white/60 px-3 font-['Satoshi:Medium',sans-serif] text-[13px] text-[#606d76] transition-colors hover:border-[#0b191f]/25 hover:bg-white hover:text-[#0b191f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/15"
+          aria-label={`Create task in ${col.title}`}
+        >
+          <Plus className="size-[14px]" strokeWidth={2} aria-hidden />
+          <span>Create task</span>
+        </button>
       ) : null}
     </div>
   );

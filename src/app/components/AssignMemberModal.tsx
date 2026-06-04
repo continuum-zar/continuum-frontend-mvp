@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, Search, X } from "lucide-react";
 
 import { useProjectMembers, useSetTaskAssignees } from "@/api/hooks";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Member } from "@/types/member";
 
 import {
@@ -14,15 +15,6 @@ import {
   DialogPortal,
 } from "./ui/dialog";
 import { cn } from "./ui/utils";
-
-const AVATAR_BGS = [
-  "bg-[#e19c02]",
-  "bg-[#f5c542]",
-  "bg-[#3b82f6]",
-  "bg-[#8b5cf6]",
-  "bg-[#10b981]",
-  "bg-[#f17173]",
-];
 
 function memberDisplayLines(m: Member): { primary: string; secondary: string } {
   const email = m.email?.trim() ?? "";
@@ -219,20 +211,25 @@ export function AssignMemberModal({
                   >
                     {sortedFiltered.map((m) => {
                       const { primary, secondary } = memberDisplayLines(m);
-                      const bg = AVATAR_BGS[m.id % AVATAR_BGS.length];
+                      const bg = memberAvatarBackground(m.userId);
                       const isAssigned = draftSet.has(m.userId);
                       const rowId = `assign-member-${m.id}`;
                       const assignBusy = setAssigneesMutation.isPending || !taskId;
                       return (
                         <li
                           key={m.id}
-                          className="flex w-full flex-wrap items-center gap-4 sm:flex-nowrap"
+                          onClick={() => {
+                            if (assignBusy) return;
+                            toggleMember(m.userId, !isAssigned);
+                          }}
+                          className={cn(
+                            "flex w-full flex-wrap items-center gap-4 rounded-md p-1 -m-1 sm:flex-nowrap",
+                            assignBusy ? "cursor-not-allowed" : "cursor-pointer hover:bg-muted/40",
+                          )}
                         >
                           <div
-                            className={cn(
-                              "flex size-8 shrink-0 items-center justify-center rounded-full border border-background text-xs font-medium text-white",
-                              bg,
-                            )}
+                            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-background text-xs font-medium text-white"
+                            style={{ backgroundColor: bg }}
                             aria-hidden
                           >
                             {m.initials}
@@ -257,7 +254,10 @@ export function AssignMemberModal({
                               aria-checked={isAssigned}
                               aria-labelledby={`${rowId}-label`}
                               disabled={assignBusy}
-                              onClick={() => toggleMember(m.userId, !isAssigned)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleMember(m.userId, !isAssigned);
+                              }}
                               className={cn(
                                 "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40",
                                 isAssigned
@@ -275,7 +275,10 @@ export function AssignMemberModal({
                                 type="button"
                                 className="shrink-0 font-['Inter',sans-serif] text-[13px] font-medium text-[#727d83] transition-colors hover:text-[#0b191f] disabled:pointer-events-none disabled:opacity-50"
                                 disabled={assignBusy}
-                                onClick={() => handleUnassignOne(m.userId)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUnassignOne(m.userId);
+                                }}
                               >
                                 Unassign
                               </button>
