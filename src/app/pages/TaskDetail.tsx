@@ -16,6 +16,7 @@ import {
   Download,
   FileText,
   Flag,
+  GripVertical,
   Link2,
   Loader2,
   Plus,
@@ -70,6 +71,7 @@ import {
 } from '../components/AddTaskResourceModal';
 import { TaskLinkedBranchesSection } from '../components/TaskLinkedBranchesSection';
 import { AssignMemberModal } from '../components/AssignMemberModal';
+import { useChecklistItemDrag, reorderChecklistItems } from '@/lib/useChecklistItemDrag';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -435,6 +437,62 @@ function TaskNotFound() {
           Go to board
         </button>
       </div>
+    </div>
+  );
+}
+
+type NamedChecklistItem = { id?: string; text: string; done: boolean };
+
+/** Render the items of a single named checklist section with drag-handle reordering. */
+function NamedSectionChecklistItems({
+  items,
+  onItemsChange,
+}: {
+  items: NamedChecklistItem[];
+  onItemsChange: (next: NamedChecklistItem[]) => void;
+}) {
+  const drag = useChecklistItemDrag((from, to) => onItemsChange(reorderChecklistItems(items, from, to)));
+  return (
+    <div className="space-y-2">
+      {items.map((item, itemIdx) => {
+        const isDragging = drag.draggingIdx === itemIdx;
+        const isTarget =
+          drag.draggingIdx !== null && drag.draggingIdx !== itemIdx && drag.overIdx === itemIdx;
+        return (
+          <div
+            key={itemIdx}
+            data-checklist-row
+            className={`group/row flex items-center gap-2 rounded-md -mx-1 px-1 py-0.5 ${isDragging ? 'opacity-40' : ''} ${isTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
+          >
+            <button
+              type="button"
+              onPointerDown={drag.onHandlePointerDown(itemIdx)}
+              aria-label="Reorder checklist item"
+              className="inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
+            >
+              <GripVertical size={14} strokeWidth={2} aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={() => onItemsChange(items.map((it, i) => (i === itemIdx ? { ...it, done: !it.done } : it)))}
+              aria-pressed={item.done}
+              className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+            >
+              {item.done ? <Check size={13} className="text-white" /> : null}
+            </button>
+            <input
+              type="text"
+              value={item.text}
+              onChange={(e) => onItemsChange(items.map((it, i) => (i === itemIdx ? { ...it, text: e.target.value } : it)))}
+              onBlur={() => {
+                if (!item.text.trim()) onItemsChange(items.filter((_, i) => i !== itemIdx));
+              }}
+              placeholder="Item"
+              className={`min-w-0 flex-1 border-0 bg-transparent text-[13px] outline-none ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1023,6 +1081,10 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     startEditChecklist(idx);
   };
 
+  const defaultChecklistDrag = useChecklistItemDrag((from, to) => {
+    saveChecklists(reorderChecklistItems(localChecklists, from, to));
+  });
+
   useEffect(() => {
     return () => {
       if (checklistClickTimerRef.current != null) {
@@ -1288,13 +1350,29 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <div className="space-y-2">
                   {localChecklists.map((item, idx) => {
                     const isEditing = editingChecklistIdx === idx;
+                    const isDragging = defaultChecklistDrag.draggingIdx === idx;
+                    const isDragTarget =
+                      defaultChecklistDrag.draggingIdx !== null &&
+                      defaultChecklistDrag.draggingIdx !== idx &&
+                      defaultChecklistDrag.overIdx === idx;
                     return (
                       <div
                         key={idx}
-                        className={`flex items-center gap-4 rounded-md -mx-1 px-1 py-0.5 ${isEditing ? '' : 'cursor-pointer select-none hover:bg-[#f3f5f7]'}`}
+                        data-checklist-row
+                        className={`group/row flex items-center gap-2 rounded-md -mx-1 px-1 py-0.5 ${isEditing ? '' : 'cursor-pointer select-none hover:bg-[#f3f5f7]'} ${isDragging ? 'opacity-40' : ''} ${isDragTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
                         onClick={isEditing ? undefined : () => handleChecklistRowClick(idx)}
                         onDoubleClick={isEditing ? undefined : () => handleChecklistRowDoubleClick(idx)}
                       >
+                        <button
+                          type="button"
+                          onPointerDown={defaultChecklistDrag.onHandlePointerDown(idx)}
+                          onClick={(e) => e.stopPropagation()}
+                          onDoubleClick={(e) => e.stopPropagation()}
+                          aria-label="Reorder checklist item"
+                          className="inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
+                        >
+                          <GripVertical size={14} strokeWidth={2} aria-hidden />
+                        </button>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1382,40 +1460,10 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     </button>
                   </div>
                   {section.type === 'checklist' && (section.items ?? []).length > 0 ? (
-                    <div className="space-y-2">
-                      {(section.items ?? []).map((item, itemIdx) => (
-                        <div key={itemIdx} className="flex items-center gap-4">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateChecklistSection(sIdx, (items) =>
-                                items.map((it, i) => (i === itemIdx ? { ...it, done: !it.done } : it)),
-                              )
-                            }
-                            aria-pressed={item.done}
-                            className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
-                          >
-                            {item.done ? <Check size={13} className="text-white" /> : null}
-                          </button>
-                          <input
-                            type="text"
-                            value={item.text}
-                            onChange={(e) =>
-                              updateChecklistSection(sIdx, (items) =>
-                                items.map((it, i) => (i === itemIdx ? { ...it, text: e.target.value } : it)),
-                              )
-                            }
-                            onBlur={() => {
-                              if (!item.text.trim()) {
-                                updateChecklistSection(sIdx, (items) => items.filter((_, i) => i !== itemIdx));
-                              }
-                            }}
-                            placeholder="Item"
-                            className={`min-w-0 flex-1 border-0 bg-transparent text-[13px] outline-none ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    <NamedSectionChecklistItems
+                      items={section.items ?? []}
+                      onItemsChange={(next) => updateChecklistSection(sIdx, () => next)}
+                    />
                   ) : null}
                   {section.type === 'checklist' ? (
                     <button

@@ -7,6 +7,7 @@ import {
   Check,
   ChevronDown,
   Flag,
+  GripVertical,
   Plus,
   Tag,
   UserRoundPlus,
@@ -29,6 +30,7 @@ import {
   type TaskPriority,
 } from "@/types/task";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
+import { useChecklistItemDrag, reorderChecklistItems } from "@/lib/useChecklistItemDrag";
 
 type ChecklistRow = { id: string; text: string; done: boolean };
 
@@ -68,6 +70,9 @@ export function CreateTaskLiveModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [checklists, setChecklists] = useState<ChecklistRow[]>([]);
+  const checklistDrag = useChecklistItemDrag((from, to) => {
+    setChecklists((prev) => reorderChecklistItems(prev, from, to));
+  });
   const [tags, setTags] = useState<string[]>([]);
   const [addingTag, setAddingTag] = useState(false);
   const [tagDraft, setTagDraft] = useState("New tag");
@@ -595,8 +600,30 @@ export function CreateTaskLiveModal({
                   </button>
                 </div>
                 <div className="flex w-full flex-col gap-2">
-                  {checklists.map((item) => (
-                    <div key={item.id} className="flex w-full min-w-0 items-center">
+                  {checklists.map((item, idx) => {
+                    const isDragging = checklistDrag.draggingIdx === idx;
+                    const isTarget =
+                      checklistDrag.draggingIdx !== null &&
+                      checklistDrag.draggingIdx !== idx &&
+                      checklistDrag.overIdx === idx;
+                    return (
+                    <div
+                      key={item.id}
+                      data-checklist-row
+                      className={cn(
+                        "group/row flex w-full min-w-0 items-center gap-1.5 rounded-md transition-all",
+                        isDragging && "opacity-40",
+                        isTarget && "ring-2 ring-[#24B5F8]/40",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onPointerDown={checklistDrag.onHandlePointerDown(idx)}
+                        aria-label="Reorder checklist item"
+                        className="inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
+                      >
+                        <GripVertical className="size-[14px]" strokeWidth={2} aria-hidden />
+                      </button>
                       <button
                         type="button"
                         onClick={() => toggleChecklist(item.id)}
@@ -634,7 +661,8 @@ export function CreateTaskLiveModal({
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   {checklists.length === 0 && (
                     <p className="font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
                       No checklist items
