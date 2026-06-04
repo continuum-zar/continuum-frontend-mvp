@@ -480,13 +480,13 @@ function NamedSectionChecklistItems({
           <div
             key={itemIdx}
             data-checklist-row
-            className={`group/row flex items-center gap-2 rounded-md -mx-1 px-1 py-0.5 ${isDragging ? 'opacity-40' : ''} ${isTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
+            className={`group/row flex items-start gap-2 rounded-md -mx-1 px-1 py-0.5 ${isDragging ? 'opacity-40' : ''} ${isTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
           >
             <button
               type="button"
               onPointerDown={drag.onHandlePointerDown(itemIdx)}
               aria-label="Reorder checklist item"
-              className="inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
+              className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
             >
               <GripVertical size={14} strokeWidth={2} aria-hidden />
             </button>
@@ -494,7 +494,7 @@ function NamedSectionChecklistItems({
               type="button"
               onClick={() => onItemsChange(items.map((it, i) => (i === itemIdx ? { ...it, done: !it.done } : it)))}
               aria-pressed={item.done}
-              className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+              className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
             >
               {item.done ? <Check size={13} className="text-white" /> : null}
             </button>
@@ -524,7 +524,7 @@ function NamedSectionChecklistItems({
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => onItemsChange(items.filter((_, i) => i !== itemIdx))}
               aria-label="Remove checklist item"
-              className="inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+              className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
             >
               <X size={12} strokeWidth={2} aria-hidden />
             </button>
@@ -1413,7 +1413,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       <div
                         key={idx}
                         data-checklist-row
-                        className={`group/row flex items-center gap-2 rounded-md -mx-1 px-1 py-0.5 ${isEditing ? '' : 'cursor-pointer select-none hover:bg-[#f3f5f7]'} ${isDragging ? 'opacity-40' : ''} ${isDragTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
+                        className={`group/row flex items-start gap-2 rounded-md -mx-1 px-1 py-0.5 ${isEditing ? '' : 'cursor-pointer select-none hover:bg-[#f3f5f7]'} ${isDragging ? 'opacity-40' : ''} ${isDragTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
                         onClick={isEditing ? undefined : () => handleChecklistRowClick(idx)}
                         onDoubleClick={isEditing ? undefined : () => handleChecklistRowDoubleClick(idx)}
                       >
@@ -1423,7 +1423,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           onClick={(e) => e.stopPropagation()}
                           onDoubleClick={(e) => e.stopPropagation()}
                           aria-label="Reorder checklist item"
-                          className="inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
+                          className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
                         >
                           <GripVertical size={14} strokeWidth={2} aria-hidden />
                         </button>
@@ -1438,7 +1438,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                             handleChecklistRowDoubleClick(idx);
                           }}
                           aria-pressed={item.done}
-                          className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+                          className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
                         >
                           {item.done ? <Check size={13} className="text-white" /> : null}
                         </button>
@@ -1476,7 +1476,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           }}
                           onDoubleClick={(e) => e.stopPropagation()}
                           aria-label="Remove checklist item"
-                          className="inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                          className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
                         >
                           <X size={12} strokeWidth={2} aria-hidden />
                         </button>
