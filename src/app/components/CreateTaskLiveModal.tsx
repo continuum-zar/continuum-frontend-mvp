@@ -134,7 +134,7 @@ export function CreateTaskLiveModal({
   const [dependencyPickerOpen, setDependencyPickerOpen] = useState(false);
   const [dependencySearch, setDependencySearch] = useState("");
 
-  const titleRef = useRef<HTMLInputElement>(null);
+  const titleRef = useAutosizeTextarea(title, { minPx: 36, maxPx: 160 });
   const tagInputRef = useRef<HTMLInputElement>(null);
   const effortInputRef = useRef<HTMLInputElement>(null);
   const dependencyPickerRef = useRef<HTMLDivElement>(null);
@@ -516,14 +516,19 @@ export function CreateTaskLiveModal({
           >
             <div className="flex w-full flex-col gap-6 pb-6">
               {/* ── Title ── */}
-              <div className="flex w-full items-center bg-white py-2">
-                <input
+              <div className="flex w-full items-start bg-white py-2">
+                <textarea
                   ref={titleRef}
-                  type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                    }
+                  }}
                   placeholder="Task title"
-                  className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f] outline-none placeholder:text-[#cdd2d5]"
+                  rows={1}
+                  className="max-h-[160px] min-w-0 flex-1 resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[24px] font-medium leading-tight break-words text-[#0b191f] outline-none placeholder:text-[#cdd2d5]"
                 />
               </div>
 
