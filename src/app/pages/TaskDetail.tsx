@@ -60,6 +60,7 @@ import {
   type TaskPriority,
   type TaskTimelineEntry,
   type TaskAPIResponse,
+  type TaskSection,
 } from '@/types/task';
 import type { CommentAuthorAPI } from '@/types/comment';
 import type { Member } from '@/types/member';
@@ -467,6 +468,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const checklistDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const checklistPendingRef = useRef<Array<{ id?: string; text: string; done: boolean }> | null>(null);
   const checklistInflightRef = useRef(false);
+  const sectionsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sectionsPendingRef = useRef<TaskSection[] | null>(null);
   const { data: attachments } = useTaskAttachments(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
   const timelineQuery = useTaskTimelineInfinite(taskId);
@@ -507,6 +510,10 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [localChecklists, setLocalChecklists] = useState<Array<{ id?: string; text: string; done: boolean }>>([]);
   const [editingChecklistIdx, setEditingChecklistIdx] = useState<number | null>(null);
   const [checklistDraft, setChecklistDraft] = useState('');
+  const [localSections, setLocalSections] = useState<TaskSection[]>([]);
+  const [addSectionMenuOpen, setAddSectionMenuOpen] = useState(false);
+  /** Track which section's name input is being actively edited (so its draft doesn't get clobbered by server sync). */
+  const [editingSectionNameIdx, setEditingSectionNameIdx] = useState<number | null>(null);
   const [addingTag, setAddingTag] = useState(false);
   const [tagDraft, setTagDraft] = useState('New tag');
   const [addingEffort, setAddingEffort] = useState(false);
@@ -753,6 +760,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       clearTimeout(checklistDebounceRef.current);
       checklistDebounceRef.current = null;
     }
+    sectionsPendingRef.current = null;
+    if (sectionsDebounceRef.current != null) {
+      clearTimeout(sectionsDebounceRef.current);
+      sectionsDebounceRef.current = null;
+    }
   }, [taskId]);
 
   /* ─ init from task ─ */
@@ -768,6 +780,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       });
       if (!pauseChecklistSync) {
         setLocalChecklists(task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : []);
+      }
+      if (editingSectionNameIdx === null) {
+        setLocalSections(Array.isArray(task.sections) ? [...task.sections] : []);
       }
       // Keep drafts in sync so "Update" does not send empty description/title when the user never opened edit mode.
       if (!editingTitle) setTitleDraft(task.title ?? '');
@@ -873,8 +888,95 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
           },
         );
       }
+      if (sectionsDebounceRef.current != null) {
+        clearTimeout(sectionsDebounceRef.current);
+        sectionsDebounceRef.current = null;
+      }
+      const pendingSections = sectionsPendingRef.current;
+      sectionsPendingRef.current = null;
+      if (pendingSections != null && taskId) {
+        updateTaskMutation.mutate({ taskId, sections: pendingSections });
+      }
     };
   }, [taskId, updateTaskMutation]);
+
+  /* ─ sections (debounced PUT, mirrors the checklist pattern) ─ */
+  const saveSections = useCallback(
+    (next: TaskSection[]) => {
+      setLocalSections(next);
+      sectionsPendingRef.current = next;
+      if (sectionsDebounceRef.current != null) clearTimeout(sectionsDebounceRef.current);
+      sectionsDebounceRef.current = window.setTimeout(() => {
+        sectionsDebounceRef.current = null;
+        const pending = sectionsPendingRef.current;
+        sectionsPendingRef.current = null;
+        if (pending != null && taskId) {
+          updateTaskMutation.mutate({ taskId, sections: pending });
+        }
+      }, TASK_DETAIL_CHECKLIST_DEBOUNCE_MS);
+    },
+    [taskId, updateTaskMutation],
+  );
+
+  const newSectionId = () =>
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? `sec-${crypto.randomUUID()}`
+      : `sec-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  const addSection = (type: TaskSection['type']) => {
+    const defaultName = type === 'checklist' ? 'New checklist section' : 'New section';
+    const base = { id: newSectionId(), name: defaultName };
+    const created: TaskSection =
+      type === 'checklist' ? { ...base, type: 'checklist', items: [] } : { ...base, type: 'plain_text', text: '' };
+    const next = [...localSections, created];
+    setAddSectionMenuOpen(false);
+    setEditingSectionNameIdx(next.length - 1);
+    saveSections(next);
+  };
+
+  const renameSection = (idx: number, name: string) => {
+    const next = localSections.map((s, i) => (i === idx ? { ...s, name } : s));
+    setLocalSections(next);
+  };
+
+  const commitSectionName = (idx: number) => {
+    const section = localSections[idx];
+    if (!section) {
+      setEditingSectionNameIdx(null);
+      return;
+    }
+    const trimmed = section.name.trim();
+    setEditingSectionNameIdx(null);
+    if (!trimmed) {
+      saveSections(localSections.filter((_, i) => i !== idx));
+      return;
+    }
+    if (trimmed !== section.name) {
+      saveSections(localSections.map((s, i) => (i === idx ? { ...s, name: trimmed } : s)));
+    } else {
+      saveSections(localSections);
+    }
+  };
+
+  const removeSection = (idx: number) => {
+    saveSections(localSections.filter((_, i) => i !== idx));
+  };
+
+  const updateChecklistSection = (
+    idx: number,
+    updater: (items: Array<{ id?: string; text: string; done: boolean }>) => Array<{ id?: string; text: string; done: boolean }>,
+  ) => {
+    const next = localSections.map((s, i) => {
+      if (i !== idx || s.type !== 'checklist') return s;
+      return { ...s, items: updater(s.items ?? []) };
+    });
+    saveSections(next);
+  };
+
+  const updatePlainTextSection = (idx: number, text: string) => {
+    const next = localSections.map((s, i) => (i === idx && s.type === 'plain_text' ? { ...s, text } : s));
+    saveSections(next);
+  };
 
   const addChecklistItem = () => {
     const next = [...localChecklists, { text: 'New checklist', done: false }];
@@ -1232,6 +1334,157 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   })}
                 </div>
               )}
+            </section>
+
+            {/* ─── User-defined sections (Checklist or Plain text) ─── */}
+            <section className="space-y-4">
+              {localSections.map((section, sIdx) => (
+                <div
+                  key={section.id ?? `sec-${sIdx}`}
+                  className="space-y-3 rounded-[8px] border border-[#ebedee] bg-white p-4"
+                >
+                  <div className="flex items-center gap-2">
+                    {editingSectionNameIdx === sIdx ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        value={section.name}
+                        onChange={(e) => renameSection(sIdx, e.target.value)}
+                        onBlur={() => commitSectionName(sIdx)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                          if (e.key === 'Escape') setEditingSectionNameIdx(null);
+                        }}
+                        placeholder="Section name"
+                        className="flex-1 border-0 bg-transparent text-[16px] font-medium leading-none text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                        aria-label="Section name"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setEditingSectionNameIdx(sIdx)}
+                        className="flex-1 cursor-text border-0 bg-transparent p-0 text-left text-[16px] font-medium leading-none text-[#0b191f]"
+                        aria-label={`Rename ${section.name}`}
+                      >
+                        {section.name || 'Untitled section'}
+                      </button>
+                    )}
+                    <span className="rounded-full bg-[#f3f5f7] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#606d76]">
+                      {section.type === 'checklist' ? 'Checklist' : 'Plain text'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeSection(sIdx)}
+                      className="inline-flex size-7 items-center justify-center rounded-[6px] text-[#727d83] transition-colors hover:bg-[#f3f5f7] hover:text-[#b91c1c]"
+                      aria-label={`Delete section ${section.name}`}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  {section.type === 'checklist' ? (
+                    <div className="space-y-2">
+                      {(section.items ?? []).length === 0 ? (
+                        <p className="text-[13px] text-[#727d83]">No items yet</p>
+                      ) : (
+                        (section.items ?? []).map((item, itemIdx) => (
+                          <div key={itemIdx} className="flex items-center gap-4">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateChecklistSection(sIdx, (items) =>
+                                  items.map((it, i) => (i === itemIdx ? { ...it, done: !it.done } : it)),
+                                )
+                              }
+                              aria-pressed={item.done}
+                              className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+                            >
+                              {item.done ? <Check size={13} className="text-white" /> : null}
+                            </button>
+                            <input
+                              type="text"
+                              value={item.text}
+                              onChange={(e) =>
+                                updateChecklistSection(sIdx, (items) =>
+                                  items.map((it, i) => (i === itemIdx ? { ...it, text: e.target.value } : it)),
+                                )
+                              }
+                              onBlur={() => {
+                                if (!item.text.trim()) {
+                                  updateChecklistSection(sIdx, (items) => items.filter((_, i) => i !== itemIdx));
+                                }
+                              }}
+                              placeholder="Item"
+                              className={`min-w-0 flex-1 border-0 bg-transparent text-[13px] outline-none ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateChecklistSection(sIdx, (items) => items.filter((_, i) => i !== itemIdx))
+                              }
+                              className="inline-flex size-6 items-center justify-center rounded-[6px] text-[#727d83] transition-colors hover:bg-[#f3f5f7] hover:text-[#b91c1c]"
+                              aria-label="Remove item"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateChecklistSection(sIdx, (items) => [...items, { text: '', done: false }])
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+                      >
+                        <Plus size={12} /> Add item
+                      </button>
+                    </div>
+                  ) : (
+                    <textarea
+                      value={section.text ?? ''}
+                      onChange={(e) => updatePlainTextSection(sIdx, e.target.value)}
+                      placeholder="Plain text…"
+                      rows={3}
+                      className="min-h-[72px] w-full resize-y rounded-[6px] border border-[#ebedee] bg-[#fafbfc] p-2 text-[13px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus:border-[#0b191f]/20"
+                    />
+                  )}
+                </div>
+              ))}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setAddSectionMenuOpen((v) => !v)}
+                  className="inline-flex items-center gap-2 rounded-[8px] border border-dashed border-[#cdd2d5] bg-white px-3 py-2 text-[13px] font-medium text-[#606d76] transition-colors hover:border-[#0b191f]/25 hover:bg-[#f9fafb] hover:text-[#0b191f]"
+                  aria-haspopup="menu"
+                  aria-expanded={addSectionMenuOpen}
+                >
+                  <Plus size={14} /> Add section
+                  <ChevronDown size={14} />
+                </button>
+                {addSectionMenuOpen ? (
+                  <div
+                    role="menu"
+                    className="absolute left-0 top-full z-20 mt-1 w-[220px] overflow-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => addSection('checklist')}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-medium text-[#0b191f] hover:bg-[#f0f3f5]"
+                    >
+                      <Check size={14} className="text-[#606d76]" /> Checklist (items with checkboxes)
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => addSection('plain_text')}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-medium text-[#0b191f] hover:bg-[#f0f3f5]"
+                    >
+                      <FileText size={14} className="text-[#606d76]" /> Plain text
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </section>
 
             {/* ─── Tags ─── */}

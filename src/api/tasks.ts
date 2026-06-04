@@ -9,11 +9,12 @@ import type {
     TaskPriority,
     TaskTimelineEntry,
     TaskLinkedBranch,
+    TaskSection,
 } from '@/types/task';
 import type { CommentAPIResponse } from '@/types/comment';
 import type { AttachmentAPIResponse } from '@/types/attachment';
 
-export type { Task, TaskStatus, TaskAPIResponse, TaskTimelineEntry, TaskLinkedBranch };
+export type { Task, TaskStatus, TaskAPIResponse, TaskTimelineEntry, TaskLinkedBranch, TaskSection };
 export { getTaskLinkedBranches } from '@/types/task';
 
 /** Payload fragment for replacing a task's linked branches (PUT /tasks/:id). */
@@ -89,6 +90,8 @@ export async function updateTask(
         linked_repo?: string | null;
         linked_branch?: string | null;
         checklists?: TaskChecklistItemUpdate[];
+        /** Full replacement list of user-defined sections beneath the default checklist. */
+        sections?: TaskSection[] | null;
         dependencies?: number[] | null;
         /** Move task to another project (requires membership on both projects). */
         project_id?: number;
@@ -103,6 +106,7 @@ export async function updateTask(
         | number
         | null
         | TaskChecklistItemUpdate[]
+        | TaskSection[]
         | number[]
         | TaskLinkedBranchesUpdate
         | undefined
@@ -143,6 +147,9 @@ export async function updateTask(
     }
     if (body.checklists !== undefined) {
         payload.checklists = body.checklists;
+    }
+    if (body.sections !== undefined) {
+        payload.sections = body.sections ?? [];
     }
     if (body.dependencies !== undefined) {
         payload.dependencies = body.dependencies ?? [];
@@ -190,6 +197,8 @@ export interface CreateTaskBody {
     assigned_to?: number | null;
     milestone_id?: number | null;
     checklists?: Array<{ text: string; done?: boolean }> | null;
+    /** Optional user-defined sections beneath the default checklist on the new task. */
+    sections?: TaskSection[] | null;
     labels?: string[] | null;
     dependencies?: number[] | null;
 }

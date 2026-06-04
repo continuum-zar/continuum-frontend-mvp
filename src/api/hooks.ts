@@ -106,6 +106,7 @@ import {
     type ScopeWeight,
     type TaskPriority,
     type TaskLinkedBranch,
+    type TaskSection,
 } from '@/types/task';
 import type { CreateTaskBody } from './tasks';
 import { useAuthStore } from '@/store/authStore';
@@ -386,9 +387,10 @@ function isChecklistOnlyTaskUpdate(vars: {
     linked_repo?: string | null;
     linked_branch?: string | null;
     checklists?: TaskChecklistItemUpdate[];
+    sections?: TaskSection[] | null;
     dependencies?: number[] | null;
 }): boolean {
-    if (vars.checklists === undefined) return false;
+    if (vars.checklists === undefined && vars.sections === undefined) return false;
     return (
         vars.title === undefined &&
         vars.description === undefined &&
@@ -1126,6 +1128,7 @@ export function useUpdateTask() {
             linked_repo,
             linked_branch,
             checklists,
+            sections,
             dependencies,
         }: {
             taskId: string | number;
@@ -1140,6 +1143,7 @@ export function useUpdateTask() {
             linked_repo?: string | null;
             linked_branch?: string | null;
             checklists?: TaskChecklistItemUpdate[];
+            sections?: TaskSection[] | null;
             dependencies?: number[] | null;
         }) =>
             updateTask(taskId, {
@@ -1154,6 +1158,7 @@ export function useUpdateTask() {
                 linked_repo,
                 linked_branch,
                 checklists,
+                sections,
                 dependencies,
             }),
         onMutate: async (variables) => {
