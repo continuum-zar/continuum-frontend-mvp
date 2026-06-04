@@ -452,6 +452,24 @@ function NamedSectionChecklistItems({
   onItemsChange: (next: NamedChecklistItem[]) => void;
 }) {
   const drag = useChecklistItemDrag((from, to) => onItemsChange(reorderChecklistItems(items, from, to)));
+  const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
+  const [pendingFocusIdx, setPendingFocusIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (pendingFocusIdx === null) return;
+    const el = inputRefs.current.get(pendingFocusIdx);
+    if (el) {
+      el.focus();
+      setPendingFocusIdx(null);
+    }
+  }, [pendingFocusIdx, items]);
+
+  const addItemAndFocus = () => {
+    const next = [...items, { text: '', done: false }];
+    onItemsChange(next);
+    setPendingFocusIdx(next.length - 1);
+  };
+
   return (
     <div className="space-y-2">
       {items.map((item, itemIdx) => {
@@ -481,17 +499,29 @@ function NamedSectionChecklistItems({
               {item.done ? <Check size={13} className="text-white" /> : null}
             </button>
             <input
+              ref={(el) => {
+                if (el) inputRefs.current.set(itemIdx, el);
+                else inputRefs.current.delete(itemIdx);
+              }}
               type="text"
               value={item.text}
               onChange={(e) => onItemsChange(items.map((it, i) => (i === itemIdx ? { ...it, text: e.target.value } : it)))}
               onBlur={() => {
                 if (!item.text.trim()) onItemsChange(items.filter((_, i) => i !== itemIdx));
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  addItemAndFocus();
+                }
+              }}
               placeholder="Item"
               className={`min-w-0 flex-1 border-0 bg-transparent text-[13px] outline-none ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
             />
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => onItemsChange(items.filter((_, i) => i !== itemIdx))}
               aria-label="Remove checklist item"
               className="inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
@@ -1115,6 +1145,22 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     setEditingChecklistIdx(null);
   };
 
+  /** Commit the current edit (or drop the row if empty) and immediately add a new empty row in edit mode. */
+  const saveChecklistEditAndAddNew = () => {
+    if (editingChecklistIdx === null) return;
+    const trimmed = checklistDraft.trim();
+    const committed = trimmed
+      ? localChecklists.map((c, i) => (i === editingChecklistIdx ? { ...c, text: trimmed } : c))
+      : localChecklists.filter((_, i) => i !== editingChecklistIdx);
+    const next = [...committed, { text: '', done: false }];
+    saveChecklists(next);
+    setEditingChecklistIdx(next.length - 1);
+    setChecklistDraft('');
+    setTimeout(() => {
+      checklistInputRef.current?.focus();
+    }, 0);
+  };
+
   /* ─ tags (labels) ─ */
   const startAddTag = () => {
     setTagDraft('New tag');
@@ -1404,7 +1450,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                             onChange={(e) => setChecklistDraft(e.target.value)}
                             onBlur={saveChecklistEdit}
                             onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => { if (e.key === 'Enter') saveChecklistEdit(); if (e.key === 'Escape') setEditingChecklistIdx(null); }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                saveChecklistEditAndAddNew();
+                              }
+                              if (e.key === 'Escape') setEditingChecklistIdx(null);
+                            }}
                             className="min-w-0 flex-1 border-0 bg-transparent font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none"
                           />
                         ) : (
