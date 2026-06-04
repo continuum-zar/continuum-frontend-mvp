@@ -511,7 +511,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [editingChecklistIdx, setEditingChecklistIdx] = useState<number | null>(null);
   const [checklistDraft, setChecklistDraft] = useState('');
   const [localSections, setLocalSections] = useState<TaskSection[]>([]);
-  const [addSectionMenuOpen, setAddSectionMenuOpen] = useState(false);
   /** Track which section's name input is being actively edited (so its draft doesn't get clobbered by server sync). */
   const [editingSectionNameIdx, setEditingSectionNameIdx] = useState<number | null>(null);
   const [addingTag, setAddingTag] = useState(false);
@@ -929,7 +928,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     const created: TaskSection =
       type === 'checklist' ? { ...base, type: 'checklist', items: [] } : { ...base, type: 'plain_text', text: '' };
     const next = [...localSections, created];
-    setAddSectionMenuOpen(false);
     setEditingSectionNameIdx(next.length - 1);
     saveSections(next);
   };
@@ -1277,7 +1275,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 <p className="text-[16px] font-medium text-[#0b191f]">Checklist</p>
                 <button
                   type="button"
-                  onClick={addChecklistItem}
+                  onClick={() => addSection('checklist')}
+                  aria-label="Add named checklist section"
                   className="flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] hover:text-[#0b191f]"
                 >
                   <Plus size={16} />
@@ -1334,9 +1333,16 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   })}
                 </div>
               )}
+              <button
+                type="button"
+                onClick={addChecklistItem}
+                className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+              >
+                <Plus size={12} /> Add item
+              </button>
             </section>
 
-            {/* ─── User-defined sections (Checklist or Plain text) ─── */}
+            {/* ─── Named checklist sections (created via the Checklist + button) ─── */}
             <section className="space-y-4">
               {localSections.map((section, sIdx) => (
                 <div
@@ -1369,9 +1375,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                         {section.name || 'Untitled section'}
                       </button>
                     )}
-                    <span className="rounded-full bg-[#f3f5f7] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#606d76]">
-                      {section.type === 'checklist' ? 'Checklist' : 'Plain text'}
-                    </span>
                     <button
                       type="button"
                       onClick={() => removeSection(sIdx)}
@@ -1450,41 +1453,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   )}
                 </div>
               ))}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setAddSectionMenuOpen((v) => !v)}
-                  className="inline-flex items-center gap-2 rounded-[8px] border border-dashed border-[#cdd2d5] bg-white px-3 py-2 text-[13px] font-medium text-[#606d76] transition-colors hover:border-[#0b191f]/25 hover:bg-[#f9fafb] hover:text-[#0b191f]"
-                  aria-haspopup="menu"
-                  aria-expanded={addSectionMenuOpen}
-                >
-                  <Plus size={14} /> Add section
-                  <ChevronDown size={14} />
-                </button>
-                {addSectionMenuOpen ? (
-                  <div
-                    role="menu"
-                    className="absolute left-0 top-full z-20 mt-1 w-[220px] overflow-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md"
-                  >
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => addSection('checklist')}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-medium text-[#0b191f] hover:bg-[#f0f3f5]"
-                    >
-                      <Check size={14} className="text-[#606d76]" /> Checklist (items with checkboxes)
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => addSection('plain_text')}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-medium text-[#0b191f] hover:bg-[#f0f3f5]"
-                    >
-                      <FileText size={14} className="text-[#606d76]" /> Plain text
-                    </button>
-                  </div>
-                ) : null}
-              </div>
             </section>
 
             {/* ─── Tags ─── */}
