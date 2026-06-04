@@ -1,5 +1,6 @@
 "use client";
 
+import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAutosizeTextarea } from "@/hooks/useAutosizeTextarea";
 import {
@@ -34,6 +35,44 @@ import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { useChecklistItemDrag, reorderChecklistItems } from "@/lib/useChecklistItemDrag";
 
 type ChecklistRow = { id: string; text: string; done: boolean };
+
+/**
+ * Single-row checklist input that grows with content (auto-sizing textarea).
+ * Wraps long text within the row's column width instead of overflowing horizontally,
+ * and lets the caller observe the underlying DOM node for focus management.
+ */
+function ChecklistRowInput({
+  value,
+  onChange,
+  onBlur,
+  onKeyDown,
+  placeholder,
+  inputRef,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  onBlur: () => void;
+  onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
+  placeholder: string;
+  inputRef?: (el: HTMLTextAreaElement | null) => void;
+}) {
+  const autosizeRef = useAutosizeTextarea(value, { minPx: 20, maxPx: 200 });
+  return (
+    <textarea
+      ref={(el) => {
+        autosizeRef.current = el;
+        if (inputRef) inputRef(el);
+      }}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+      placeholder={placeholder}
+      rows={1}
+      className="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
+    />
+  );
+}
 
 type CreateTaskLiveModalProps = {
   open: boolean;
@@ -122,7 +161,7 @@ export function CreateTaskLiveModal({
     onOpenChange(next);
   };
 
-  const checklistInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const checklistInputRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const [pendingFocusChecklistId, setPendingFocusChecklistId] = useState<string | null>(null);
 
   const addChecklistRow = useCallback(() => {
@@ -166,7 +205,7 @@ export function CreateTaskLiveModal({
   const [sections, setSections] = useState<TaskSection[]>([]);
   const [editingSectionNameId, setEditingSectionNameId] = useState<string | null>(null);
   const sectionNameInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
-  const sectionItemInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const sectionItemInputRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const [pendingFocusSectionId, setPendingFocusSectionId] = useState<string | null>(null);
   const [pendingFocusSectionItemId, setPendingFocusSectionItemId] = useState<string | null>(null);
 
@@ -749,7 +788,7 @@ export function CreateTaskLiveModal({
                       key={item.id}
                       data-checklist-row
                       className={cn(
-                        "group/row flex w-full min-w-0 items-center gap-1.5 rounded-md transition-all",
+                        "group/row flex w-full min-w-0 items-start gap-1.5 rounded-md transition-all",
                         isDragging && "opacity-40",
                         isTarget && "ring-2 ring-[#24B5F8]/40",
                       )}
@@ -758,7 +797,7 @@ export function CreateTaskLiveModal({
                         type="button"
                         onPointerDown={checklistDrag.onHandlePointerDown(idx)}
                         aria-label="Reorder checklist item"
-                        className="inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
+                        className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
                       >
                         <GripVertical className="size-[14px]" strokeWidth={2} aria-hidden />
                       </button>
@@ -766,7 +805,7 @@ export function CreateTaskLiveModal({
                         type="button"
                         onClick={() => toggleChecklist(item.id)}
                         className={cn(
-                          "flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-black transition-colors",
+                          "mt-0.5 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-black transition-colors",
                           item.done
                             ? "bg-[#24B5F8]"
                             : "bg-[#f9f9f9]",
@@ -775,34 +814,32 @@ export function CreateTaskLiveModal({
                       >
                         {item.done && <Check className="size-[13px] text-white" strokeWidth={2.5} />}
                       </button>
-                      <div className="min-w-0 flex-1 overflow-hidden px-4 py-1">
+                      <div className="min-w-0 flex-1 px-4">
                         {item.done ? (
                           <button
                             type="button"
                             onClick={() => toggleChecklist(item.id)}
-                            className="w-full cursor-pointer text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
+                            className="block w-full cursor-pointer break-words whitespace-pre-wrap text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
                           >
                             {item.text}
                           </button>
                         ) : (
-                          <input
-                            ref={(el) => {
-                              if (el) checklistInputRefs.current.set(item.id, el);
-                              else checklistInputRefs.current.delete(item.id);
-                            }}
-                            type="text"
+                          <ChecklistRowInput
                             value={item.text}
-                            onChange={(e) => updateChecklistText(item.id, e.target.value)}
+                            onChange={(v) => updateChecklistText(item.id, v)}
                             onBlur={() => removeChecklistIfEmpty(item.id)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") {
+                              if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 addChecklistRow();
                               }
                             }}
                             placeholder="Checklist item..."
-                            className="w-full border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
+                            inputRef={(el) => {
+                              if (el) checklistInputRefs.current.set(item.id, el);
+                              else checklistInputRefs.current.delete(item.id);
+                            }}
                           />
                         )}
                       </div>
@@ -811,7 +848,7 @@ export function CreateTaskLiveModal({
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => removeChecklistRow(item.id)}
                         aria-label="Remove checklist item"
-                        className="inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                        className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
                       >
                         <X className="size-3" strokeWidth={2} aria-hidden />
                       </button>
@@ -883,47 +920,45 @@ export function CreateTaskLiveModal({
                       {(section.items ?? []).map((it) => (
                         <div
                           key={it.id}
-                          className="group/row flex w-full min-w-0 items-center gap-1.5 rounded-md"
+                          className="group/row flex w-full min-w-0 items-start gap-1.5 rounded-md"
                         >
                           <button
                             type="button"
                             onClick={() => section.id && it.id && toggleSectionItem(section.id, it.id)}
                             className={cn(
-                              "flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-black transition-colors",
+                              "mt-0.5 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-black transition-colors",
                               it.done ? "bg-[#24B5F8]" : "bg-[#f9f9f9]",
                             )}
                             aria-label={it.done ? "Mark incomplete" : "Mark complete"}
                           >
                             {it.done && <Check className="size-[13px] text-white" strokeWidth={2.5} />}
                           </button>
-                          <div className="min-w-0 flex-1 overflow-hidden px-4 py-1">
+                          <div className="min-w-0 flex-1 px-4">
                             {it.done ? (
                               <button
                                 type="button"
                                 onClick={() => section.id && it.id && toggleSectionItem(section.id, it.id)}
-                                className="w-full cursor-pointer text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
+                                className="block w-full cursor-pointer break-words whitespace-pre-wrap text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
                               >
                                 {it.text}
                               </button>
                             ) : (
-                              <input
-                                ref={(el) => {
-                                  if (el && it.id) sectionItemInputRefs.current.set(it.id, el);
-                                  else if (it.id) sectionItemInputRefs.current.delete(it.id);
-                                }}
-                                type="text"
+                              <ChecklistRowInput
                                 value={it.text}
-                                onChange={(e) => section.id && it.id && updateSectionItemText(section.id, it.id, e.target.value)}
+                                onChange={(v) => section.id && it.id && updateSectionItemText(section.id, it.id, v)}
                                 onBlur={() => section.id && it.id && removeSectionItemIfEmpty(section.id, it.id)}
                                 onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
+                                  if (e.key === "Enter" && !e.shiftKey) {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     if (section.id) addSectionItem(section.id);
                                   }
                                 }}
                                 placeholder="Checklist item..."
-                                className="w-full border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
+                                inputRef={(el) => {
+                                  if (el && it.id) sectionItemInputRefs.current.set(it.id, el);
+                                  else if (it.id) sectionItemInputRefs.current.delete(it.id);
+                                }}
                               />
                             )}
                           </div>
@@ -932,7 +967,7 @@ export function CreateTaskLiveModal({
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => section.id && it.id && removeSectionItem(section.id, it.id)}
                             aria-label="Remove checklist item"
-                            className="inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                            className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
                           >
                             <X className="size-3" strokeWidth={2} aria-hidden />
                           </button>
