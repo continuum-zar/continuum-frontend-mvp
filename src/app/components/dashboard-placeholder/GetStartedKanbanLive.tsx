@@ -73,9 +73,6 @@ const SprintKanbanListView = lazy(() =>
 
 const imgLucideListTodo = mcpAsset("2a12c1eb-b745-4bea-b9f1-f67045f8c03a");
 const imgLucideSearch1 = mcpAsset("c5ee61c3-f628-42e7-b456-58f9c49a5cfe");
-/** Plus icon — To-do column “Create task” (same asset as mock Get started kanban, DashboardPlaceholder). */
-const imgVector11 = mcpAsset("4912f83a-d378-4c38-9bf2-ce38aa20cc19");
-const imgVector12 = mcpAsset("64e38728-fa1b-4a8c-97d3-cbb7f586a27c");
 const imgLucideSquircleDashed = mcpAsset("e2efeca9-31cd-4cf9-ac56-b2799ee8a450");
 const imgLucideCircleCheckBig = mcpAsset("244bb570-3aed-481d-8cf9-f067c69c50b0");
 
@@ -255,6 +252,11 @@ export function GetStartedKanbanLive({
   }, [filtered, columns, taskColumnPreference]);
 
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [createTaskColumnId, setCreateTaskColumnId] = useState<string | null>(null);
+  const openCreateTaskInColumn = useCallback((columnId: string) => {
+    setCreateTaskColumnId(columnId);
+    setCreateTaskOpen(true);
+  }, []);
   const [taskPendingDelete, setTaskPendingDelete] = useState<Task | null>(null);
   const [columnPendingDelete, setColumnPendingDelete] = useState<KanbanColumnConfig | null>(null);
   const [addColumnOpen, setAddColumnOpen] = useState(false);
@@ -689,48 +691,54 @@ export function GetStartedKanbanLive({
     );
   }
 
-  const columnHeaderDivider = (
-    <div className="h-0 relative w-full shrink-0">
-      <div className="absolute inset-[-0.57px_0]">
-        <img alt="" className="block max-w-none size-full" src={imgVector12} />
-      </div>
-    </div>
-  );
-
   const colWrap = (
     columnId: string,
     children: ReactNode,
     header: ReactNode,
     isColumnDragSource = false,
-  ) => (
-    <div
-      data-kanban-col={columnId}
-      className={cn(
-        "content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200",
-        isColumnDragSource && "opacity-0",
-      )}
-      style={{
-        flexGrow: 1,
-        flexShrink: 0,
-        flexBasis: "350px",
-        width: "350px",
-        minWidth: "350px",
-        backgroundImage:
-          "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
-      }}
-    >
-      <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
-        {header}
-        {columnHeaderDivider}
-      </div>
-      <div className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pt-4">
-        {dragOverCol === columnId && draggingId !== null && (
-          <div className="h-[152px] w-full shrink-0 rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
+  ) => {
+    const isDropTarget = dragOverCol === columnId && draggingId !== null;
+    return (
+      <div
+        data-kanban-col={columnId}
+        className={cn(
+          "content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200",
+          isColumnDragSource && "opacity-0",
+          isDropTarget && "bg-[#eef4f8]",
         )}
-        {children}
+        style={{
+          flexGrow: 1,
+          flexShrink: 0,
+          flexBasis: "350px",
+          width: "350px",
+          minWidth: "350px",
+          backgroundImage:
+            "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
+        }}
+      >
+        {isDropTarget ? (
+          <div
+            className="pointer-events-none absolute inset-x-[16px] top-0 h-[3px] rounded-full bg-primary"
+            aria-hidden
+          />
+        ) : null}
+        <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
+          {header}
+        </div>
+        <div
+          className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto py-4"
+          style={{
+            maskImage:
+              "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
+          }}
+        >
+          {children}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const boardColumnIconSrc = (kind: KanbanColumnConfig["kind"]) => {
     if (kind === "in-progress") return imgLucideSquircleDashed;
@@ -771,8 +779,7 @@ export function GetStartedKanbanLive({
         }}
         searchIconSrc={imgLucideSearch1}
         showCreateTask={showCreateTask}
-        onCreateTask={() => setCreateTaskOpen(true)}
-        createIconSrc={imgVector11}
+        onCreateTask={() => openCreateTaskInColumn(col.id)}
         kebabMenu={renderColumnKebabMenu(col)}
       />
     );
@@ -792,7 +799,7 @@ export function GetStartedKanbanLive({
             members={members}
             projectId={projectId}
             milestoneId={milestoneId}
-            onCreateTask={() => setCreateTaskOpen(true)}
+            onCreateTask={openCreateTaskInColumn}
             draggingId={draggingId}
             dragOverCol={dragOverCol}
             cardPointerDown={cardPointerDown}
@@ -900,9 +907,13 @@ export function GetStartedKanbanLive({
       )}
       <CreateTaskLiveModal
         open={createTaskOpen}
-        onOpenChange={setCreateTaskOpen}
+        onOpenChange={(next) => {
+          setCreateTaskOpen(next);
+          if (!next) setCreateTaskColumnId(null);
+        }}
         projectId={projectId}
         milestoneId={milestoneId}
+        defaultColumnId={createTaskColumnId}
       />
       <Dialog
         open={addColumnOpen}

@@ -21,15 +21,18 @@ function Cap({
   size: number;
   color: string;
 }) {
+  // Match the arc's solid band: the ring mask fades the outer 0.5px on each
+  // edge, so a cap rendered at the full stroke width bulges past the arc.
+  const visible = size - 1;
   return (
     <div
       className="pointer-events-none absolute rounded-full"
       style={{
-        width: size,
-        height: size,
+        width: visible,
+        height: visible,
         backgroundColor: color,
-        left: cx - size / 2,
-        top: cy - size / 2,
+        left: cx - visible / 2,
+        top: cy - visible / 2,
       }}
     />
   );
@@ -205,7 +208,7 @@ function efficiencyZoneLabel(hps: number): string {
   return "Danger Zone";
 }
 
-function EfficiencyGauge({ hps }: { hps: number }) {
+export function EfficiencyGauge({ hps }: { hps: number }) {
   const effGrad = `conic-gradient(from ${SM_CSS_START}deg at 50% 50%, #1ED760 0deg, #FBBC05 ${SM_SWEEP / 2}deg, #EB4335 ${SM_SWEEP}deg, transparent ${SM_SWEEP}deg 360deg)`;
   const frac = Math.max(0, Math.min(1, hps / 3));
   const dot = smArcPoint(frac);
@@ -213,13 +216,13 @@ function EfficiencyGauge({ hps }: { hps: number }) {
   const endPt = smArcPoint(1);
 
   return (
-    <div className="relative h-[81.592px] w-[82.864px] shrink-0">
+    <div className="relative h-[90px] w-[82.864px] shrink-0">
       <div className="absolute top-0 left-0 h-[66.484px] w-[82.864px]">
         <div style={{ ...smCircleBase, background: effGrad }} />
         <Cap cx={startPt.x} cy={startPt.y} size={SM_STROKE} color="#1ED760" />
         <Cap cx={endPt.x} cy={endPt.y} size={SM_STROKE} color="#EB4335" />
       </div>
-      <p className="absolute top-[18px] left-1/2 z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
+      <p className="absolute top-[28px] left-1/2 z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
         {Number(hps.toFixed(2))}
       </p>
       <div
@@ -230,12 +233,10 @@ function EfficiencyGauge({ hps }: { hps: number }) {
           <img alt="" className="block size-full max-w-none" src={imgGaugeIndicator} />
         </div>
       </div>
-      <p className="absolute top-[66px] left-[11.86px] z-[1] font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] text-[#0b191f] opacity-50">
-        0
-      </p>
-      <p className="absolute top-[66px] left-[69.86px] z-[1] -translate-x-full text-right font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] text-[#0b191f] opacity-50">
-        3
-      </p>
+      <div className="pointer-events-none absolute top-[74px] left-[11.86px] right-[13px] z-[1] flex justify-between font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] text-[#0b191f] opacity-50">
+        <span>0</span>
+        <span>3</span>
+      </div>
     </div>
   );
 }
@@ -244,7 +245,7 @@ function EfficiencyGauge({ hps }: { hps: number }) {
    Tasks Completed gauge
    ================================================================ */
 
-function TasksGauge({ completed, total }: { completed: number; total: number }) {
+export function TasksGauge({ completed, total }: { completed: number; total: number }) {
   const pct = total > 0 ? Math.max(0, Math.min(100, (completed / total) * 100)) : 0;
   const fillDeg = (pct / 100) * SM_SWEEP;
   const fillColor = "#1ED760";
@@ -265,7 +266,7 @@ function TasksGauge({ completed, total }: { completed: number; total: number }) 
         <Cap cx={endPt.x} cy={endPt.y} size={SM_STROKE} color={BG_GREY} />
         {pct > 0 && pct < 100 && <Cap cx={tipPt.x} cy={tipPt.y} size={SM_STROKE} color={fillColor} />}
       </div>
-      <p className="absolute top-[18px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
+      <p className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
         {Math.round(completed)}
       </p>
       <div
@@ -340,7 +341,7 @@ const COMMIT_GREEN = COMMIT_GAUGE_SHIPPED;
 const COMMIT_YELLOW = COMMIT_GAUGE_IN_PROGRESS;
 const COMMIT_GREY = COMMIT_GAUGE_TRIVIAL;
 
-function CommitsGauge({
+export function CommitsGauge({
   structural,
   incremental,
   trivial,
@@ -401,7 +402,7 @@ function CommitsGauge({
           </>
         )}
       </div>
-      <p className="absolute top-[18px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
+      <p className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
         {total}
       </p>
     </div>

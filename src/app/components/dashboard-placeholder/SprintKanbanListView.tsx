@@ -45,7 +45,8 @@ export type SprintKanbanListViewProps = {
   members: Member[];
   projectId: number;
   milestoneId: string | null;
-  onCreateTask: () => void;
+  /** Called with the column id of the section whose "+" was clicked, so the new task lands in that column. */
+  onCreateTask: (columnId: string) => void;
   /** Drag-and-drop between sections — same behavior as board view. */
   draggingId: string | null;
   dragOverCol: string | null;
@@ -136,7 +137,7 @@ export function SprintKanbanListView({
           />
         ) : (
         <div
-          className="list-kanban-drag-surface bg-white content-stretch flex w-full gap-[24px] border-b border-[#ebedee] border-solid px-[16px] py-[6px] text-left transition-colors hover:bg-[#fafbfc]"
+          className="list-kanban-drag-surface bg-white flex w-full items-center gap-[24px] border-b border-[#ebedee] border-solid px-[16px] py-[6px] text-left transition-colors hover:bg-[#fafbfc]"
         >
         <div className="content-stretch flex w-[380px] shrink-0 flex-col gap-1.5">
           <div className="flex min-w-0 items-center gap-[8px]">
@@ -295,7 +296,7 @@ export function SprintKanbanListView({
             >
               {dragOverCol === col.id && draggingId !== null ? (
                 <div
-                  className="h-[52px] w-full shrink-0 rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.55)]"
+                  className="pointer-events-none absolute inset-x-0 top-0 h-[3px] rounded-full bg-primary"
                   aria-hidden
                 />
               ) : null}
@@ -356,12 +357,12 @@ export function SprintKanbanListView({
     </KanbanColumnSearchControls>
   );
 
-  const createTaskControl = (
+  const createTaskControl = (col: KanbanColumnConfig) => (
     <button
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        onCreateTask();
+        onCreateTask(col.id);
       }}
       className="content-stretch flex shrink-0 cursor-pointer items-center overflow-clip rounded-[6px] border-0 bg-transparent p-[5px]"
       aria-label="Create task"
@@ -385,7 +386,7 @@ export function SprintKanbanListView({
         const headerRight = (
           <>
             {searchAndKebab(col)}
-            {col.taskStatus === "todo" ? createTaskControl : null}
+            {col.taskStatus === "todo" ? createTaskControl(col) : null}
           </>
         );
         const emptyTail =

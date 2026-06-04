@@ -28,7 +28,7 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
       <div className="relative flex shrink-0 items-center gap-6" data-node-id="11:5685">
         <div className="relative h-[81.592px] w-[82.864px] shrink-0" data-node-id="11:5686">
           <p
-            className="absolute top-[18px] left-1/2 z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
+            className="absolute top-[28px] left-1/2 z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
             data-node-id="11:5687"
           >
             {empty ? "0" : "1.17"}
@@ -83,7 +83,7 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
       <div className="relative flex shrink-0 items-center gap-6" data-node-id="11:5699">
         <div className="relative h-[81.592px] w-[82.864px] shrink-0" data-node-id="11:5700">
           <p
-            className="absolute top-[18px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
+            className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
             data-node-id="11:5701"
           >
             {empty ? "0" : "46"}
@@ -126,7 +126,7 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
       <div className="relative flex shrink-0 items-center gap-6" data-node-id="11:5711">
         <div className="relative h-[81.592px] w-[82.864px] shrink-0" data-name="Component 145" data-node-id="11:5712">
           <p
-            className="absolute top-[18px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[32px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
+            className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
             data-node-id="I11:5712;3310:12281"
           >
             {empty ? "0" : "12"}
