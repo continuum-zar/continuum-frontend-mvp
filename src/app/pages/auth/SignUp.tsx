@@ -21,14 +21,14 @@ function ClerkSignUpShell() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [clerkError, setClerkError] = useState<string | null>(null);
-    const [pending, setPending] = useState(false);
+    const [pending, setPending] = useState<null | 'email' | 'google' | 'apple'>(null);
     const [needsVerification, setNeedsVerification] = useState(false);
     const [code, setCode] = useState('');
 
     const handleSubmit = async (form: { firstName: string; lastName: string; email: string; password: string }) => {
         if (!clerkSignUp.isLoaded) return;
         setClerkError(null);
-        setPending(true);
+        setPending('email');
         try {
             const result = await clerkSignUp.signUp.create({
                 emailAddress: form.email,
@@ -47,14 +47,35 @@ function ClerkSignUpShell() {
         } catch (err: unknown) {
             setClerkError(extractClerkErrorMessage(err) ?? 'Registration failed. Try again.');
         } finally {
-            setPending(false);
+            setPending(null);
         }
     };
+
+    const handleOAuth = async (provider: 'google' | 'apple') => {
+        if (!clerkSignUp.isLoaded) return;
+        setClerkError(null);
+        setPending(provider);
+        try {
+            await clerkSignUp.signUp.authenticateWithRedirect({
+                strategy: provider === 'google' ? 'oauth_google' : 'oauth_apple',
+                redirectUrl: '/sso-callback',
+                redirectUrlComplete: '/onboarding/usage',
+            });
+        } catch (err: unknown) {
+            setClerkError(
+                extractClerkErrorMessage(err)
+                    ?? `Could not start ${provider === 'google' ? 'Google' : 'Apple'} sign-up.`,
+            );
+            setPending(null);
+        }
+    };
+
+    const oauthDisabled = !clerkSignUp.isLoaded || pending !== null;
 
     const handleVerifyCode = async () => {
         if (!clerkSignUp.isLoaded) return;
         setClerkError(null);
-        setPending(true);
+        setPending('email');
         try {
             const attempt = await clerkSignUp.signUp.attemptEmailAddressVerification({ code });
             if (attempt.status === 'complete') {
@@ -66,7 +87,7 @@ function ClerkSignUpShell() {
         } catch (err: unknown) {
             setClerkError(extractClerkErrorMessage(err) ?? "We couldn't verify that code.");
         } finally {
-            setPending(false);
+            setPending(null);
         }
     };
 
@@ -74,7 +95,7 @@ function ClerkSignUpShell() {
         return (
             <SignUpLayout
                 searchParams={searchParams}
-                pending={pending}
+                pending={pending === 'email'}
                 error={clerkError}
                 renderVerification={() => (
                     <div className="flex w-[297px] flex-col gap-3">
@@ -92,11 +113,11 @@ function ClerkSignUpShell() {
                         />
                         <button
                             type="button"
-                            disabled={pending || code.length < 4}
+                            disabled={pending === 'email' || code.length < 4}
                             onClick={() => void handleVerifyCode()}
                             className="flex h-10 w-[297px] cursor-pointer items-center justify-center rounded-lg border-none bg-[#24B5F8] px-4 py-2 shadow-[0px_3px_9.3px_0px_rgba(44,158,249,0.1)] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            {pending ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <span className="text-sm font-semibold text-white">Verify code</span>}
+                            {pending === 'email' ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <span className="text-sm font-semibold text-white">Verify code</span>}
                         </button>
                     </div>
                 )}
@@ -107,9 +128,21 @@ function ClerkSignUpShell() {
     return (
         <SignUpLayout
             searchParams={searchParams}
-            pending={pending}
+            pending={pending === 'email'}
             error={clerkError}
             onSubmit={handleSubmit}
+            googleProps={{
+                disabled: oauthDisabled,
+                pending: pending === 'google',
+                onClick: () => void handleOAuth('google'),
+                title: 'Sign up with Google',
+            }}
+            appleProps={{
+                disabled: oauthDisabled,
+                pending: pending === 'apple',
+                onClick: () => void handleOAuth('apple'),
+                title: 'Sign up with Apple',
+            }}
         />
     );
 }
@@ -145,9 +178,28 @@ function LegacySignUpShell() {
             pending={pending || isLoading}
             error={error}
             onSubmit={handleSubmit}
+            googleProps={{
+                disabled: true,
+                pending: false,
+                onClick: () => {},
+                title: 'Google sign-up is not available yet',
+            }}
+            appleProps={{
+                disabled: true,
+                pending: false,
+                onClick: () => {},
+                title: 'Apple sign-up is not available yet',
+            }}
         />
     );
 }
+
+type SocialButtonProps = {
+    disabled: boolean;
+    pending: boolean;
+    onClick: () => void;
+    title: string;
+};
 
 function SignUpLayout(props: {
     searchParams: URLSearchParams;
@@ -155,8 +207,10 @@ function SignUpLayout(props: {
     error: string | null;
     onSubmit?: (form: { firstName: string; lastName: string; email: string; password: string }) => void | Promise<void>;
     renderVerification?: () => React.ReactNode;
+    googleProps?: SocialButtonProps;
+    appleProps?: SocialButtonProps;
 }) {
-    const { searchParams, pending, error, onSubmit, renderVerification } = props;
+    const { searchParams, pending, error, onSubmit, renderVerification, googleProps, appleProps } = props;
     const location = useLocation();
     const clearError = useAuthStore((state) => state.clearError);
     const emailFromSignUp = (location.state as { email?: string } | null)?.email ?? '';
@@ -246,6 +300,18 @@ function SignUpLayout(props: {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="flex w-[345px] flex-col gap-6 bg-white px-6 pb-9 pt-6">
+                        {googleProps && appleProps ? (
+                            <div className="flex w-[297px] flex-col gap-2">
+                                <SocialButton {...googleProps} iconSrc="/auth/google.svg" label="Continue with Google" />
+                                <SocialButton {...appleProps} iconSrc="/auth/apple.svg" label="Continue with Apple" />
+                                <div className="my-1 flex items-center gap-2 text-[11px] uppercase tracking-wide text-[#9FA5A8]">
+                                    <span className="h-px flex-1 bg-[#E9E9E9]" aria-hidden />
+                                    or
+                                    <span className="h-px flex-1 bg-[#E9E9E9]" aria-hidden />
+                                </div>
+                            </div>
+                        ) : null}
+
                         <div className="flex w-[297px] flex-col gap-1">
                             <label htmlFor="email" className="text-sm font-medium leading-[100%] text-[#151515]">Email</label>
                             <input
@@ -339,6 +405,29 @@ function SignUpLayout(props: {
                 )}
             </div>
         </div>
+    );
+}
+
+function SocialButton(props: SocialButtonProps & { iconSrc: string; label: string }) {
+    const { disabled, pending, onClick, title, iconSrc, label } = props;
+    return (
+        <button
+            type="button"
+            aria-disabled={disabled}
+            disabled={disabled}
+            title={title}
+            onClick={onClick}
+            className={`relative flex h-10 w-[297px] items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4 py-2 ${
+                disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+            }`}
+        >
+            {pending ? (
+                <Loader2 className="absolute left-4 h-5 w-5 animate-spin text-[#252014]" />
+            ) : (
+                <img src={iconSrc} alt="" className="absolute left-4 h-5 w-5" />
+            )}
+            <span className="text-sm font-medium leading-[100%] text-[#151515]">{label}</span>
+        </button>
     );
 }
 
