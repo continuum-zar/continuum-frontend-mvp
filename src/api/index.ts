@@ -410,3 +410,52 @@ export {
     isReviewRunTerminal,
     REVIEW_RUN_TERMINAL_STATUSES,
 } from '@/types/reviewRun';
+
+// ---------------------------------------------------------------------------
+// Migration import
+// ---------------------------------------------------------------------------
+export {
+    applyMigration,
+    cancelMigration,
+    fetchMigration,
+    listMigrations,
+    migrationEventsStreamUrl,
+    migrationKeys,
+    patchMigrationMapping,
+    uploadMigration,
+    useApplyMigration,
+    useCancelMigration,
+    useMigration,
+    usePatchMigrationMapping,
+    useRecentMigrations,
+    useUploadMigration,
+} from './migrations';
+export type {
+    CanonicalProjectIR,
+    IRAttachment,
+    IRChecklist,
+    IRChecklistItem,
+    IRColumn,
+    IRComment,
+    IRLabel,
+    IRMember,
+    IRMilestone,
+    IRProject,
+    IRTask,
+    IRWarning,
+    MigrationApplyRequest,
+    MigrationApplyResult,
+    MigrationEvent,
+    MigrationEventType,
+    MigrationJobDetail,
+    MigrationJobOut,
+    MigrationListResponse,
+    MigrationMappingOverrides,
+    MigrationMappingPatch,
+    MigrationStats,
+    MigrationStatus,
+    MigrationUploadResponse,
+    SourceHint,
+    SourceHintOption,
+} from '@/types/migration';
+export { isMigrationTerminal } from '@/types/migration';
