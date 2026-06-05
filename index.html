@@ -10,7 +10,45 @@
     <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
     <link rel="dns-prefetch" href="https://api.fontshare.com" />
     <link rel="dns-prefetch" href="https://cdn.fontshare.com" />
+    <!--
+      Sarina (brand mark) is preloaded so it's in the cache before the first
+      paint of the landing/auth pages — without this the browser default font
+      shows for ~200ms then flickers to Sarina. The matching @font-face below
+      uses the same /fonts/ URL so the preload is actually consumed.
+    -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/sarina-latin-400-normal.woff2"
+      crossorigin
+    />
     <style>
+      @font-face {
+        font-family: "Sarina";
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src:
+          url("/fonts/sarina-latin-400-normal.woff2") format("woff2"),
+          url("/fonts/sarina-latin-400-normal.woff") format("woff");
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+          U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+          U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: "Sarina";
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src:
+          url("/fonts/sarina-latin-ext-400-normal.woff2") format("woff2"),
+          url("/fonts/sarina-latin-ext-400-normal.woff") format("woff");
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+          U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+          U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+          U+A720-A7FF;
+      }
       /*
        * Critical path CSS (inlined): first paint before the Vite bundle + index.css load.
        * Mirrors auth/loading gradient intent; full theme tokens live in src/styles/theme.css.

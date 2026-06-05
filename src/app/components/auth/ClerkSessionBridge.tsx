@@ -46,10 +46,9 @@ export function ClerkSessionBridge() {
           ?? clerkUser.emailAddresses[0]?.emailAddress
           ?? '';
         useAuthStore.setState({
+          // Clerk owns refresh — the axios interceptor mints a fresh JWT via
+          // Clerk on 401 instead of hitting /auth/refresh-token.
           accessToken: token,
-          // Clerk owns refresh — we keep `refreshToken` null and let the axios
-          // interceptor mint a fresh token via Clerk on 401.
-          refreshToken: null,
           isAuthenticated: true,
           isInitialized: true,
           isLoading: false,

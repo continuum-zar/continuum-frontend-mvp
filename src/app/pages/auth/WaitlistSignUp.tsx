@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import '@/styles/load-decorative-fonts';
 import { Link, useNavigate } from 'react-router';
 import { isAxiosError } from 'axios';
 import { useSignUp } from '@clerk/clerk-react';

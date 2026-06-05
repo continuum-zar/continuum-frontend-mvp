@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 
 import { clerkJwtTemplate, isClerkEnabled } from './clerkConfig';
 
@@ -49,163 +49,149 @@ const api = axios.create({
     // 30s is plenty for normal REST calls even on slow 4G; 90s hung forever on dropped TCP sockets before failing.
     // Slow LLM / wiki-scan / planner endpoints pass `{ timeout: ... }` on the call site.
     timeout: 30_000,
+    // Send cookies so the backend's HttpOnly refresh-token cookie reaches /auth/* endpoints.
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-/** Same shape as zustand persist `partialize` for `auth-storage`. */
-function readAuthTokensFromStorage(): {
-    accessToken: string | null;
-    refreshToken: string | null;
-} {
-    const tokens = localStorage.getItem('auth-storage');
-    if (!tokens) {
-        return { accessToken: null, refreshToken: null };
-    }
-    try {
-        const { state } = JSON.parse(tokens) as {
-            state?: { accessToken?: string | null; refreshToken?: string | null };
-        };
-        return {
-            accessToken: state?.accessToken ?? null,
-            refreshToken: state?.refreshToken ?? null,
-        };
-    } catch {
-        return { accessToken: null, refreshToken: null };
-    }
-}
-
 /**
- * Backend expects `refresh_token` as a query parameter (OpenAPI: no request body).
- * @see continuum-backend Postman + tests using `params={"refresh_token": ...}`.
+ * Refresh tokens via HttpOnly cookie. The backend reads the refresh token from
+ * the cookie set on login; no token is sent from the client.
  */
-async function postRefresh(refreshToken: string) {
-    return axios.post<{ access_token: string; refresh_token: string; token_type?: string }>(
+async function postRefresh() {
+    return axios.post<{ access_token: string; token_type?: string }>(
         `${apiBaseURL}/auth/refresh-token`,
         null,
         {
-            params: { refresh_token: refreshToken },
+            withCredentials: true,
             timeout: 30_000,
         }
     );
 }
 
 const AUTH_REFRESH_LOCK_NAME = 'continuum-auth-refresh';
-const STORAGE_MUTEX_KEY = 'continuum-auth-refresh-mutex';
-const STORAGE_MUTEX_TTL_MS = 120_000;
 
-function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+async function runRefresh(): Promise<string> {
+    const response = await postRefresh();
+    return response.data.access_token;
 }
 
 /**
- * Cross-tab mutex when Web Locks API is unavailable (older browsers).
- * Uses compare-then-set with a microtask yield so only one tab holds the mutex.
+ * Serialize refresh across tabs via the Web Locks API when available.
+ * Without it, tabs may both refresh — backends supporting refresh-token rotation
+ * handle this fine; each tab ends up with its own in-memory access token.
  */
-async function withStorageMutex<T>(fn: () => Promise<T>): Promise<T> {
-    if (typeof localStorage === 'undefined') {
-        return fn();
-    }
-    const deadline = Date.now() + STORAGE_MUTEX_TTL_MS;
-    while (Date.now() < deadline) {
-        const raw = localStorage.getItem(STORAGE_MUTEX_KEY);
-        if (raw) {
-            const ts = parseInt(raw.split('|')[0]!, 10);
-            const age = Date.now() - ts;
-            if (!Number.isNaN(age) && age >= 0 && age < STORAGE_MUTEX_TTL_MS) {
-                await sleep(50);
-                continue;
-            }
-            localStorage.removeItem(STORAGE_MUTEX_KEY);
-        }
-        const id = `${Date.now()}|${Math.random().toString(36).slice(2)}`;
-        localStorage.setItem(STORAGE_MUTEX_KEY, id);
-        await sleep(0);
-        if (localStorage.getItem(STORAGE_MUTEX_KEY) === id) {
-            try {
-                return await fn();
-            } finally {
-                if (localStorage.getItem(STORAGE_MUTEX_KEY) === id) {
-                    localStorage.removeItem(STORAGE_MUTEX_KEY);
-                }
-            }
-        }
-    }
-    return fn();
-}
-
-/**
- * Serialize refresh across tabs (Web Locks API, or localStorage mutex fallback).
- * If another tab already refreshed, re-read storage and skip a second rotation.
- */
-async function refreshTokensCoordinated(snapshotBefore: {
-    accessToken: string | null;
-    refreshToken: string | null;
-}): Promise<{ access_token: string; refresh_token: string }> {
-    const run = async (): Promise<{ access_token: string; refresh_token: string }> => {
-        const latest = readAuthTokensFromStorage();
-        if (
-            latest.accessToken &&
-            latest.accessToken !== snapshotBefore.accessToken
-        ) {
-            return {
-                access_token: latest.accessToken,
-                refresh_token: latest.refreshToken ?? '',
-            };
-        }
-        const rt = latest.refreshToken;
-        if (!rt) {
-            throw new Error('No refresh token');
-        }
-        const response = await postRefresh(rt);
-        return response.data;
-    };
-
+async function refreshAccessTokenCoordinated(): Promise<string> {
     if (typeof navigator !== 'undefined' && navigator.locks) {
-        return navigator.locks.request(AUTH_REFRESH_LOCK_NAME, () => run());
+        return navigator.locks.request(AUTH_REFRESH_LOCK_NAME, () => runRefresh());
     }
-    return withStorageMutex(run);
+    return runRefresh();
 }
 
-let isRefreshing = false;
-let failedQueue: Array<{
-    resolve: (token: string) => void;
-    reject: (error: unknown) => void;
-}> = [];
+/**
+ * Single in-flight refresh promise shared by `silentRefresh` (bootstrap) and the
+ * response interceptor (401 retry). Without this, parallel callers fire multiple
+ * POST /auth/refresh-token requests and trip the backend's 5/minute rate limit.
+ */
+let refreshInFlight: Promise<string> | null = null;
 
-const processQueue = (error: unknown, token: string | null = null) => {
-    failedQueue.forEach((prom) => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve(token!);
+// After a 429 from /auth/refresh-token, fail fast for a bit so query retries
+// (TanStack Query retries 429s once) don't fire another POST that's guaranteed
+// to also rate-limit. The backend limits to 5/minute, so 60s clears the bucket.
+let refreshCooldownUntil = 0;
+let lastRefreshError: unknown = null;
+
+function performRefresh(): Promise<string> {
+    if (refreshInFlight) return refreshInFlight;
+    if (Date.now() < refreshCooldownUntil && lastRefreshError) {
+        return Promise.reject(lastRefreshError);
+    }
+    const promise = (async () => {
+        const token = await refreshAccessTokenCoordinated();
+        const { useAuthStore } = await import('../store/authStore');
+        useAuthStore.getState().setAccessToken(token);
+        return token;
+    })();
+    refreshInFlight = promise;
+    promise.then(
+        () => {
+            refreshCooldownUntil = 0;
+            lastRefreshError = null;
+        },
+        (err) => {
+            const status = isAxiosError(err) ? err.response?.status : undefined;
+            if (status === 429) {
+                refreshCooldownUntil = Date.now() + 60_000;
+                lastRefreshError = err;
+            } else {
+                refreshCooldownUntil = 0;
+                lastRefreshError = null;
+            }
         }
+    );
+    // Clear in-flight on next microtask so concurrent callers attach to this
+    // promise instead of starting a second refresh.
+    promise.finally(() => {
+        queueMicrotask(() => {
+            if (refreshInFlight === promise) refreshInFlight = null;
+        });
     });
-    failedQueue = [];
-};
+    return promise;
+}
 
-// Request interceptor to add the bearer token
+export type SilentRefreshResult =
+    | { kind: 'ok'; token: string }
+    | { kind: 'unauthenticated' } // refresh cookie missing/expired — must log in
+    | { kind: 'transient' }; // 429, network error, 5xx — should retry, not logout
+
+/**
+ * Attempts a silent refresh on app boot. Distinguishes a real auth failure
+ * (`unauthenticated`) from a transient failure (`transient`) so callers don't
+ * kick the user out on a rate-limit blip.
+ */
+export async function silentRefresh(): Promise<SilentRefreshResult> {
+    try {
+        const token = await performRefresh();
+        return { kind: 'ok', token };
+    } catch (err) {
+        const status = isAxiosError(err) ? err.response?.status : undefined;
+        if (status === 401 || status === 403) return { kind: 'unauthenticated' };
+        return { kind: 'transient' };
+    }
+}
+
+// Request interceptor: attach the in-memory access token. If no token is set yet
+// but a refresh is in flight (e.g. the bootstrap silentRefresh from
+// AuthSessionBootstrap), wait for it so we don't fire requests that will 401 and
+// kick off a second, parallel refresh.
+//
+// When Clerk is configured, prefer a freshly-minted Clerk JWT instead of the
+// in-memory legacy token; Clerk handles its own refresh so the cookie-refresh
+// dance below is skipped entirely.
 api.interceptors.request.use(
     async (config) => {
-        // When Clerk is configured prefer a freshly-minted Clerk token so the
-        // request always carries an un-expired JWT — Clerk handles its own
-        // refresh, so the legacy /auth/refresh-token dance is bypassed.
         const clerkToken = await getClerkSessionToken();
         if (clerkToken) {
             config.headers.Authorization = `Bearer ${clerkToken}`;
             return config;
         }
-        const tokens = localStorage.getItem('auth-storage');
-        if (tokens) {
-            try {
-                const { state } = JSON.parse(tokens);
-                if (state.accessToken) {
-                    config.headers.Authorization = `Bearer ${state.accessToken}`;
-                }
-            } catch (e) {
-                console.error('Error parsing auth tokens from localStorage', e);
-            }
+        const { useAuthStore } = await import('../store/authStore');
+        let accessToken = useAuthStore.getState().accessToken;
+        const isAuthEndpoint =
+            config.url === '/auth/login' ||
+            config.url === '/auth/register' ||
+            config.url === '/auth/logout' ||
+            config.url === '/auth/refresh-token' ||
+            config.url === '/auth/email-exists' ||
+            config.url === '/auth/waitlist';
+        if (!accessToken && !isAuthEndpoint && refreshInFlight) {
+            await refreshInFlight;
+            accessToken = useAuthStore.getState().accessToken;
+        }
+        if (accessToken) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
         }
         return config;
     },
@@ -214,79 +200,46 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor to handle token refresh
+// Response interceptor: on 401, try a cookie-based refresh once, then retry the request.
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
-        // If error is 401 and not already retried
         if (
             error.response?.status === 401 &&
+            originalRequest &&
             !originalRequest._retry &&
-            originalRequest.url !== '/auth/logout'
+            originalRequest.url !== '/auth/logout' &&
+            originalRequest.url !== '/auth/refresh-token'
         ) {
-            if (isRefreshing) {
-                return new Promise(function (resolve, reject) {
-                    failedQueue.push({ resolve, reject });
-                })
-                    .then((token) => {
-                        originalRequest.headers.Authorization = `Bearer ${token}`;
-                        return api(originalRequest);
-                    })
-                    .catch((err) => {
-                        return Promise.reject(err);
-                    });
-            }
-
             originalRequest._retry = true;
-            isRefreshing = true;
 
-            // Clerk-managed sessions: just ask Clerk for a fresh token and retry.
+            // Clerk-managed sessions: ask Clerk for a fresh token and retry.
+            // Clerk owns its own refresh, so we bypass the cookie-refresh dance.
             if (isClerkEnabled) {
-                try {
-                    const fresh = await getClerkSessionToken();
-                    if (fresh) {
-                        processQueue(null, fresh);
-                        originalRequest.headers.Authorization = `Bearer ${fresh}`;
-                        return api(originalRequest);
-                    }
-                    processQueue(error, null);
-                    return Promise.reject(error);
-                } finally {
-                    isRefreshing = false;
+                const fresh = await getClerkSessionToken();
+                if (fresh) {
+                    originalRequest.headers.Authorization = `Bearer ${fresh}`;
+                    return api(originalRequest);
                 }
+                return Promise.reject(error);
             }
 
-            const tokens = localStorage.getItem('auth-storage');
-            if (tokens) {
-                try {
-                    const snapshotBefore = readAuthTokensFromStorage();
-                    const refreshToken = snapshotBefore.refreshToken;
-
-                    if (refreshToken) {
-                        const { useAuthStore } = await import('../store/authStore');
-
-                        const data = await refreshTokensCoordinated(snapshotBefore);
-                        const { access_token, refresh_token } = data;
-
-                        useAuthStore.getState().setTokens(access_token, refresh_token);
-
-                        processQueue(null, access_token);
-
-                        originalRequest.headers.Authorization = `Bearer ${access_token}`;
-                        return api(originalRequest);
-                    }
-                } catch (refreshError) {
-                    processQueue(refreshError, null);
+            try {
+                const token = await performRefresh();
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                return api(originalRequest);
+            } catch (refreshError) {
+                // Only logout when the refresh cookie is actually invalid/expired
+                // (401). Transient failures (429 rate limit, network errors,
+                // 5xx) shouldn't kick the user out — let the caller retry.
+                const status = isAxiosError(refreshError) ? refreshError.response?.status : undefined;
+                if (status === 401 || status === 403) {
                     const { useAuthStore } = await import('../store/authStore');
                     useAuthStore.getState().logout();
-                    return Promise.reject(refreshError);
-                } finally {
-                    isRefreshing = false;
                 }
-            } else {
-                isRefreshing = false;
+                return Promise.reject(error);
             }
         }
 

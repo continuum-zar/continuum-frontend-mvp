@@ -39,6 +39,8 @@ import type { SettingsSection } from "./SettingsModal";
 import { cn } from "../ui/utils";
 import { sortMilestonesForNav } from "@/lib/milestoneSort";
 import { useTimeTracking } from "@/app/context/TimeTrackingContext";
+import { LeftRailProjectSearchControls } from "./LeftRailProjectSearchControls";
+import { filterApiProjectsBySearchQuery } from "./leftRailProjectSearchUtils";
 
 const CreateProjectModal = lazy(() =>
   import("./CreateProjectModal").then((m) => ({ default: m.CreateProjectModal }))
@@ -365,6 +367,11 @@ function Frame({
   isMyTasksActive = false,
   isProductivityRhythmActive = false,
   plannerNavigationGuard,
+  projectSearchOpen,
+  projectSearchQuery,
+  onProjectSearchOpen,
+  onProjectSearchQueryChange,
+  onProjectSearchClose,
 }: {
   className?: string;
   isInvoiceActive?: boolean;
@@ -372,17 +379,22 @@ function Frame({
   isMyTasksActive?: boolean;
   isProductivityRhythmActive?: boolean;
   plannerNavigationGuard?: PlannerNavigationGuardProps;
+  projectSearchOpen: boolean;
+  projectSearchQuery: string;
+  onProjectSearchOpen: () => void;
+  onProjectSearchQueryChange: (value: string) => void;
+  onProjectSearchClose: () => void;
 }) {
   return (
     <div className={className || "content-stretch flex flex-col gap-[8px] items-start relative"} data-node-id="7:92">
-      <div className="bg-[#edf0f3] content-stretch flex gap-[8px] h-[40px] items-center px-[16px] py-[8px] relative rounded-[999px] shrink-0 w-full" data-name="Component 6" data-node-id="7:93">
-        <div className="relative shrink-0 size-[16px]" data-name="lucide/search" data-node-id="7:94">
-          <img alt="" className="absolute block max-w-none size-full" src={imgLucideSearch} />
-        </div>
-        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] text-center whitespace-nowrap" data-node-id="7:96">
-          Search Projects
-        </p>
-      </div>
+      <LeftRailProjectSearchControls
+        open={projectSearchOpen}
+        query={projectSearchQuery}
+        onQueryChange={onProjectSearchQueryChange}
+        onOpen={onProjectSearchOpen}
+        onClose={onProjectSearchClose}
+        searchIconSrc={imgLucideSearch}
+      />
       <Frame1
         className="content-stretch flex gap-[8px] items-center relative shrink-0"
         isInvoiceActive={isInvoiceActive}
@@ -560,6 +572,8 @@ export function DashboardLeftRail({
   );
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
+  const [projectSearchOpen, setProjectSearchOpen] = useState(false);
+  const [projectSearchQuery, setProjectSearchQuery] = useState("");
   const taskSearchInputRef = useRef<HTMLInputElement>(null);
   const [railPickerBoundary, setRailPickerBoundary] = useState<Element | null>(null);
   const setRailPickerContainer = useCallback((node: HTMLDivElement | null) => {
@@ -626,12 +640,24 @@ export function DashboardLeftRail({
     }
   }, [taskPickerOpen]);
 
+  const closeProjectSearch = useCallback(() => {
+    setProjectSearchOpen(false);
+    setProjectSearchQuery("");
+  }, []);
+
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const projectParam = searchParams.get("project");
   const expandedProjectId = expandedProjectFromLocation(pathname, projectParam);
   const { data: apiProjectsRaw } = useProjects();
   const apiProjects = Array.isArray(apiProjectsRaw) ? apiProjectsRaw : [];
+  const filteredApiProjects = useMemo(
+    () => filterApiProjectsBySearchQuery(apiProjects, projectSearchQuery),
+    [apiProjects, projectSearchQuery],
+  );
+  const projectSearchActive = projectSearchQuery.trim().length > 0;
+  const noApiProjectMatches =
+    projectSearchActive && apiProjects.length > 0 && filteredApiProjects.length === 0;
   const user = useAuthStore((s) => s.user);
   const profileName = user
     ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email
@@ -719,6 +745,11 @@ export function DashboardLeftRail({
           isMyTasksActive={isMyTasksActive}
           isProductivityRhythmActive={isProductivityRhythmActive}
           plannerNavigationGuard={plannerNavigationGuard}
+          projectSearchOpen={projectSearchOpen}
+          projectSearchQuery={projectSearchQuery}
+          onProjectSearchOpen={() => setProjectSearchOpen(true)}
+          onProjectSearchQueryChange={setProjectSearchQuery}
+          onProjectSearchClose={closeProjectSearch}
         />
         <div
           className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden"
@@ -831,7 +862,7 @@ export function DashboardLeftRail({
                 }
                 plannerNavigationGuard={plannerNavigationGuard}
               />
-              {apiProjects.map((project) => (
+              {filteredApiProjects.map((project) => (
                 <ApiProjectBlock
                   key={project.apiId}
                   project={project}
@@ -841,6 +872,11 @@ export function DashboardLeftRail({
                   plannerNavigationGuard={plannerNavigationGuard}
                 />
               ))}
+              {noApiProjectMatches ? (
+                <p className="px-[12px] py-[8px] font-['Satoshi:Medium',sans-serif] text-[13px] text-[#606d76]">
+                  No matching projects
+                </p>
+              ) : null}
             </div>
           </div>
         <div className="pointer-events-none absolute content-stretch flex flex-col items-center left-[131px] opacity-0 top-[159px] w-[145px]" data-node-id="7:2829" aria-hidden="true">
