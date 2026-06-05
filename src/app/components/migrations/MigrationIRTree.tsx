@@ -47,7 +47,57 @@ interface MigrationIRTreeProps {
 interface TaskGroup {
     key: string;
     label: string;
+    /** Kind of grouping this represents — used only for the icon. */
+    kind: "milestone" | "column" | "unscheduled";
     tasks: IRTask[];
+}
+
+/**
+ * Pick the grouping axis based on what's in the IR:
+ *
+ *   - Trello / Asana exports have `columns` (lists / sections) — group by
+ *     column so tasks line up with the original board lanes.
+ *   - Jira CSV exports have `milestones` (sprints) — group by milestone.
+ *   - Neither: everything goes under "Unscheduled".
+ *
+ * Picking columns when both exist matches what the user sees in their
+ * source tool. We don't try to nest (column → milestone) because the
+ * source tools themselves don't model that.
+ */
+function groupTasks(ir: CanonicalProjectIR): TaskGroup[] {
+    if (ir.columns.length > 0) {
+        return groupTasksByColumn(ir);
+    }
+    return groupTasksByMilestone(ir);
+}
+
+function groupTasksByColumn(ir: CanonicalProjectIR): TaskGroup[] {
+    const byColumn = new Map<string, IRTask[]>();
+    const ungrouped: IRTask[] = [];
+    for (const t of ir.tasks) {
+        if (t.column_ext_id && ir.columns.some((c) => c.ext_id === t.column_ext_id)) {
+            const arr = byColumn.get(t.column_ext_id) ?? [];
+            arr.push(t);
+            byColumn.set(t.column_ext_id, arr);
+        } else {
+            ungrouped.push(t);
+        }
+    }
+    const groups: TaskGroup[] = ir.columns.map((c) => ({
+        key: c.ext_id,
+        label: c.title,
+        kind: "column",
+        tasks: byColumn.get(c.ext_id) ?? [],
+    }));
+    if (ungrouped.length > 0) {
+        groups.push({
+            key: "__no_column__",
+            label: "No column",
+            kind: "unscheduled",
+            tasks: ungrouped,
+        });
+    }
+    return groups;
 }
 
 function groupTasksByMilestone(ir: CanonicalProjectIR): TaskGroup[] {
@@ -65,6 +115,7 @@ function groupTasksByMilestone(ir: CanonicalProjectIR): TaskGroup[] {
     const groups: TaskGroup[] = ir.milestones.map((m) => ({
         key: m.ext_id,
         label: m.name,
+        kind: "milestone",
         tasks: byMilestone.get(m.ext_id) ?? [],
     }));
     // Tasks whose milestone_ext_id doesn't match an IR milestone are
@@ -75,7 +126,12 @@ function groupTasksByMilestone(ir: CanonicalProjectIR): TaskGroup[] {
         }
     }
     if (unscheduled.length > 0) {
-        groups.push({ key: "__unscheduled__", label: "Unscheduled", tasks: unscheduled });
+        groups.push({
+            key: "__unscheduled__",
+            label: "Unscheduled",
+            kind: "unscheduled",
+            tasks: unscheduled,
+        });
     }
     return groups;
 }
@@ -90,7 +146,7 @@ function warningsByExtId(warnings: IRWarning[]): Map<string, number> {
 }
 
 export function MigrationIRTree({ ir, focusedTaskExtId }: MigrationIRTreeProps) {
-    const groups = React.useMemo(() => groupTasksByMilestone(ir), [ir]);
+    const groups = React.useMemo(() => groupTasks(ir), [ir]);
     const warningCounts = React.useMemo(
         () => warningsByExtId(ir.warnings),
         [ir.warnings],
@@ -172,7 +228,7 @@ function MilestoneGroup({ group, warningCounts, focusedTaskExtId }: MilestoneGro
                                 aria-hidden="true"
                             />
                         )}
-                        {group.key === "__unscheduled__" ? (
+                        {group.kind === "unscheduled" ? (
                             <Inbox
                                 className="size-3.5 text-muted-foreground"
                                 aria-hidden="true"
