@@ -60,6 +60,10 @@ const DashboardPlaceholderAIPlanner = lazy(() =>
     default: m.DashboardPlaceholderAIPlanner,
   }))
 );
+const MigrationsUploadPage = lazy(() => import("./pages/MigrationsUploadPage"));
+const MigrationsPreviewPage = lazy(() => import("./pages/MigrationsPreviewPage"));
+const MigrationsApplyPage = lazy(() => import("./pages/MigrationsApplyPage"));
+const MigrationsJobRedirect = lazy(() => import("./pages/MigrationsJobRedirect"));
 const DashboardPlaceholderGetStartedTimeLogs = lazy(() =>
   import("./pages/DashboardPlaceholderGetStartedTimeLogs").then((m) => ({
     default: m.DashboardPlaceholderGetStartedTimeLogs,
@@ -408,6 +412,47 @@ const appRoutes = [
       <AuthGuard>
         <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
           <DashboardPlaceholderAIPlanner />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  /** Migration import wizard (Jira / Trello / Asana → Continuum). */
+  {
+    path: `${WORKSPACE_BASE}/migrations/new`,
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <MigrationsUploadPage />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: `${WORKSPACE_BASE}/migrations/:jobId/preview`,
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <MigrationsPreviewPage />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: `${WORKSPACE_BASE}/migrations/:jobId/apply`,
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <MigrationsApplyPage />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: `${WORKSPACE_BASE}/migrations/:jobId`,
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <MigrationsJobRedirect />
         </Suspense>
       </AuthGuard>
     ),
