@@ -2,9 +2,92 @@ import { useState } from 'react';
 import '@/styles/load-decorative-fonts';
 import { Link, useNavigate } from 'react-router';
 import { isAxiosError } from 'axios';
+import { useSignUp } from '@clerk/clerk-react';
+import { Loader2 } from 'lucide-react';
 import { checkEmailExists } from '@/api/auth';
+import { isClerkEnabled } from '@/lib/clerkConfig';
 
 export function WaitlistSignUp() {
+  return isClerkEnabled ? <ClerkShell /> : <LegacyShell />;
+}
+
+function ClerkShell() {
+  const clerkSignUp = useSignUp();
+  const [oauthError, setOauthError] = useState<string | null>(null);
+  const [oauthPending, setOauthPending] = useState<null | 'google' | 'apple'>(null);
+
+  const handleOAuth = async (provider: 'google' | 'apple') => {
+    if (!clerkSignUp.isLoaded) return;
+    setOauthError(null);
+    setOauthPending(provider);
+    try {
+      await clerkSignUp.signUp.authenticateWithRedirect({
+        strategy: provider === 'google' ? 'oauth_google' : 'oauth_apple',
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/onboarding/usage',
+      });
+    } catch (err: unknown) {
+      setOauthError(
+        extractClerkErrorMessage(err)
+          ?? `Could not start ${provider === 'google' ? 'Google' : 'Apple'} sign-up.`,
+      );
+      setOauthPending(null);
+    }
+  };
+
+  return (
+    <WaitlistLayout
+      googleDisabled={!clerkSignUp.isLoaded || oauthPending !== null}
+      googlePending={oauthPending === 'google'}
+      onGoogleClick={() => void handleOAuth('google')}
+      googleTitle="Continue with Google"
+      appleDisabled={!clerkSignUp.isLoaded || oauthPending !== null}
+      applePending={oauthPending === 'apple'}
+      onAppleClick={() => void handleOAuth('apple')}
+      appleTitle="Continue with Apple"
+      headerError={oauthError}
+    />
+  );
+}
+
+function LegacyShell() {
+  return (
+    <WaitlistLayout
+      googleDisabled
+      googlePending={false}
+      onGoogleClick={() => {}}
+      googleTitle="Google sign-in is not available yet"
+      appleDisabled
+      applePending={false}
+      onAppleClick={() => {}}
+      appleTitle="Apple sign-in is not available yet"
+      headerError={null}
+    />
+  );
+}
+
+function WaitlistLayout(props: {
+  googleDisabled: boolean;
+  googlePending: boolean;
+  onGoogleClick: () => void;
+  googleTitle: string;
+  appleDisabled: boolean;
+  applePending: boolean;
+  onAppleClick: () => void;
+  appleTitle: string;
+  headerError: string | null;
+}) {
+  const {
+    googleDisabled,
+    googlePending,
+    onGoogleClick,
+    googleTitle,
+    appleDisabled,
+    applePending,
+    onAppleClick,
+    appleTitle,
+    headerError,
+  } = props;
   const [email, setEmail] = useState('');
   const [touched, setTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,23 +149,37 @@ export function WaitlistSignUp() {
               <div className="flex flex-col gap-2">
                 <button
                   type="button"
-                  aria-disabled="true"
-                  title="Google sign-in is not available yet"
-                  onClick={(e) => e.preventDefault()}
-                  className="relative flex h-10 w-full cursor-not-allowed items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4"
+                  aria-disabled={googleDisabled}
+                  disabled={googleDisabled}
+                  title={googleTitle}
+                  onClick={onGoogleClick}
+                  className={`relative flex h-10 w-full items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4 ${
+                    googleDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+                  }`}
                 >
-                  <img src="/auth/google.svg" alt="Google" className="absolute left-[9px] h-5 w-5" />
+                  {googlePending ? (
+                    <Loader2 className="absolute left-[9px] h-5 w-5 animate-spin text-[#252014]" />
+                  ) : (
+                    <img src="/auth/google.svg" alt="Google" className="absolute left-[9px] h-5 w-5" />
+                  )}
                   <span className="text-sm font-medium text-[#252014]">Continue with Google</span>
                 </button>
 
                 <button
                   type="button"
-                  aria-disabled="true"
-                  title="Apple sign-in is not available yet"
-                  onClick={(e) => e.preventDefault()}
-                  className="relative flex h-10 w-full cursor-not-allowed items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4"
+                  aria-disabled={appleDisabled}
+                  disabled={appleDisabled}
+                  title={appleTitle}
+                  onClick={onAppleClick}
+                  className={`relative flex h-10 w-full items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4 ${
+                    appleDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+                  }`}
                 >
-                  <img src="/auth/apple.svg" alt="Apple" className="absolute left-2 h-5 w-5" />
+                  {applePending ? (
+                    <Loader2 className="absolute left-2 h-5 w-5 animate-spin text-[#252014]" />
+                  ) : (
+                    <img src="/auth/apple.svg" alt="Apple" className="absolute left-2 h-5 w-5" />
+                  )}
                   <span className="text-sm font-medium text-[#252014]">Continue with Apple</span>
                 </button>
               </div>
@@ -96,7 +193,7 @@ export function WaitlistSignUp() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onBlur={handleBlur}
-                    placeholder="What’s your email address?"
+                    placeholder="What's your email address?"
                     required
                     className="h-10 w-full rounded-lg border border-[#E9E9E9] bg-white px-4 text-sm font-medium text-[#151515] outline-none placeholder:text-[#9FA5A8]"
                   />
@@ -112,6 +209,9 @@ export function WaitlistSignUp() {
                 </button>
                 {submitError && (
                   <p className="text-xs text-red-600">{submitError}</p>
+                )}
+                {headerError && !submitError && (
+                  <p className="text-xs text-red-600">{headerError}</p>
                 )}
               </form>
             </div>
@@ -132,4 +232,18 @@ export function WaitlistSignUp() {
       </div>
     </div>
   );
+}
+
+function extractClerkErrorMessage(err: unknown): string | null {
+  if (typeof err === 'object' && err !== null) {
+    const errors = (err as { errors?: Array<{ longMessage?: string; message?: string }> }).errors;
+    if (Array.isArray(errors) && errors.length > 0) {
+      const first = errors[0];
+      if (first?.longMessage) return first.longMessage;
+      if (first?.message) return first.message;
+    }
+    const message = (err as { message?: string }).message;
+    if (typeof message === 'string' && message) return message;
+  }
+  return null;
 }
