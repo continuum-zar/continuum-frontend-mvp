@@ -15,6 +15,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.61.3",
     "@fontsource/sarina": "^5.2.7",
     "@popperjs/core": "2.11.8",
     "@radix-ui/react-accordion": "1.2.3",

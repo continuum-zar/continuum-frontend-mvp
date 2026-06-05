@@ -1,10 +1,41 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { SignIn } from '@clerk/clerk-react';
 import { SESSION_INVITE_TOKEN_KEY } from '@/app/components/welcome/welcomeModalAssets';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
+import { isClerkEnabled } from '@/lib/clerkConfig';
+
+function ClerkLogin() {
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[#A8E5FE] to-[#FAF8F4] p-10">
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-3">
+          <img src="/auth/Continuum.svg" alt="Continuum Logo" className="h-[37px] w-[219px]" />
+          <p className="text-center text-xs font-medium leading-[100%] tracking-[-0.12px] text-[#252014] opacity-80">
+            Time track with one click.
+          </p>
+        </div>
+        <SignIn
+          routing="hash"
+          signUpUrl="/register"
+          afterSignInUrl="/loading"
+          afterSignUpUrl="/loading"
+          appearance={{ elements: { card: 'shadow-[0px_4px_24px_rgba(0,0,0,0.1)]' } }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export function Login() {
+  if (isClerkEnabled) {
+    return <ClerkLogin />;
+  }
+  return <LegacyLogin />;
+}
+
+function LegacyLogin() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();

@@ -1,5 +1,33 @@
 import axios from 'axios';
 
+import { clerkJwtTemplate, isClerkEnabled } from './clerkConfig';
+
+/**
+ * Minimal type for the global `Clerk` object the SDK installs on `window`.
+ * We only use the bits we need (session token fetch) to avoid importing the
+ * SDK at module-load time and pulling it into the legacy auth bundle.
+ */
+type WindowWithClerk = Window & {
+    Clerk?: {
+        session?: {
+            getToken: (options?: { template?: string }) => Promise<string | null>;
+        } | null;
+    };
+};
+
+async function getClerkSessionToken(): Promise<string | null> {
+    if (!isClerkEnabled || typeof window === 'undefined') return null;
+    const w = window as WindowWithClerk;
+    const session = w.Clerk?.session;
+    if (!session?.getToken) return null;
+    try {
+        return await session.getToken(clerkJwtTemplate ? { template: clerkJwtTemplate } : undefined);
+    } catch (err) {
+        console.error('api: failed to mint Clerk session token', err);
+        return null;
+    }
+}
+
 /**
  * API base URL for axios.
  * - If `VITE_API_BASE_URL` is set (e.g. `/api/v1` or `https://api.example.com/api/v1`), that wins.
@@ -159,7 +187,15 @@ const processQueue = (error: unknown, token: string | null = null) => {
 
 // Request interceptor to add the bearer token
 api.interceptors.request.use(
-    (config) => {
+    async (config) => {
+        // When Clerk is configured prefer a freshly-minted Clerk token so the
+        // request always carries an un-expired JWT — Clerk handles its own
+        // refresh, so the legacy /auth/refresh-token dance is bypassed.
+        const clerkToken = await getClerkSessionToken();
+        if (clerkToken) {
+            config.headers.Authorization = `Bearer ${clerkToken}`;
+            return config;
+        }
         const tokens = localStorage.getItem('auth-storage');
         if (tokens) {
             try {
@@ -205,6 +241,22 @@ api.interceptors.response.use(
 
             originalRequest._retry = true;
             isRefreshing = true;
+
+            // Clerk-managed sessions: just ask Clerk for a fresh token and retry.
+            if (isClerkEnabled) {
+                try {
+                    const fresh = await getClerkSessionToken();
+                    if (fresh) {
+                        processQueue(null, fresh);
+                        originalRequest.headers.Authorization = `Bearer ${fresh}`;
+                        return api(originalRequest);
+                    }
+                    processQueue(error, null);
+                    return Promise.reject(error);
+                } finally {
+                    isRefreshing = false;
+                }
+            }
 
             const tokens = localStorage.getItem('auth-storage');
             if (tokens) {
