@@ -1903,6 +1903,10 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 </Tooltip>
                 <button
                   type="button"
+                  // Block blur on inline title/description inputs so their save
+                  // doesn't flip the mutation to pending and disable this button
+                  // before the click registers. handleUpdateTask reads the drafts.
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={handleUpdateTask}
                   className={`h-12 rounded-[12px] px-8 text-[14px] font-medium ${
                     updateTaskMutation.isPending
