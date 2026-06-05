@@ -119,6 +119,7 @@ export function SprintKanbanListView({
 
     return (
       <div
+        data-no-kanban-search-dismiss
         onPointerDown={cardPointerDown(task.id)}
         onClick={() => {
           if (!isDragging) {

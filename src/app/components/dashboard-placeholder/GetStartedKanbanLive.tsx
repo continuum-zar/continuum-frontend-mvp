@@ -594,6 +594,7 @@ export function GetStartedKanbanLive({
         onMoveTaskToMilestone={(milestoneId) => void handleMoveTaskToMilestone(task.id, milestoneId)}
       >
         <div
+          data-no-kanban-search-dismiss
           className={cn(
             "content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100",
             isDragging ? "pointer-events-none" : "cursor-open-hand",
