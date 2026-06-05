@@ -119,6 +119,7 @@ export function SprintKanbanListView({
 
     return (
       <div
+        data-no-kanban-search-dismiss
         onPointerDown={cardPointerDown(task.id)}
         onClick={() => {
           if (!isDragging) {
@@ -318,6 +319,12 @@ export function SprintKanbanListView({
                   {(t) => renderRow(t)}
                 </VirtualList>
               )}
+              {dragOverCol === col.id && draggingId !== null ? (
+                <div
+                  className="mx-3 mb-3 mt-2 flex min-h-[52px] items-center justify-center rounded-[8px] border-2 border-dashed border-primary bg-[rgba(36,181,248,0.06)]"
+                  aria-label="Drop here to move this task to this list"
+                />
+              ) : null}
             </div>
           </div>
         )}

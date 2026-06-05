@@ -608,6 +608,7 @@ export function GetStartedKanbanLive({
         onMoveTaskToMilestone={(milestoneId) => void handleMoveTaskToMilestone(task.id, milestoneId)}
       >
         <div
+          data-no-kanban-search-dismiss
           className={cn(
             "content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100",
             isDragging ? "pointer-events-none" : "cursor-open-hand",
@@ -749,6 +750,12 @@ export function GetStartedKanbanLive({
           }}
         >
           {children}
+          {isDropTarget ? (
+            <div
+              className="flex min-h-[152px] w-full shrink-0 flex-col items-center justify-center rounded-[8px] border-2 border-dashed border-primary bg-[rgba(36,181,248,0.06)] px-3 py-4"
+              aria-label="Drop here to move this task to this list"
+            />
+          ) : null}
         </div>
       </div>
     );

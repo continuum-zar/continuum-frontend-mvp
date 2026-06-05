@@ -1205,7 +1205,11 @@ export function useUpdateTask() {
             if (ctx?.prevSnapshot != null) {
                 restoreTaskCachesFromSnapshot(queryClient, variables.taskId, ctx.prevSnapshot);
             }
-            toast.error(getApiErrorMessage(err, 'Failed to update task'));
+            const fallback =
+                variables.checklists !== undefined && isChecklistOnlyTaskUpdate(variables)
+                    ? "Couldn't save checklist changes. Reverted to last saved state."
+                    : 'Failed to update task';
+            toast.error(getApiErrorMessage(err, fallback));
         },
         onSettled: (_data, err, variables) => {
             if (err != null) return;

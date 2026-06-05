@@ -1,11 +1,13 @@
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ClerkProvider } from "@clerk/clerk-react";
 import { QueryDevtoolsGate } from "./dev/QueryDevtoolsGate.tsx";
 import App from "./app/App.tsx";
 // Satoshi is @imported from index.css so it loads with the main stylesheet.
 import "./styles/index.css";
 import { DEFAULT_GC_MS, DEFAULT_STALE_MS } from "./lib/queryDefaults.ts";
 import { tryReloadForStaleChunk } from "./lib/staleClientChunk.ts";
+import { clerkPublishableKey, isClerkEnabled } from "./lib/clerkConfig.ts";
 
 if (typeof window !== "undefined") {
   window.addEventListener("vite:preloadError", () => {
@@ -39,9 +41,19 @@ const queryClient = new QueryClient({
   },
 });
 
-createRoot(document.getElementById("root")!).render(
+const appTree = (
   <QueryClientProvider client={queryClient}>
     <App />
     <QueryDevtoolsGate />
   </QueryClientProvider>
+);
+
+createRoot(document.getElementById("root")!).render(
+  isClerkEnabled && clerkPublishableKey
+    ? (
+      <ClerkProvider publishableKey={clerkPublishableKey} afterSignOutUrl="/login">
+        {appTree}
+      </ClerkProvider>
+    )
+    : appTree,
 );

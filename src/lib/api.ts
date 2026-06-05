@@ -1,5 +1,33 @@
 import axios, { isAxiosError } from 'axios';
 
+import { clerkJwtTemplate, isClerkEnabled } from './clerkConfig';
+
+/**
+ * Minimal type for the global `Clerk` object the SDK installs on `window`.
+ * We only use the bits we need (session token fetch) to avoid importing the
+ * SDK at module-load time and pulling it into the legacy auth bundle.
+ */
+type WindowWithClerk = Window & {
+    Clerk?: {
+        session?: {
+            getToken: (options?: { template?: string }) => Promise<string | null>;
+        } | null;
+    };
+};
+
+async function getClerkSessionToken(): Promise<string | null> {
+    if (!isClerkEnabled || typeof window === 'undefined') return null;
+    const w = window as WindowWithClerk;
+    const session = w.Clerk?.session;
+    if (!session?.getToken) return null;
+    try {
+        return await session.getToken(clerkJwtTemplate ? { template: clerkJwtTemplate } : undefined);
+    } catch (err) {
+        console.error('api: failed to mint Clerk session token', err);
+        return null;
+    }
+}
+
 /**
  * API base URL for axios.
  * - If `VITE_API_BASE_URL` is set (e.g. `/api/v1` or `https://api.example.com/api/v1`), that wins.
@@ -138,8 +166,17 @@ export async function silentRefresh(): Promise<SilentRefreshResult> {
 // but a refresh is in flight (e.g. the bootstrap silentRefresh from
 // AuthSessionBootstrap), wait for it so we don't fire requests that will 401 and
 // kick off a second, parallel refresh.
+//
+// When Clerk is configured, prefer a freshly-minted Clerk JWT instead of the
+// in-memory legacy token; Clerk handles its own refresh so the cookie-refresh
+// dance below is skipped entirely.
 api.interceptors.request.use(
     async (config) => {
+        const clerkToken = await getClerkSessionToken();
+        if (clerkToken) {
+            config.headers.Authorization = `Bearer ${clerkToken}`;
+            return config;
+        }
         const { useAuthStore } = await import('../store/authStore');
         let accessToken = useAuthStore.getState().accessToken;
         const isAuthEndpoint =
@@ -177,6 +214,17 @@ api.interceptors.response.use(
             originalRequest.url !== '/auth/refresh-token'
         ) {
             originalRequest._retry = true;
+
+            // Clerk-managed sessions: ask Clerk for a fresh token and retry.
+            // Clerk owns its own refresh, so we bypass the cookie-refresh dance.
+            if (isClerkEnabled) {
+                const fresh = await getClerkSessionToken();
+                if (fresh) {
+                    originalRequest.headers.Authorization = `Bearer ${fresh}`;
+                    return api(originalRequest);
+                }
+                return Promise.reject(error);
+            }
 
             try {
                 const token = await performRefresh();
