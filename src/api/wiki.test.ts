@@ -46,7 +46,7 @@ describe('wiki AI task generation API', () => {
         );
     });
 
-    it('forwards repository_id and branch when generating tasks', async () => {
+    it('forwards sources (repo + branch pairs) when generating tasks', async () => {
         postMock.mockResolvedValueOnce({
             data: {
                 project_id: 1,
@@ -60,8 +60,10 @@ describe('wiki AI task generation API', () => {
         await generateTasks(1, {
             prompt: 'Add auth tests',
             max_tasks: 2,
-            repository_id: 42,
-            branch: '  feature/login  ',
+            sources: [
+                { repository_id: 42, branch: '  feature/login  ' },
+                { repository_id: 43, branch: null },
+            ],
         });
 
         expect(postMock).toHaveBeenCalledWith(
@@ -69,14 +71,16 @@ describe('wiki AI task generation API', () => {
             {
                 prompt: 'Add auth tests',
                 max_tasks: 2,
-                repository_id: 42,
-                branch: 'feature/login',
+                sources: [
+                    { repository_id: 42, branch: 'feature/login' },
+                    { repository_id: 43 },
+                ],
             },
             { timeout: 600_000 },
         );
     });
 
-    it('omits repository_id and branch when not provided', async () => {
+    it('omits sources when not provided', async () => {
         postMock.mockResolvedValueOnce({
             data: {
                 project_id: 1,
