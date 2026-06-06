@@ -16,7 +16,7 @@
  */
 
 import { useMemo } from "react";
-import { AlertTriangle, Sparkles } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/app/components/ui/utils";
@@ -182,7 +182,7 @@ function WarningGroupCard({
     group: WarningGroup;
     onJumpTo?: MigrationWarningsListProps["onJumpTo"];
 }) {
-    const Icon = group.severity === "info" ? Sparkles : AlertTriangle;
+    const Icon = group.severity === "info" ? Info : AlertTriangle;
     return (
         <div
             className={cn(
