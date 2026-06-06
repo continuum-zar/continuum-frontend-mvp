@@ -82,6 +82,14 @@ const SUGGESTED_PROMPTS = [
   "Is the timeline on track?",
 ] as const;
 
+const SUGGESTED_TASK_GEN_PROMPTS = [
+  "Add authentication to the app",
+  "Make the dashboard mobile-friendly",
+  "Set up unit testing",
+  "Improve error handling",
+  "Add observability and logging",
+] as const;
+
 const MOCK_AI_BODY =
   "42% of weighted scope is complete. There have been 3 structural updates in the last sprint. Signals are Stable based on hours-per-scope efficiency. 2 tasks are currently flagged as stalled or missing scope.";
 
@@ -489,75 +497,82 @@ export function WelcomeAiChatModal({
     setPhase("thinking");
   };
 
-  const submitGetStartedPrompt = useCallback(async () => {
-    const text = draftMessage.trim();
-    if (!text || !projectId) return;
-    setSelectedPrompt(text);
-    setDraftMessage("");
-    setApiError(null);
-    setTaskGenOriginalPrompt(text);
-    setTaskGenClarificationLog("");
-    setWikiClarifyReply(null);
-    setWikiChoiceQuestions([]);
-    setWikiChoiceSelections({});
-    setWikiSubmittedChoiceIds(new Set());
-    setWikiSubmittedChoiceAnswers({});
-    setPhase("getStartedLoading");
+  const runGetStartedPrompt = useCallback(
+    async (rawText: string) => {
+      const text = rawText.trim();
+      if (!text || !projectId) return;
+      setSelectedPrompt(text);
+      setDraftMessage("");
+      setApiError(null);
+      setTaskGenOriginalPrompt(text);
+      setTaskGenClarificationLog("");
+      setWikiClarifyReply(null);
+      setWikiChoiceQuestions([]);
+      setWikiChoiceSelections({});
+      setWikiSubmittedChoiceIds(new Set());
+      setWikiSubmittedChoiceAnswers({});
+      setPhase("getStartedLoading");
 
-    const controller = new AbortController();
-    abortRef.current = controller;
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-    try {
-      const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
-      const res = await generateTasks(projectId, {
-        prompt: text,
-        max_tasks: 10,
-        ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
-        ...(figmaAttachment ? { figma_attachment: figmaAttachment } : {}),
-        ...(figmaBlueprint ? { figma_blueprint: figmaBlueprint } : {}),
-        ...(filledSources.length ? { sources: filledSources } : {}),
-      });
-      if (controller.signal.aborted) return;
+      try {
+        const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+        const res = await generateTasks(projectId, {
+          prompt: text,
+          max_tasks: 10,
+          ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
+          ...(figmaAttachment ? { figma_attachment: figmaAttachment } : {}),
+          ...(figmaBlueprint ? { figma_blueprint: figmaBlueprint } : {}),
+          ...(filledSources.length ? { sources: filledSources } : {}),
+        });
+        if (controller.signal.aborted) return;
 
-      const count = res.tasks.length;
-      const questions = normalizeWikiChoiceQuestions(res.choice_questions);
+        const count = res.tasks.length;
+        const questions = normalizeWikiChoiceQuestions(res.choice_questions);
 
-      if (questions.length > 0) {
-        setWikiClarifyReply(res.reply?.trim() ? res.reply!.trim() : null);
-        setWikiChoiceQuestions(questions);
-        setGeneratedTasks(res.tasks);
-        setGeneratedSummary("");
-      } else {
-        setWikiClarifyReply(null);
-        setWikiChoiceQuestions([]);
-        setGeneratedTasks(res.tasks);
-        setGeneratedSummary(
-          count === 0
-            ? "I couldn't generate any tasks from that prompt. Try being more specific."
-            : count === 1
-              ? "I generated 1 task based on your request."
-              : `I generated ${count} tasks based on your request.`,
+        if (questions.length > 0) {
+          setWikiClarifyReply(res.reply?.trim() ? res.reply!.trim() : null);
+          setWikiChoiceQuestions(questions);
+          setGeneratedTasks(res.tasks);
+          setGeneratedSummary("");
+        } else {
+          setWikiClarifyReply(null);
+          setWikiChoiceQuestions([]);
+          setGeneratedTasks(res.tasks);
+          setGeneratedSummary(
+            count === 0
+              ? "I couldn't generate any tasks from that prompt. Try being more specific."
+              : count === 1
+                ? "I generated 1 task based on your request."
+                : `I generated ${count} tasks based on your request.`,
+          );
+        }
+        setPhase("getStartedAnswer");
+        clearComposerAttachments();
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        const msg = getApiErrorMessage(
+          err,
+          "Task generation failed. Make sure the repository is indexed and try again.",
         );
+        setApiError(msg);
+        setPhase("getStartedAnswer");
       }
-      setPhase("getStartedAnswer");
-      clearComposerAttachments();
-    } catch (err) {
-      if (controller.signal.aborted) return;
-      const msg = getApiErrorMessage(
-        err,
-        "Task generation failed. Make sure the repository is indexed and try again.",
-      );
-      setApiError(msg);
-      setPhase("getStartedAnswer");
-    }
-  }, [
-    draftMessage,
-    projectId,
-    clearComposerAttachments,
-    figmaAttachment,
-    figmaBlueprint,
-    filledSources,
-  ]);
+    },
+    [
+      projectId,
+      clearComposerAttachments,
+      figmaAttachment,
+      figmaBlueprint,
+      filledSources,
+    ],
+  );
+
+  const submitGetStartedPrompt = useCallback(
+    () => runGetStartedPrompt(draftMessage),
+    [runGetStartedPrompt, draftMessage],
+  );
 
   const handleWikiChoiceSelect = useCallback(
     (question: PlannerChoiceQuestion, answer: string) => {
@@ -880,6 +895,25 @@ export function WelcomeAiChatModal({
                       ))}
                     </div>
                   )}
+                  {isGetStartedFlow && projectId ? (
+                    <div className="relative flex w-full shrink-0 flex-col items-start gap-2">
+                      {SUGGESTED_TASK_GEN_PROMPTS.map((label, i) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => void runGetStartedPrompt(label)}
+                          className={cn(
+                            "relative flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-[32px] border border-solid border-[#ededed] bg-white px-4 py-2",
+                            i === 0 ? "text-left" : "",
+                          )}
+                        >
+                          <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#727d83]">
+                            {label}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="pointer-events-none absolute bottom-0 left-0 flex w-full max-w-[395px] flex-col items-center bg-gradient-to-b from-[rgba(255,255,255,0)] to-[25.182%] to-white px-4 pb-[27px]">
