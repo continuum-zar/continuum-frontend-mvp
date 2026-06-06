@@ -25,7 +25,6 @@ import {
     FolderOpen,
     Inbox,
     ListTree,
-    Sparkles,
 } from "lucide-react";
 
 import { Badge } from "@/app/components/ui/badge";
@@ -236,19 +235,6 @@ function MilestoneGroup({ group, warningCounts, focusedTaskExtId }: MilestoneGro
                             />
                         ) : null}
                         <span>{group.label}</span>
-                        {/* LLM-grouping marker: the group_llm module mints
-                            milestone ext_ids prefixed with `llm-`. Visible
-                            so the user can tell which groups came from the
-                            AI vs the source export. */}
-                        {group.key.startsWith("llm-") ? (
-                            <span
-                                aria-label="AI-suggested milestone"
-                                className="flex items-center gap-0.5 text-info text-[10px] font-medium uppercase tracking-wide"
-                            >
-                                <Sparkles className="size-3" aria-hidden="true" />
-                                AI
-                            </span>
-                        ) : null}
                     </span>
                     <span className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>

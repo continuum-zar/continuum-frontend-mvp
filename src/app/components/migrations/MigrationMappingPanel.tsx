@@ -14,9 +14,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
-
-import { Badge } from "@/app/components/ui/badge";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import {
     Collapsible,
     CollapsibleContent,
@@ -57,10 +55,6 @@ interface MappingRow {
      *  expected to remap it (or accept the fallback). When false, the
      *  adapter LUT matched cleanly. */
     needsAttention: boolean;
-    /** True if currently mapped via an LLM suggestion (future flag — see
-     *  arch doc §3.3.a). For Phase 1 always false; the UI plumbing exists
-     *  but no IR carries this marker yet. */
-    llmSuggested: boolean;
 }
 
 function buildRows(
@@ -74,7 +68,7 @@ function buildRows(
         const raw = (w.detail as { raw?: string })?.raw;
         if (typeof raw !== "string" || !raw) continue;
         if (!seen.has(raw)) {
-            seen.set(raw, { raw, needsAttention: true, llmSuggested: false });
+            seen.set(raw, { raw, needsAttention: true });
         }
     }
     return [...seen.values()].sort((a, b) => a.raw.localeCompare(b.raw));
@@ -200,16 +194,6 @@ function MappingRowItem({ row, value, canonical, onChange }: MappingRowItemProps
                 <span className="truncate text-sm font-mono text-foreground">
                     {row.raw}
                 </span>
-                {row.llmSuggested ? (
-                    <Badge
-                        variant="outline"
-                        className="border-info/40 text-info"
-                        aria-label="LLM-suggested mapping"
-                    >
-                        <Sparkles className="size-3" aria-hidden="true" />
-                        LLM
-                    </Badge>
-                ) : null}
             </div>
             <Select value={value} onValueChange={onChange}>
                 <SelectTrigger className="w-40">
