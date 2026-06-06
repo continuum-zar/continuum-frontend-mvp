@@ -174,14 +174,8 @@ export default function MigrationsUploadPage() {
                                     disabled={isUploading}
                                 />
                                 <div className="space-y-0.5">
-                                    <Label
-                                        htmlFor="migration-auto-group"
-                                        className="flex items-center gap-1.5"
-                                    >
+                                    <Label htmlFor="migration-auto-group">
                                         Auto-organize tasks into milestones
-                                        <span className="text-info text-xs font-normal">
-                                            ✨ AI
-                                        </span>
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
                                         Groups your imported tasks into a small number of themed milestones (e.g. &ldquo;Onboarding flow&rdquo;, &ldquo;Cleanup&rdquo;) so the new project has structure on day one. You can rename, split, or remove them in the preview.
