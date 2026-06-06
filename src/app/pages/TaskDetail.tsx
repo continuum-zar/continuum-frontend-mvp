@@ -564,8 +564,12 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const checklistDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const checklistPendingRef = useRef<Array<{ id?: string; text: string; done: boolean }> | null>(null);
   const checklistInflightRef = useRef(false);
+  // Last server-confirmed checklist value; used to revert local UI on failed writes.
+  const checklistBaselineRef = useRef<Array<{ id?: string; text: string; done: boolean }>>([]);
   const sectionsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sectionsPendingRef = useRef<TaskSection[] | null>(null);
+  // Last server-confirmed sections value; used to revert local UI on failed writes.
+  const sectionsBaselineRef = useRef<TaskSection[]>([]);
   const { data: attachments } = useTaskAttachments(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
   const timelineQuery = useTaskTimelineInfinite(taskId);
@@ -851,11 +855,13 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   useEffect(() => {
     checklistInflightRef.current = false;
     checklistPendingRef.current = null;
+    checklistBaselineRef.current = [];
     if (checklistDebounceRef.current != null) {
       clearTimeout(checklistDebounceRef.current);
       checklistDebounceRef.current = null;
     }
     sectionsPendingRef.current = null;
+    sectionsBaselineRef.current = [];
     if (sectionsDebounceRef.current != null) {
       clearTimeout(sectionsDebounceRef.current);
       sectionsDebounceRef.current = null;
@@ -874,10 +880,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         checklistSaveInFlight: checklistInflightRef.current,
       });
       if (!pauseChecklistSync) {
-        setLocalChecklists(task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : []);
+        const fromServer = task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : [];
+        setLocalChecklists(fromServer);
+        checklistBaselineRef.current = fromServer;
       }
       if (editingSectionNameIdx === null) {
-        setLocalSections(Array.isArray(task.sections) ? [...task.sections] : []);
+        const fromServer = Array.isArray(task.sections) ? [...task.sections] : [];
+        setLocalSections(fromServer);
+        sectionsBaselineRef.current = fromServer;
       }
       // Keep drafts in sync so "Update" does not send empty description/title when the user never opened edit mode.
       if (!editingTitle) setTitleDraft(task.title ?? '');
@@ -949,10 +959,24 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         const pending = checklistPendingRef.current;
         checklistPendingRef.current = null;
         if (pending != null && taskId) {
+          // Capture the last-known-good baseline at send time so a rapid burst of
+          // optimistic toggles all revert to the pre-burst state on failure.
+          const revertTo = checklistBaselineRef.current;
           checklistInflightRef.current = true;
           updateTaskMutation.mutate(
             { taskId, checklists: pending },
             {
+              onSuccess: (data) => {
+                if (Array.isArray(data?.checklists)) {
+                  checklistBaselineRef.current = [...data.checklists];
+                }
+              },
+              onError: () => {
+                // Revert the locally-rendered checklist so the user does not see the
+                // optimistic state after the server rejected the write. The toast and
+                // query-cache rollback are handled inside useUpdateTask.
+                setLocalChecklists(revertTo);
+              },
               onSettled: () => {
                 checklistInflightRef.current = false;
               },
@@ -1006,7 +1030,20 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         const pending = sectionsPendingRef.current;
         sectionsPendingRef.current = null;
         if (pending != null && taskId) {
-          updateTaskMutation.mutate({ taskId, sections: pending });
+          const revertTo = sectionsBaselineRef.current;
+          updateTaskMutation.mutate(
+            { taskId, sections: pending },
+            {
+              onSuccess: (data) => {
+                if (Array.isArray(data?.sections)) {
+                  sectionsBaselineRef.current = [...data.sections];
+                }
+              },
+              onError: () => {
+                setLocalSections(revertTo);
+              },
+            },
+          );
         }
       }, TASK_DETAIL_CHECKLIST_DEBOUNCE_MS);
     },

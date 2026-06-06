@@ -13,6 +13,7 @@ import {
 import { Login } from "./pages/auth/Login";
 import { WaitlistSignUp } from "./pages/auth/WaitlistSignUp";
 import { SignUp } from "./pages/auth/SignUp";
+import { SsoCallback } from "./pages/auth/SsoCallback";
 import { Loading } from "./pages/auth/Loading";
 import { PostAuthBoardRedirect } from "./pages/auth/PostAuthBoardRedirect";
 import { ResetPassword } from "./pages/auth/ResetPassword";
@@ -169,6 +170,10 @@ const appRoutes = [
   {
     path: "/reset-password",
     Component: ResetPassword,
+  },
+  {
+    path: "/sso-callback",
+    Component: SsoCallback,
   },
   {
     path: "/loading",

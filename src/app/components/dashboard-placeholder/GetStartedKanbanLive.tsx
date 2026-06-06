@@ -187,8 +187,8 @@ export function GetStartedKanbanLive({
 
   useEffect(() => {
     if (typeof window === "undefined" || !isAuthenticated || !accessToken) return;
-    const url = projectTaskEventsStreamUrl(projectId, accessToken);
-    const es = new EventSource(url);
+    let cancelled = false;
+    let es: EventSource | null = null;
     const onMessage = (ev: MessageEvent<string>) => {
       try {
         const data = JSON.parse(ev.data) as { type?: string; project_id?: number };
@@ -200,14 +200,28 @@ export function GetStartedKanbanLive({
         /* ignore malformed */
       }
     };
-    es.addEventListener("message", onMessage as EventListener);
-    es.onerror = () => {
-      console.debug("[GetStartedKanbanLive] project task-events stream closed or errored");
-      es.close();
-    };
+    void (async () => {
+      let url: string;
+      try {
+        url = await projectTaskEventsStreamUrl(projectId);
+      } catch (err) {
+        console.debug("[GetStartedKanbanLive] failed to mint SSE ticket", err);
+        return;
+      }
+      if (cancelled) return;
+      es = new EventSource(url);
+      es.addEventListener("message", onMessage as EventListener);
+      es.onerror = () => {
+        console.debug("[GetStartedKanbanLive] project task-events stream closed or errored");
+        es?.close();
+      };
+    })();
     return () => {
-      es.removeEventListener("message", onMessage as EventListener);
-      es.close();
+      cancelled = true;
+      if (es) {
+        es.removeEventListener("message", onMessage as EventListener);
+        es.close();
+      }
     };
   }, [projectId, accessToken, isAuthenticated, queryClient]);
 
@@ -594,6 +608,7 @@ export function GetStartedKanbanLive({
         onMoveTaskToMilestone={(milestoneId) => void handleMoveTaskToMilestone(task.id, milestoneId)}
       >
         <div
+          data-no-kanban-search-dismiss
           className={cn(
             "content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100",
             isDragging ? "pointer-events-none" : "cursor-open-hand",

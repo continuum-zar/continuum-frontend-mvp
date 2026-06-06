@@ -91,6 +91,150 @@ export function KanbanBoardSkeleton() {
   );
 }
 
+/**
+ * Dashboard home content skeleton: header row, summary band, and two side-by-side
+ * panels — matches the shape of the home view when KPI cards / productivity rhythm
+ * are hidden.
+ */
+export function DashboardHomeContentSkeleton() {
+  return (
+    <div
+      className="flex w-full flex-col gap-6 px-6 pb-6 pt-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading dashboard"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-3 w-64" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-32 rounded-[8px]" />
+          <Skeleton className="h-8 w-28 rounded-[8px]" />
+        </div>
+      </div>
+      <Skeleton className="h-28 w-full rounded-[12px]" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Skeleton className="h-[280px] w-full rounded-[12px]" />
+        <Skeleton className="h-[280px] w-full rounded-[12px]" />
+      </div>
+      <Skeleton className="h-[220px] w-full rounded-[12px]" />
+    </div>
+  );
+}
+
+/**
+ * Productivity rhythm content skeleton: header, member legend row, and a tall
+ * heatmap-style block matching the rhythm view layout.
+ */
+export function ProductivityRhythmContentSkeleton() {
+  return (
+    <div
+      className="flex w-full flex-col gap-6 px-6 pb-6 pt-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading productivity rhythm"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-6 w-56" />
+          <Skeleton className="h-3 w-80" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-28 rounded-[8px]" />
+          <Skeleton className="h-8 w-28 rounded-[8px]" />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-7 w-32 rounded-[999px]" />
+        ))}
+      </div>
+      <Skeleton className="h-[360px] w-full rounded-[12px]" />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Skeleton className="h-[220px] w-full rounded-[12px]" />
+        <Skeleton className="h-[220px] w-full rounded-[12px]" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * AI planner content skeleton: input panel + a stack of project/section blocks.
+ * Replaces the spinner shown while the planner page chunk loads.
+ */
+export function AIPlannerContentSkeleton() {
+  return (
+    <div
+      className="flex w-full flex-col gap-6 px-6 pb-6 pt-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading AI planner"
+    >
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-6 w-56" />
+        <Skeleton className="h-3 w-96 max-w-full" />
+      </div>
+      <Skeleton className="h-[140px] w-full rounded-[12px]" />
+      <div className="flex flex-col gap-4">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="flex flex-col gap-3 rounded-[12px] border border-[#ebedee] bg-white p-4"
+            aria-hidden
+          >
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-6 w-20 rounded-[8px]" />
+            </div>
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-2/3" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Task detail skeleton: title row, meta band, description block, and an
+ * activity-style list. Used while the task detail chunk + initial data load.
+ */
+export function TaskDetailSkeleton() {
+  return (
+    <div
+      className="mx-auto flex w-full max-w-[960px] flex-col gap-6 px-6 pb-6 pt-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading task"
+    >
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-3 w-40" />
+        <Skeleton className="h-8 w-3/4" />
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Skeleton className="h-7 w-24 rounded-[8px]" />
+        <Skeleton className="h-7 w-28 rounded-[8px]" />
+        <Skeleton className="h-7 w-20 rounded-[8px]" />
+        <Skeleton className="h-7 w-24 rounded-[8px]" />
+      </div>
+      <Skeleton className="h-[180px] w-full rounded-[12px]" />
+      <div className="flex flex-col gap-3">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex items-start gap-3" aria-hidden>
+            <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-3 w-40" />
+              <Skeleton className="h-3 w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Sprint list view: stacked column sections with row blocks. */
 export function SprintKanbanListSkeleton() {
   return (

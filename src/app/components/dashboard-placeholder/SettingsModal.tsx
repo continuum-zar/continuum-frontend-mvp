@@ -12,8 +12,16 @@ import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { workspaceJoin } from "@/lib/workspacePaths";
+import { isClerkEnabled } from "@/lib/clerkConfig";
+import { ClerkAccountSettings } from "@/app/components/auth/ClerkAccountSettings";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
+
+type WindowWithClerk = Window & {
+  Clerk?: {
+    signOut?: (options?: { redirectUrl?: string }) => Promise<void>;
+  };
+};
 import { DiscordIntegrationModal } from "./DiscordIntegrationModal";
 import { FeedbackModal } from "./FeedbackModal";
 import { GithubIntegrationModal } from "./GithubIntegrationModal";
@@ -58,6 +66,7 @@ const placeholderLinkClass =
 
 export type SettingsSection =
   | "general"
+  | "account"
   | "notification"
   | "invoice"
   | "integrations"
@@ -83,8 +92,14 @@ const NAV: { id: SettingsSection; label: string }[] = [
   { id: "support", label: "Support & legal" },
 ];
 
+const ACCOUNT_NAV_ITEM: { id: SettingsSection; label: string } = {
+  id: "account",
+  label: "Account",
+};
+
 const SECTION_TITLE: Record<SettingsSection, string> = {
   general: "General",
+  account: "Account",
   notification: "Notifications",
   invoice: "Invoice",
   integrations: "Integrations",
@@ -149,6 +164,10 @@ export function SettingsModal({
 
   const settingsNavItems = useMemo(() => {
     const items = [...NAV];
+    if (isClerkEnabled) {
+      // Place "Account" right after "General" so identity-related settings group together.
+      items.splice(1, 0, ACCOUNT_NAV_ITEM);
+    }
     if (isGlobalAdmin) {
       items.push({ id: "waitlist", label: "Waitlist" });
     }
@@ -211,6 +230,9 @@ export function SettingsModal({
       setSection("general");
     }
     if (section === "status" && !isGlobalAdmin) {
+      setSection("general");
+    }
+    if (section === "account" && !isClerkEnabled) {
       setSection("general");
     }
   }, [section, isGlobalAdmin]);
@@ -296,6 +318,21 @@ export function SettingsModal({
 
   const handleLogout = async () => {
     handleOpenChange(false);
+    if (isClerkEnabled && typeof window !== "undefined") {
+      const clerk = (window as WindowWithClerk).Clerk;
+      if (clerk?.signOut) {
+        try {
+          // Clerk's signOut clears the session both client- and server-side; the
+          // ClerkSessionBridge then propagates the signed-out state into
+          // useAuthStore. We still navigate explicitly so the modal closes onto
+          // /login even if signOut redirects via Clerk's own afterSignOutUrl.
+          await clerk.signOut({ redirectUrl: "/login" });
+          return;
+        } catch (err) {
+          console.error("Clerk signOut failed; falling back to legacy logout", err);
+        }
+      }
+    }
     await logout();
     navigate("/login");
   };
@@ -475,6 +512,12 @@ export function SettingsModal({
                       </button>
                     </div>
                   ) : null}
+                </div>
+              )}
+
+              {section === "account" && isClerkEnabled && (
+                <div className="flex flex-col gap-2 pt-6">
+                  <ClerkAccountSettings />
                 </div>
               )}
 
