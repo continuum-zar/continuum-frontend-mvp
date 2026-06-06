@@ -119,6 +119,11 @@ export function SettingsModal({
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  // Continuum #1344: only fire Clerk's signOut when the session was actually
+  // acquired via Clerk. A manual login does not have a Clerk session — calling
+  // clerk.signOut() in that case is a no-op that incorrectly short-circuits
+  // before backend /auth/logout runs.
+  const authSource = useAuthStore((s) => s.authSource);
   const authLoading = useAuthStore((s) => s.isLoading);
   const checkAuth = useAuthStore((s) => s.checkAuth);
   const startWorkspaceTour = useWorkspaceTourStore((s) => s.startTour);
@@ -318,18 +323,16 @@ export function SettingsModal({
 
   const handleLogout = async () => {
     handleOpenChange(false);
-    if (isClerkEnabled && typeof window !== "undefined") {
+    // For Clerk-acquired sessions, tear down the Clerk session first so it
+    // doesn't get re-bridged into the store on the next render. For manual
+    // sessions there is no Clerk session to clear.
+    if (authSource === "clerk" && isClerkEnabled && typeof window !== "undefined") {
       const clerk = (window as WindowWithClerk).Clerk;
       if (clerk?.signOut) {
         try {
-          // Clerk's signOut clears the session both client- and server-side; the
-          // ClerkSessionBridge then propagates the signed-out state into
-          // useAuthStore. We still navigate explicitly so the modal closes onto
-          // /login even if signOut redirects via Clerk's own afterSignOutUrl.
-          await clerk.signOut({ redirectUrl: "/login" });
-          return;
+          await clerk.signOut();
         } catch (err) {
-          console.error("Clerk signOut failed; falling back to legacy logout", err);
+          console.error("Clerk signOut failed; continuing with backend logout", err);
         }
       }
     }
