@@ -18,34 +18,32 @@ export function SignUp() {
 
 function ClerkSignUpShell() {
     const clerkSignUp = useSignUp();
+    const register = useAuthStore((state) => state.register);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [clerkError, setClerkError] = useState<string | null>(null);
     const [pending, setPending] = useState<null | 'email' | 'google' | 'apple'>(null);
-    const [needsVerification, setNeedsVerification] = useState(false);
-    const [code, setCode] = useState('');
 
+    // Continuum #1344: manual sign-up goes to the backend; Clerk is only used
+    // for social providers (Google/Apple) below.
     const handleSubmit = async (form: { firstName: string; lastName: string; email: string; password: string }) => {
-        if (!clerkSignUp.isLoaded) return;
         setClerkError(null);
         setPending('email');
         try {
-            const result = await clerkSignUp.signUp.create({
-                emailAddress: form.email,
+            await register({
+                first_name: form.firstName,
+                last_name: form.lastName,
+                email: form.email,
                 password: form.password,
-                firstName: form.firstName,
-                lastName: form.lastName,
             });
-            if (result.status === 'complete') {
-                await clerkSignUp.setActive({ session: result.createdSessionId });
-                navigate('/onboarding/usage', { replace: true });
-                return;
-            }
-            // Most Clerk instances require an email-code verification step.
-            await clerkSignUp.signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
-            setNeedsVerification(true);
+            navigate('/onboarding/usage', { replace: true });
         } catch (err: unknown) {
-            setClerkError(extractClerkErrorMessage(err) ?? 'Registration failed. Try again.');
+            setClerkError(
+                (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
+                    ? (err as { message: string }).message
+                    : null)
+                    ?? 'Registration failed. Try again.',
+            );
         } finally {
             setPending(null);
         }
@@ -71,59 +69,6 @@ function ClerkSignUpShell() {
     };
 
     const oauthDisabled = !clerkSignUp.isLoaded || pending !== null;
-
-    const handleVerifyCode = async () => {
-        if (!clerkSignUp.isLoaded) return;
-        setClerkError(null);
-        setPending('email');
-        try {
-            const attempt = await clerkSignUp.signUp.attemptEmailAddressVerification({ code });
-            if (attempt.status === 'complete') {
-                await clerkSignUp.setActive({ session: attempt.createdSessionId });
-                navigate('/onboarding/usage', { replace: true });
-            } else {
-                setClerkError("That code didn't match. Check the email and try again.");
-            }
-        } catch (err: unknown) {
-            setClerkError(extractClerkErrorMessage(err) ?? "We couldn't verify that code.");
-        } finally {
-            setPending(null);
-        }
-    };
-
-    if (needsVerification) {
-        return (
-            <SignUpLayout
-                searchParams={searchParams}
-                pending={pending === 'email'}
-                error={clerkError}
-                renderVerification={() => (
-                    <div className="flex w-[297px] flex-col gap-3">
-                        <p className="text-sm text-[#151515]">
-                            We sent a 6-digit code to your email. Enter it below to finish signing up.
-                        </p>
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            autoComplete="one-time-code"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            placeholder="123456"
-                            className="h-10 w-[297px] rounded-lg border border-[#E9E9E9] bg-white px-4 py-2 text-sm text-[#151515] outline-none"
-                        />
-                        <button
-                            type="button"
-                            disabled={pending === 'email' || code.length < 4}
-                            onClick={() => void handleVerifyCode()}
-                            className="flex h-10 w-[297px] cursor-pointer items-center justify-center rounded-lg border-none bg-[#24B5F8] px-4 py-2 shadow-[0px_3px_9.3px_0px_rgba(44,158,249,0.1)] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            {pending === 'email' ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <span className="text-sm font-semibold text-white">Verify code</span>}
-                        </button>
-                    </div>
-                )}
-            />
-        );
-    }
 
     return (
         <SignUpLayout
