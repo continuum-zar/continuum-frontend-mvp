@@ -126,6 +126,8 @@ export interface GenerationSource {
     branch?: string | null;
 }
 
+export type AssistantMode = 'plan' | 'create';
+
 export async function generateTasks(
     projectId: number | string,
     body: {
@@ -136,6 +138,8 @@ export async function generateTasks(
         figma_blueprint?: FigmaBlueprint | null;
         /** Optional (repository, branch) pairs to scope code context. Each repo must be linked to this project. */
         sources?: GenerationSource[];
+        /** Assistant mode. 'plan' returns a planning summary + clarifying questions and creates no tasks. 'create' generates tasks directly. */
+        mode?: AssistantMode;
     }
 ): Promise<GenerateTasksResponse> {
     const sources = (body.sources ?? [])
@@ -153,6 +157,7 @@ export async function generateTasks(
             ...(body.figma_attachment ? { figma_attachment: body.figma_attachment } : {}),
             ...(body.figma_blueprint ? { figma_blueprint: body.figma_blueprint } : {}),
             ...(sources.length ? { sources } : {}),
+            ...(body.mode ? { mode: body.mode } : {}),
         },
         { timeout: 600_000 },
     );
