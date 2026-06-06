@@ -129,6 +129,10 @@ export async function generateTasks(
         file_contents?: FileContent[];
         figma_attachment?: FigmaAttachmentRequest | null;
         figma_blueprint?: FigmaBlueprint | null;
+        /** Optional source repository (must be linked to this project) to scope code context. */
+        repository_id?: number | null;
+        /** Optional branch name within the selected repository. */
+        branch?: string | null;
     }
 ): Promise<GenerateTasksResponse> {
     const { data } = await api.post<GenerateTasksResponse>(
@@ -139,6 +143,8 @@ export async function generateTasks(
             ...(body.file_contents?.length ? { file_contents: body.file_contents } : {}),
             ...(body.figma_attachment ? { figma_attachment: body.figma_attachment } : {}),
             ...(body.figma_blueprint ? { figma_blueprint: body.figma_blueprint } : {}),
+            ...(body.repository_id != null ? { repository_id: body.repository_id } : {}),
+            ...(body.branch?.trim() ? { branch: body.branch.trim() } : {}),
         },
         { timeout: 600_000 },
     );

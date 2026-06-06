@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, ArrowUp, Check, FileText, Flag, Link2, Loader2, Minus, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, Check, ChevronDown as ChevronDownIcon, FileText, Flag, GitBranch, Link2, Loader2, Minus, X } from "lucide-react";
 import {
   Fragment,
   useCallback,
@@ -21,10 +21,13 @@ import {
   postProjectQuery,
   projectKeys,
   useIndexingProgressPoll,
+  useProjectRepositories,
+  useRepositoryBranches,
   useUploadPlannerFile,
   fetchFigmaBlueprint,
   type FileContent,
 } from "@/api";
+import type { BranchItem, Repository } from "@/types/repository";
 import TextareaAutosize from "react-textarea-autosize";
 import type {
   FigmaAttachmentRequest,
@@ -276,6 +279,24 @@ export function WelcomeAiChatModal({
   const reportingAbortRef = useRef<AbortController | null>(null);
   const reportingLockRef = useRef(false);
 
+  /** Source repo + branch context for the AI generation (Task #1341/#1343). */
+  const [sourceRepoId, setSourceRepoId] = useState<number | null>(null);
+  const [sourceBranch, setSourceBranch] = useState<string | null>(null);
+  const isGetStartedFlowForSource = !showQuickActions;
+  const projectRepositoriesQuery = useProjectRepositories(
+    isGetStartedFlowForSource && open && projectId != null && projectId > 0 ? projectId : null,
+  );
+  const repoBranchesQuery = useRepositoryBranches(
+    isGetStartedFlowForSource && open && projectId != null && projectId > 0 ? projectId : null,
+    sourceRepoId,
+  );
+  const sourceRepos: Repository[] = projectRepositoriesQuery.data ?? [];
+  const sourceBranches: BranchItem[] = repoBranchesQuery.data ?? [];
+  const selectedSourceRepo = useMemo(
+    () => sourceRepos.find((r) => r.id === sourceRepoId) ?? null,
+    [sourceRepos, sourceRepoId],
+  );
+
   const [composerAttachments, setComposerAttachments] = useState<WelcomeComposerAttachment[]>([]);
   const [figmaAttachment, setFigmaAttachment] = useState<FigmaAttachmentRequest | null>(null);
   const [figmaBlueprint, setFigmaBlueprint] = useState<FigmaBlueprint | null>(null);
@@ -394,8 +415,27 @@ export function WelcomeAiChatModal({
       reportingLockRef.current = false;
       reportingAbortRef.current?.abort();
       reportingAbortRef.current = null;
+      setSourceRepoId(null);
+      setSourceBranch(null);
     }
   }, [open, clearComposerAttachments]);
+
+  /**
+   * When the user picks a repository (or branches finish loading for the current
+   * one), default the branch to the provider's default branch. Cleared whenever
+   * the repo is unset so we don't silently keep stale state.
+   */
+  useEffect(() => {
+    if (sourceRepoId == null) {
+      if (sourceBranch !== null) setSourceBranch(null);
+      return;
+    }
+    if (sourceBranch) return;
+    if (!sourceBranches.length) return;
+    const defaultBranch =
+      sourceBranches.find((b) => b.default)?.name ?? sourceBranches[0]?.name ?? null;
+    if (defaultBranch) setSourceBranch(defaultBranch);
+  }, [sourceRepoId, sourceBranches, sourceBranch]);
 
   // showQuickActions=true mock "thinking -> responded" transition (welcome demo only — no projectId)
   useEffect(() => {
@@ -487,6 +527,8 @@ export function WelcomeAiChatModal({
         ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
         ...(figmaAttachment ? { figma_attachment: figmaAttachment } : {}),
         ...(figmaBlueprint ? { figma_blueprint: figmaBlueprint } : {}),
+        ...(sourceRepoId != null ? { repository_id: sourceRepoId } : {}),
+        ...(sourceBranch ? { branch: sourceBranch } : {}),
       });
       if (controller.signal.aborted) return;
 
@@ -521,7 +563,15 @@ export function WelcomeAiChatModal({
       setApiError(msg);
       setPhase("getStartedAnswer");
     }
-  }, [draftMessage, projectId, clearComposerAttachments, figmaAttachment, figmaBlueprint]);
+  }, [
+    draftMessage,
+    projectId,
+    clearComposerAttachments,
+    figmaAttachment,
+    figmaBlueprint,
+    sourceRepoId,
+    sourceBranch,
+  ]);
 
   const handleWikiChoiceSelect = useCallback(
     (question: PlannerChoiceQuestion, answer: string) => {
@@ -565,6 +615,8 @@ export function WelcomeAiChatModal({
             ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
             ...(figmaAttachment ? { figma_attachment: figmaAttachment } : {}),
             ...(figmaBlueprint ? { figma_blueprint: figmaBlueprint } : {}),
+            ...(sourceRepoId != null ? { repository_id: sourceRepoId } : {}),
+            ...(sourceBranch ? { branch: sourceBranch } : {}),
           });
 
           setTaskGenClarificationLog(nextLog);
@@ -620,6 +672,8 @@ export function WelcomeAiChatModal({
       taskGenClarificationLog,
       figmaAttachment,
       figmaBlueprint,
+      sourceRepoId,
+      sourceBranch,
     ],
   );
 
@@ -869,6 +923,23 @@ export function WelcomeAiChatModal({
                         </div>
                       </div>
                     )}
+                    {isGetStartedFlow && projectId ? (
+                      <SourceContextPicker
+                        repos={sourceRepos}
+                        reposLoading={projectRepositoriesQuery.isLoading}
+                        reposError={projectRepositoriesQuery.isError}
+                        selectedRepo={selectedSourceRepo}
+                        onSelectRepo={(repo) => {
+                          setSourceRepoId(repo?.id ?? null);
+                          setSourceBranch(null);
+                        }}
+                        branches={sourceBranches}
+                        branchesLoading={repoBranchesQuery.isLoading}
+                        branchesError={repoBranchesQuery.isError}
+                        selectedBranch={sourceBranch}
+                        onSelectBranch={setSourceBranch}
+                      />
+                    ) : null}
                     <ComposerWelcome
                       draft={draftMessage}
                       onDraftChange={setDraftMessage}
@@ -1451,6 +1522,235 @@ function ComposerWelcome({
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * Repository + branch picker that scopes AI task generation to a specific
+ * project repo and branch. Pure presentational — owning component holds state
+ * and feeds it to `generateTasks` via `repository_id` / `branch`.
+ */
+function SourceContextPicker({
+  repos,
+  reposLoading,
+  reposError,
+  selectedRepo,
+  onSelectRepo,
+  branches,
+  branchesLoading,
+  branchesError,
+  selectedBranch,
+  onSelectBranch,
+}: {
+  repos: Repository[];
+  reposLoading: boolean;
+  reposError: boolean;
+  selectedRepo: Repository | null;
+  onSelectRepo: (repo: Repository | null) => void;
+  branches: BranchItem[];
+  branchesLoading: boolean;
+  branchesError: boolean;
+  selectedBranch: string | null;
+  onSelectBranch: (branch: string | null) => void;
+}) {
+  const [repoOpen, setRepoOpen] = useState(false);
+  const [branchOpen, setBranchOpen] = useState(false);
+  const repoRef = useRef<HTMLDivElement | null>(null);
+  const branchRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!repoOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!repoRef.current) return;
+      if (!repoRef.current.contains(e.target as Node)) setRepoOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [repoOpen]);
+
+  useEffect(() => {
+    if (!branchOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!branchRef.current) return;
+      if (!branchRef.current.contains(e.target as Node)) setBranchOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [branchOpen]);
+
+  // Hide the entire picker when the project has no repos and we already finished
+  // loading. The board's existing onboarding flow handles connecting repos —
+  // this picker is purely additive context for AI generation.
+  if (!reposLoading && !reposError && repos.length === 0) return null;
+
+  const repoButtonLabel = reposLoading
+    ? "Loading repositories…"
+    : reposError
+      ? "Couldn't load repositories"
+      : selectedRepo
+        ? selectedRepo.repositoryName
+        : "Select repository";
+
+  const branchDisabled = selectedRepo == null || branchesLoading;
+  const branchButtonLabel = selectedRepo == null
+    ? "Select branch"
+    : branchesLoading
+      ? "Loading branches…"
+      : branchesError
+        ? "Couldn't load branches"
+        : selectedBranch
+          ? selectedBranch
+          : "Select branch";
+
+  return (
+    <div className="mb-2 flex w-full flex-col gap-1.5">
+      <p className="font-['Inter',sans-serif] text-[11px] font-medium leading-[normal] text-[#727d83]">
+        Source context (optional)
+      </p>
+      <div className="flex w-full items-center gap-2">
+        <div ref={repoRef} className="relative min-w-0 flex-1">
+          <button
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={repoOpen}
+            onClick={() => {
+              setRepoOpen((v) => !v);
+              setBranchOpen(false);
+            }}
+            disabled={reposLoading || reposError}
+            className="flex h-8 w-full items-center gap-1.5 rounded-[8px] border border-solid border-[#ededed] bg-white px-2.5 font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f] outline-none transition-colors hover:border-[#cdd2d5] focus-visible:border-[#2E96F9] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {reposLoading ? (
+              <Loader2 className="size-3.5 shrink-0 animate-spin text-[#727d83]" aria-hidden />
+            ) : null}
+            <span className={cn(
+              "min-w-0 flex-1 truncate text-left",
+              !selectedRepo && !reposLoading ? "text-[#727d83]" : "",
+            )}>
+              {repoButtonLabel}
+            </span>
+            {selectedRepo ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectRepo(null);
+                }}
+                aria-label="Clear repository"
+                className="inline-flex size-4 shrink-0 items-center justify-center rounded-[4px] text-[#727d83] hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+              >
+                <X className="size-3" strokeWidth={2} aria-hidden />
+              </button>
+            ) : (
+              <ChevronDownIcon className="size-3.5 shrink-0 text-[#727d83]" aria-hidden />
+            )}
+          </button>
+          {repoOpen && !reposLoading && !reposError && repos.length > 0 && (
+            <div
+              role="listbox"
+              aria-label="Repositories"
+              className="absolute bottom-full left-0 z-30 mb-1 max-h-[200px] w-full overflow-y-auto rounded-[8px] border border-solid border-[#ededed] bg-white py-1 shadow-[0px_8px_16px_0px_rgba(11,25,31,0.08)]"
+            >
+              {repos.map((r) => {
+                const isSelected = selectedRepo?.id === r.id;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => {
+                      onSelectRepo(r);
+                      setRepoOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-start gap-2 px-2.5 py-1.5 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-[#f5f7f8]",
+                      isSelected ? "font-medium text-[#0b191f]" : "text-[#606d76]",
+                    )}
+                  >
+                    <span className="min-w-0 flex-1 truncate">{r.repositoryName}</span>
+                    {isSelected ? (
+                      <Check className="size-3.5 shrink-0 text-[#2E96F9]" strokeWidth={2.5} aria-hidden />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div ref={branchRef} className="relative min-w-0 flex-1">
+          <button
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={branchOpen}
+            onClick={() => {
+              if (branchDisabled) return;
+              setBranchOpen((v) => !v);
+              setRepoOpen(false);
+            }}
+            disabled={branchDisabled}
+            className="flex h-8 w-full items-center gap-1.5 rounded-[8px] border border-solid border-[#ededed] bg-white px-2.5 font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f] outline-none transition-colors hover:border-[#cdd2d5] focus-visible:border-[#2E96F9] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <GitBranch className="size-3.5 shrink-0 text-[#727d83]" aria-hidden />
+            <span className={cn(
+              "min-w-0 flex-1 truncate text-left",
+              !selectedBranch ? "text-[#727d83]" : "",
+            )}>
+              {branchButtonLabel}
+            </span>
+            <ChevronDownIcon className="size-3.5 shrink-0 text-[#727d83]" aria-hidden />
+          </button>
+          {branchOpen && !branchesLoading && selectedRepo != null && (
+            <div
+              role="listbox"
+              aria-label="Branches"
+              className="absolute bottom-full left-0 z-30 mb-1 max-h-[200px] w-full overflow-y-auto rounded-[8px] border border-solid border-[#ededed] bg-white py-1 shadow-[0px_8px_16px_0px_rgba(11,25,31,0.08)]"
+            >
+              {branchesError ? (
+                <p className="px-2.5 py-1.5 font-['Inter',sans-serif] text-[12px] text-[#dc2626]">
+                  Couldn&apos;t load branches.
+                </p>
+              ) : branches.length === 0 ? (
+                <p className="px-2.5 py-1.5 font-['Inter',sans-serif] text-[12px] text-[#727d83]">
+                  No branches found.
+                </p>
+              ) : (
+                branches.map((b) => {
+                  const isSelected = selectedBranch === b.name;
+                  return (
+                    <button
+                      key={b.name}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => {
+                        onSelectBranch(b.name);
+                        setBranchOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center gap-2 px-2.5 py-1.5 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-[#f5f7f8]",
+                        isSelected ? "font-medium text-[#0b191f]" : "text-[#606d76]",
+                      )}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{b.name}</span>
+                      {b.default ? (
+                        <span className="shrink-0 font-['Inter',sans-serif] text-[10px] uppercase tracking-[0.06em] text-[#727d83]">
+                          default
+                        </span>
+                      ) : null}
+                      {isSelected ? (
+                        <Check className="size-3.5 shrink-0 text-[#2E96F9]" strokeWidth={2.5} aria-hidden />
+                      ) : null}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
