@@ -44,6 +44,7 @@ import { MigrationApplyProgress } from "@/app/components/migrations/MigrationApp
 import { MigrationApplySummary } from "@/app/components/migrations/MigrationApplySummary";
 import { MigrationsPageHeader } from "@/app/components/migrations/MigrationsPageHeader";
 import { MigrationsPageShell } from "@/app/components/migrations/MigrationsPageShell";
+import { MigrationWarningsList } from "@/app/components/migrations/MigrationWarningsList";
 import { useMigrationEvents } from "@/app/components/migrations/useMigrationEvents";
 import {
     migrationPreviewHref,
@@ -187,6 +188,17 @@ export default function MigrationsApplyPage() {
                                         {data.error ?? "We rolled the import back. Nothing was written."}
                                     </AlertDescription>
                                 </Alert>
+                            ) : null}
+                            {data.warnings.length > 0 ? (
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-foreground">
+                                        Warnings to be aware of
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        None of these block the import — they're things we couldn't auto-resolve. Tap &ldquo;Back to preview&rdquo; if you want to fix any before applying.
+                                    </p>
+                                    <MigrationWarningsList warnings={data.warnings} />
+                                </div>
                             ) : null}
                             <div className="flex items-center justify-between">
                                 <Button
