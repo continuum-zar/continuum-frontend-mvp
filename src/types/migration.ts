@@ -263,6 +263,11 @@ export interface MigrationParseFailedEvent {
 
 export interface MigrationApplyStartEvent {
   type: "migration.apply.start";
+  /** Total task count being applied. Lets the UI render "0 / N" right when
+   *  apply kicks off — without it the progress bar would sit at "0 / 0"
+   *  until the first batch event lands. */
+  tasks_total?: number;
+  milestones_total?: number;
 }
 
 export interface MigrationApplyProgressEvent {

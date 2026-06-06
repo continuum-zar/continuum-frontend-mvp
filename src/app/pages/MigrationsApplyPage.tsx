@@ -68,7 +68,14 @@ export default function MigrationsApplyPage() {
 
     useMigrationEvents(jobId, {
         enabled: !!data && !isMigrationTerminal(data.status),
-        onApplyStart: () => setProgress({ batchIndex: 0, tasksDone: 0, tasksTotal: 0 }),
+        onApplyStart: (e) =>
+            setProgress({
+                batchIndex: 0,
+                tasksDone: 0,
+                // Seed total from start event so the bar shows "0 / N" right
+                // away; fall back to IR length if the server payload is empty.
+                tasksTotal: e.tasks_total ?? data?.ir?.tasks.length ?? 0,
+            }),
         onApplyProgress: (e) =>
             setProgress({
                 batchIndex: e.batch_index,

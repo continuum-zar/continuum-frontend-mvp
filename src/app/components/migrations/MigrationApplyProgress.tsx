@@ -36,12 +36,16 @@ export function MigrationApplyProgress({
             <Progress
                 value={pct}
                 aria-valuetext={`${tasksDone.toLocaleString()} of ${tasksTotal.toLocaleString()} tasks`}
+                // Slightly slower than the default 150 ms so consecutive
+                // SSE ticks (one per 50-task batch ≈ every 100-300 ms) blend
+                // into a continuous motion instead of snapping.
+                indicatorClassName="bg-primary transition-all duration-300 ease-out"
             />
-            <p className="text-xs text-muted-foreground">
-                {tasksDone.toLocaleString()} / {tasksTotal.toLocaleString()} tasks ·{" "}
+            <p className="text-xs text-muted-foreground tabular-nums">
+                {tasksDone.toLocaleString()} / {tasksTotal.toLocaleString()} tasks
                 {batchTotal
-                    ? `batch ${batchIndex + 1} / ${batchTotal}`
-                    : `batch ${batchIndex + 1}`}
+                    ? ` · batch ${batchIndex + 1} / ${batchTotal}`
+                    : ` · batch ${batchIndex + 1}`}
             </p>
         </div>
     );
