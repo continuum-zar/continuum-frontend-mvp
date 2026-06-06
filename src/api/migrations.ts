@@ -9,9 +9,11 @@ import type {
     MigrationJobDetail,
     MigrationListResponse,
     MigrationMappingPatch,
+    MigrationStatus,
     MigrationUploadResponse,
     SourceHintOption,
 } from '@/types/migration';
+import { isMigrationTerminal } from '@/types/migration';
 
 // ---------------------------------------------------------------------------
 // Plain fetchers
@@ -116,6 +118,18 @@ export function useMigration(jobId: number | string | undefined, options?: { ena
         queryKey: jobId !== undefined ? migrationKeys.detail(jobId) : migrationKeys.detail('pending'),
         queryFn: () => fetchMigration(jobId as number | string),
         enabled: jobId !== undefined && (options?.enabled ?? true),
+        // Poll while the job is non-terminal so the UI catches background-
+        // task state transitions even without Redis SSE. Cheap: one tiny
+        // GET every 2 s, and it stops the moment the job hits a terminal
+        // status.
+        refetchInterval: (query) => {
+            const status = (query.state.data as MigrationJobDetail | undefined)?.status as
+                | MigrationStatus
+                | undefined;
+            if (!status) return false;
+            if (isMigrationTerminal(status)) return false;
+            return 2000;
+        },
     });
 }
 
@@ -168,6 +182,18 @@ export function useApplyMigration(jobId: number | string | undefined) {
         },
         onSuccess: () => {
             if (jobId !== undefined) {
+                // Optimistic flip to 'applying' so the UI swaps to the
+                // progress view immediately. Without this there's a race:
+                // the apply runs as a BackgroundTask, so a refetch right
+                // after the 202 may still see status='ready' (the BG task
+                // hasn't yet committed its status update). The polling
+                // refetchInterval on useMigration then catches up with
+                // the real state within ~2 s.
+                qc.setQueryData(
+                    migrationKeys.detail(jobId),
+                    (old: MigrationJobDetail | undefined) =>
+                        old ? { ...old, status: 'applying' as const, error: null } : old,
+                );
                 qc.invalidateQueries({ queryKey: migrationKeys.detail(jobId) });
             }
         },
