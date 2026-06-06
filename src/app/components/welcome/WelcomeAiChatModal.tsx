@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, ArrowUp, Check, ChevronDown as ChevronDownIcon, FileText, Flag, GitBranch, Link2, Loader2, Minus, X } from "lucide-react";
+import { ArrowUp, Check, ChevronDown as ChevronDownIcon, FileText, Flag, GitBranch, Link2, Loader2, Minus, X } from "lucide-react";
 import {
   Fragment,
   useCallback,
@@ -24,14 +24,12 @@ import {
   useProjectRepositories,
   useRepositoryBranches,
   useUploadPlannerFile,
-  fetchFigmaBlueprint,
   type FileContent,
 } from "@/api";
+import type { AssistantMode } from "@/api/wiki";
 import type { BranchItem, Repository } from "@/types/repository";
 import TextareaAutosize from "react-textarea-autosize";
 import type {
-  FigmaAttachmentRequest,
-  FigmaBlueprint,
   GeneratedTask,
   WikiConfirmTaskItem,
 } from "@/api";
@@ -58,7 +56,6 @@ const imgSquarePen = mcpAsset("8b659cef-3407-4a90-9a3b-040a80e97dd7");
 const imgMinus = mcpAsset("398b8c9e-4389-4bf0-b963-a0ba27edd9e9");
 const imgBot = mcpAsset("39d27ae7-19c5-4d7d-b5fa-d32575b9f513");
 const imgPlus = mcpAsset("0d0492e3-ad36-48a3-8f2a-a9ea51d299e4");
-const imgSettings2 = mcpAsset("dce388b9-22f0-4c35-976b-ca6706b88382");
 /** Figma — active chat 14:3531 / 14:3595 */
 const imgSquarePenChat = mcpAsset("79fbaac6-1ad4-4409-9061-0ae19953dbea");
 const imgEllipsis = mcpAsset("8a1cc0a4-ebd0-4e5d-b345-dccb8e9fd5b1");
@@ -118,37 +115,6 @@ type WelcomeComposerAttachment = {
   isImage: boolean;
   previewUrl?: string;
 };
-
-function buildFigmaAttachmentFromUrl(rawUrl: string): FigmaAttachmentRequest | null {
-  const trimmed = rawUrl.trim();
-  if (!trimmed) return null;
-  try {
-    const parsed = new URL(trimmed);
-    if (!["figma.com", "www.figma.com"].includes(parsed.hostname)) return null;
-    const segments = parsed.pathname.split("/").filter(Boolean);
-    if (segments.length < 2 || !["design", "file"].includes(segments[0])) return null;
-    const fileKey = segments[2] === "branch" ? segments[3] : segments[1];
-    if (!fileKey) return null;
-    const rawNodeId = parsed.searchParams.get("node-id");
-    return {
-      url: trimmed,
-      file_key: fileKey,
-      node_id: rawNodeId ? rawNodeId.replace(/-/g, ":") : null,
-      source_name: segments[2] && segments[2] !== "branch" ? decodeURIComponent(segments[2]) : null,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function figmaAttachmentFromBlueprint(blueprint: FigmaBlueprint): FigmaAttachmentRequest {
-  return {
-    url: blueprint.url,
-    file_key: blueprint.file_key,
-    node_id: blueprint.node_id ?? null,
-    source_name: blueprint.frame_name || blueprint.source_name || null,
-  };
-}
 
 type ChatPhase = "welcome" | "thinking" | "responded" | "getStartedLoading" | "getStartedAnswer";
 
@@ -312,11 +278,7 @@ export function WelcomeAiChatModal({
   );
 
   const [composerAttachments, setComposerAttachments] = useState<WelcomeComposerAttachment[]>([]);
-  const [figmaAttachment, setFigmaAttachment] = useState<FigmaAttachmentRequest | null>(null);
-  const [figmaBlueprint, setFigmaBlueprint] = useState<FigmaBlueprint | null>(null);
-  const [figmaBlueprintLoading, setFigmaBlueprintLoading] = useState(false);
-  const [figmaModalOpen, setFigmaModalOpen] = useState(false);
-  const [figmaUrlInput, setFigmaUrlInput] = useState("");
+  const [assistantMode, setAssistantMode] = useState<AssistantMode>("create");
   const composerAttachmentsRef = useRef(composerAttachments);
   composerAttachmentsRef.current = composerAttachments;
   const welcomeFileInputRef = useRef<HTMLInputElement>(null);
@@ -365,31 +327,6 @@ export function WelcomeAiChatModal({
     });
   }, []);
 
-  const handleAttachFigma = useCallback(() => {
-    setFigmaUrlInput(figmaAttachment?.url ?? "");
-    setFigmaModalOpen(true);
-  }, [figmaAttachment]);
-
-  const handleAttachFigmaFromModal = useCallback(async () => {
-    const next = buildFigmaAttachmentFromUrl(figmaUrlInput);
-    if (!next) {
-      toast.error("Enter a valid Figma design or frame URL.");
-      return;
-    }
-    setFigmaBlueprintLoading(true);
-    try {
-      const blueprint = await fetchFigmaBlueprint(next.url, next.node_id);
-      setFigmaBlueprint(blueprint);
-      setFigmaAttachment(figmaAttachmentFromBlueprint(blueprint));
-      setFigmaModalOpen(false);
-      toast.success(`Figma blueprint attached (${blueprint.pruned_node_count} nodes, ${blueprint.flows.length} annotations)`);
-    } catch {
-      toast.error("Could not inspect that Figma URL. Check access and try again.");
-    } finally {
-      setFigmaBlueprintLoading(false);
-    }
-  }, [figmaUrlInput]);
-
   const milestoneIdForConfirm = useMemo(
     () => parseMilestoneIdParam(milestoneIdParam ?? null),
     [milestoneIdParam],
@@ -418,10 +355,7 @@ export function WelcomeAiChatModal({
       setApiError(null);
       setConfirming(false);
       setConfirmed(false);
-      setFigmaAttachment(null);
-      setFigmaBlueprint(null);
-      setFigmaUrlInput("");
-      setFigmaModalOpen(false);
+      setAssistantMode("create");
       abortRef.current?.abort();
       abortRef.current = null;
       setReportingThread([]);
@@ -521,9 +455,8 @@ export function WelcomeAiChatModal({
         const res = await generateTasks(projectId, {
           prompt: text,
           max_tasks: 10,
+          mode: assistantMode,
           ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
-          ...(figmaAttachment ? { figma_attachment: figmaAttachment } : {}),
-          ...(figmaBlueprint ? { figma_blueprint: figmaBlueprint } : {}),
           ...(filledSources.length ? { sources: filledSources } : {}),
         });
         if (controller.signal.aborted) return;
@@ -563,8 +496,7 @@ export function WelcomeAiChatModal({
     [
       projectId,
       clearComposerAttachments,
-      figmaAttachment,
-      figmaBlueprint,
+      assistantMode,
       filledSources,
     ],
   );
@@ -613,9 +545,8 @@ export function WelcomeAiChatModal({
           const res = await generateTasks(projectId, {
             prompt: fullPrompt,
             max_tasks: 10,
+            mode: assistantMode,
             ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
-            ...(figmaAttachment ? { figma_attachment: figmaAttachment } : {}),
-            ...(figmaBlueprint ? { figma_blueprint: figmaBlueprint } : {}),
             ...(filledSources.length ? { sources: filledSources } : {}),
           });
 
@@ -670,8 +601,7 @@ export function WelcomeAiChatModal({
       wikiChoiceSelections,
       taskGenOriginalPrompt,
       taskGenClarificationLog,
-      figmaAttachment,
-      figmaBlueprint,
+      assistantMode,
       filledSources,
     ],
   );
@@ -718,7 +648,7 @@ export function WelcomeAiChatModal({
     setConfirming(true);
     try {
       const items = tasks.map((t) => mapGeneratedTaskToConfirmItem(t, pid, milestoneIdForConfirm));
-      const res = await confirmTasks(pid, { tasks: items, figma_blueprint: figmaBlueprint });
+      const res = await confirmTasks(pid, { tasks: items });
       if (res.created_count < 1) {
         toast.error("No tasks were created. Try again.");
         return;
@@ -739,7 +669,6 @@ export function WelcomeAiChatModal({
     confirmed,
     queryClient,
     showQuickActions,
-    figmaBlueprint,
   ]);
 
   const isReportingChat = useReportingApi && (reportingThread.length > 0 || reportingPending);
@@ -972,13 +901,8 @@ export function WelcomeAiChatModal({
                       disabled={isGetStartedFlow && !projectId}
                       attachments={composerAttachments}
                       onRemoveAttachment={removeComposerAttachment}
-                      figmaAttachment={figmaAttachment}
-                      onAttachFigma={isGetStartedFlow ? handleAttachFigma : undefined}
-                      onRemoveFigma={() => {
-                        setFigmaAttachment(null);
-                        setFigmaBlueprint(null);
-                      }}
-                      figmaBlueprint={figmaBlueprint}
+                      mode={isGetStartedFlow ? assistantMode : undefined}
+                      onModeChange={isGetStartedFlow ? setAssistantMode : undefined}
                       fileInputRef={welcomeFileInputRef}
                       onAddFiles={(files) => void addComposerFiles(files)}
                       uploadPending={uploadMutation.isPending}
@@ -1227,84 +1151,56 @@ export function WelcomeAiChatModal({
         }}
       />
     )}
-    <Dialog open={figmaModalOpen} onOpenChange={setFigmaModalOpen}>
-      <DialogPortal>
-        <DialogOverlay className="bg-black/25" />
-        <DialogPrimitive.Content
-          aria-describedby={undefined}
-          className={cn(
-            "fixed left-1/2 top-1/2 z-[120] flex w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-          )}
-        >
-          <DialogPrimitive.Title className="sr-only">Attach Figma design</DialogPrimitive.Title>
-          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
-            <DialogPrimitive.Close asChild>
-              <button type="button" className="inline-flex size-5 items-center justify-center text-[#606d76]" aria-label="Close">
-                <ArrowLeft className="size-5" />
-              </button>
-            </DialogPrimitive.Close>
-            <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
-              Attach Figma Design
-            </p>
-            <div className="size-5" />
-          </div>
-          <div className="flex w-full flex-col gap-5 px-9 py-6">
-            <div className="space-y-1">
-              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
-                Figma frame URL
-              </p>
-              <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-[#727d83]">
-                Continuum will inspect layout, typography, gradients, icons, assets, and measurements before creating tasks.
-                Layer-name hints like &amp;logic: submit-form or &amp;data: user.email make the tasks more precise.
-              </p>
-            </div>
-            <input
-              type="url"
-              autoFocus
-              value={figmaUrlInput}
-              onChange={(e) => setFigmaUrlInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                e.preventDefault();
-                void handleAttachFigmaFromModal();
-              }}
-              placeholder="https://www.figma.com/design/..."
-              className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76]/40 focus-visible:border-[#1466ff]"
-            />
-            <div className="flex w-full justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setFigmaModalOpen(false)}
-                className="h-10 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleAttachFigmaFromModal()}
-                disabled={!figmaUrlInput.trim() || figmaBlueprintLoading}
-                className={cn(
-                  "h-10 rounded-[8px] px-4 font-['Satoshi',sans-serif] text-[14px] font-semibold transition-colors",
-                  figmaUrlInput.trim() && !figmaBlueprintLoading
-                    ? "bg-[#1466ff] text-white hover:bg-[#0051e6]"
-                    : "bg-[rgba(96,109,118,0.1)] text-[#606d76]/50",
-                )}
-              >
-                {figmaBlueprintLoading ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="size-4 animate-spin" />
-                    Processing
-                  </span>
-                ) : (
-                  "Attach"
-                )}
-              </button>
-            </div>
-          </div>
-        </DialogPrimitive.Content>
-      </DialogPortal>
-    </Dialog>
   </>
+  );
+}
+
+/** Segmented Plan/Create toggle. Plan: assistant clarifies and outlines scope. Create: tasks are generated. */
+function ModeSwitcher({
+  mode,
+  onModeChange,
+  disabled,
+}: {
+  mode: AssistantMode;
+  onModeChange: (next: AssistantMode) => void;
+  disabled?: boolean;
+}) {
+  const segmentClass = (active: boolean) =>
+    cn(
+      "shrink-0 cursor-pointer rounded-[999px] border-0 px-2.5 py-0.5 font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] tracking-[-0.12px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#2E96F9] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50",
+      active
+        ? "bg-white text-[#0b191f] shadow-[0px_1px_2px_0px_rgba(14,14,34,0.08)]"
+        : "bg-transparent text-[#727d83] hover:text-[#0b191f]",
+    );
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Assistant mode"
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-[999px] bg-[#f3f5f7] p-0.5"
+    >
+      <button
+        type="button"
+        role="radio"
+        aria-checked={mode === "plan"}
+        title="Plan together before tasks are created"
+        onClick={() => onModeChange("plan")}
+        disabled={disabled}
+        className={segmentClass(mode === "plan")}
+      >
+        Plan
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={mode === "create"}
+        title="Create tasks directly from your prompt"
+        onClick={() => onModeChange("create")}
+        disabled={disabled}
+        className={segmentClass(mode === "create")}
+      >
+        Create
+      </button>
+    </div>
   );
 }
 
@@ -1317,10 +1213,8 @@ function ComposerWelcome({
   inputId = "welcome-ai-chat-input",
   attachments,
   onRemoveAttachment,
-  figmaAttachment,
-  figmaBlueprint,
-  onAttachFigma,
-  onRemoveFigma,
+  mode,
+  onModeChange,
   fileInputRef,
   onAddFiles,
   uploadPending,
@@ -1334,10 +1228,9 @@ function ComposerWelcome({
   inputId?: string;
   attachments: WelcomeComposerAttachment[];
   onRemoveAttachment: (id: string) => void;
-  figmaAttachment?: FigmaAttachmentRequest | null;
-  figmaBlueprint?: FigmaBlueprint | null;
-  onAttachFigma?: () => void;
-  onRemoveFigma?: () => void;
+  /** When provided, render a Plan/Create segmented switcher next to the attach button. */
+  mode?: AssistantMode;
+  onModeChange?: (next: AssistantMode) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onAddFiles: (files: File[]) => void;
   uploadPending: boolean;
@@ -1361,7 +1254,7 @@ function ComposerWelcome({
         }}
       />
       <div className="relative mb-[-11px] flex shrink-0 flex-col gap-2">
-        {(attachments.length > 0 || figmaAttachment) && (
+        {attachments.length > 0 && (
           <div
             className="flex flex-wrap gap-2"
             aria-label="Attachments for AI message"
@@ -1414,30 +1307,6 @@ function ComposerWelcome({
                 </span>
               ),
             )}
-            {figmaAttachment && (
-              <span className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm">
-                <span
-                  className="flex w-9 shrink-0 items-center justify-center self-stretch bg-[#e7f2fc]"
-                  aria-hidden
-                >
-                  <Link2 className="size-4 shrink-0 text-[#2f6df6]" strokeWidth={1.75} />
-                </span>
-                <span className="min-w-0 max-w-[220px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f]">
-                  {figmaAttachment.source_name || "Figma design attached"}
-                  {figmaBlueprint
-                    ? ` · ${figmaBlueprint.pruned_node_count} nodes · ${figmaBlueprint.flows.length} annotations`
-                    : ""}
-                </span>
-                <button
-                  type="button"
-                  onClick={onRemoveFigma}
-                  className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-[#606d76] hover:text-[#0b191f]"
-                  aria-label="Remove Figma design"
-                >
-                  <X className="size-3.5" strokeWidth={2} />
-                </button>
-              </span>
-            )}
           </div>
         )}
 
@@ -1472,8 +1341,8 @@ function ComposerWelcome({
               className="w-full min-h-[40px] resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0 disabled:opacity-40"
             />
           </div>
-          <div className="relative flex w-full shrink-0 items-center justify-between px-[11px]">
-            <div className="relative flex shrink-0 items-center gap-[7px]">
+          <div className="relative flex w-full shrink-0 items-center justify-between gap-2 px-[11px]">
+            <div className="relative flex min-w-0 shrink items-center gap-2">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -1498,20 +1367,9 @@ function ComposerWelcome({
                   </span>
                 )}
               </button>
-              <button
-                type="button"
-                onClick={onAttachFigma}
-                disabled={!onAttachFigma || disabled}
-                title="Attach Figma design"
-                className="relative size-[18px] shrink-0 overflow-clip rounded-sm p-0 transition-colors hover:bg-[#edf0f3] disabled:opacity-50"
-                aria-label="Attach Figma design"
-              >
-                <div className="absolute inset-[16.67%]">
-                  <div className="absolute inset-[-4.17%]">
-                    <img alt="" className="block size-full max-w-none" src={imgSettings2} />
-                  </div>
-                </div>
-              </button>
+              {mode && onModeChange ? (
+                <ModeSwitcher mode={mode} onModeChange={onModeChange} disabled={disabled} />
+              ) : null}
             </div>
             <div className="relative flex shrink-0 items-center gap-2.5">
               <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#727d83]">
