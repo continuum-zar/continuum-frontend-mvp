@@ -46,6 +46,59 @@ describe('wiki AI task generation API', () => {
         );
     });
 
+    it('forwards repository_id and branch when generating tasks', async () => {
+        postMock.mockResolvedValueOnce({
+            data: {
+                project_id: 1,
+                prompt: 'Add auth tests',
+                tasks: [],
+                source_files_used: [],
+                confidence: 0.8,
+            },
+        });
+
+        await generateTasks(1, {
+            prompt: 'Add auth tests',
+            max_tasks: 2,
+            repository_id: 42,
+            branch: '  feature/login  ',
+        });
+
+        expect(postMock).toHaveBeenCalledWith(
+            '/projects/1/wiki/generate',
+            {
+                prompt: 'Add auth tests',
+                max_tasks: 2,
+                repository_id: 42,
+                branch: 'feature/login',
+            },
+            { timeout: 600_000 },
+        );
+    });
+
+    it('omits repository_id and branch when not provided', async () => {
+        postMock.mockResolvedValueOnce({
+            data: {
+                project_id: 1,
+                prompt: 'No repo context',
+                tasks: [],
+                source_files_used: [],
+                confidence: 0.5,
+            },
+        });
+
+        await generateTasks(1, { prompt: 'No repo context' });
+
+        expect(postMock).toHaveBeenCalledWith(
+            '/projects/1/wiki/generate',
+            {
+                prompt: 'No repo context',
+                max_tasks: 10,
+            },
+            { timeout: 600_000 },
+        );
+    });
+
     it('sends generated task resources through confirm', async () => {
         postMock.mockResolvedValueOnce({ data: { created_count: 1, task_ids: [42] } });
 
