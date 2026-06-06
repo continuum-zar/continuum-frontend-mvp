@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Pause, Play, Search, Square } from "lucide-react";
+import { Check, ChevronDown, Pause, Play, Search, Square, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import type { PlannerNavigationGuardProps } from "@/app/components/planner/PlannerLeaveConfirmModal";
@@ -22,12 +22,14 @@ import {
   projectSprintHref,
 } from "../../data/dashboardPlaceholderProjects";
 import {
+  migrationsNewHref,
   WORKSPACE_BASE,
   WORKSPACE_MY_TASKS_SEGMENT,
   workspaceJoin,
   workspaceMyTasksHref,
   workspaceProductivityRhythmHref,
 } from "@/lib/workspacePaths";
+import { isMigrationsEnabled } from "@/app/components/migrations/migrationFlags";
 import { GuidedTourLayer } from "@/app/components/onboarding/GuidedTourLayer";
 import {
   consumeGithubOAuthReopenGithubIntegrationModal,
@@ -836,6 +838,24 @@ export function DashboardLeftRail({
                       </span>
                       Create with AI
                     </button>
+                    {isMigrationsEnabled ? (
+                      <button
+                        type="button"
+                        className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-[#151515] outline-none transition-colors hover:bg-[#f5f7f8] focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => {
+                          setCreateProjectMenuOpen(false);
+                          void navigate(migrationsNewHref());
+                        }}
+                      >
+                        <span
+                          className="relative flex h-[16px] w-[16px] shrink-0 items-center justify-center overflow-clip text-[#151515]"
+                          aria-hidden
+                        >
+                          <Upload className="size-[14px]" />
+                        </span>
+                        Import from another tool
+                      </button>
+                    ) : null}
                   </PopoverContent>
                 </Popover>
               </div>
