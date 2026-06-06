@@ -242,7 +242,20 @@ export default function MigrationsApplyPage() {
                     ) : null}
 
                     {status === "completed" ? (
-                        <MigrationApplySummary stats={data.stats} projectHref={projectHref} />
+                        <>
+                            <MigrationApplySummary stats={data.stats} projectHref={projectHref} />
+                            {data.warnings.length > 0 ? (
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-foreground">
+                                        Warnings recorded during this import
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Your project is ready — these are notes about source values we couldn't resolve cleanly. Open the project and fix the affected tasks at your own pace.
+                                    </p>
+                                    <MigrationWarningsList warnings={data.warnings} />
+                                </div>
+                            ) : null}
+                        </>
                     ) : null}
 
                     {(status === "queued" || status === "parsing") ? (
