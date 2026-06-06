@@ -114,6 +114,12 @@ const LABELS: Record<
         description: "Skipped because you toggled \"Skip tasks already marked done\".",
         severity: "info",
     },
+    IMPORTED_TO_DEFAULT_MILESTONE: {
+        label: "Grouped under a catch-all milestone",
+        description:
+            "Continuum tasks live inside milestones. Tasks without a sprint or section in the source were grouped together — you can rename or split this milestone after the import.",
+        severity: "info",
+    },
     LLM_MAPPED: {
         label: "AI-suggested mappings",
         description: "Continuum used an AI hint for these source values.",
