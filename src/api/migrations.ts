@@ -38,11 +38,15 @@ export async function listMigrations(params?: { limit?: number }): Promise<Migra
 export async function uploadMigration(args: {
     file: File;
     sourceHint?: SourceHintOption;
+    autoGroupMilestones?: boolean;
 }): Promise<MigrationUploadResponse> {
     const formData = new FormData();
     formData.append('file', args.file);
     if (args.sourceHint && args.sourceHint !== 'auto') {
         formData.append('source_hint', args.sourceHint);
+    }
+    if (args.autoGroupMilestones) {
+        formData.append('auto_group_milestones', 'true');
     }
     const { data } = await api.post<MigrationUploadResponse>('/migrations/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

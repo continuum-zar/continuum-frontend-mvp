@@ -45,6 +45,10 @@ export default function MigrationsUploadPage() {
     const [file, setFile] = useState<File | null>(null);
     const [sourceHint, setSourceHint] = useState<SourceHintOption>("auto");
     const [skipDone, setSkipDone] = useState(false);
+    // Default ON for Trello / Asana / generic CSV (no native sprints).
+    // Jira CSVs already carry Sprint columns so the catch-all rarely fires;
+    // the user can still flip it on if they want LLM grouping on top.
+    const [autoGroupMilestones, setAutoGroupMilestones] = useState(true);
     const [parseError, setParseError] = useState<string | null>(null);
 
     const isUploading = upload.isPending;
@@ -53,7 +57,11 @@ export default function MigrationsUploadPage() {
         if (!file || isUploading) return;
         setParseError(null);
         try {
-            const result = await upload.mutateAsync({ file, sourceHint });
+            const result = await upload.mutateAsync({
+                file,
+                sourceHint,
+                autoGroupMilestones,
+            });
             if (result.status === "failed") {
                 setParseError(
                     "We couldn't read this file. Double-check it's the original export, then try again.",
@@ -153,6 +161,30 @@ export default function MigrationsUploadPage() {
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
                                         Keeps your imported project clean of closed history. You can change this on the next screen.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <Checkbox
+                                    id="migration-auto-group"
+                                    checked={autoGroupMilestones}
+                                    onCheckedChange={(v) =>
+                                        setAutoGroupMilestones(v === true)
+                                    }
+                                    disabled={isUploading}
+                                />
+                                <div className="space-y-0.5">
+                                    <Label
+                                        htmlFor="migration-auto-group"
+                                        className="flex items-center gap-1.5"
+                                    >
+                                        Auto-organize tasks into milestones
+                                        <span className="text-info text-xs font-normal">
+                                            ✨ AI
+                                        </span>
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Groups your imported tasks into a small number of themed milestones (e.g. &ldquo;Onboarding flow&rdquo;, &ldquo;Cleanup&rdquo;) so the new project has structure on day one. You can rename, split, or remove them in the preview.
                                     </p>
                                 </div>
                             </div>
