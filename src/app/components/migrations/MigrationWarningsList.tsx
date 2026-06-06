@@ -125,6 +125,12 @@ const LABELS: Record<
         description: "Continuum used an AI hint for these source values.",
         severity: "info",
     },
+    LLM_GROUPING_FAILED: {
+        label: "Auto-organize couldn't run",
+        description:
+            "The AI couldn't group these tasks into milestones (often an LLM rate-limit or quota issue). Your tasks will land under the catch-all milestone — you can split them up after import.",
+        severity: "warning",
+    },
 };
 
 function groupWarnings(warnings: IRWarning[]): WarningGroup[] {

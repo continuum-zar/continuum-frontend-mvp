@@ -42,6 +42,7 @@ import {
 } from "@/app/components/migrations/MigrationApplyTargetCard";
 import { MigrationApplyProgress } from "@/app/components/migrations/MigrationApplyProgress";
 import { MigrationApplySummary } from "@/app/components/migrations/MigrationApplySummary";
+import { MigrationMilestonePreview } from "@/app/components/migrations/MigrationMilestonePreview";
 import { MigrationsPageHeader } from "@/app/components/migrations/MigrationsPageHeader";
 import { MigrationsPageShell } from "@/app/components/migrations/MigrationsPageShell";
 import { MigrationWarningsList } from "@/app/components/migrations/MigrationWarningsList";
@@ -180,6 +181,12 @@ export default function MigrationsApplyPage() {
                                     </dl>
                                 </CardContent>
                             </Card>
+                            {data.ir ? (
+                                <MigrationMilestonePreview
+                                    ir={data.ir}
+                                    warnings={data.warnings}
+                                />
+                            ) : null}
                             {status === "failed" ? (
                                 <Alert variant="destructive">
                                     <XCircle aria-hidden="true" />
