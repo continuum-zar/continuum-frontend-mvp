@@ -22,6 +22,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { migrationEventsStreamUrl, migrationKeys } from "@/api/migrations";
+import { projectKeys } from "@/api/projects";
 import type {
     MigrationApplyDoneEvent,
     MigrationApplyDryRunDoneEvent,
@@ -113,6 +114,15 @@ export function useMigrationEvents(
             // Refresh the canonical detail so the page (`useMigration(jobId)`)
             // sees the new status, warnings, stats.
             qc.invalidateQueries({ queryKey: migrationKeys.detail(jobId) });
+
+            // When apply finishes, the imported project is fresh on the
+            // backend but the sidebar's projects list query is still cached.
+            // Invalidate the list prefix so every cached listForUser(*) key
+            // refetches and the new project appears in the sidebar without
+            // a hard refresh.
+            if (event.type === "migration.apply.done") {
+                qc.invalidateQueries({ queryKey: projectKeys.list() });
+            }
 
             // Terminal events close the stream so we don't leak EventSources.
             if (TERMINAL_TYPES.has(event.type)) {

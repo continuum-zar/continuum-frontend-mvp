@@ -16,8 +16,9 @@
  * GET is what we render on terminal events.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import {
     ArrowLeft,
     Loader2,
@@ -26,6 +27,7 @@ import {
 } from "lucide-react";
 
 import { useApplyMigration, useMigration } from "@/api/migrations";
+import { projectKeys } from "@/api/projects";
 import { Alert, AlertDescription, AlertTitle } from "@/app/components/ui/alert";
 import { Button } from "@/app/components/ui/button";
 import {
@@ -62,9 +64,22 @@ export default function MigrationsApplyPage() {
 
     const { data, isLoading } = useMigration(jobId);
     const apply = useApplyMigration(jobId);
+    const qc = useQueryClient();
 
     const [target, setTarget] = useState<ApplyTarget>({ kind: "new" });
     const [progress, setProgress] = useState<ProgressState | null>(null);
+
+    // Belt-and-braces: when the page itself sees the status flip to
+    // 'completed' (e.g. after a refetch when Redis SSE isn't available),
+    // invalidate the projects list so the imported project lands in the
+    // sidebar without a hard refresh. The SSE consumer
+    // (useMigrationEvents) does the same on migration.apply.done — this
+    // covers the no-Redis case.
+    useEffect(() => {
+        if (data?.status === "completed") {
+            qc.invalidateQueries({ queryKey: projectKeys.list() });
+        }
+    }, [data?.status, qc]);
 
     useMigrationEvents(jobId, {
         enabled: !!data && !isMigrationTerminal(data.status),
