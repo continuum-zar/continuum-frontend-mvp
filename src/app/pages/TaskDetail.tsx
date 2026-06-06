@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { DEFAULT_KANBAN_COLUMNS, mapKanbanBoardFromApi, type KanbanColumnConfig } from '@/app/components/dashboard-placeholder/kanbanBoardTypes';
+import { TaskDescriptionMarkdown } from '@/app/components/TaskDescriptionMarkdown';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
@@ -1414,9 +1415,13 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     className="min-h-[106px] cursor-text rounded-[8px] border border-[#e9e9e9] bg-white p-4"
                     onClick={startEditDesc}
                   >
-                    <p className="whitespace-pre-wrap text-[16px] font-medium leading-relaxed text-[#0b191f]">
-                      {task.description || 'Click to add a description…'}
-                    </p>
+                    {task.description ? (
+                      <TaskDescriptionMarkdown>{task.description}</TaskDescriptionMarkdown>
+                    ) : (
+                      <p className="text-[16px] font-medium leading-relaxed text-[#606d76]">
+                        Click to add a description…
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
