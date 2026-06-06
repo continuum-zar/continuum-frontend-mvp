@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { clerkJwtTemplate } from '@/lib/clerkConfig';
+import { SESSION_SOCIAL_ONBOARDING_PENDING_KEY } from '@/lib/socialOnboarding';
 import type { AuthResponse } from '@/types/auth';
 
 /**
@@ -20,10 +21,34 @@ import type { AuthResponse } from '@/types/auth';
  * A manual login marks the store with `authSource: 'manual'`; this component
  * never touches such a session, so signing out of Clerk in another tab cannot
  * log the manual user out.
+ *
+ * Timing note: AuthGuard's `useEffect` fires before this component's `useEffect`
+ * (bottom-up effect order — the guard is deeper in the tree than this top-level
+ * bridge). Without intervention the guard would call `checkAuth` → silent
+ * refresh → 401 (no backend cookie yet) and redirect to /login before our
+ * `/auth/social-login` exchange resolves. We pre-empt that race by setting
+ * `isLoading: true` synchronously in `useLayoutEffect` the moment Clerk reports
+ * a signed-in user. `checkAuth` early-returns while `isLoading` is true, and
+ * AuthGuard keeps showing the skeleton until the exchange finishes.
  */
 export function ClerkSessionBridge() {
   const { isLoaded: authLoaded, isSignedIn, getToken } = useAuth();
   const { isLoaded: userLoaded } = useUser();
+
+  // Run BEFORE AuthGuard's checkAuth useEffect so we claim the loading
+  // indicator first. Without this, the post-OAuth landing on /onboarding/usage
+  // or /loading bounces the user to /login before we can swap a Clerk JWT for
+  // a backend session.
+  useLayoutEffect(() => {
+    if (!authLoaded || !userLoaded) return;
+    if (!isSignedIn) return;
+    const store = useAuthStore.getState();
+    if (store.authSource === 'manual') return;
+    if (store.authSource === 'clerk' && store.isAuthenticated && store.accessToken) return;
+    if (!store.isLoading || store.isInitialized) {
+      useAuthStore.setState({ isLoading: true, isInitialized: false });
+    }
+  }, [authLoaded, userLoaded, isSignedIn]);
 
   useEffect(() => {
     if (!authLoaded || !userLoaded) return;
@@ -56,17 +81,34 @@ export function ClerkSessionBridge() {
         const clerkToken = await getToken(
           clerkJwtTemplate ? { template: clerkJwtTemplate } : undefined,
         );
-        if (cancelled || !clerkToken) return;
+        if (cancelled || !clerkToken) {
+          // Clerk reports signed-in but couldn't mint a token — let AuthGuard
+          // make a decision rather than hanging on the skeleton forever.
+          if (!cancelled) {
+            useAuthStore.setState({ isLoading: false, isInitialized: true });
+          }
+          return;
+        }
 
         // Exchange the Clerk JWT for a backend session. The backend verifies
         // the Clerk signature, upserts the user, and returns an HS256 token
-        // (plus an HttpOnly refresh cookie scoped to /api/v1/auth).
+        // (plus an HttpOnly refresh cookie scoped to /api/v1/auth). The
+        // ``is_new_user`` flag is sticky for one navigation so /loading can
+        // redirect first-time social signups into /onboarding/usage.
         const response = await api.post<AuthResponse>(
           '/auth/social-login',
           undefined,
           { headers: { Authorization: `Bearer ${clerkToken}` } },
         );
         if (cancelled) return;
+        if (response.data.is_new_user) {
+          try {
+            sessionStorage.setItem(SESSION_SOCIAL_ONBOARDING_PENDING_KEY, '1');
+          } catch {
+            /* sessionStorage may be unavailable (private mode) — onboarding
+               just won't auto-trigger; the user can still complete it later. */
+          }
+        }
         useAuthStore.setState({
           accessToken: response.data.access_token,
           isAuthenticated: true,
@@ -83,7 +125,11 @@ export function ClerkSessionBridge() {
         }
       } catch (err) {
         console.error('ClerkSessionBridge: social-login exchange failed', err);
-        useAuthStore.setState({ isInitialized: true });
+        if (!cancelled) {
+          // Release the skeleton so AuthGuard can redirect to /login instead
+          // of spinning forever on a failed exchange.
+          useAuthStore.setState({ isLoading: false, isInitialized: true });
+        }
       }
     })();
     return () => {
