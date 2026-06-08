@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 
 /**
  * API base URL for axios.
@@ -67,8 +67,96 @@ const AUTH_REFRESH_LOCK_NAME = 'continuum-auth-refresh';
 const STORAGE_MUTEX_KEY = 'continuum-auth-refresh-mutex';
 const STORAGE_MUTEX_TTL_MS = 120_000;
 
+/** Causes we surface to the auth store / UI so logout banners can be accurate. */
+export type LogoutCause =
+    | 'session_expired'        // access + refresh both expired or refresh revoked
+    | 'invalid_token'          // malformed token, signature mismatch, epoch invalidated
+    | 'refresh_failed'         // refresh threw a non-401/non-429 error
+    | 'manual';                // user clicked sign out
+
+/** Persisted breadcrumb for #1350 instrumentation. */
+const LOGOUT_DIAG_KEY = 'continuum-last-logout-diagnostic';
+
+export interface LogoutDiagnostic {
+    cause: LogoutCause;
+    status?: number;
+    code?: string;
+    message?: string;
+    hadRefreshToken: boolean;
+    correlationId?: string;
+    timestamp: string;
+}
+
+export function recordLogoutDiagnostic(d: LogoutDiagnostic): void {
+    try {
+        sessionStorage.setItem(LOGOUT_DIAG_KEY, JSON.stringify(d));
+    } catch {
+        /* noop */
+    }
+    // Always log to console so support can reproduce from a user-shared error.
+    // eslint-disable-next-line no-console
+    console.warn('[auth] forced logout', d);
+}
+
+export function readLogoutDiagnostic(): LogoutDiagnostic | null {
+    try {
+        const raw = sessionStorage.getItem(LOGOUT_DIAG_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw) as LogoutDiagnostic;
+    } catch {
+        return null;
+    }
+}
+
+export function clearLogoutDiagnostic(): void {
+    try {
+        sessionStorage.removeItem(LOGOUT_DIAG_KEY);
+    } catch {
+        /* noop */
+    }
+}
+
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Read Retry-After (seconds or HTTP-date). Returns ms, clamped to [0, max].
+ * Defaults to ``fallbackMs`` when the header is missing or invalid.
+ */
+function parseRetryAfter(error: AxiosError, fallbackMs: number, maxMs: number): number {
+    const raw = error.response?.headers?.['retry-after'];
+    if (typeof raw === 'string' && raw.trim() !== '') {
+        const asInt = parseInt(raw, 10);
+        if (!Number.isNaN(asInt)) {
+            return Math.min(Math.max(asInt * 1000, 0), maxMs);
+        }
+        const asDate = Date.parse(raw);
+        if (!Number.isNaN(asDate)) {
+            return Math.min(Math.max(asDate - Date.now(), 0), maxMs);
+        }
+    }
+    return Math.min(fallbackMs, maxMs);
+}
+
+function extractErrorCode(error: AxiosError): string | undefined {
+    const body = error.response?.data;
+    if (body && typeof body === 'object' && 'code' in body) {
+        const code = (body as { code?: unknown }).code;
+        if (typeof code === 'string') return code;
+    }
+    return undefined;
+}
+
+function extractCorrelationId(error: AxiosError): string | undefined {
+    const headerId = error.response?.headers?.['x-request-id'];
+    if (typeof headerId === 'string' && headerId) return headerId;
+    const body = error.response?.data;
+    if (body && typeof body === 'object' && 'correlation_id' in body) {
+        const id = (body as { correlation_id?: unknown }).correlation_id;
+        if (typeof id === 'string') return id;
+    }
+    return undefined;
 }
 
 /**
@@ -178,24 +266,65 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor to handle token refresh
+/**
+ * Once-per-request retry guard for 429 backoff. We intentionally cap at a
+ * single retry so we never amplify a thundering herd.
+ */
+const RATE_LIMIT_MAX_RETRY_MS = 8000;
+const RATE_LIMIT_FALLBACK_MS = 1500;
+
+async function performLogoutWithCause(diag: LogoutDiagnostic) {
+    recordLogoutDiagnostic(diag);
+    const { useAuthStore } = await import('../store/authStore');
+    useAuthStore.getState().logout();
+}
+
+// Response interceptor: distinguishes 401 (auth) from 403 (forbidden) from 429
+// (rate limited) per task #1352. 429 must NEVER cause a forced logout because
+// the rate limit lives at the proxy/IP layer and the user is still valid.
 api.interceptors.response.use(
     (response) => response,
-    async (error) => {
-        const originalRequest = error.config;
+    async (error: AxiosError) => {
+        const originalRequest = error.config as
+            | (AxiosRequestConfig & { _retry?: boolean; _rateLimitRetried?: boolean })
+            | undefined;
+        const status = error.response?.status;
 
-        // If error is 401 and not already retried
+        // ---- 429: back off once, then surface a typed error. NEVER logout. ----
+        if (status === 429 && originalRequest && !originalRequest._rateLimitRetried) {
+            originalRequest._rateLimitRetried = true;
+            const waitMs = parseRetryAfter(error, RATE_LIMIT_FALLBACK_MS, RATE_LIMIT_MAX_RETRY_MS);
+            await sleep(waitMs);
+            return api(originalRequest);
+        }
+        if (status === 429) {
+            // Already retried once — bubble up so callers (incl. the refresh
+            // path) can surface a "service busy" toast instead of logging out.
+            return Promise.reject(error);
+        }
+
+        // ---- 403: forbidden. Not an auth failure. Do not refresh, do not logout.
+        if (status === 403) {
+            return Promise.reject(error);
+        }
+
+        // ---- 401: try refresh. Only logout when refresh truly fails. ----
         if (
-            error.response?.status === 401 &&
+            status === 401 &&
+            originalRequest &&
             !originalRequest._retry &&
-            originalRequest.url !== '/auth/logout'
+            originalRequest.url !== '/auth/logout' &&
+            originalRequest.url !== '/auth/login' &&
+            originalRequest.url !== '/auth/login/access-token' &&
+            originalRequest.url !== '/auth/refresh-token'
         ) {
             if (isRefreshing) {
                 return new Promise(function (resolve, reject) {
                     failedQueue.push({ resolve, reject });
                 })
                     .then((token) => {
-                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                        originalRequest.headers = originalRequest.headers ?? {};
+                        (originalRequest.headers as Record<string, string>).Authorization = `Bearer ${token}`;
                         return api(originalRequest);
                     })
                     .catch((err) => {
@@ -206,34 +335,94 @@ api.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
 
-            const tokens = localStorage.getItem('auth-storage');
-            if (tokens) {
-                try {
-                    const snapshotBefore = readAuthTokensFromStorage();
-                    const refreshToken = snapshotBefore.refreshToken;
+            const snapshotBefore = readAuthTokensFromStorage();
+            const refreshToken = snapshotBefore.refreshToken;
 
-                    if (refreshToken) {
-                        const { useAuthStore } = await import('../store/authStore');
+            // No refresh token at all → we genuinely cannot recover. Logout.
+            if (!refreshToken) {
+                isRefreshing = false;
+                processQueue(error, null);
+                await performLogoutWithCause({
+                    cause: 'session_expired',
+                    status,
+                    code: extractErrorCode(error),
+                    message: 'No refresh token available.',
+                    hadRefreshToken: false,
+                    correlationId: extractCorrelationId(error),
+                    timestamp: new Date().toISOString(),
+                });
+                return Promise.reject(error);
+            }
 
-                        const data = await refreshTokensCoordinated(snapshotBefore);
-                        const { access_token, refresh_token } = data;
+            try {
+                const { useAuthStore } = await import('../store/authStore');
+                const data = await refreshTokensCoordinated(snapshotBefore);
+                const { access_token, refresh_token } = data;
 
-                        useAuthStore.getState().setTokens(access_token, refresh_token);
+                useAuthStore.getState().setTokens(access_token, refresh_token);
+                processQueue(null, access_token);
 
-                        processQueue(null, access_token);
+                originalRequest.headers = originalRequest.headers ?? {};
+                (originalRequest.headers as Record<string, string>).Authorization = `Bearer ${access_token}`;
+                return api(originalRequest);
+            } catch (refreshError) {
+                processQueue(refreshError, null);
 
-                        originalRequest.headers.Authorization = `Bearer ${access_token}`;
-                        return api(originalRequest);
-                    }
-                } catch (refreshError) {
-                    processQueue(refreshError, null);
-                    const { useAuthStore } = await import('../store/authStore');
-                    useAuthStore.getState().logout();
+                // Critical: the refresh call itself may have hit a rate limit.
+                // That is NOT a session-expired signal — it is a transient
+                // proxy/backend condition. Reject so the caller backs off
+                // instead of logging the user out.
+                if (
+                    axios.isAxiosError(refreshError) &&
+                    refreshError.response?.status === 429
+                ) {
                     return Promise.reject(refreshError);
-                } finally {
-                    isRefreshing = false;
                 }
-            } else {
+
+                // Anything else from the refresh path: the refresh token is
+                // truly invalid/expired/revoked. Logout with a precise cause.
+                let cause: LogoutCause = 'refresh_failed';
+                let code: string | undefined;
+                let message: string | undefined;
+                let respStatus: number | undefined;
+                let correlationId: string | undefined;
+                if (axios.isAxiosError(refreshError)) {
+                    respStatus = refreshError.response?.status;
+                    code = extractErrorCode(refreshError);
+                    correlationId = extractCorrelationId(refreshError);
+                    const body = refreshError.response?.data;
+                    if (body && typeof body === 'object' && 'message' in body) {
+                        const m = (body as { message?: unknown }).message;
+                        if (typeof m === 'string') message = m;
+                    }
+                    if (respStatus === 401) {
+                        if (
+                            code === 'REFRESH_TOKEN_EXPIRED' ||
+                            code === 'SESSION_EXPIRED'
+                        ) {
+                            cause = 'session_expired';
+                        } else if (
+                            code === 'INVALID_TOKEN' ||
+                            code === 'SESSION_INVALIDATED_BY_DEPLOY' ||
+                            code === 'REFRESH_TOKEN_REVOKED'
+                        ) {
+                            cause = 'invalid_token';
+                        } else {
+                            cause = 'session_expired';
+                        }
+                    }
+                }
+                await performLogoutWithCause({
+                    cause,
+                    status: respStatus,
+                    code,
+                    message,
+                    hadRefreshToken: true,
+                    correlationId,
+                    timestamp: new Date().toISOString(),
+                });
+                return Promise.reject(refreshError);
+            } finally {
                 isRefreshing = false;
             }
         }
