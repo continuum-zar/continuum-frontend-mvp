@@ -41,6 +41,7 @@ import {
   DialogPortal,
 } from "../ui/dialog";
 import { cn } from "../ui/utils";
+import { TruncatedText } from "../ui/truncated-text";
 import {
   CreateTaskModal,
   type CreateTaskModalPrefill,
@@ -1591,14 +1592,13 @@ function SourceContextRow({
           {reposLoading ? (
             <Loader2 className="size-3.5 shrink-0 animate-spin text-[#727d83]" aria-hidden />
           ) : null}
-          <span
+          <TruncatedText
+            text={repoButtonLabel}
             className={cn(
-              "min-w-0 flex-1 truncate text-left",
+              "flex-1 text-left",
               !selectedRepo && !reposLoading ? "text-[#727d83]" : "",
             )}
-          >
-            {repoButtonLabel}
-          </span>
+          />
           {selectedRepo ? (
             <button
               type="button"
@@ -1638,7 +1638,7 @@ function SourceContextRow({
                     isSelected ? "font-medium text-[#0b191f]" : "text-[#606d76]",
                   )}
                 >
-                  <span className="min-w-0 flex-1 truncate">{r.repositoryName}</span>
+                  <TruncatedText text={r.repositoryName} className="flex-1" />
                   {isSelected ? (
                     <Check
                       className="size-3.5 shrink-0 text-[#2E96F9]"
@@ -1667,14 +1667,13 @@ function SourceContextRow({
           className="flex h-8 w-full items-center gap-1.5 rounded-[8px] border border-solid border-[#ededed] bg-white px-2.5 font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f] outline-none transition-colors hover:border-[#cdd2d5] focus-visible:border-[#2E96F9] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <GitBranch className="size-3.5 shrink-0 text-[#727d83]" aria-hidden />
-          <span
+          <TruncatedText
+            text={branchButtonLabel}
             className={cn(
-              "min-w-0 flex-1 truncate text-left",
+              "flex-1 text-left",
               !row.branch ? "text-[#727d83]" : "",
             )}
-          >
-            {branchButtonLabel}
-          </span>
+          />
           <ChevronDownIcon className="size-3.5 shrink-0 text-[#727d83]" aria-hidden />
         </button>
         {branchOpen && !branchesLoading && selectedRepo != null && (
@@ -1709,7 +1708,7 @@ function SourceContextRow({
                       isSelected ? "font-medium text-[#0b191f]" : "text-[#606d76]",
                     )}
                   >
-                    <span className="min-w-0 flex-1 truncate">{b.name}</span>
+                    <TruncatedText text={b.name} className="flex-1" />
                     {b.default ? (
                       <span className="shrink-0 font-['Inter',sans-serif] text-[10px] uppercase tracking-[0.06em] text-[#727d83]">
                         default
