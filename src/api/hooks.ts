@@ -84,6 +84,7 @@ import {
     setTaskAssignees,
     addTaskLabel,
     removeTaskLabel,
+    DuplicateTaskLinkedBranchError,
     type TaskChecklistItemUpdate,
     type TaskCommentsPageResult,
 } from './tasks';
@@ -1328,6 +1329,9 @@ export function useCreateAndLinkTaskBranch() {
             try {
                 return await updateTask(taskId, { linked_branches: next });
             } catch (linkErr) {
+                if (linkErr instanceof DuplicateTaskLinkedBranchError) {
+                    throw linkErr;
+                }
                 throw Object.assign(
                     new Error(
                         'Branch was created on the remote but could not be linked to this task. Link it manually under Development.',
@@ -1372,6 +1376,10 @@ export function useCreateAndLinkTaskBranch() {
                     variables.taskId,
                     getTaskLinkedBranches(ctx.prevDetail),
                 );
+            }
+            if (err instanceof DuplicateTaskLinkedBranchError) {
+                toast.error(err.message);
+                return;
             }
             const status = axios.isAxiosError(err) ? err.response?.status : undefined;
             if (status === 409) {
