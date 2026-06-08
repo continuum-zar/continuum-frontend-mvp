@@ -27,6 +27,7 @@ import { WORKSPACE_BASE, WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from '@/lib/w
 import {
     usePlannerChat,
     useUploadPlannerFile,
+    useUploadMeetingAudio,
     useGeneratePlan,
     useGenerateArchitecture,
     useApprovePlan,
@@ -43,6 +44,7 @@ import type {
     ProjectPlan,
     PlannedMilestone,
     PlannerRefinementContext,
+    PlanMergeMode,
 } from '@/api/planner';
 import { PlannerRefinementReviewPanel } from '@/app/components/planner/PlannerRefinementReviewPanel';
 import { fetchPlannerLockMeta, type PlannerLockMeta } from '@/lib/plannerLockMeta';
@@ -278,6 +280,11 @@ export function AIProjectPlanner({
     const [lockMeta, setLockMeta] = useState<PlannerLockMeta | null>(null);
     const [diffSections, setDiffSections] = useState<MilestoneDiffSection[]>([]);
 
+    /** Set when the user uploaded a meeting recording; used at approve time to tag generated milestones. */
+    const [meetingId, setMeetingId] = useState<number | null>(null);
+    /** Approve-time choice when a meeting was uploaded; "isolated" bundles new milestones as one. */
+    const [meetingMergeMode, setMeetingMergeMode] = useState<PlanMergeMode>('merge');
+
     // Refs
     const chatEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -290,6 +297,7 @@ export function AIProjectPlanner({
     // Mutations
     const chatMutation = usePlannerChat();
     const uploadMutation = useUploadPlannerFile();
+    const meetingUploadMutation = useUploadMeetingAudio();
     const generateMutation = useGeneratePlan();
     const architectureMutation = useGenerateArchitecture();
     const approveMutation = useApprovePlan();
@@ -516,10 +524,25 @@ export function AIProjectPlanner({
         const file = e.target.files?.[0];
         if (!file) return;
 
+        const lowerName = file.name.toLowerCase();
+        const isAudio = lowerName.endsWith('.mp3') || lowerName.endsWith('.m4a');
+
         try {
-            const result = await uploadMutation.mutateAsync(file);
-            setFileContents((prev) => [...prev, result]);
-            toast.success(`Uploaded ${result.filename}`);
+            if (isAudio) {
+                const result = await meetingUploadMutation.mutateAsync({
+                    file,
+                    projectId: refinementPayload?.project_id ?? null,
+                });
+                setFileContents((prev) => [...prev, result]);
+                if (result.meeting_id != null) {
+                    setMeetingId(result.meeting_id);
+                }
+                toast.success(`Transcribed meeting: ${result.filename}`);
+            } else {
+                const result = await uploadMutation.mutateAsync(file);
+                setFileContents((prev) => [...prev, result]);
+                toast.success(`Uploaded ${result.filename}`);
+            }
         } catch {
             // Error toast handled by hook
         }
@@ -528,7 +551,21 @@ export function AIProjectPlanner({
     };
 
     const handleRemoveFile = (index: number) => {
-        setFileContents((prev) => prev.filter((_, i) => i !== index));
+        setFileContents((prev) => {
+            const removed = prev[index];
+            const next = prev.filter((_, i) => i !== index);
+            // If we just removed the audio file that owns the current meetingId, clear it.
+            if (removed?.meeting_id != null && removed.meeting_id === meetingId) {
+                const stillHasAnotherMeeting = next.some(
+                    (fc) => fc.meeting_id != null && fc.meeting_id === removed.meeting_id,
+                );
+                if (!stillHasAnotherMeeting) {
+                    setMeetingId(null);
+                    setMeetingMergeMode('merge');
+                }
+            }
+            return next;
+        });
     };
 
     const handleAttachFigma = () => {
@@ -618,6 +655,7 @@ export function AIProjectPlanner({
             const res = await approveMutation.mutateAsync({
                 plan,
                 figma_blueprint: figmaContext?.blueprint ?? null,
+                source_meeting_id: meetingId,
             });
             toast.success(
                 `Project created with ${res.milestone_count} milestones and ${res.task_count} tasks`,
@@ -637,6 +675,8 @@ export function AIProjectPlanner({
                 project_id: refinementPayload.project_id,
                 plan,
                 figma_blueprint: figmaContext?.blueprint ?? null,
+                mode: meetingId != null ? meetingMergeMode : 'merge',
+                source_meeting_id: meetingId,
             });
             toast.success('Project refined', {
                 icon: (
@@ -987,7 +1027,7 @@ export function AIProjectPlanner({
                                                     ref={fileInputRef}
                                                     type="file"
                                                     className="hidden"
-                                                    accept=".txt,.md,.pdf,.docx"
+                                                    accept=".txt,.md,.pdf,.docx,.png,.jpg,.jpeg,.gif,.webp,.mp3,.m4a,audio/mpeg,audio/mp4"
                                                     onChange={handleFileUpload}
                                                 />
 
@@ -1046,12 +1086,19 @@ export function AIProjectPlanner({
                                                                         fileInputRef.current?.click()
                                                                     }
                                                                     disabled={
-                                                                        uploadMutation.isPending
+                                                                        uploadMutation.isPending ||
+                                                                        meetingUploadMutation.isPending
                                                                     }
                                                                     className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center p-0 disabled:opacity-50"
-                                                                    aria-label="Upload file"
+                                                                    aria-label="Upload file or meeting recording"
+                                                                    title={
+                                                                        meetingUploadMutation.isPending
+                                                                            ? 'Transcribing meeting audio…'
+                                                                            : 'Upload file or meeting recording (.mp3, .m4a)'
+                                                                    }
                                                                 >
-                                                                    {uploadMutation.isPending ? (
+                                                                    {uploadMutation.isPending ||
+                                                                    meetingUploadMutation.isPending ? (
                                                                         <Loader2 className="h-[18px] w-[18px] animate-spin text-[#727d83]" />
                                                                     ) : (
                                                                         <img
@@ -1453,6 +1500,51 @@ export function AIProjectPlanner({
                                             onApply={() => undefined}
                                         />
                                     )
+                                ) : null}
+
+                                {meetingId != null && refinementPayload ? (
+                                    <div className="rounded-xl border border-[#ebedee] bg-white p-5 shadow-sm">
+                                        <p className="font-['Satoshi',sans-serif] text-[13px] font-semibold uppercase tracking-wide text-[#0b191f]">
+                                            Meeting plan — how should it land?
+                                        </p>
+                                        <p className="mt-1 font-['Satoshi',sans-serif] text-[13px] text-[#606d76]">
+                                            This plan was generated from an uploaded meeting recording.
+                                        </p>
+                                        <div className="mt-3 flex flex-col gap-2">
+                                            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#edecea] px-3 py-2 text-[13px]">
+                                                <input
+                                                    type="radio"
+                                                    name="meeting-merge-mode"
+                                                    value="merge"
+                                                    checked={meetingMergeMode === 'merge'}
+                                                    onChange={() => setMeetingMergeMode('merge')}
+                                                    className="mt-1"
+                                                />
+                                                <span>
+                                                    <span className="font-medium text-[#0b191f]">Merge into project</span>
+                                                    <span className="block text-[#606d76]">
+                                                        New milestones land alongside existing ones.
+                                                    </span>
+                                                </span>
+                                            </label>
+                                            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#edecea] px-3 py-2 text-[13px]">
+                                                <input
+                                                    type="radio"
+                                                    name="meeting-merge-mode"
+                                                    value="isolated"
+                                                    checked={meetingMergeMode === 'isolated'}
+                                                    onChange={() => setMeetingMergeMode('isolated')}
+                                                    className="mt-1"
+                                                />
+                                                <span>
+                                                    <span className="font-medium text-[#0b191f]">Keep as isolated milestone</span>
+                                                    <span className="block text-[#606d76]">
+                                                        Bundle the meeting&apos;s tasks into a single milestone marked as AI-generated.
+                                                    </span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
                                 ) : null}
 
                                 <div className="flex items-center justify-between border-t border-[#ebedee] pt-8">

@@ -31,7 +31,11 @@ export interface PlannerMessage {
 export interface FileContent {
     filename: string;
     text: string;
+    /** Set when this content was produced by /planner/upload-meeting; used to tag generated milestones. */
+    meeting_id?: number | null;
 }
+
+export type PlanMergeMode = 'merge' | 'isolated';
 
 export interface FigmaContext {
     file_key: string;
@@ -194,6 +198,27 @@ export async function uploadPlannerFile(file: File): Promise<FileContent> {
     return data;
 }
 
+/**
+ * Upload a meeting recording (.mp3 / .m4a) for Whisper transcription.
+ * Returns a FileContent (text = transcript) plus `meeting_id` so subsequent
+ * approve/apply calls can stamp generated milestones with the meeting reference.
+ */
+export async function uploadMeetingAudio(
+    file: File,
+    projectId?: number | null,
+): Promise<FileContent> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (projectId != null) {
+        formData.append('project_id', String(projectId));
+    }
+    const { data } = await api.post<FileContent>('/planner/upload-meeting', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 600_000,
+    });
+    return data;
+}
+
 export async function fetchFigmaBlueprint(url: string, node_id?: string | null): Promise<FigmaBlueprint> {
     const { data } = await api.post<FigmaBlueprint>('/figma/blueprint', {
         url,
@@ -298,10 +323,12 @@ export async function generateArchitecture(
 export async function approvePlan(
     plan: ProjectPlan,
     figma_blueprint?: FigmaBlueprint | null,
+    source_meeting_id?: number | null,
 ): Promise<ApprovePlanResponse> {
     const { data } = await api.post<ApprovePlanResponse>('/planner/approve-plan', {
         plan,
         ...(figma_blueprint ? { figma_blueprint } : {}),
+        ...(source_meeting_id != null ? { source_meeting_id } : {}),
     }, {
         timeout: 600_000,
     });
@@ -317,11 +344,15 @@ export async function applyPlanRefinement(
     projectId: number,
     plan: ProjectPlan,
     figma_blueprint?: FigmaBlueprint | null,
+    mode: PlanMergeMode = 'merge',
+    source_meeting_id?: number | null,
 ): Promise<ApplyPlanRefinementResponse> {
     const { data } = await api.post<ApplyPlanRefinementResponse>('/planner/apply-plan-refinement', {
         project_id: projectId,
         plan,
         ...(figma_blueprint ? { figma_blueprint } : {}),
+        mode,
+        ...(source_meeting_id != null ? { source_meeting_id } : {}),
     }, {
         timeout: 600_000,
     });
@@ -337,6 +368,16 @@ export function useUploadPlannerFile() {
         mutationFn: uploadPlannerFile,
         onError: (err: unknown) => {
             toast.error(getApiErrorMessage(err, 'Failed to upload file'));
+        },
+    });
+}
+
+export function useUploadMeetingAudio() {
+    return useMutation({
+        mutationFn: ({ file, projectId }: { file: File; projectId?: number | null }) =>
+            uploadMeetingAudio(file, projectId),
+        onError: (err: unknown) => {
+            toast.error(getApiErrorMessage(err, 'Failed to transcribe meeting audio'));
         },
     });
 }
@@ -408,10 +449,12 @@ export function useApprovePlan() {
         mutationFn: ({
             plan,
             figma_blueprint,
+            source_meeting_id,
         }: {
             plan: ProjectPlan;
             figma_blueprint?: FigmaBlueprint | null;
-        }) => approvePlan(plan, figma_blueprint),
+            source_meeting_id?: number | null;
+        }) => approvePlan(plan, figma_blueprint, source_meeting_id),
         onSuccess: async (data) => {
             const pid = data.project_id;
             // Left rail + dashboard read from React Query; without this, the new project and
@@ -448,11 +491,15 @@ export function useApplyPlanRefinement() {
             project_id,
             plan,
             figma_blueprint,
+            mode,
+            source_meeting_id,
         }: {
             project_id: number;
             plan: ProjectPlan;
             figma_blueprint?: FigmaBlueprint | null;
-        }) => applyPlanRefinement(project_id, plan, figma_blueprint),
+            mode?: PlanMergeMode;
+            source_meeting_id?: number | null;
+        }) => applyPlanRefinement(project_id, plan, figma_blueprint, mode ?? 'merge', source_meeting_id),
         onSuccess: async (data) => {
             const pid = data.project_id;
             void queryClient.invalidateQueries({ queryKey: projectKeys.detail(pid) });

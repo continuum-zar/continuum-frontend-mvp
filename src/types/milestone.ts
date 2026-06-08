@@ -15,6 +15,9 @@ export interface MilestoneProgressPayload {
     total_weight?: number;
 }
 
+/** Origin marker — "manual" by default, "ai_meeting" when created via the AI planner meeting flow. */
+export type MilestoneSource = 'manual' | 'ai_meeting';
+
 /** Raw milestone from API (GET /projects/:id/milestones, POST /milestones/) */
 export interface MilestoneAPIResponse {
     id: number;
@@ -26,6 +29,8 @@ export interface MilestoneAPIResponse {
     created_at?: string;
     updated_at?: string | null;
     progress?: MilestoneProgressPayload | null;
+    source?: MilestoneSource | string;
+    source_meeting_id?: number | null;
 }
 
 /** Milestone shape used by UI (e.g. ProjectBoard timeline) */
@@ -38,4 +43,6 @@ export interface Milestone {
     /** Raw `due_date` from API (YYYY-MM-DD) for timeline formatting */
     dueDateIso?: string | null;
     progress?: MilestoneProgressPayload | null;
+    source: MilestoneSource;
+    sourceMeetingId?: number | null;
 }
