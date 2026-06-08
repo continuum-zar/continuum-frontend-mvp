@@ -121,6 +121,13 @@ export async function getWikiScanStatus(
     return data ?? [];
 }
 
+export interface GenerationSource {
+    repository_id: number;
+    branch?: string | null;
+}
+
+export type AssistantMode = 'plan' | 'create';
+
 export async function generateTasks(
     projectId: number | string,
     body: {
@@ -129,8 +136,18 @@ export async function generateTasks(
         file_contents?: FileContent[];
         figma_attachment?: FigmaAttachmentRequest | null;
         figma_blueprint?: FigmaBlueprint | null;
+        /** Optional (repository, branch) pairs to scope code context. Each repo must be linked to this project. */
+        sources?: GenerationSource[];
+        /** Assistant mode. 'plan' returns a planning summary + clarifying questions and creates no tasks. 'create' generates tasks directly. */
+        mode?: AssistantMode;
     }
 ): Promise<GenerateTasksResponse> {
+    const sources = (body.sources ?? [])
+        .filter((s) => s && Number.isFinite(s.repository_id))
+        .map((s) => ({
+            repository_id: s.repository_id,
+            ...(s.branch?.trim() ? { branch: s.branch.trim() } : {}),
+        }));
     const { data } = await api.post<GenerateTasksResponse>(
         `/projects/${projectId}/wiki/generate`,
         {
@@ -139,6 +156,8 @@ export async function generateTasks(
             ...(body.file_contents?.length ? { file_contents: body.file_contents } : {}),
             ...(body.figma_attachment ? { figma_attachment: body.figma_attachment } : {}),
             ...(body.figma_blueprint ? { figma_blueprint: body.figma_blueprint } : {}),
+            ...(sources.length ? { sources } : {}),
+            ...(body.mode ? { mode: body.mode } : {}),
         },
         { timeout: 600_000 },
     );

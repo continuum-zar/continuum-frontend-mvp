@@ -306,8 +306,14 @@ export const WORKSPACE_TOUR_STEPS: WorkspaceTourStep[] = [
     body: T([
       { text: "Open the assistant here to ", h: "peach" },
       { text: "describe work in plain language", h: "cyan" },
+      { text: ". Use the ", h: "peach" },
+      { text: "Plan / Create", h: "cyan" },
+      { text: " switch next to the attach button: ", h: "peach" },
+      { text: "Plan", h: "cyan" },
+      { text: " asks clarifying questions and outlines scope before anything is written; ", h: "peach" },
+      { text: "Create", h: "cyan" },
       {
-        text: " and generate tasks that match your codebase and backlog, then refine or add them to the board.",
+        text: " generates tasks that match your codebase and backlog so you can refine or add them to the board.",
         h: "peach",
       },
     ]),

@@ -6,6 +6,27 @@ import { SESSION_INVITE_TOKEN_KEY } from '@/app/components/welcome/welcomeModalA
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import { isClerkEnabled } from '@/lib/clerkConfig';
+import {
+  readLogoutDiagnostic,
+  clearLogoutDiagnostic,
+  type LogoutDiagnostic,
+} from '../../../lib/api';
+
+function logoutMessage(d: LogoutDiagnostic): string {
+  switch (d.cause) {
+    case 'session_expired':
+      return 'Your session expired. Please sign in again.';
+    case 'invalid_token':
+      return 'Your session is no longer valid. Please sign in again.';
+    case 'refresh_failed':
+      return d.status === 429
+        ? "We're rate-limited right now — please wait a moment and sign in again."
+        : 'We could not refresh your session. Please sign in again.';
+    case 'manual':
+    default:
+      return 'Signed out.';
+  }
+}
 
 /**
  * Single page, two flavours: the existing Continuum UI is reused, but the
@@ -163,6 +184,9 @@ function LoginLayout(props: {
   const [email, setEmail] = useState(prefilledEmail);
   const [password, setPassword] = useState('');
   const [touched, setTouched] = useState({ email: false, password: false });
+  const [logoutBanner, setLogoutBanner] = useState<LogoutDiagnostic | null>(() =>
+    readLogoutDiagnostic(),
+  );
 
   useEffect(() => {
     return () => clearError();
@@ -286,6 +310,24 @@ function LoginLayout(props: {
               </button>
 
               {error && <p className="text-center text-xs text-red-600">{error}</p>}
+
+              {!error && logoutBanner && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+                  <p className="text-center text-xs text-amber-800">
+                    {logoutMessage(logoutBanner)}
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-1 block w-full text-center text-[10px] text-amber-700 underline"
+                    onClick={() => {
+                      clearLogoutDiagnostic();
+                      setLogoutBanner(null);
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
 
               <div className="flex items-center justify-center gap-1">
                 <p className="text-sm text-[#9FA5A8]">Don't have an account?</p>

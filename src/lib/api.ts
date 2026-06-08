@@ -1,4 +1,4 @@
-import axios, { isAxiosError } from 'axios';
+import axios, { AxiosError, isAxiosError } from 'axios';
 
 import { clerkJwtTemplate, isClerkEnabled } from './clerkConfig';
 
@@ -76,6 +76,117 @@ const AUTH_REFRESH_LOCK_NAME = 'continuum-auth-refresh';
 async function runRefresh(): Promise<string> {
     const response = await postRefresh();
     return response.data.access_token;
+}
+
+/** Causes we surface to the auth store / UI so logout banners can be accurate. */
+export type LogoutCause =
+    | 'session_expired'        // access + refresh both expired or refresh revoked
+    | 'invalid_token'          // malformed token, signature mismatch, epoch invalidated
+    | 'refresh_failed'         // refresh threw a non-401/non-429 error
+    | 'manual';                // user clicked sign out
+
+const LOGOUT_DIAG_KEY = 'continuum-last-logout-diagnostic';
+
+export interface LogoutDiagnostic {
+    cause: LogoutCause;
+    status?: number;
+    code?: string;
+    message?: string;
+    correlationId?: string;
+    timestamp: string;
+}
+
+export function recordLogoutDiagnostic(d: LogoutDiagnostic): void {
+    try {
+        sessionStorage.setItem(LOGOUT_DIAG_KEY, JSON.stringify(d));
+    } catch {
+        /* noop */
+    }
+    // eslint-disable-next-line no-console
+    console.warn('[auth] forced logout', d);
+}
+
+export function readLogoutDiagnostic(): LogoutDiagnostic | null {
+    try {
+        const raw = sessionStorage.getItem(LOGOUT_DIAG_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw) as LogoutDiagnostic;
+    } catch {
+        return null;
+    }
+}
+
+export function clearLogoutDiagnostic(): void {
+    try {
+        sessionStorage.removeItem(LOGOUT_DIAG_KEY);
+    } catch {
+        /* noop */
+    }
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Read Retry-After (seconds or HTTP-date). Returns ms, clamped to [0, max].
+ * Defaults to `fallbackMs` when the header is missing or invalid.
+ */
+function parseRetryAfter(error: AxiosError, fallbackMs: number, maxMs: number): number {
+    const raw = error.response?.headers?.['retry-after'];
+    if (typeof raw === 'string' && raw.trim() !== '') {
+        const asInt = parseInt(raw, 10);
+        if (!Number.isNaN(asInt)) {
+            return Math.min(Math.max(asInt * 1000, 0), maxMs);
+        }
+        const asDate = Date.parse(raw);
+        if (!Number.isNaN(asDate)) {
+            return Math.min(Math.max(asDate - Date.now(), 0), maxMs);
+        }
+    }
+    return Math.min(fallbackMs, maxMs);
+}
+
+function extractErrorCode(error: AxiosError): string | undefined {
+    const body = error.response?.data;
+    if (body && typeof body === 'object' && 'code' in body) {
+        const code = (body as { code?: unknown }).code;
+        if (typeof code === 'string') return code;
+    }
+    return undefined;
+}
+
+function extractCorrelationId(error: AxiosError): string | undefined {
+    const headerId = error.response?.headers?.['x-request-id'];
+    if (typeof headerId === 'string' && headerId) return headerId;
+    const body = error.response?.data;
+    if (body && typeof body === 'object' && 'correlation_id' in body) {
+        const id = (body as { correlation_id?: unknown }).correlation_id;
+        if (typeof id === 'string') return id;
+    }
+    return undefined;
+}
+
+function extractErrorMessage(error: AxiosError): string | undefined {
+    const body = error.response?.data;
+    if (body && typeof body === 'object' && 'message' in body) {
+        const m = (body as { message?: unknown }).message;
+        if (typeof m === 'string') return m;
+    }
+    return undefined;
+}
+
+function classifyRefreshError(err: unknown): LogoutCause {
+    if (!isAxiosError(err)) return 'refresh_failed';
+    const status = err.response?.status;
+    if (status !== 401 && status !== 403) return 'refresh_failed';
+    const code = extractErrorCode(err);
+    if (code === 'INVALID_TOKEN'
+        || code === 'SESSION_INVALIDATED_BY_DEPLOY'
+        || code === 'REFRESH_TOKEN_REVOKED') {
+        return 'invalid_token';
+    }
+    return 'session_expired';
 }
 
 /**
@@ -200,14 +311,48 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor: on 401, try a cookie-based refresh once, then retry the request.
+const RATE_LIMIT_MAX_RETRY_MS = 8000;
+const RATE_LIMIT_FALLBACK_MS = 1500;
+
+async function forceLogoutWithCause(diag: LogoutDiagnostic) {
+    recordLogoutDiagnostic(diag);
+    const { useAuthStore } = await import('../store/authStore');
+    useAuthStore.getState().logout();
+}
+
+type RetryableConfig = NonNullable<AxiosError['config']> & {
+    _retry?: boolean;
+    _rateLimitRetried?: boolean;
+};
+
+// Response interceptor: distinguishes 401 (auth) from 403 (forbidden) from 429
+// (rate limited). 429 must never cause a forced logout because the rate limit
+// lives at the proxy/IP layer and the user is still valid.
 api.interceptors.response.use(
     (response) => response,
-    async (error) => {
-        const originalRequest = error.config;
+    async (error: AxiosError) => {
+        const originalRequest = error.config as RetryableConfig | undefined;
+        const status = error.response?.status;
 
+        // ---- 429: back off once, then surface. NEVER logout. ----
+        if (status === 429 && originalRequest && !originalRequest._rateLimitRetried) {
+            originalRequest._rateLimitRetried = true;
+            const waitMs = parseRetryAfter(error, RATE_LIMIT_FALLBACK_MS, RATE_LIMIT_MAX_RETRY_MS);
+            await sleep(waitMs);
+            return api(originalRequest);
+        }
+        if (status === 429) {
+            return Promise.reject(error);
+        }
+
+        // ---- 403: forbidden. Not an auth failure. Do not refresh, do not logout.
+        if (status === 403) {
+            return Promise.reject(error);
+        }
+
+        // ---- 401: try refresh. Only logout when refresh truly fails. ----
         if (
-            error.response?.status === 401 &&
+            status === 401 &&
             originalRequest &&
             !originalRequest._retry &&
             originalRequest.url !== '/auth/logout' &&
@@ -219,8 +364,8 @@ api.interceptors.response.use(
             // Clerk owns its own refresh, so we bypass the cookie-refresh dance.
             if (isClerkEnabled) {
                 const fresh = await getClerkSessionToken();
-                if (fresh) {
-                    originalRequest.headers.Authorization = `Bearer ${fresh}`;
+                if (fresh && originalRequest.headers) {
+                    (originalRequest.headers as Record<string, string>).Authorization = `Bearer ${fresh}`;
                     return api(originalRequest);
                 }
                 return Promise.reject(error);
@@ -228,16 +373,27 @@ api.interceptors.response.use(
 
             try {
                 const token = await performRefresh();
-                originalRequest.headers.Authorization = `Bearer ${token}`;
+                if (originalRequest.headers) {
+                    (originalRequest.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+                }
                 return api(originalRequest);
             } catch (refreshError) {
-                // Only logout when the refresh cookie is actually invalid/expired
-                // (401). Transient failures (429 rate limit, network errors,
-                // 5xx) shouldn't kick the user out — let the caller retry.
-                const status = isAxiosError(refreshError) ? refreshError.response?.status : undefined;
-                if (status === 401 || status === 403) {
-                    const { useAuthStore } = await import('../store/authStore');
-                    useAuthStore.getState().logout();
+                // Transient failures (429, network errors, 5xx) shouldn't kick
+                // the user out — let the caller retry. Only logout on a real
+                // 401/403 from refresh-token.
+                const refreshStatus = isAxiosError(refreshError) ? refreshError.response?.status : undefined;
+                if (refreshStatus === 429) {
+                    return Promise.reject(refreshError);
+                }
+                if (refreshStatus === 401 || refreshStatus === 403) {
+                    await forceLogoutWithCause({
+                        cause: classifyRefreshError(refreshError),
+                        status: refreshStatus,
+                        code: isAxiosError(refreshError) ? extractErrorCode(refreshError) : undefined,
+                        message: isAxiosError(refreshError) ? extractErrorMessage(refreshError) : undefined,
+                        correlationId: isAxiosError(refreshError) ? extractCorrelationId(refreshError) : undefined,
+                        timestamp: new Date().toISOString(),
+                    });
                 }
                 return Promise.reject(error);
             }
