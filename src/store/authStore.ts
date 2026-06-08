@@ -20,6 +20,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
     user: null,
     isAuthenticated: false,
     accessToken: null,
+    authSource: null,
     isLoading: false,
     isInitialized: false,
     error: null,
@@ -33,6 +34,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
             set({
                 accessToken: access_token,
                 isAuthenticated: true,
+                authSource: 'manual',
             });
 
             try {
@@ -65,6 +67,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
             set({
                 accessToken: access_token,
                 isAuthenticated: true,
+                authSource: 'manual',
             });
 
             try {
@@ -73,6 +76,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
                 set({
                     accessToken: null,
                     isAuthenticated: false,
+                    authSource: null,
                     user: null,
                     isInitialized: true,
                     isLoading: false,
@@ -99,6 +103,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
                 user: null,
                 isAuthenticated: false,
                 accessToken: null,
+                authSource: null,
                 isLoading: false,
                 isInitialized: true,
                 error: null,
@@ -125,6 +130,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
                     set({
                         user: null,
                         isAuthenticated: false,
+                        authSource: null,
                         isLoading: false,
                         isInitialized: true,
                     });
@@ -137,11 +143,12 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
                     set({ isLoading: false, isInitialized: true });
                     return;
                 }
-                set({ accessToken: result.token, isAuthenticated: true });
+                set({ accessToken: result.token, isAuthenticated: true, authSource: 'manual' });
             } catch {
                 set({
                     user: null,
                     isAuthenticated: false,
+                    authSource: null,
                     isLoading: false,
                     isInitialized: true,
                 });
@@ -165,6 +172,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
                     user: null,
                     isAuthenticated: false,
                     accessToken: null,
+                    authSource: null,
                     isLoading: false,
                     isInitialized: true,
                 });

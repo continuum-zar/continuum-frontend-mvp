@@ -48,28 +48,31 @@ function ClerkLoginShell() {
   const clerkSignIn = useSignIn();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const login = useAuthStore((state) => state.login);
   const [clerkError, setClerkError] = useState<string | null>(null);
   const [pending, setPending] = useState<null | 'google' | 'apple' | 'email'>(null);
 
   const readInviteToken = () => readSessionInviteToken(searchParams);
 
+  // Continuum #1344: manual email/password auth lives on the backend, even when
+  // Clerk is otherwise enabled in the tree. Clerk is reserved for social
+  // providers; we never send credentials to Clerk's signIn API here.
   const handleEmailPasswordSubmit = async (email: string, password: string) => {
-    if (!clerkSignIn.isLoaded) return;
     setClerkError(null);
     setPending('email');
     try {
-      const result = await clerkSignIn.signIn.create({ identifier: email, password });
-      if (result.status === 'complete') {
-        await clerkSignIn.setActive({ session: result.createdSessionId });
-        const inviteToken = readInviteToken();
-        navigate('/loading', {
-          state: { from: 'login', ...(inviteToken ? { inviteToken } : {}) },
-        });
-      } else {
-        setClerkError('Additional verification is required. Continue in the secure window that opens.');
-      }
+      await login({ email, password });
+      const inviteToken = readInviteToken();
+      navigate('/loading', {
+        state: { from: 'login', ...(inviteToken ? { inviteToken } : {}) },
+      });
     } catch (err: unknown) {
-      setClerkError(extractClerkErrorMessage(err) ?? 'Login failed. Check your email and password.');
+      setClerkError(
+        (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
+          ? (err as { message: string }).message
+          : null)
+          ?? 'Login failed. Check your email and password.',
+      );
     } finally {
       setPending(null);
     }
