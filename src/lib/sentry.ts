@@ -69,12 +69,16 @@ export function initSentry(): void {
     dsn,
     environment: import.meta.env.VITE_SENTRY_ENVIRONMENT ?? import.meta.env.MODE,
     release: import.meta.env.VITE_APP_VERSION,
+    enableLogs: true,
     integrations: [
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration({
         maskAllText: true,
         blockAllMedia: true,
       }),
+      // Forward console.warn/console.error to Sentry Logs. Skipped in dev so
+      // local debugging noise doesn't ship to the project's Logs view.
+      Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] }),
     ],
     tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
     replaysSessionSampleRate: 0.0,

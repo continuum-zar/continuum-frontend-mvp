@@ -328,6 +328,22 @@ api.interceptors.response.use(
                     error_code: extractErrorCode(error) ?? 'unknown',
                 },
             });
+            // Sentry Logs ship structured records (separate from Issues). Emit
+            // a single line per 5xx/network failure so on-call can grep by
+            // correlation_id without opening every Issue.
+            try {
+                Sentry.logger?.error?.(
+                    Sentry.logger.fmt`API ${originalRequest?.method?.toUpperCase() ?? 'REQ'} ${originalRequest?.url ?? 'unknown'} failed: ${status ?? 'network_error'}`,
+                    {
+                        api_status: status ?? 'network_error',
+                        api_url: originalRequest?.url ?? 'unknown',
+                        correlation_id: requestId ?? 'unknown',
+                        error_code: extractErrorCode(error) ?? 'unknown',
+                    },
+                );
+            } catch {
+                /* logger emit must never break a real API call */
+            }
         }
 
         // ---- 429: back off once, then surface a typed error. NEVER logout. ----
