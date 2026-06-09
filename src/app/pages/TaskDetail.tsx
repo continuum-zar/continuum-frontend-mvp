@@ -64,6 +64,7 @@ import {
   type TaskSection,
 } from '@/types/task';
 import type { CommentAuthorAPI } from '@/types/comment';
+import { CommentBody } from '@/app/components/comments/CommentBody';
 import type { Member } from '@/types/member';
 import {
   AddTaskResourceModal,
@@ -2151,9 +2152,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
                         </p>
                         <p className="text-[16px] leading-none text-[#0b191f]">{commentAuthorDisplayName(c.author)}</p>
-                        <p className="mt-1 whitespace-pre-wrap text-[14px] font-medium leading-snug text-[#606d76]">
-                          {c.content}
-                        </p>
+                        <CommentBody
+                          content={c.content}
+                          mentions={c.mentions}
+                          className="mt-1 text-[14px] font-medium leading-snug text-[#606d76]"
+                        />
                       </div>
                     </div>
                   ))}
