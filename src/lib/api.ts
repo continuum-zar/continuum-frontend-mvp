@@ -1,9 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import * as Sentry from '@sentry/react';
 
-/** HTTP statuses that are expected client conditions — never log or meter. */
-const EXPECTED_STATUSES = new Set([401, 403, 404, 422, 429]);
-
 /**
  * API base URL for axios.
  * - If `VITE_API_BASE_URL` is set (e.g. `/api/v1` or `https://api.example.com/api/v1`), that wins.
@@ -283,46 +280,12 @@ api.interceptors.request.use(
         if (!config.headers['X-Request-ID']) {
             config.headers['X-Request-ID'] = generateRequestId();
         }
-        // Stamp a start time so the response/error interceptors can emit a
-        // latency metric to Sentry without each call site doing its own timing.
-        (config as AxiosRequestConfig & { _startTime?: number })._startTime =
-            (typeof performance !== 'undefined' ? performance.now() : Date.now());
         return config;
     },
     (error) => {
         return Promise.reject(error);
     }
 );
-
-function readStartTime(config: AxiosRequestConfig | undefined): number | undefined {
-    const t = (config as (AxiosRequestConfig & { _startTime?: number }) | undefined)?._startTime;
-    return typeof t === 'number' ? t : undefined;
-}
-
-function emitApiLatency(
-    config: AxiosRequestConfig | undefined,
-    status: number | 'network_error',
-): void {
-    const start = readStartTime(config);
-    if (start === undefined) return;
-    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    const durationMs = Math.max(0, now - start);
-    // Drop expected client conditions from the latency histogram so 401/429
-    // retry chatter doesn't skew API health percentiles.
-    if (typeof status === 'number' && EXPECTED_STATUSES.has(status)) return;
-    try {
-        (Sentry as unknown as { metrics?: { distribution: (n: string, v: number, o: { unit: string; tags: Record<string, string> }) => void } })
-            .metrics?.distribution('api.client.request.duration', durationMs, {
-                unit: 'millisecond',
-                tags: {
-                    method: (config?.method ?? 'unknown').toUpperCase(),
-                    status: String(status),
-                },
-            });
-    } catch {
-        /* metrics emit must never break a real API call */
-    }
-}
 
 /**
  * Once-per-request retry guard for 429 backoff. We intentionally cap at a
@@ -341,17 +304,12 @@ async function performLogoutWithCause(diag: LogoutDiagnostic) {
 // (rate limited) per task #1352. 429 must NEVER cause a forced logout because
 // the rate limit lives at the proxy/IP layer and the user is still valid.
 api.interceptors.response.use(
-    (response) => {
-        emitApiLatency(response.config, response.status);
-        return response;
-    },
+    (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as
             | (AxiosRequestConfig & { _retry?: boolean; _rateLimitRetried?: boolean })
             | undefined;
         const status = error.response?.status;
-
-        emitApiLatency(originalRequest, status ?? 'network_error');
 
         // Report 5xx and true network failures to Sentry — anything below 500 is
         // expected client noise (auth, validation, rate limit) and is dropped
