@@ -7,6 +7,12 @@ interface ImportMetaEnv {
     readonly VITE_MCP_PUBLIC_URL?: string;
     /** OAuth Web client ID for Google Calendar (sprint calendar view). */
     readonly VITE_GOOGLE_CLIENT_ID?: string;
+    /** Sentry DSN for the browser SDK. Leave unset to disable Sentry. */
+    readonly VITE_SENTRY_DSN?: string;
+    /** Sentry environment label (defaults to import.meta.env.MODE). */
+    readonly VITE_SENTRY_ENVIRONMENT?: string;
+    /** Release identifier surfaced to Sentry; usually the git tag or commit SHA. */
+    readonly VITE_APP_VERSION?: string;
 }
 
 interface ImportMeta {

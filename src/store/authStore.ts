@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { isAxiosError } from 'axios';
 import api from '../lib/api';
+import { setSentryUser } from '../lib/sentry';
 import { TIME_RECORDING_STORAGE_KEY } from '../lib/timeRecordingTimerStorage';
 import { AuthState, AuthResponse } from '../types/auth';
 import { RegisterPayload, User } from '../types/user';
@@ -114,6 +115,7 @@ export const useAuthStore = create<AuthStore>()(
                         isInitialized: true,
                         error: null
                     });
+                    setSentryUser(null);
                     localStorage.removeItem('auth-storage');
                     try {
                         localStorage.removeItem(TIME_RECORDING_STORAGE_KEY);
@@ -144,6 +146,7 @@ export const useAuthStore = create<AuthStore>()(
                         isLoading: false,
                         isInitialized: true
                     });
+                    setSentryUser({ id: response.data.id, email: response.data.email });
                 } catch (error) {
                     if (isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
                         set({

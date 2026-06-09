@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import * as Sentry from '@sentry/react';
 
 /**
  * API base URL for axios.
@@ -245,7 +246,24 @@ const processQueue = (error: unknown, token: string | null = null) => {
     failedQueue = [];
 };
 
-// Request interceptor to add the bearer token
+/**
+ * Generate a per-request correlation ID. We propagate this as X-Request-ID so
+ * backend logs, Sentry tags (set in CorrelationIdMiddleware), and the response
+ * body's `correlation_id` field all share the same identifier — a frontend
+ * Sentry event and the corresponding backend event become joinable.
+ */
+function generateRequestId(): string {
+    try {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+    } catch {
+        /* fall through */
+    }
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+// Request interceptor to add the bearer token + correlation ID
 api.interceptors.request.use(
     (config) => {
         const tokens = localStorage.getItem('auth-storage');
@@ -258,6 +276,9 @@ api.interceptors.request.use(
             } catch (e) {
                 console.error('Error parsing auth tokens from localStorage', e);
             }
+        }
+        if (!config.headers['X-Request-ID']) {
+            config.headers['X-Request-ID'] = generateRequestId();
         }
         return config;
     },
@@ -289,6 +310,25 @@ api.interceptors.response.use(
             | (AxiosRequestConfig & { _retry?: boolean; _rateLimitRetried?: boolean })
             | undefined;
         const status = error.response?.status;
+
+        // Report 5xx and true network failures to Sentry — anything below 500 is
+        // expected client noise (auth, validation, rate limit) and is dropped
+        // by `beforeSend` in `lib/sentry.ts` if it slips through.
+        const isServerError = typeof status === 'number' && status >= 500;
+        const isNetworkError = !error.response && Boolean(originalRequest);
+        if (isServerError || isNetworkError) {
+            const requestId =
+                (originalRequest?.headers as Record<string, string> | undefined)?.['X-Request-ID'] ??
+                extractCorrelationId(error);
+            Sentry.captureException(error, {
+                tags: {
+                    api_status: status ?? 'network_error',
+                    api_url: originalRequest?.url ?? 'unknown',
+                    correlation_id: requestId ?? 'unknown',
+                    error_code: extractErrorCode(error) ?? 'unknown',
+                },
+            });
+        }
 
         // ---- 429: back off once, then surface a typed error. NEVER logout. ----
         if (status === 429 && originalRequest && !originalRequest._rateLimitRetried) {
