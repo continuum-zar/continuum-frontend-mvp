@@ -2,7 +2,10 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { isAxiosError } from 'axios';
 import api from '../lib/api';
+import { clearStoredGoogleAccessToken } from '../lib/googleCalendarClient';
+import { MCP_OAUTH_CLIENT_LABEL_KEY, MCP_OAUTH_SESSION_KEY } from '../lib/mcpOauthSessionKeys';
 import { TIME_RECORDING_STORAGE_KEY } from '../lib/timeRecordingTimerStorage';
+import { SESSION_INVITE_TOKEN_KEY } from '../app/components/welcome/welcomeModalAssets';
 import { AuthState, AuthResponse } from '../types/auth';
 import { RegisterPayload, User } from '../types/user';
 
@@ -117,9 +120,15 @@ export const useAuthStore = create<AuthStore>()(
                     localStorage.removeItem('auth-storage');
                     try {
                         localStorage.removeItem(TIME_RECORDING_STORAGE_KEY);
+                        clearStoredGoogleAccessToken();
+                        sessionStorage.removeItem(SESSION_INVITE_TOKEN_KEY);
+                        sessionStorage.removeItem(MCP_OAUTH_SESSION_KEY);
+                        sessionStorage.removeItem(MCP_OAUTH_CLIENT_LABEL_KEY);
                     } catch {
                         /* noop */
                     }
+                    // React Query cache is purged by AuthQueryCacheSync once isAuthenticated
+                    // flips false — after unmount, so observers don't refetch unauthenticated.
                 }
             },
 

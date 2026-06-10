@@ -226,7 +226,7 @@ function EventCard({ ev }: { ev: MergedEvent }) {
             <a
               href={prUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-[#0369a1] hover:underline"
             >
               <GitPullRequest size={12} aria-hidden />
@@ -359,7 +359,7 @@ function ReviewSummary({
           <a
             href={review.github_comment_url}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-[12px] font-medium text-[#0369a1] hover:underline"
           >
             View review on PR
@@ -633,7 +633,7 @@ export function BuildRunDrawer({
                 <a
                   href={detail.pr_url}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-[#0369a1] hover:underline"
                 >
                   <GitPullRequest size={12} aria-hidden />

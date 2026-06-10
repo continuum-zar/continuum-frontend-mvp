@@ -1371,11 +1371,11 @@ export function AIProjectPlanner({
                                                     {figmaContext.node_id ? ` (${figmaContext.node_id})` : ''} as design evidence.
                                                     Review frontend and design-system tasks against the linked frame.
                                                 </p>
-                                                {figmaContext.url && (
+                                                {figmaContext.url && /^https:\/\/(www\.)?figma\.com\//i.test(figmaContext.url) && (
                                                     <a
                                                         href={figmaContext.url}
                                                         target="_blank"
-                                                        rel="noreferrer"
+                                                        rel="noopener noreferrer"
                                                         className="mt-2 inline-flex max-w-full truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#2f6df6] hover:underline"
                                                     >
                                                         Open Figma reference
