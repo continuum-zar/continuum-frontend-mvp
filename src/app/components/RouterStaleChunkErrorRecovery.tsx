@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { isRouteErrorResponse, useRouteError } from "react-router";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import * as Sentry from "@sentry/react";
 import { isStaleClientChunkError, tryReloadForStaleChunk } from "@/lib/staleClientChunk";
 import { Button } from "./ui/button";
 
@@ -21,9 +22,13 @@ export function RouterStaleChunkErrorRecovery() {
   const isChunk = isStaleClientChunkError(error);
 
   useEffect(() => {
-    if (!isChunk) return;
-    void tryReloadForStaleChunk();
-  }, [isChunk]);
+    if (isChunk) {
+      void tryReloadForStaleChunk();
+      return;
+    }
+    // A real route error (not a stale chunk after deploy) — escalate to Sentry.
+    Sentry.captureException(error);
+  }, [isChunk, error]);
 
   const message =
     error instanceof Error

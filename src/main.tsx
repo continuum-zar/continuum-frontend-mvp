@@ -1,17 +1,28 @@
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ClerkProvider } from "@clerk/clerk-react";
+import * as Sentry from "@sentry/react";
 import { QueryDevtoolsGate } from "./dev/QueryDevtoolsGate.tsx";
 import App from "./app/App.tsx";
 // Satoshi is @imported from index.css so it loads with the main stylesheet.
 import "./styles/index.css";
 import { DEFAULT_GC_MS, DEFAULT_STALE_MS } from "./lib/queryDefaults.ts";
-import { tryReloadForStaleChunk } from "./lib/staleClientChunk.ts";
+import { initSentry } from "./lib/sentry.ts";
+import { isStaleClientChunkError, tryReloadForStaleChunk } from "./lib/staleClientChunk.ts";
 import { clerkPublishableKey, isClerkEnabled } from "./lib/clerkConfig.ts";
+
+// Initialise Sentry before React renders so the first paint is already instrumented.
+initSentry();
 
 if (typeof window !== "undefined") {
   window.addEventListener("vite:preloadError", () => {
     void tryReloadForStaleChunk();
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    // Stale-chunk reload paths produce expected rejections during deploys.
+    const reason = event.reason as unknown;
+    if (isStaleClientChunkError(reason)) return;
+    Sentry.captureException(reason ?? new Error("Unhandled promise rejection"));
   });
 }
 
