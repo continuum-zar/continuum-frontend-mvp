@@ -65,6 +65,8 @@ import {
   type TaskSection,
 } from '@/types/task';
 import type { CommentAuthorAPI } from '@/types/comment';
+import { CommentBody } from '@/app/components/comments/CommentBody';
+import { CommentMentionTextarea } from '@/app/components/comments/CommentMentionTextarea';
 import type { Member } from '@/types/member';
 import {
   AddTaskResourceModal,
@@ -2138,19 +2140,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
           <div className="space-y-4">
             <p className="text-[16px] font-medium text-[#0b191f]">Comments</p>
             <div className="space-y-3">
-              <textarea
-                ref={commentTextareaRef}
+              <CommentMentionTextarea
+                textareaRef={commentTextareaRef}
                 value={commentDraft}
-                onChange={(e) => setCommentDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault();
-                    handlePostComment();
-                  }
-                }}
+                onChange={setCommentDraft}
+                members={members ?? []}
                 placeholder="Write a comment…"
                 disabled={createCommentMutation.isPending}
-                className="w-full resize-none overflow-y-auto rounded-[8px] border border-[#e9e9e9] bg-white px-3 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] outline-none placeholder:text-[#727d83] focus:ring-2 focus:ring-[#24b5f8]/40 disabled:opacity-60"
+                onSubmit={handlePostComment}
               />
               <div className="flex justify-end">
                 <button
@@ -2193,9 +2190,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
                         </p>
                         <p className="text-[16px] leading-none text-[#0b191f]">{commentAuthorDisplayName(c.author)}</p>
-                        <p className="mt-1 whitespace-pre-wrap text-[14px] font-medium leading-snug text-[#606d76]">
-                          {c.content}
-                        </p>
+                        <CommentBody
+                          content={c.content}
+                          mentions={c.mentions}
+                          className="mt-1 text-[14px] font-medium leading-snug text-[#606d76]"
+                        />
                       </div>
                     </div>
                   ))}

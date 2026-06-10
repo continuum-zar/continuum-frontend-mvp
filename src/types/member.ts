@@ -9,6 +9,8 @@ export interface MemberAPIResponse {
         last_name?: string;
         email?: string;
         role?: string;
+        username?: string;
+        display_name?: string;
     } | null;
     first_name?: string;
     last_name?: string;
@@ -22,6 +24,10 @@ export interface Member {
     name: string;
     email: string;
     role: string;
+    /** Canonical @mention username from API (empty when unavailable). */
+    username: string;
+    /** Display name for UI labels (falls back to derived name). */
+    displayName: string;
     /** Global user role (e.g. backend = Developer, project_manager = PM) for filtering */
     userRole?: string;
     initials: string;

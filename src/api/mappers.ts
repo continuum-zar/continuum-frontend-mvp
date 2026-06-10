@@ -142,6 +142,10 @@ export function mapMember(m: MemberAPIResponse): Member {
     const lastName = user?.last_name ?? m.last_name ?? '';
     const name = [firstName, lastName].filter(Boolean).join(' ') || 'Unknown';
     const email = user?.email ?? m.email ?? '';
+    const displayNameRaw = user?.display_name?.trim();
+    const displayName = displayNameRaw || name;
+    const emailForUsername = user?.email ?? m.email ?? '';
+    const username = user?.username?.trim() || emailForUsername.trim();
     const initials =
         [firstName, lastName]
             .map((s) => (s && s[0]) || '')
@@ -154,6 +158,8 @@ export function mapMember(m: MemberAPIResponse): Member {
         name,
         email,
         role: m.role ?? 'developer',
+        username,
+        displayName,
         userRole: (m.user as { role?: string } | undefined)?.role,
         initials,
     };
