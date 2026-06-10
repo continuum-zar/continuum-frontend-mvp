@@ -186,7 +186,7 @@ export function ProductivityRhythmHeatmapCard({
               </div>
             ) : rhythmLoading ? (
               <div className="h-[200px] flex flex-col gap-1 ml-[40px]">
-                {[...Array(5)].map((_, i) => (
+                {[...Array(7)].map((_, i) => (
                   <div key={i} className="flex gap-1 h-6">
                     {visibleHours.map((h) => (
                       <Skeleton key={h} className="flex-1 rounded-sm" />

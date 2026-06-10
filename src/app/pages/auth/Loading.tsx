@@ -8,6 +8,7 @@ import {
   SESSION_SUPPRESS_RELEASE_NOTES_NEW_SIGNUP_KEY,
 } from '@/app/components/welcome/welcomeModalAssets';
 import { resolveDefaultBoardPath } from '@/lib/defaultBoardPath';
+import { consumeSocialOnboardingPending } from '@/lib/socialOnboarding';
 import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from '@/lib/workspacePaths';
 
 const LOADING_DURATION_MS = 2500;
@@ -20,6 +21,13 @@ export function Loading() {
     const navState = location.state as { from?: string; inviteToken?: string } | null;
     const fromOnboarding = navState?.from === 'onboarding';
     const fromLogin = navState?.from === 'login';
+    // Continuum #1344: first-time social signup → push straight into onboarding
+    // instead of the post-login destination. The flag is set by
+    // ClerkSessionBridge from the /auth/social-login response and is one-shot.
+    if (consumeSocialOnboardingPending()) {
+      navigate('/onboarding/usage', { replace: true });
+      return;
+    }
     let inviteToken: string | null = null;
     try {
       inviteToken =

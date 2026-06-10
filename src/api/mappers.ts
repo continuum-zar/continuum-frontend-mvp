@@ -268,12 +268,27 @@ export function mapAttachment(a: AttachmentAPIResponse): Attachment {
     const explicitLabel =
         a.display_name?.trim() || a.name?.trim() || a.title?.trim() || '';
     const filename = explicitLabel || a.original_filename;
+
+    // Prefer the backend's explicit kind for AI-planner Markdown artifacts so the
+    // UI can route them to the inline Markdown/Mermaid viewer instead of forcing
+    // a download. Falls back to filename-based detection for older responses.
+    const backendKind = a.kind ?? undefined;
+    const lowerFilename = (a.original_filename ?? '').toLowerCase();
+    let uiKind: Attachment['kind'];
+    if (backendKind === 'plan' || lowerFilename === 'plan.md') {
+        uiKind = 'plan';
+    } else if (backendKind === 'architecture' || lowerFilename === 'architecture.md') {
+        uiKind = 'architecture';
+    } else {
+        uiKind = isLink ? 'link' : 'file';
+    }
+
     return {
         id: String(a.id),
         filename,
-        size: isLink ? '' : formatFileSize(a.file_size),
+        size: uiKind === 'link' ? '' : formatFileSize(a.file_size),
         mimeType: a.mime_type,
-        kind: isLink ? 'link' : 'file',
+        kind: uiKind,
         url: resolvedUrl,
         createdAt: formatDistanceToNow(new Date(a.created_at), { addSuffix: true }),
         uploadedBy: uploadedBy || undefined,

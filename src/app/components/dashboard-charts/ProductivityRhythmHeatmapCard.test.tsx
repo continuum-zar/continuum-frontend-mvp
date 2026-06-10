@@ -4,6 +4,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ActiveWorkSessionItem } from "@/api/dashboard";
 import { ProductivityRhythmHeatmapCard, type LiveRhythmOverlayState } from "./ProductivityRhythmHeatmapCard";
+import { HEATMAP_DAY_LABELS } from "@/lib/productivityRhythmLiveCell";
 
 function sessionForUser(userId: number, sessionId: number): ActiveWorkSessionItem {
   return {
@@ -21,7 +22,7 @@ function sessionForUser(userId: number, sessionId: number): ActiveWorkSessionIte
 }
 
 function buildChartRows() {
-  return (["Mon", "Tue", "Wed", "Thu", "Fri"] as const).map((day) => {
+  return HEATMAP_DAY_LABELS.map((day) => {
     const row: Record<string, string | number> = { day };
     for (let h = 8; h <= 18; h++) {
       row[`hour${h}`] = 0;

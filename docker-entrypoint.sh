@@ -10,6 +10,7 @@ if [ ! -f node_modules/vite/package.json ] \
   || [ ! -f node_modules/react-markdown/package.json ] \
   || [ ! -f node_modules/mermaid/package.json ] \
   || [ ! -f node_modules/react-zoom-pan-pinch/package.json ] \
+  || [ ! -f node_modules/@clerk/clerk-react/package.json ] \
   || [ ! -f node_modules/@sentry/react/package.json ]; then
   echo "docker-entrypoint: installing dependencies (node_modules missing or incomplete)..."
   # npm ci can hit "Exit handler never called" (npm bug); fall back to npm install.

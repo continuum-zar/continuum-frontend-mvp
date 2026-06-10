@@ -16,6 +16,9 @@ export const WORKSPACE_MY_TASKS_SEGMENT = "my-tasks";
 /** Standalone productivity rhythm heatmap (`/workspace/productivity-rhythm`). */
 export const WORKSPACE_PRODUCTIVITY_RHYTHM_SEGMENT = "productivity-rhythm";
 
+/** Migration import flow (`/workspace/migrations/...`). */
+export const WORKSPACE_MIGRATIONS_SEGMENT = "migrations";
+
 export type WorkspaceMyTasksScope = "assigned" | "created";
 
 export function workspaceMyTasksHref(scope: WorkspaceMyTasksScope): string {
@@ -24,6 +27,26 @@ export function workspaceMyTasksHref(scope: WorkspaceMyTasksScope): string {
 
 export function workspaceProductivityRhythmHref(): string {
   return workspaceJoin(WORKSPACE_PRODUCTIVITY_RHYTHM_SEGMENT);
+}
+
+/** First step of the migration-import wizard — no job id yet. */
+export function migrationsNewHref(): string {
+  return workspaceJoin(WORKSPACE_MIGRATIONS_SEGMENT, "new");
+}
+
+/** Preview screen for a staged migration job. */
+export function migrationPreviewHref(jobId: number | string): string {
+  return workspaceJoin(WORKSPACE_MIGRATIONS_SEGMENT, String(jobId), "preview");
+}
+
+/** Confirm-and-apply screen for a staged migration job. */
+export function migrationApplyHref(jobId: number | string): string {
+  return workspaceJoin(WORKSPACE_MIGRATIONS_SEGMENT, String(jobId), "apply");
+}
+
+/** Status-driven redirect entry point — `/workspace/migrations/<id>`. */
+export function migrationJobRedirectHref(jobId: number | string): string {
+  return workspaceJoin(WORKSPACE_MIGRATIONS_SEGMENT, String(jobId));
 }
 
 /**
