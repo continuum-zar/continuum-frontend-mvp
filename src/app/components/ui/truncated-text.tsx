@@ -44,27 +44,29 @@ export function TruncatedText({
     return () => ro.disconnect();
   }, [text]);
 
-  const span = (
-    <span
-      ref={ref}
-      className={cn("block min-w-0 truncate", className)}
-      {...spanProps}
-    >
-      {text}
-    </span>
-  );
-
-  if (!isTruncated) return span;
-
+  // The Tooltip/Trigger wrapper is always rendered and only the content is
+  // conditional: swapping the span between wrapped and unwrapped remounts its
+  // DOM node, which detaches the one the ResizeObserver is watching — the
+  // final 0×0 observation then reads as "not truncated" and unwraps again.
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{span}</TooltipTrigger>
-      <TooltipContent
-        side={side}
-        className={cn("max-w-[320px] break-words", tooltipClassName)}
-      >
-        {text}
-      </TooltipContent>
+      <TooltipTrigger asChild>
+        <span
+          ref={ref}
+          className={cn("block min-w-0 truncate", className)}
+          {...spanProps}
+        >
+          {text}
+        </span>
+      </TooltipTrigger>
+      {isTruncated ? (
+        <TooltipContent
+          side={side}
+          className={cn("max-w-[320px] break-words", tooltipClassName)}
+        >
+          {text}
+        </TooltipContent>
+      ) : null}
     </Tooltip>
   );
 }
