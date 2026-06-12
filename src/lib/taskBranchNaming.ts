@@ -31,14 +31,24 @@ export function branchNameFromTaskTitle(title: string, taskId: string | number):
   return base.length > MAX_BRANCH_LEN ? base.slice(0, MAX_BRANCH_LEN).replace(/-+$/g, '') : base;
 }
 
+function repoBranchKey(linkedRepo: string, linkedBranch: string): string {
+  return `${linkedRepo.trim().toLowerCase()}\0${linkedBranch.trim().toLowerCase()}`;
+}
+
 export function isDuplicateRepoBranchLink(
   existing: TaskLinkedBranch[],
   linkedRepo: string,
   linkedBranch: string,
 ): boolean {
-  const want = `${linkedRepo.trim().toLowerCase()}\0${linkedBranch.trim().toLowerCase()}`;
-  return existing.some(
-    (b) =>
-      `${b.linked_repo.trim().toLowerCase()}\0${b.linked_branch.trim().toLowerCase()}` === want,
-  );
+  const want = repoBranchKey(linkedRepo, linkedBranch);
+  return existing.some((b) => repoBranchKey(b.linked_repo, b.linked_branch) === want);
+}
+
+/** Append a link, replacing any existing entry for the same repo+branch (case-insensitive). */
+export function appendLinkedBranchDeduped(
+  existing: TaskLinkedBranch[],
+  link: TaskLinkedBranch,
+): TaskLinkedBranch[] {
+  const want = repoBranchKey(link.linked_repo, link.linked_branch);
+  return [...existing.filter((b) => repoBranchKey(b.linked_repo, b.linked_branch) !== want), link];
 }
