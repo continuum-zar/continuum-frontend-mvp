@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  appendLinkedBranchDeduped,
   branchNameFromTaskTitle,
   isDuplicateRepoBranchLink,
   repositoryLinkedName,
@@ -69,5 +70,39 @@ describe('isDuplicateRepoBranchLink', () => {
     ];
     expect(isDuplicateRepoBranchLink(existing, 'org/repo', 'Main')).toBe(true);
     expect(isDuplicateRepoBranchLink(existing, 'other/r', 'main')).toBe(false);
+  });
+});
+
+describe('appendLinkedBranchDeduped', () => {
+  const link = (repo: string, branch: string): TaskLinkedBranch => ({
+    linked_repo: repo,
+    linked_branch: branch,
+    linked_branch_full_ref: `refs/heads/${branch}`,
+  });
+
+  it('appends a new link', () => {
+    const out = appendLinkedBranchDeduped([link('org/repo', 'main')], link('org/repo', 'feat'));
+    expect(out).toHaveLength(2);
+    expect(out[1].linked_branch).toBe('feat');
+  });
+
+  it('replaces an existing entry instead of duplicating it', () => {
+    const existing = [link('org/repo', 'Fix-login-bug')];
+    const out = appendLinkedBranchDeduped(existing, link('org/repo', 'Fix-login-bug'));
+    expect(out).toHaveLength(1);
+  });
+
+  it('matches case-insensitively and ignores surrounding whitespace', () => {
+    const existing = [link('Org/Repo', ' Fix-Login-Bug ')];
+    const out = appendLinkedBranchDeduped(existing, link('org/repo', 'fix-login-bug'));
+    expect(out).toHaveLength(1);
+    expect(out[0].linked_branch).toBe('fix-login-bug');
+  });
+
+  it('keeps other links untouched', () => {
+    const existing = [link('org/repo', 'main'), link('org/other', 'main')];
+    const out = appendLinkedBranchDeduped(existing, link('org/repo', 'main'));
+    expect(out).toHaveLength(2);
+    expect(out.map((b) => b.linked_repo)).toEqual(['org/other', 'org/repo']);
   });
 });
