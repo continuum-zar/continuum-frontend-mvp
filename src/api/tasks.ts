@@ -14,6 +14,56 @@ import type {
 import type { CommentAPIResponse } from '@/types/comment';
 import type { AttachmentAPIResponse } from '@/types/attachment';
 
+export class DuplicateTaskLinkedBranchError extends Error {
+    readonly repo: string;
+    readonly branch: string;
+
+    constructor(repo: string, branch: string) {
+        const trimmedRepo = repo.trim();
+        const trimmedBranch = branch.trim();
+        super(`Branch "${trimmedBranch}" on ${trimmedRepo} is already linked to this task.`);
+        this.name = 'DuplicateTaskLinkedBranchError';
+        this.repo = trimmedRepo;
+        this.branch = trimmedBranch;
+    }
+}
+
+const normalizeTaskLinkedBranch = (link: TaskLinkedBranch): TaskLinkedBranch => {
+    const repo = link.linked_repo?.trim() ?? '';
+    const branch = link.linked_branch?.trim() ?? '';
+    const fullRefRaw = link.linked_branch_full_ref;
+    const fullRefTrimmed = typeof fullRefRaw === 'string' ? fullRefRaw.trim() : null;
+    const base: TaskLinkedBranch = {
+        ...link,
+        linked_repo: repo,
+        linked_branch: branch,
+    };
+    if (fullRefTrimmed && fullRefTrimmed.length > 0) {
+        base.linked_branch_full_ref = fullRefTrimmed;
+    } else if (fullRefRaw !== undefined) {
+        base.linked_branch_full_ref = null;
+    }
+    return base;
+};
+
+export function ensureUniqueTaskLinkedBranches(branches: TaskLinkedBranch[]): TaskLinkedBranch[] {
+    const normalized = branches.map((b) => normalizeTaskLinkedBranch(b));
+    const seen = new Map<string, TaskLinkedBranch>();
+    for (const link of normalized) {
+        const repo = link.linked_repo;
+        const branch = link.linked_branch;
+        if (!repo || !branch) {
+            continue;
+        }
+        const key = `${repo.toLowerCase()}\0${branch.toLowerCase()}`;
+        if (seen.has(key)) {
+            throw new DuplicateTaskLinkedBranchError(repo, branch);
+        }
+        seen.set(key, link);
+    }
+    return normalized;
+}
+
 export type { Task, TaskStatus, TaskAPIResponse, TaskTimelineEntry, TaskLinkedBranch, TaskSection };
 export { getTaskLinkedBranches } from '@/types/task';
 
@@ -135,12 +185,15 @@ export async function updateTask(
         payload.estimated_hours = body.estimated_hours;
     }
     if (body.linked_branches !== undefined) {
-        payload.linked_branches = body.linked_branches ?? [];
+        const linked = body.linked_branches ?? [];
+        payload.linked_branches = ensureUniqueTaskLinkedBranches(linked);
     } else if (body.linked_repo !== undefined || body.linked_branch !== undefined) {
         const lr = body.linked_repo;
         const lb = body.linked_branch;
         if (lr != null && lb != null && String(lr).trim() !== '' && String(lb).trim() !== '') {
-            payload.linked_branches = [{ linked_repo: lr.trim(), linked_branch: lb.trim() }];
+            payload.linked_branches = ensureUniqueTaskLinkedBranches([
+                { linked_repo: lr.trim(), linked_branch: lb.trim() },
+            ]);
         } else if (lr === null && lb === null) {
             payload.linked_branches = [];
         }
@@ -171,13 +224,20 @@ export async function setTaskLinkedBranch(
         linked_branch_full_ref?: string | null;
     }
 ): Promise<TaskAPIResponse> {
+    const [sanitized] = ensureUniqueTaskLinkedBranches([
+        {
+            linked_repo: body.linked_repo,
+            linked_branch: body.linked_branch,
+            linked_branch_full_ref: body.linked_branch_full_ref,
+        },
+    ]);
     const payload: {
         linked_repo: string;
         linked_branch: string;
         linked_branch_full_ref?: string | null;
-    } = { linked_repo: body.linked_repo, linked_branch: body.linked_branch };
-    if (body.linked_branch_full_ref != null && body.linked_branch_full_ref !== '') {
-        payload.linked_branch_full_ref = body.linked_branch_full_ref;
+    } = { linked_repo: sanitized.linked_repo, linked_branch: sanitized.linked_branch };
+    if (sanitized.linked_branch_full_ref != null && sanitized.linked_branch_full_ref !== '') {
+        payload.linked_branch_full_ref = sanitized.linked_branch_full_ref;
     }
     const { data } = await api.post<TaskAPIResponse>(`/tasks/${taskId}/linked-branch`, payload);
     return data;
