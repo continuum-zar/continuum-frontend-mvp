@@ -8,9 +8,11 @@ import { cn } from '@/app/components/ui/utils';
 import { ErrorBoundary } from '@/app/ErrorBoundary';
 import { isAxiosError, isCancel } from 'axios';
 import { Check, XCircle } from 'lucide-react';
+import {
+    MCP_OAUTH_CLIENT_LABEL_KEY,
+    MCP_OAUTH_SESSION_KEY,
+} from '@/lib/mcpOauthSessionKeys';
 
-const MCP_OAUTH_SESSION_KEY = 'continuum-mcp-oauth-completed';
-const MCP_OAUTH_CLIENT_LABEL_KEY = 'continuum-mcp-oauth-client-label';
 const REDIRECT_FALLBACK_MS = 10_000;
 /** Brief “returning to…” state before manual handoff for http(s) callbacks (Claude Code). */
 const MANUAL_HANDOFF_PENDING_MS = 2_000;
@@ -23,6 +25,21 @@ export function usesBrowserNavigableRedirect(redirectUri: string): boolean {
     try {
         const scheme = new URL(redirectUri).protocol.replace(':', '');
         return scheme === 'http' || scheme === 'https';
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Schemes we are willing to navigate to from the consent response. Blocks
+ * `javascript:`/`data:` if the server ever echoes an unvalidated redirect_uri.
+ * IDE deep links (Cursor, VS Code) are legitimate targets here.
+ */
+const ALLOWED_REDIRECT_SCHEMES = ['https:', 'http:', 'cursor:', 'vscode:', 'vscode-insiders:'];
+
+export function isAllowedRedirectUrl(url: string): boolean {
+    try {
+        return ALLOWED_REDIRECT_SCHEMES.includes(new URL(url).protocol);
     } catch {
         return false;
     }
@@ -346,6 +363,34 @@ function McpOAuthInner() {
                         description: (
                             <>
                                 <p className="mb-2">The server did not return a redirect address.</p>
+                                <ul className="list-disc pl-4 space-y-1 text-sm">
+                                    <li>Try reconnecting from your editor.</li>
+                                    <li>If this repeats, report it to Continuum support.</li>
+                                </ul>
+                            </>
+                        ),
+                    });
+                    return;
+                }
+
+                if (!isAllowedRedirectUrl(redirectUrl)) {
+                    let rejectedScheme = 'unparseable URL';
+                    try {
+                        rejectedScheme = new URL(redirectUrl).protocol;
+                    } catch {
+                        /* keep fallback label */
+                    }
+                    console.error(
+                        `[McpOAuth] consent response redirect_url has a disallowed scheme: ${rejectedScheme}`
+                    );
+                    setError({
+                        title: 'Invalid redirect address',
+                        description: (
+                            <>
+                                <p className="mb-2">
+                                    The server returned a redirect target this app does not allow
+                                    ({rejectedScheme}).
+                                </p>
                                 <ul className="list-disc pl-4 space-y-1 text-sm">
                                     <li>Try reconnecting from your editor.</li>
                                     <li>If this repeats, report it to Continuum support.</li>

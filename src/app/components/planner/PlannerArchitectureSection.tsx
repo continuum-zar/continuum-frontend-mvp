@@ -20,6 +20,9 @@ async function ensureMermaid(): Promise<typeof import('mermaid').default> {
         startOnLoad: false,
         securityLevel: 'strict',
         theme: 'neutral',
+        // Native SVG <text> labels instead of <foreignObject> HTML: the DOMPurify pass
+        // in the render effect strips HTML content inside SVG, which would blank out HTML labels.
+        flowchart: { htmlLabels: false },
     });
     mermaidConfigured = true;
     return mermaid;
@@ -104,8 +107,16 @@ export function PlannerArchitectureSection({
                 const mermaid = await ensureMermaid();
                 const rid = `planner-arch-${Math.random().toString(36).slice(2)}`;
                 const { svg } = await mermaid.render(rid, diagram);
+                // Defense-in-depth: the diagram source is AI/backend-generated, so strip any
+                // scripts/handlers that survive mermaid's own strict-mode sanitization.
+                // svg-only profile: labels are native <text> (htmlLabels: false above), so
+                // nothing legitimate lives in the HTML namespace. Loaded lazily like mermaid.
+                const { default: DOMPurify } = await import('dompurify');
+                const safeSvg = DOMPurify.sanitize(svg, {
+                    USE_PROFILES: { svg: true, svgFilters: true },
+                });
                 if (!cancelled) {
-                    setSvgMarkup(svg);
+                    setSvgMarkup(safeSvg);
                     setDiagramError(null);
                 }
             } catch (e: unknown) {

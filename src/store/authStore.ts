@@ -2,7 +2,10 @@ import { create } from 'zustand';
 import { isAxiosError } from 'axios';
 import api, { silentRefresh } from '../lib/api';
 import { setSentryUser } from '../lib/sentry';
+import { clearStoredGoogleAccessToken } from '../lib/googleCalendarClient';
+import { MCP_OAUTH_CLIENT_LABEL_KEY, MCP_OAUTH_SESSION_KEY } from '../lib/mcpOauthSessionKeys';
 import { TIME_RECORDING_STORAGE_KEY } from '../lib/timeRecordingTimerStorage';
+import { SESSION_INVITE_TOKEN_KEY } from '../app/components/welcome/welcomeModalAssets';
 import { AuthState, AuthResponse } from '../types/auth';
 import { RegisterPayload, User } from '../types/user';
 
@@ -111,10 +114,17 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
                 error: null,
             });
             try {
+                localStorage.removeItem('auth-storage');
                 localStorage.removeItem(TIME_RECORDING_STORAGE_KEY);
+                clearStoredGoogleAccessToken();
+                sessionStorage.removeItem(SESSION_INVITE_TOKEN_KEY);
+                sessionStorage.removeItem(MCP_OAUTH_SESSION_KEY);
+                sessionStorage.removeItem(MCP_OAUTH_CLIENT_LABEL_KEY);
             } catch {
                 /* noop */
             }
+            // React Query cache is purged by AuthQueryCacheSync once isAuthenticated
+            // flips false — after unmount, so observers don't refetch unauthenticated.
         }
     },
 

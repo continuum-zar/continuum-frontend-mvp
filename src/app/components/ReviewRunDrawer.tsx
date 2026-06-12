@@ -367,7 +367,7 @@ export function ReviewRunDrawer({
                 <a
                   href={review.github_comment_url}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-foreground hover:underline"
                 >
                   <PullRequestIcon size={12} />
