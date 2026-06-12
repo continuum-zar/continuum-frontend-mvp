@@ -142,6 +142,10 @@ export function mapMember(m: MemberAPIResponse): Member {
     const lastName = user?.last_name ?? m.last_name ?? '';
     const name = [firstName, lastName].filter(Boolean).join(' ') || 'Unknown';
     const email = user?.email ?? m.email ?? '';
+    const displayNameRaw = user?.display_name?.trim();
+    const displayName = displayNameRaw || name;
+    const emailForUsername = user?.email ?? m.email ?? '';
+    const username = user?.username?.trim() || emailForUsername.trim();
     const initials =
         [firstName, lastName]
             .map((s) => (s && s[0]) || '')
@@ -154,6 +158,8 @@ export function mapMember(m: MemberAPIResponse): Member {
         name,
         email,
         role: m.role ?? 'developer',
+        username,
+        displayName,
         userRole: (m.user as { role?: string } | undefined)?.role,
         initials,
     };
@@ -262,12 +268,27 @@ export function mapAttachment(a: AttachmentAPIResponse): Attachment {
     const explicitLabel =
         a.display_name?.trim() || a.name?.trim() || a.title?.trim() || '';
     const filename = explicitLabel || a.original_filename;
+
+    // Prefer the backend's explicit kind for AI-planner Markdown artifacts so the
+    // UI can route them to the inline Markdown/Mermaid viewer instead of forcing
+    // a download. Falls back to filename-based detection for older responses.
+    const backendKind = a.kind ?? undefined;
+    const lowerFilename = (a.original_filename ?? '').toLowerCase();
+    let uiKind: Attachment['kind'];
+    if (backendKind === 'plan' || lowerFilename === 'plan.md') {
+        uiKind = 'plan';
+    } else if (backendKind === 'architecture' || lowerFilename === 'architecture.md') {
+        uiKind = 'architecture';
+    } else {
+        uiKind = isLink ? 'link' : 'file';
+    }
+
     return {
         id: String(a.id),
         filename,
-        size: isLink ? '' : formatFileSize(a.file_size),
+        size: uiKind === 'link' ? '' : formatFileSize(a.file_size),
         mimeType: a.mime_type,
-        kind: isLink ? 'link' : 'file',
+        kind: uiKind,
         url: resolvedUrl,
         createdAt: formatDistanceToNow(new Date(a.created_at), { addSuffix: true }),
         uploadedBy: uploadedBy || undefined,

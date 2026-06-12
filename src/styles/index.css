@@ -1,5 +1,6 @@
 /*
- * Satoshi (UI) loads with this sheet; Sarina loads lazily via load-decorative-fonts.ts.
+ * Satoshi (UI) loads with this sheet; Sarina's @font-face is inlined in index.html
+ * alongside a <link rel="preload"> so the brand mark renders without a fallback flash.
  */
 @import './fonts-satoshi.css';
 @import './fonts.css';

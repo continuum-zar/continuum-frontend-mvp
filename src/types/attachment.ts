@@ -19,6 +19,11 @@ export interface AttachmentAPIResponse {
     /** Explicit type flags from API */
     is_link?: boolean | null;
     attachment_type?: string | null;
+    /**
+     * Backend-supplied resource discriminator:
+     * "plan" / "architecture" (AI-planner artifacts), "link", or "file".
+     */
+    kind?: 'plan' | 'architecture' | 'link' | 'file' | null;
     created_at: string;
     /** Some APIs return uploaded_by */
     uploaded_by?: {
@@ -42,7 +47,12 @@ export interface Attachment {
     /** Formatted size for files; empty for links (second line hidden in UI) */
     size: string;
     mimeType: string;
-    kind: 'file' | 'link';
+    /**
+     * UI discriminator:
+     * - "file" / "link" — generic uploads
+     * - "plan" / "architecture" — AI-planner Markdown artifacts that render in an inline viewer
+     */
+    kind: 'file' | 'link' | 'plan' | 'architecture';
     /** Resolved target URL for link attachments (for open + display) */
     url?: string | null;
     createdAt: string;

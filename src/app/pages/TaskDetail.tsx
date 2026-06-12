@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { DEFAULT_KANBAN_COLUMNS, mapKanbanBoardFromApi, type KanbanColumnConfig } from '@/app/components/dashboard-placeholder/kanbanBoardTypes';
+import { TaskDescriptionMarkdown } from '@/app/components/TaskDescriptionMarkdown';
 import { useAutosizeTextarea } from '@/hooks/useAutosizeTextarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
@@ -64,6 +65,8 @@ import {
   type TaskSection,
 } from '@/types/task';
 import type { CommentAuthorAPI } from '@/types/comment';
+import { CommentBody } from '@/app/components/comments/CommentBody';
+import { CommentMentionTextarea } from '@/app/components/comments/CommentMentionTextarea';
 import type { Member } from '@/types/member';
 import {
   AddTaskResourceModal,
@@ -564,8 +567,12 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const checklistDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const checklistPendingRef = useRef<Array<{ id?: string; text: string; done: boolean }> | null>(null);
   const checklistInflightRef = useRef(false);
+  // Last server-confirmed checklist value; used to revert local UI on failed writes.
+  const checklistBaselineRef = useRef<Array<{ id?: string; text: string; done: boolean }>>([]);
   const sectionsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sectionsPendingRef = useRef<TaskSection[] | null>(null);
+  // Last server-confirmed sections value; used to revert local UI on failed writes.
+  const sectionsBaselineRef = useRef<TaskSection[]>([]);
   const { data: attachments } = useTaskAttachments(taskId);
   const deleteAttachmentMutation = useDeleteAttachment(taskId);
   const timelineQuery = useTaskTimelineInfinite(taskId);
@@ -851,11 +858,13 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   useEffect(() => {
     checklistInflightRef.current = false;
     checklistPendingRef.current = null;
+    checklistBaselineRef.current = [];
     if (checklistDebounceRef.current != null) {
       clearTimeout(checklistDebounceRef.current);
       checklistDebounceRef.current = null;
     }
     sectionsPendingRef.current = null;
+    sectionsBaselineRef.current = [];
     if (sectionsDebounceRef.current != null) {
       clearTimeout(sectionsDebounceRef.current);
       sectionsDebounceRef.current = null;
@@ -874,10 +883,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         checklistSaveInFlight: checklistInflightRef.current,
       });
       if (!pauseChecklistSync) {
-        setLocalChecklists(task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : []);
+        const fromServer = task.checklists && Array.isArray(task.checklists) ? [...task.checklists] : [];
+        setLocalChecklists(fromServer);
+        checklistBaselineRef.current = fromServer;
       }
       if (editingSectionNameIdx === null) {
-        setLocalSections(Array.isArray(task.sections) ? [...task.sections] : []);
+        const fromServer = Array.isArray(task.sections) ? [...task.sections] : [];
+        setLocalSections(fromServer);
+        sectionsBaselineRef.current = fromServer;
       }
       // Keep drafts in sync so "Update" does not send empty description/title when the user never opened edit mode.
       if (!editingTitle) setTitleDraft(task.title ?? '');
@@ -949,10 +962,24 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         const pending = checklistPendingRef.current;
         checklistPendingRef.current = null;
         if (pending != null && taskId) {
+          // Capture the last-known-good baseline at send time so a rapid burst of
+          // optimistic toggles all revert to the pre-burst state on failure.
+          const revertTo = checklistBaselineRef.current;
           checklistInflightRef.current = true;
           updateTaskMutation.mutate(
             { taskId, checklists: pending },
             {
+              onSuccess: (data) => {
+                if (Array.isArray(data?.checklists)) {
+                  checklistBaselineRef.current = [...data.checklists];
+                }
+              },
+              onError: () => {
+                // Revert the locally-rendered checklist so the user does not see the
+                // optimistic state after the server rejected the write. The toast and
+                // query-cache rollback are handled inside useUpdateTask.
+                setLocalChecklists(revertTo);
+              },
               onSettled: () => {
                 checklistInflightRef.current = false;
               },
@@ -1006,7 +1033,20 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         const pending = sectionsPendingRef.current;
         sectionsPendingRef.current = null;
         if (pending != null && taskId) {
-          updateTaskMutation.mutate({ taskId, sections: pending });
+          const revertTo = sectionsBaselineRef.current;
+          updateTaskMutation.mutate(
+            { taskId, sections: pending },
+            {
+              onSuccess: (data) => {
+                if (Array.isArray(data?.sections)) {
+                  sectionsBaselineRef.current = [...data.sections];
+                }
+              },
+              onError: () => {
+                setLocalSections(revertTo);
+              },
+            },
+          );
         }
       }, TASK_DETAIL_CHECKLIST_DEBOUNCE_MS);
     },
@@ -1377,9 +1417,13 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     className="min-h-[106px] cursor-text rounded-[8px] border border-[#e9e9e9] bg-white p-4"
                     onClick={startEditDesc}
                   >
-                    <p className="whitespace-pre-wrap text-[16px] font-medium leading-relaxed text-[#0b191f]">
-                      {task.description || 'Click to add a description…'}
-                    </p>
+                    {task.description ? (
+                      <TaskDescriptionMarkdown>{task.description}</TaskDescriptionMarkdown>
+                    ) : (
+                      <p className="text-[16px] font-medium leading-relaxed text-[#606d76]">
+                        Click to add a description…
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -2096,19 +2140,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
           <div className="space-y-4">
             <p className="text-[16px] font-medium text-[#0b191f]">Comments</p>
             <div className="space-y-3">
-              <textarea
-                ref={commentTextareaRef}
+              <CommentMentionTextarea
+                textareaRef={commentTextareaRef}
                 value={commentDraft}
-                onChange={(e) => setCommentDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault();
-                    handlePostComment();
-                  }
-                }}
+                onChange={setCommentDraft}
+                members={members ?? []}
                 placeholder="Write a comment…"
                 disabled={createCommentMutation.isPending}
-                className="w-full resize-none overflow-y-auto rounded-[8px] border border-[#e9e9e9] bg-white px-3 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] outline-none placeholder:text-[#727d83] focus:ring-2 focus:ring-[#24b5f8]/40 disabled:opacity-60"
+                onSubmit={handlePostComment}
               />
               <div className="flex justify-end">
                 <button
@@ -2151,9 +2190,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
                         </p>
                         <p className="text-[16px] leading-none text-[#0b191f]">{commentAuthorDisplayName(c.author)}</p>
-                        <p className="mt-1 whitespace-pre-wrap text-[14px] font-medium leading-snug text-[#606d76]">
-                          {c.content}
-                        </p>
+                        <CommentBody
+                          content={c.content}
+                          mentions={c.mentions}
+                          className="mt-1 text-[14px] font-medium leading-snug text-[#606d76]"
+                        />
                       </div>
                     </div>
                   ))}

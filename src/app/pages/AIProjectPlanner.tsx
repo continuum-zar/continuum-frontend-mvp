@@ -17,6 +17,7 @@ import {
     Link2,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { Skeleton } from '../components/ui/skeleton';
 import {
     Collapsible,
     CollapsibleContent,
@@ -1437,11 +1438,19 @@ export function AIProjectPlanner({
 
                                 {refinementPayload ? (
                                     !baselinePlan || !lockMeta ? (
-                                        <div className="flex items-center gap-3 rounded-xl border border-[#ebedee] bg-white px-5 py-8 text-[#606d76] shadow-sm">
-                                            <Loader2 className="size-6 shrink-0 animate-spin text-[#2E96F9]" />
-                                            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium">
-                                                Loading baseline comparison…
-                                            </p>
+                                        <div
+                                            className="flex flex-col gap-3 rounded-xl border border-[#ebedee] bg-white px-5 py-6 shadow-sm"
+                                            role="status"
+                                            aria-busy="true"
+                                            aria-label="Loading baseline comparison"
+                                        >
+                                            <Skeleton className="h-4 w-48" />
+                                            <Skeleton className="h-3 w-full" />
+                                            <Skeleton className="h-3 w-2/3" />
+                                            <div className="mt-2 flex flex-col gap-2">
+                                                <Skeleton className="h-12 w-full rounded-[10px]" />
+                                                <Skeleton className="h-12 w-full rounded-[10px]" />
+                                            </div>
                                         </div>
                                     ) : (
                                         <PlannerRefinementReviewPanel

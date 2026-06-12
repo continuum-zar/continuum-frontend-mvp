@@ -3,6 +3,7 @@ import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { Loader2, RefreshCw } from 'lucide-react';
 import type { SystemArchitecture } from '@/api/planner';
 import { Button } from '@/app/components/ui/button';
+import { Skeleton } from '@/app/components/ui/skeleton';
 import { cn } from '@/app/components/ui/utils';
 
 const CARD_SHADOW =
@@ -224,8 +225,13 @@ export function PlannerArchitectureSection({
                                 </p>
                             </div>
                         ) : (
-                            <div className="flex h-full items-center justify-center">
-                                <Loader2 className="size-8 animate-spin text-[#2E96F9]" aria-hidden />
+                            <div
+                                className="flex h-full w-full items-center justify-center p-4"
+                                role="status"
+                                aria-busy="true"
+                                aria-label="Rendering architecture diagram"
+                            >
+                                <Skeleton className="size-full rounded-[12px]" />
                             </div>
                         )}
                     </div>

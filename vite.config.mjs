@@ -9,6 +9,33 @@ import { defineConfig } from 'vite'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const analyzeBundle = process.env.ANALYZE === '1'
 
+// Source map upload only runs in CI where SENTRY_AUTH_TOKEN is set. Local
+// `vite build` and `vite dev` skip the plugin so developers don't need the
+// `@sentry/vite-plugin` package installed at all — important for dev images
+// that build node_modules without devDependencies.
+const sentryUploadEnabled =
+  Boolean(process.env.SENTRY_AUTH_TOKEN) &&
+  Boolean(process.env.SENTRY_ORG) &&
+  Boolean(process.env.SENTRY_PROJECT)
+
+async function loadSentryPlugin() {
+  if (!sentryUploadEnabled) return null
+  // Dynamic import: only required when CI has actually provided credentials,
+  // so dev containers don't crash on a missing optional devDependency.
+  const { sentryVitePlugin } = await import('@sentry/vite-plugin')
+  return sentryVitePlugin({
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    release: {
+      name: process.env.VITE_APP_VERSION || process.env.GITHUB_SHA || undefined,
+    },
+    telemetry: false,
+  })
+}
+
+const sentryPlugin = await loadSentryPlugin()
+
 const PROXY_TARGET = process.env.VITE_PROXY_TARGET || 'http://localhost:8001'
 
 /**
@@ -190,6 +217,9 @@ export default defineConfig({
           }),
         ]
       : []),
+    // Must run last so it sees the finished bundle. Loaded only when CI has
+    // set SENTRY_AUTH_TOKEN / ORG / PROJECT — see loadSentryPlugin above.
+    ...(sentryPlugin ? [sentryPlugin] : []),
   ],
   resolve: {
     alias: {
@@ -204,6 +234,10 @@ export default defineConfig({
   assetsInclude: ['**/*.svg', '**/*.csv'],
 
   build: {
+    // Required for Sentry to symbolicate stack traces. The Sentry plugin
+    // deletes the .map files from `dist` after uploading so the deployed
+    // bundle stays the same size.
+    sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks: {

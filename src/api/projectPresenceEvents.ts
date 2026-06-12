@@ -1,4 +1,5 @@
 import { resolveApiBaseURL } from "@/lib/api";
+import { getSseTicket } from "@/api/sseTicket";
 
 export type ProjectPresenceEventType =
   | "session_started"
@@ -17,11 +18,15 @@ export interface ProjectPresenceEvent {
 
 /**
  * SSE stream URL for per-project work-session presence updates.
- * EventSource cannot send custom headers; pass JWT via `access_token` query param.
+ *
+ * EventSource cannot send custom headers; we mint a short-lived single-use
+ * ticket via `POST /events/sse-ticket` and pass it via `?ticket=` rather
+ * than embedding the JWT (which leaks into access logs / browser history).
  */
-export function projectPresenceEventsStreamUrl(projectId: number | string, accessToken: string): string {
+export async function projectPresenceEventsStreamUrl(projectId: number | string): Promise<string> {
   const base = resolveApiBaseURL().replace(/\/$/, "");
-  const qs = new URLSearchParams({ access_token: accessToken }).toString();
+  const ticket = await getSseTicket();
+  const qs = new URLSearchParams({ ticket }).toString();
   const path = `${base}/projects/${projectId}/presence-events/stream`;
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return `${path}?${qs}`;
