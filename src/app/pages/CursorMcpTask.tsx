@@ -14,6 +14,7 @@ import { Skeleton } from '@/app/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 import { buildCursorMcpTaskShareUrl } from '@/lib/cursorMcpShareUrl';
 import { workspaceJoin } from '@/lib/workspacePaths';
+import { CommentBody } from '@/app/components/comments/CommentBody';
 import type { CommentAuthorAPI } from '@/types/comment';
 import { getTaskLinkedBranches } from '@/types/task';
 
@@ -312,9 +313,12 @@ function CursorMcpTaskBody({ data }: { data: CursorMcpTaskDetail }) {
                                         </span>
                                         <time dateTime={c.created_at}>{safeFormatCommentTime(c.created_at)}</time>
                                     </div>
-                                    <pre className="text-foreground max-w-full overflow-x-auto text-sm leading-relaxed whitespace-pre-wrap font-mono">
-                                        {c.content}
-                                    </pre>
+                                    <CommentBody
+                                        as="pre"
+                                        content={c.content}
+                                        mentions={c.mentions}
+                                        className="text-foreground max-w-full overflow-x-auto text-sm leading-relaxed font-mono"
+                                    />
                                 </li>
                             ))}
                         </ul>

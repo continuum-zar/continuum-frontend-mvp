@@ -44,7 +44,16 @@ const baseProps = {
   rhythmMember: "all",
   onRhythmMemberChange: vi.fn(),
   rhythmProjectMembers: [
-    { id: 1, userId: 10, name: "Member One", email: "m1@example.com", role: "developer", initials: "MO" },
+    {
+      id: 1,
+      userId: 10,
+      name: "Member One",
+      email: "m1@example.com",
+      role: "developer",
+      username: "member_one",
+      displayName: "Member One",
+      initials: "MO",
+    },
   ],
   rhythmLoading: false,
   rhythmError: false,

@@ -1,4 +1,5 @@
 import axios, { AxiosError, isAxiosError } from 'axios';
+import * as Sentry from '@sentry/react';
 
 import { extractErrorCode, extractCorrelationId } from './errorMessages';
 import { clerkJwtTemplate, isClerkEnabled } from './clerkConfig';
@@ -254,6 +255,23 @@ export async function silentRefresh(): Promise<SilentRefreshResult> {
     }
 }
 
+/**
+ * Generate a per-request correlation ID. We propagate this as X-Request-ID so
+ * backend logs, Sentry tags (set in CorrelationIdMiddleware), and the response
+ * body's `correlation_id` field all share the same identifier — a frontend
+ * Sentry event and the corresponding backend event become joinable.
+ */
+function generateRequestId(): string {
+    try {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+    } catch {
+        /* fall through */
+    }
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 // Request interceptor: attach the in-memory access token. If no token is set yet
 // but a refresh is in flight (e.g. the bootstrap silentRefresh from
 // AuthSessionBootstrap), wait for it so we don't fire requests that will 401 and
@@ -267,23 +285,26 @@ api.interceptors.request.use(
         const clerkToken = await getClerkSessionToken();
         if (clerkToken) {
             config.headers.Authorization = `Bearer ${clerkToken}`;
-            return config;
+        } else {
+            const { useAuthStore } = await import('../store/authStore');
+            let accessToken = useAuthStore.getState().accessToken;
+            const isAuthEndpoint =
+                config.url === '/auth/login' ||
+                config.url === '/auth/register' ||
+                config.url === '/auth/logout' ||
+                config.url === '/auth/refresh-token' ||
+                config.url === '/auth/email-exists' ||
+                config.url === '/auth/waitlist';
+            if (!accessToken && !isAuthEndpoint && refreshInFlight) {
+                await refreshInFlight;
+                accessToken = useAuthStore.getState().accessToken;
+            }
+            if (accessToken) {
+                config.headers.Authorization = `Bearer ${accessToken}`;
+            }
         }
-        const { useAuthStore } = await import('../store/authStore');
-        let accessToken = useAuthStore.getState().accessToken;
-        const isAuthEndpoint =
-            config.url === '/auth/login' ||
-            config.url === '/auth/register' ||
-            config.url === '/auth/logout' ||
-            config.url === '/auth/refresh-token' ||
-            config.url === '/auth/email-exists' ||
-            config.url === '/auth/waitlist';
-        if (!accessToken && !isAuthEndpoint && refreshInFlight) {
-            await refreshInFlight;
-            accessToken = useAuthStore.getState().accessToken;
-        }
-        if (accessToken) {
-            config.headers.Authorization = `Bearer ${accessToken}`;
+        if (!config.headers['X-Request-ID']) {
+            config.headers['X-Request-ID'] = generateRequestId();
         }
         return config;
     },
@@ -314,6 +335,41 @@ api.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as RetryableConfig | undefined;
         const status = error.response?.status;
+
+        // Report 5xx and true network failures to Sentry — anything below 500 is
+        // expected client noise (auth, validation, rate limit) and is dropped
+        // by `beforeSend` in `lib/sentry.ts` if it slips through.
+        const isServerError = typeof status === 'number' && status >= 500;
+        const isNetworkError = !error.response && Boolean(originalRequest);
+        if (isServerError || isNetworkError) {
+            const requestId =
+                (originalRequest?.headers as Record<string, string> | undefined)?.['X-Request-ID'] ??
+                extractCorrelationId(error);
+            Sentry.captureException(error, {
+                tags: {
+                    api_status: status ?? 'network_error',
+                    api_url: originalRequest?.url ?? 'unknown',
+                    correlation_id: requestId ?? 'unknown',
+                    error_code: extractErrorCode(error) ?? 'unknown',
+                },
+            });
+            // Sentry Logs ship structured records (separate from Issues). Emit
+            // a single line per 5xx/network failure so on-call can grep by
+            // correlation_id without opening every Issue.
+            try {
+                Sentry.logger?.error?.(
+                    Sentry.logger.fmt`API ${originalRequest?.method?.toUpperCase() ?? 'REQ'} ${originalRequest?.url ?? 'unknown'} failed: ${status ?? 'network_error'}`,
+                    {
+                        api_status: status ?? 'network_error',
+                        api_url: originalRequest?.url ?? 'unknown',
+                        correlation_id: requestId ?? 'unknown',
+                        error_code: extractErrorCode(error) ?? 'unknown',
+                    },
+                );
+            } catch {
+                /* logger emit must never break a real API call */
+            }
+        }
 
         // ---- 429: back off once, then surface. NEVER logout. ----
         if (status === 429 && originalRequest && !originalRequest._rateLimitRetried) {

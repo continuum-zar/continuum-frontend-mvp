@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { isAxiosError } from 'axios';
 import api, { silentRefresh } from '../lib/api';
+import { setSentryUser } from '../lib/sentry';
 import { TIME_RECORDING_STORAGE_KEY } from '../lib/timeRecordingTimerStorage';
 import { AuthState, AuthResponse } from '../types/auth';
 import { RegisterPayload, User } from '../types/user';
@@ -99,6 +100,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
         } catch (error) {
             console.error('Logout request failed', error);
         } finally {
+            setSentryUser(null);
             set({
                 user: null,
                 isAuthenticated: false,
@@ -127,6 +129,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
             try {
                 const result = await silentRefresh();
                 if (result.kind === 'unauthenticated') {
+                    setSentryUser(null);
                     set({
                         user: null,
                         isAuthenticated: false,
@@ -145,6 +148,7 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
                 }
                 set({ accessToken: result.token, isAuthenticated: true, authSource: 'manual' });
             } catch {
+                setSentryUser(null);
                 set({
                     user: null,
                     isAuthenticated: false,
@@ -166,8 +170,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => ({
                 isLoading: false,
                 isInitialized: true,
             });
+            setSentryUser({ id: response.data.id, email: response.data.email });
         } catch (error) {
             if (isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
+                setSentryUser(null);
                 set({
                     user: null,
                     isAuthenticated: false,
