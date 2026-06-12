@@ -24,6 +24,8 @@ import {
 } from "../data/dashboardPlaceholderProjects";
 import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
+import { BrandedLoadingPlaceholder } from "@/app/components/ui/branded-loading";
+import { useTempLoadingDelay } from "@/app/components/ui/use-temp-loading-delay";
 import { useAuthStore } from "@/store/authStore";
 
 const imgLucideFolderOpenDot = mcpAsset("565be4ed-fc29-4562-a26f-1c943a6d5847");
@@ -69,6 +71,9 @@ export function WelcomeContinuumView() {
   const headerTitle = isWelcomeDemo
     ? DASHBOARD_WELCOME_PROJECT.name
     : projectQuery.data?.name ?? (projectQuery.isLoading ? "Loading…" : "Project");
+
+  // TEMP (QA): forced loading window — see branded-loading.tsx.
+  const tempLoading = useTempLoadingDelay();
 
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
@@ -233,7 +238,9 @@ export function WelcomeContinuumView() {
                   "linear-gradient(to bottom, black 0, black calc(100% - 16px), transparent 100%)",
               }}
             >
-            {isWelcomeDemo ? (
+            {tempLoading ? (
+            <BrandedLoadingPlaceholder className="h-full min-h-[60vh]" label="Loading project…" />
+            ) : isWelcomeDemo ? (
             <div className="relative flex w-full min-w-0 flex-col items-start" data-node-id="8:3554">
               <div className="content-stretch flex flex-col gap-[64px] items-center pb-[32px] pt-[48px] relative shrink-0 w-full" data-node-id="8:3555">
                 <WelcomeProjectHeroGauge />
@@ -336,9 +343,10 @@ export function WelcomeContinuumView() {
             ) : (
             <div className="relative flex w-full min-w-0 flex-col items-start px-1">
               {isApiRoute && projectQuery.isLoading && (
-                <div className="flex min-h-[280px] w-full items-center justify-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
-                  Loading project…
-                </div>
+                <BrandedLoadingPlaceholder
+                  className="min-h-[60vh] w-full"
+                  label="Loading project…"
+                />
               )}
               {isApiRoute && projectQuery.isError && (
                 <div className="flex min-h-[280px] w-full flex-col items-center justify-center gap-4 px-4 text-center">

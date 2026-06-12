@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrandedLoadingPlaceholder } from "../components/ui/branded-loading";
+import { useTempLoadingDelay } from "../components/ui/use-temp-loading-delay";
 
 const Dashboard = lazy(() => import("./Dashboard").then((m) => ({ default: m.Dashboard })));
 const DashboardLeftRail = lazy(() =>
@@ -9,6 +10,9 @@ const DashboardLeftRail = lazy(() =>
 );
 
 export function DashboardPlaceholderHome() {
+  // TEMP (QA): forced loading window — see branded-loading.tsx.
+  const tempLoading = useTempLoadingDelay();
+
   return (
     <div
       className="box-border flex h-screen min-h-0 w-full flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
@@ -33,16 +37,23 @@ export function DashboardPlaceholderHome() {
               }}
             >
               <div className="mx-auto w-full max-w-[1500px] py-4">
-                <Suspense
-                  fallback={
-                    <BrandedLoadingPlaceholder
-                      className="min-h-[40vh]"
-                      label="Loading your dashboard…"
-                    />
-                  }
-                >
-                  <Dashboard hideKpiCards hideProductivityRhythm />
-                </Suspense>
+                {tempLoading ? (
+                  <BrandedLoadingPlaceholder
+                    className="h-full min-h-[60vh]"
+                    label="Loading your dashboard…"
+                  />
+                ) : (
+                  <Suspense
+                    fallback={
+                      <BrandedLoadingPlaceholder
+                        className="h-full min-h-[60vh]"
+                        label="Loading your dashboard…"
+                      />
+                    }
+                  >
+                    <Dashboard hideKpiCards hideProductivityRhythm />
+                  </Suspense>
+                )}
               </div>
             </div>
           </section>
