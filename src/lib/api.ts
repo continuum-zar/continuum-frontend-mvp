@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import { extractErrorCode, extractCorrelationId } from './errorMessages';
 
 /**
  * API base URL for axios.
@@ -137,26 +138,6 @@ function parseRetryAfter(error: AxiosError, fallbackMs: number, maxMs: number): 
         }
     }
     return Math.min(fallbackMs, maxMs);
-}
-
-function extractErrorCode(error: AxiosError): string | undefined {
-    const body = error.response?.data;
-    if (body && typeof body === 'object' && 'code' in body) {
-        const code = (body as { code?: unknown }).code;
-        if (typeof code === 'string') return code;
-    }
-    return undefined;
-}
-
-function extractCorrelationId(error: AxiosError): string | undefined {
-    const headerId = error.response?.headers?.['x-request-id'];
-    if (typeof headerId === 'string' && headerId) return headerId;
-    const body = error.response?.data;
-    if (body && typeof body === 'object' && 'correlation_id' in body) {
-        const id = (body as { correlation_id?: unknown }).correlation_id;
-        if (typeof id === 'string') return id;
-    }
-    return undefined;
 }
 
 /**

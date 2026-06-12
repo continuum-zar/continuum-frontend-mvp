@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/ui/card';
+import { getErrorCorrelationId, getUserErrorMessage } from '../lib/errorMessages';
 
 interface Props {
   children: ReactNode;
@@ -58,9 +59,27 @@ export class ErrorBoundary extends Component<Props, State> {
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground/80 bg-muted/30 p-4 m-6 rounded-md border border-border/50">
-                <p className="font-mono break-words italic">
-                  {this.state.error?.message || 'Unknown error'}
+                <p className="break-words">
+                  {getUserErrorMessage(
+                    this.state.error,
+                    'An unexpected error occurred while rendering this page.',
+                  )}
                 </p>
+                {this.state.error?.message && (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-xs text-muted-foreground/60 select-none">
+                      Technical details
+                    </summary>
+                    <p className="font-mono text-xs break-words mt-2">
+                      {this.state.error.message}
+                    </p>
+                    {getErrorCorrelationId(this.state.error) && (
+                      <p className="font-mono text-xs mt-1">
+                        Error ID: {getErrorCorrelationId(this.state.error)}
+                      </p>
+                    )}
+                  </details>
+                )}
               </CardContent>
               <CardFooter className="flex flex-col sm:flex-row gap-3 pt-2 pb-8 px-6">
                 <Button

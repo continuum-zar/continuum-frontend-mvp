@@ -6,6 +6,7 @@ import { Button } from '@/app/components/ui/button';
 import { AlertCircle, RotateCcw } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { LEGACY_WORKSPACE_BASE, WORKSPACE_BASE } from '@/lib/workspacePaths';
+import { getUserErrorMessage } from '@/lib/errorMessages';
 import { WorkspaceShellSkeleton } from '@/app/components/dashboard-placeholder/WorkspaceShellSkeleton';
 import { RouteSkeleton } from '@/app/components/ui/RouteSkeleton';
 import { ReleaseNotesSessionHost } from '@/app/components/welcome/ReleaseNotesSessionHost';
@@ -33,8 +34,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             if (isAxiosError(err) && (err.response?.status === 401 || err.response?.status === 403)) {
                 return;
             }
-            const fallback = 'Failed to authenticate. Please try again.';
-            setFetchError(err instanceof Error ? err.message || fallback : fallback);
+            setFetchError(getUserErrorMessage(err, 'Failed to authenticate. Please try again.'));
         }
     }, [checkAuth]);
 

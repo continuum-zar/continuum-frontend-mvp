@@ -40,7 +40,10 @@ export function GithubOAuthReturnHandler() {
     } else {
       const reason = searchParams.get("reason") ?? "error";
       const detail = searchParams.get("detail");
-      toast.error(detail ? `GitHub: ${reason} — ${detail}` : `GitHub: ${reason}`);
+      // reason/detail come from a backend redirect and can be technical — demote to description.
+      toast.error("GitHub connection failed. Please try again.", {
+        description: detail ?? reason,
+      });
     }
 
     const next = new URLSearchParams(searchParams);
