@@ -234,7 +234,11 @@ export function TaskLinkedBranchesSection({
       return;
     }
     const lr = repositoryLinkedName(selectedCreateRepo);
-    if (isDuplicateRepoBranchLink(getTaskLinkedBranches(task), lr, generatedBranchName)) {
+    const existingLinks = [
+      ...entriesToPayload(entries, projectRepos),
+      ...getTaskLinkedBranches(task),
+    ];
+    if (isDuplicateRepoBranchLink(existingLinks, lr, generatedBranchName)) {
       toast.error('That repository and branch are already linked.');
       return;
     }
