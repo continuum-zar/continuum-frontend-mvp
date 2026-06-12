@@ -1,5 +1,4 @@
 import { Navigate, useLocation } from "react-router";
-import "@/styles/load-decorative-fonts";
 import { peekGithubOAuthReturnPath } from "@/lib/githubOAuthReturn";
 import { WORKSPACE_BASE } from "@/lib/workspacePaths";
 import { useAuthStore } from "@/store/authStore";

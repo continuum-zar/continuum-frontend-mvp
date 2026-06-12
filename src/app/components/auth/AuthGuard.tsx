@@ -20,7 +20,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const isLoading = useAuthStore((state) => state.isLoading);
     const isInitialized = useAuthStore((state) => state.isInitialized);
-    const accessToken = useAuthStore((state) => state.accessToken);
     const checkAuth = useAuthStore((state) => state.checkAuth);
     const location = useLocation();
     const [fetchError, setFetchError] = useState<string | null>(null);
@@ -39,10 +38,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     }, [checkAuth]);
 
     useEffect(() => {
-        if (!isInitialized && accessToken && !fetchError) {
+        if (!isInitialized && !fetchError) {
             handleCheckAuth();
         }
-    }, [isInitialized, accessToken, fetchError, handleCheckAuth]);
+    }, [isInitialized, fetchError, handleCheckAuth]);
 
     if (fetchError) {
         return (
@@ -66,7 +65,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         );
     }
 
-    const showLoader = isLoading || (!isInitialized && accessToken);
+    const showLoader = isLoading || !isInitialized;
 
     if (showLoader) {
         const p = location.pathname;

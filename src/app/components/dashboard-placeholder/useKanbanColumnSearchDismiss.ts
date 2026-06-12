@@ -2,6 +2,29 @@
 
 import { useEffect, useRef } from "react";
 
+/**
+ * Decide whether a pointerdown should dismiss the column search.
+ *
+ * Returns false (do not dismiss) when the target is:
+ * - inside the search container,
+ * - inside a Radix dropdown menu (kebab menu, column move menu, etc.),
+ * - inside any element marked `data-no-kanban-search-dismiss` (e.g. task cards
+ *   that navigate on click — without this, clearing the query would reflow the
+ *   list and the click would land on the wrong row).
+ */
+export function shouldDismissKanbanColumnSearchOnPointerDown(
+  target: EventTarget | null,
+  containerEl: Element | null,
+): boolean {
+  if (target instanceof Element) {
+    if (target.closest('[data-slot="dropdown-menu-content"]')) return false;
+    if (target.closest('[data-slot="dropdown-menu-sub-content"]')) return false;
+    if (target.closest("[data-no-kanban-search-dismiss]")) return false;
+  }
+  if (containerEl?.contains(target as Node)) return false;
+  return true;
+}
+
 /** Attach `ref` to the wrapper that should count as "inside" search (outside closes). */
 export function useKanbanColumnSearchDismiss(open: boolean, onClose: () => void) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -9,12 +32,7 @@ export function useKanbanColumnSearchDismiss(open: boolean, onClose: () => void)
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: PointerEvent) => {
-      const t = e.target;
-      if (t instanceof Element) {
-        if (t.closest('[data-slot="dropdown-menu-content"]')) return;
-        if (t.closest('[data-slot="dropdown-menu-sub-content"]')) return;
-      }
-      if (containerRef.current?.contains(e.target as Node)) return;
+      if (!shouldDismissKanbanColumnSearchOnPointerDown(e.target, containerRef.current)) return;
       onClose();
     };
     const onKeyDown = (e: KeyboardEvent) => {

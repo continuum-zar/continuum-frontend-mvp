@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Loader2 } from "lucide-react";
+import { DashboardHomeContentSkeleton } from "../components/dashboard-placeholder/DashboardPlaceholderSkeletons";
 
 const Dashboard = lazy(() => import("./Dashboard").then((m) => ({ default: m.Dashboard })));
 const DashboardLeftRail = lazy(() =>
@@ -33,14 +33,7 @@ export function DashboardPlaceholderHome() {
               }}
             >
               <div className="mx-auto w-full max-w-[1500px] py-4">
-                <Suspense
-                  fallback={
-                    <div className="flex min-h-[40vh] items-center justify-center">
-                      <Loader2 className="size-8 animate-spin text-[#606d76]" aria-hidden />
-                      <span className="sr-only">Loading dashboard…</span>
-                    </div>
-                  }
-                >
+                <Suspense fallback={<DashboardHomeContentSkeleton />}>
                   <Dashboard hideKpiCards hideProductivityRhythm />
                 </Suspense>
               </div>

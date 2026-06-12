@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ClerkProvider } from "@clerk/clerk-react";
 import { QueryDevtoolsGate } from "./dev/QueryDevtoolsGate.tsx";
 import App from "./app/App.tsx";
 // Satoshi is @imported from index.css so it loads with the main stylesheet.
@@ -8,6 +9,7 @@ import { DEFAULT_GC_MS, DEFAULT_STALE_MS } from "./lib/queryDefaults.ts";
 import { tryReloadForStaleChunk } from "./lib/staleClientChunk.ts";
 import { onMutationCacheError, onQueryCacheError } from "./lib/globalQueryErrors.ts";
 import { installGlobalErrorListeners } from "./lib/installGlobalErrorListeners.ts";
+import { clerkPublishableKey, isClerkEnabled } from "./lib/clerkConfig.ts";
 
 if (typeof window !== "undefined") {
   window.addEventListener("vite:preloadError", () => {
@@ -45,28 +47,19 @@ const queryClient = new QueryClient({
   },
 });
 
-createRoot(document.getElementById("root")!).render(
+const appTree = (
   <QueryClientProvider client={queryClient}>
     <App />
     <QueryDevtoolsGate />
   </QueryClientProvider>
 );
 
-/**
- * Sarina (accent) loads at idle so it stays off the critical path. Satoshi is
- * already in index.css. Import is cached; subsequent `import()` calls are free.
- */
-if (typeof window !== "undefined") {
-  type IdleHandle = number;
-  const win = window as Window & {
-    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => IdleHandle;
-  };
-  const load = () => {
-    void import("./styles/load-decorative-fonts");
-  };
-  if (typeof win.requestIdleCallback === "function") {
-    win.requestIdleCallback(load, { timeout: 2_000 });
-  } else {
-    window.setTimeout(load, 1_500);
-  }
-}
+createRoot(document.getElementById("root")!).render(
+  isClerkEnabled && clerkPublishableKey
+    ? (
+      <ClerkProvider publishableKey={clerkPublishableKey} afterSignOutUrl="/login">
+        {appTree}
+      </ClerkProvider>
+    )
+    : appTree,
+);
