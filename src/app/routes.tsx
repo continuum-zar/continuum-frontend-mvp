@@ -72,6 +72,12 @@ const DashboardPlaceholderGetStartedTimeLogs = lazy(() =>
 const AdminReleaseNotes = lazy(() =>
   import("./pages/AdminReleaseNotes").then((m) => ({ default: m.AdminReleaseNotes }))
 );
+const TermsOfService = lazy(() =>
+  import("./pages/TermsOfService").then((m) => ({ default: m.TermsOfService }))
+);
+const PrivacyPolicy = lazy(() =>
+  import("./pages/PrivacyPolicy").then((m) => ({ default: m.PrivacyPolicy }))
+);
 
 const OnboardingUsage = lazy(() => import("./pages/onboarding/Usage"));
 const OnboardingCollaboration = lazy(() => import("./pages/onboarding/Collaboration"));
@@ -186,6 +192,22 @@ const appRoutes = [
   {
     path: "/invite",
     element: <InviteHandler />,
+  },
+  {
+    path: "/terms",
+    element: (
+      <Suspense fallback={<RouteSkeleton />}>
+        <TermsOfService />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/privacy",
+    element: (
+      <Suspense fallback={<RouteSkeleton />}>
+        <PrivacyPolicy />
+      </Suspense>
+    ),
   },
   {
     path: "/cursor-mcp/task/:taskId",

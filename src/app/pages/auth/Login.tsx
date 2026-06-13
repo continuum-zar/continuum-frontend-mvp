@@ -354,7 +354,13 @@ function LoginLayout(props: {
         <p className="text-center text-[11px] font-medium leading-[1.4] text-[#252014] opacity-60">
           By clicking "Sign in" or "Continue" above, you acknowledge that you have read and understood, and agree to
           Continuum's{' '}
-          <span className="cursor-default text-[#252014] underline opacity-80">Terms of Service</span>.
+          <Link
+            to="/terms"
+            className="text-[#252014] underline opacity-80 transition-opacity hover:opacity-100"
+          >
+            Terms of Service
+          </Link>
+          .
         </p>
       </div>
     </div>

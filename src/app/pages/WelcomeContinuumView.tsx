@@ -33,6 +33,7 @@ import {
 } from "../data/dashboardPlaceholderProjects";
 import { WORKSPACE_BASE, workspaceJoin } from "@/lib/workspacePaths";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
+import { BrandedLoadingPlaceholder } from "@/app/components/ui/branded-loading";
 import { useAuthStore } from "@/store/authStore";
 
 const imgLucideFolderOpenDot = mcpAsset("565be4ed-fc29-4562-a26f-1c943a6d5847");
@@ -423,9 +424,10 @@ export function WelcomeContinuumView() {
             ) : (
             <div className="relative flex w-full min-w-0 flex-col items-start px-1">
               {isApiRoute && projectQuery.isLoading && (
-                <div className="flex min-h-[280px] w-full items-center justify-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
-                  Loading project…
-                </div>
+                <BrandedLoadingPlaceholder
+                  className="min-h-[60vh] w-full"
+                  label="Loading project…"
+                />
               )}
               {isApiRoute && projectQuery.isError && (
                 <div className="flex min-h-[280px] w-full flex-col items-center justify-center gap-4 px-4 text-center">

@@ -53,7 +53,7 @@ const CURRENCY_SYMBOL: Record<(typeof INVOICE_CURRENCIES)[number], string> = {
   GBP: "£",
 };
 
-const SUPPORT_EMAIL = "support@continuum.co.za";
+const SUPPORT_EMAIL = "info@joincontinuum.co.za";
 
 /** Opens Gmail compose in a new tab with To pre-filled. */
 const GMAIL_COMPOSE_HREF = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(SUPPORT_EMAIL)}`;
@@ -925,10 +925,24 @@ export function SettingsModal({
                       Legal
                     </p>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:justify-end">
-                      <button type="button" className={placeholderLinkClass} aria-disabled="true">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleOpenChange(false);
+                          navigate("/privacy");
+                        }}
+                        className={cn(placeholderLinkClass, "cursor-pointer")}
+                      >
                         Privacy
                       </button>
-                      <button type="button" className={placeholderLinkClass} aria-disabled="true">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleOpenChange(false);
+                          navigate("/terms");
+                        }}
+                        className={cn(placeholderLinkClass, "cursor-pointer")}
+                      >
                         Terms
                       </button>
                       <button

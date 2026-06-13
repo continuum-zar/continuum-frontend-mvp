@@ -68,6 +68,8 @@ import {
 import { PlannerChoiceQuestions } from '@/app/components/planner/PlannerChoiceQuestions';
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from '@/app/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
+import { TruncatedText } from '@/app/components/ui/truncated-text';
+import { BrandedLoadingPlaceholder } from '@/app/components/ui/branded-loading';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 
 type Phase = 'chat' | 'plan_review' | 'creating' | 'complete';
@@ -821,23 +823,11 @@ export function AIProjectPlanner({
                                 >
                                     <div className="mx-auto flex h-full min-h-0 w-full max-w-[600px] min-w-[min(100%,403px)] flex-col">
                                         {generateMutation.isPending ? (
-                                            <div className="flex min-h-[min(70vh,520px)] flex-1 flex-col items-center justify-center gap-5 px-9 py-16">
-                                                <p
-                                                    className="animate-pulse-soft bg-clip-text font-sarina text-[42px] font-normal leading-none tracking-[-0.85px] text-transparent"
-                                                    style={{
-                                                        backgroundImage:
-                                                            'linear-gradient(135.275deg, rgb(36, 181, 248) 4.6217%, rgb(85, 33, 254) 148.53%)',
-                                                    }}
-                                                >
-                                                    Continuum
-                                                </p>
-                                                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#595959]">
-                                                    {generatingPlanLabel}
-                                                </p>
-                                                <p className="max-w-sm text-center font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#727d83]">
-                                                    This can take a few minutes. Hang tight.
-                                                </p>
-                                            </div>
+                                            <BrandedLoadingPlaceholder
+                                                className="min-h-[min(70vh,520px)] flex-1"
+                                                label={generatingPlanLabel}
+                                                hint="This can take a few minutes. Hang tight."
+                                            />
                                         ) : (
                                             <>
                                         {refinementPayload && (!baselinePlan || !lockMeta) ? (
@@ -979,9 +969,10 @@ export function AIProjectPlanner({
                                                                         strokeWidth={1.75}
                                                                     />
                                                                 </span>
-                                                                <span className="min-w-0 max-w-[220px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[320px]">
-                                                                    {fc.filename}
-                                                                </span>
+                                                                <TruncatedText
+                                                                    text={fc.filename}
+                                                                    className="max-w-[220px] border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[320px]"
+                                                                />
                                                                 <button
                                                                     type="button"
                                                                     onClick={() =>
@@ -1005,12 +996,14 @@ export function AIProjectPlanner({
                                                                         strokeWidth={1.75}
                                                                     />
                                                                 </span>
-                                                                <span className="min-w-0 max-w-[260px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[360px]">
-                                                                    {figmaContext.source_name || 'Figma design attached'}
-                                                                    {figmaContext.blueprint
-                                                                        ? ` · ${figmaContext.blueprint.pruned_node_count} nodes · ${countBlueprintAnnotations(figmaContext.blueprint)} annotations`
-                                                                        : ''}
-                                                                </span>
+                                                                <TruncatedText
+                                                                    text={`${figmaContext.source_name || 'Figma design attached'}${
+                                                                        figmaContext.blueprint
+                                                                            ? ` · ${figmaContext.blueprint.pruned_node_count} nodes · ${countBlueprintAnnotations(figmaContext.blueprint)} annotations`
+                                                                            : ''
+                                                                    }`}
+                                                                    className="max-w-[260px] border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[360px]"
+                                                                />
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setFigmaContext(null)}

@@ -94,7 +94,7 @@ import { fetchLoggedHours, createLoggedHour, sumLoggedHoursForTask } from './log
 import type { CreateLoggedHourBody } from './loggedHours';
 import { createRepositoryBranch } from './repositoryBranchCreate';
 import type { Repository } from '@/types/repository';
-import { repositoryLinkedName } from '@/lib/taskBranchNaming';
+import { appendLinkedBranchDeduped, repositoryLinkedName } from '@/lib/taskBranchNaming';
 import { getUserErrorMessage } from '@/lib/errorMessages';
 import { submitIssueReport } from './feedback';
 import type { SubmitIssueReportBody } from './feedback';
@@ -1247,9 +1247,11 @@ export function useAddTaskLinkedBranch() {
             taskId: string | number;
             link: TaskLinkedBranch;
         }) => {
+            // The cached detail may already contain this link from onMutate's optimistic
+            // update (onMutate runs first) — dedupe so the PUT payload holds it once.
             let detail = queryClient.getQueryData<TaskAPIResponse>(taskDetailKey(taskId));
             if (!detail) detail = await fetchTask(taskId);
-            const next = [...getTaskLinkedBranches(detail), link];
+            const next = appendLinkedBranchDeduped(getTaskLinkedBranches(detail), link);
             return updateTask(taskId, { linked_branches: next });
         },
         onMutate: async (variables) => {
@@ -1305,7 +1307,9 @@ export function useCreateAndLinkTaskBranch() {
                 linked_branch: finalName,
                 linked_branch_full_ref: `refs/heads/${finalName}`,
             };
-            const next = [...getTaskLinkedBranches(detail), link];
+            // The cached detail may already contain this link from onMutate's optimistic
+            // update (onMutate runs first) — dedupe so the PUT payload holds it once.
+            const next = appendLinkedBranchDeduped(getTaskLinkedBranches(detail), link);
             try {
                 return await updateTask(taskId, { linked_branches: next });
             } catch (linkErr) {
