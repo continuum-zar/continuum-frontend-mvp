@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { CircleCheckBig, Plus } from "lucide-react";
 
 import { useProjectMilestones } from "@/api/hooks";
+import { MilestoneSourceBadge } from "@/app/components/milestones/MilestoneSourceBadge";
+import type { MilestoneSource } from "@/types/milestone";
 
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 import {
@@ -65,6 +67,7 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
         title: m.title,
         description: m.description,
         allTasksCompleted: Boolean(m.allTasksCompleted),
+        source: 'manual' as MilestoneSource,
       }));
     }
     return sortMilestonesForTimeline(milestones).map((m) => ({
@@ -73,6 +76,7 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
       title: m.name,
       description: m.desc?.trim() || "—",
       allTasksCompleted: milestoneTimelineShowsCompletedIcon(m.progress, m.status),
+      source: m.source,
     }));
   }, [isLive, milestones]);
 
@@ -185,7 +189,10 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-center py-1.5 pl-4 pr-2 font-['Satoshi',sans-serif] font-medium leading-normal">
                   <p className="w-[183px] max-w-full truncate text-[12px] text-[#727d83]">{m.dateLabel}</p>
-                  <p className="text-[16px] text-[#0b191f]">{m.title}</p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <p className="truncate text-[16px] text-[#0b191f]">{m.title}</p>
+                    <MilestoneSourceBadge source={m.source} compact />
+                  </div>
                   <p className="truncate text-[12px] text-[#727d83] whitespace-nowrap">{m.description}</p>
                 </div>
               </div>

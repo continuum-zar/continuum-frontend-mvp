@@ -125,6 +125,8 @@ export function formatEstimatedEffortLabel(hours: number): string {
 }
 
 export function mapMilestone(m: MilestoneAPIResponse): Milestone {
+    const rawSource = (m.source ?? 'manual').toString();
+    const source = rawSource === 'ai_meeting' ? 'ai_meeting' : 'manual';
     return {
         id: String(m.id),
         name: m.name ?? '',
@@ -133,6 +135,8 @@ export function mapMilestone(m: MilestoneAPIResponse): Milestone {
         desc: m.description ?? undefined,
         dueDateIso: m.due_date ?? null,
         progress: m.progress ?? undefined,
+        source,
+        sourceMeetingId: m.source_meeting_id ?? null,
     };
 }
 
