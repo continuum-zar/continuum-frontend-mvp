@@ -27,6 +27,7 @@ const VALIDATION_MESSAGE =
 const STATUS_MESSAGES: Record<number, string> = {
     400: "That request couldn't be processed. Please check your input and try again.",
     401: 'Your session has expired. Please sign in again.',
+    402: "You've run out of AI credits. Your balance resets at the start of next month, or an admin can top you up.",
     403: "You don't have permission to perform this action.",
     404: "We couldn't find what you were looking for.",
     408: TIMEOUT_MESSAGE,

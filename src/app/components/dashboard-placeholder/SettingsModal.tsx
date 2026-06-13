@@ -26,6 +26,7 @@ import { DiscordIntegrationModal } from "./DiscordIntegrationModal";
 import { FeedbackModal } from "./FeedbackModal";
 import { GithubIntegrationModal } from "./GithubIntegrationModal";
 import { AdminStatusPanel } from "./settings/AdminStatusPanel";
+import { AICreditsUsagePanel } from "./settings/AICreditsUsagePanel";
 import { DiscordTriggersSection } from "./settings/DiscordTriggersSection";
 import {
   Select,
@@ -69,6 +70,7 @@ export type SettingsSection =
   | "account"
   | "notification"
   | "invoice"
+  | "usage"
   | "integrations"
   | "support"
   | "status"
@@ -88,6 +90,7 @@ const NAV: { id: SettingsSection; label: string }[] = [
   { id: "general", label: "General" },
   { id: "notification", label: "Notifications" },
   { id: "invoice", label: "Invoice" },
+  { id: "usage", label: "Usage" },
   { id: "integrations", label: "Integrations" },
   { id: "support", label: "Support & legal" },
 ];
@@ -102,6 +105,7 @@ const SECTION_TITLE: Record<SettingsSection, string> = {
   account: "Account",
   notification: "Notifications",
   invoice: "Invoice",
+  usage: "Usage & AI Credits",
   integrations: "Integrations",
   support: "Support & legal",
   status: "System Status",
@@ -521,6 +525,12 @@ export function SettingsModal({
               {section === "account" && isClerkEnabled && (
                 <div className="flex flex-col gap-2 pt-6">
                   <ClerkAccountSettings />
+                </div>
+              )}
+
+              {section === "usage" && (
+                <div className="flex flex-col gap-2 pt-6">
+                  <AICreditsUsagePanel />
                 </div>
               )}
 

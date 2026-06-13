@@ -16,6 +16,7 @@ import {
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { EditProjectModal } from "../components/dashboard-placeholder/EditProjectModal";
 import { NotificationBell } from "../components/notifications/NotificationBell";
+import { AICreditsBadge } from "../components/AICreditsBadge";
 import {
   WelcomeRecentActivity,
   WelcomeRepo,
@@ -181,6 +182,7 @@ export function WelcomeContinuumView() {
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideX} />
                   </div>
                 </div>
+                <AICreditsBadge />
                 {isApiRoute && routeProjectId && isApiProjectId(routeProjectId) ? (
                   <NotificationBell
                     scope={{ kind: "project", projectId: Number(routeProjectId) }}
