@@ -31,6 +31,7 @@ import type { BranchItem, Repository } from "@/types/repository";
 import TextareaAutosize from "react-textarea-autosize";
 import type {
   GeneratedTask,
+  GenerateTasksResponse,
   WikiConfirmTaskItem,
 } from "@/api";
 import type { PlannerChoiceQuestion } from "@/api/planner";
@@ -470,6 +471,17 @@ export function WelcomeAiChatModal({
           setWikiChoiceQuestions(questions);
           setGeneratedTasks(res.tasks);
           setGeneratedSummary("");
+        } else if (assistantMode === "plan") {
+          // Plan mode never returns tasks. Keep the planning summary on screen so the
+          // user can review it and proceed via "Create tasks from this plan".
+          setWikiClarifyReply(res.reply?.trim() ? res.reply.trim() : null);
+          setWikiChoiceQuestions([]);
+          setGeneratedTasks([]);
+          setGeneratedSummary(
+            res.reply?.trim()
+              ? ""
+              : "I couldn't draft a plan from that. Add more detail and try again.",
+          );
         } else {
           setWikiClarifyReply(null);
           setWikiChoiceQuestions([]);
@@ -618,6 +630,80 @@ export function WelcomeAiChatModal({
     },
     [phase],
   );
+
+  /** Render a fresh generation result (used by the plan→create transition). */
+  const applyGeneratedResult = useCallback((res: GenerateTasksResponse) => {
+    const count = res.tasks.length;
+    const questionsNext = normalizeWikiChoiceQuestions(res.choice_questions);
+    setWikiChoiceSelections({});
+    setWikiSubmittedChoiceIds(new Set());
+    setWikiSubmittedChoiceAnswers({});
+    if (questionsNext.length > 0) {
+      setWikiClarifyReply(res.reply?.trim() ? res.reply.trim() : null);
+      setWikiChoiceQuestions(questionsNext);
+      setGeneratedTasks(res.tasks);
+      setGeneratedSummary("");
+    } else {
+      setWikiClarifyReply(null);
+      setWikiChoiceQuestions([]);
+      setGeneratedTasks(res.tasks);
+      setGeneratedSummary(
+        count === 0
+          ? "I couldn't generate any tasks from that prompt. Try being more specific."
+          : count === 1
+            ? "I generated 1 task based on your request."
+            : `I generated ${count} tasks based on your request.`,
+      );
+    }
+  }, []);
+
+  /**
+   * Plan mode never creates tasks (the backend always returns an empty task list for
+   * `mode: "plan"`). This is the exit from the planning loop: re-run generation in
+   * `create` mode using the original prompt plus any clarifications gathered so far.
+   */
+  const proceedToCreateFromPlan = useCallback(async () => {
+    if (!projectId || phase === "getStartedLoading") return;
+    const fullPrompt = taskGenClarificationLog
+      ? `${taskGenOriginalPrompt}\n\n--- Clarifications ---\n${taskGenClarificationLog}`
+      : taskGenOriginalPrompt;
+    if (!fullPrompt.trim()) return;
+
+    setAssistantMode("create");
+    setApiError(null);
+    setPhase("getStartedLoading");
+    const controller = new AbortController();
+    abortRef.current = controller;
+    try {
+      const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+      const res = await generateTasks(projectId, {
+        prompt: fullPrompt,
+        max_tasks: 10,
+        mode: "create",
+        ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
+        ...(filledSources.length ? { sources: filledSources } : {}),
+      });
+      if (controller.signal.aborted) return;
+      applyGeneratedResult(res);
+      setPhase("getStartedAnswer");
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      setApiError(
+        getApiErrorMessage(
+          err,
+          "Task generation failed. Make sure the repository is indexed and try again.",
+        ),
+      );
+      setPhase("getStartedAnswer");
+    }
+  }, [
+    projectId,
+    phase,
+    taskGenOriginalPrompt,
+    taskGenClarificationLog,
+    filledSources,
+    applyGeneratedResult,
+  ]);
 
   const stopGetStarted = () => {
     abortRef.current?.abort();
@@ -1023,6 +1109,18 @@ export function WelcomeAiChatModal({
                                     onSelect={handleWikiChoiceSelect}
                                     onClearLocalSelection={handleWikiClearChoiceSelection}
                                   />
+                                ) : null}
+
+                                {assistantMode === "plan" &&
+                                generatedTasks.length === 0 &&
+                                (wikiClarifyReply || wikiChoiceQuestions.length > 0) ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void proceedToCreateFromPlan()}
+                                    className="mt-1 flex w-full items-center justify-center gap-2 rounded-[8px] bg-[#2798f5] px-4 py-2 font-['Satoshi',sans-serif] text-[13px] font-bold text-white outline-none transition-colors hover:bg-[#1e87e0]"
+                                  >
+                                    Create tasks from this plan
+                                  </button>
                                 ) : null}
 
                                 {generatedTasks.length > 0 && (
