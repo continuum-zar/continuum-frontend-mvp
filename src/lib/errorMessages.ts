@@ -57,6 +57,17 @@ export function extractErrorCode(error: AxiosError): string | undefined {
     return typeof code === 'string' ? code : undefined;
 }
 
+/**
+ * True when the backend rejected the request because the account's email has
+ * not been verified (HTTP 403 with `{ code: "EMAIL_NOT_VERIFIED" }`). Callers
+ * use this to route the user to the "check your email" page instead of
+ * surfacing a generic permission error. See continuum-backend
+ * app/api/deps.py:assert_email_verified.
+ */
+export function isEmailNotVerifiedError(err: unknown): boolean {
+    return axios.isAxiosError(err) && extractErrorCode(err) === 'EMAIL_NOT_VERIFIED';
+}
+
 export function extractCorrelationId(error: AxiosError): string | undefined {
     const headerId = error.response?.headers?.['x-request-id'];
     if (typeof headerId === 'string' && headerId) return headerId;
