@@ -24,6 +24,8 @@ export type KanbanBoardColumnHeaderProps = {
   onCreateTask: () => void;
   /** Kebab menu (column options). */
   kebabMenu: ReactNode;
+  /** Hide the automatic-sort hint when the user has manually reordered this column. */
+  suppressAutoSortHint?: boolean;
 };
 
 /**
@@ -43,10 +45,11 @@ export function KanbanBoardColumnHeader({
   showCreateTask,
   onCreateTask,
   kebabMenu,
+  suppressAutoSortHint = false,
 }: KanbanBoardColumnHeaderProps) {
   const containerRef = useKanbanColumnSearchDismiss(searchOpen, onSearchClose);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sortInfo = kanbanColumnAutoSortInfo(col);
+  const sortInfo = suppressAutoSortHint ? null : kanbanColumnAutoSortInfo(col);
 
   useEffect(() => {
     if (!searchOpen) return;

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_KANBAN_COLUMNS,
+  orderKanbanColumnTasksByBoardPosition,
   firstColumnIdForStatus,
   kanbanColumnAutoSortInfo,
   newKanbanColumnId,
@@ -27,6 +28,7 @@ function task(over: Partial<Task> & Pick<Task, "id" | "status">): Task {
     comments: over.comments ?? 0,
     checklists: over.checklists ?? { total: 0, completed: 0 },
     milestoneId: over.milestoneId ?? "m1",
+    ...(over.boardPosition != null ? { boardPosition: over.boardPosition } : {}),
   };
 }
 
@@ -100,6 +102,38 @@ describe("kanbanBoardTypes", () => {
     const d1 = task({ id: "d1", status: "done" });
     const d2 = task({ id: "d2", status: "done" });
     expect(orderKanbanColumnTasksForDisplay(doneCol, [d1, d2]).map((x) => x.id)).toEqual(["d1", "d2"]);
+  });
+
+  it("orderKanbanColumnTasksByBoardPosition falls back to auto-sort when no task has a position", () => {
+    const todoCol = DEFAULT_KANBAN_COLUMNS[0]!;
+    const t1 = task({ id: "1", status: "todo", priority: "low" });
+    const t2 = task({ id: "2", status: "todo", priority: "high" });
+    expect(orderKanbanColumnTasksByBoardPosition(todoCol, [t1, t2]).map((x) => x.id)).toEqual([
+      "2",
+      "1",
+    ]);
+  });
+
+  it("orderKanbanColumnTasksByBoardPosition sorts by board position ascending, overriding auto-sort", () => {
+    const todoCol = DEFAULT_KANBAN_COLUMNS[0]!;
+    const high = task({ id: "10", status: "todo", priority: "high", boardPosition: 1 });
+    const low = task({ id: "20", status: "todo", priority: "low", boardPosition: 0 });
+    // Manual position puts the low-priority card first, against the priority auto-sort.
+    expect(orderKanbanColumnTasksByBoardPosition(todoCol, [high, low]).map((x) => x.id)).toEqual([
+      "20",
+      "10",
+    ]);
+  });
+
+  it("orderKanbanColumnTasksByBoardPosition appends position-less tasks using auto-sort", () => {
+    const todoCol = DEFAULT_KANBAN_COLUMNS[0]!;
+    const pinned = task({ id: "1", status: "todo", priority: "low", boardPosition: 0 });
+    const newHigh = task({ id: "2", status: "todo", priority: "high" });
+    const newLow = task({ id: "3", status: "todo", priority: "low" });
+    // Pinned (has a position) stays first; the unpositioned tasks follow, priority-sorted.
+    expect(
+      orderKanbanColumnTasksByBoardPosition(todoCol, [pinned, newHigh, newLow]).map((x) => x.id),
+    ).toEqual(["1", "2", "3"]);
   });
 
   it("kanbanColumnAutoSortInfo matches columns that use auto-sort in orderKanbanColumnTasksForDisplay", () => {

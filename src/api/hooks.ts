@@ -69,6 +69,7 @@ import {
     fetchTasksCreatedByUser,
     createTask,
     updateTaskStatus,
+    reorderTasks,
     updateTask,
     setTaskLinkedBranch,
     deleteTask,
@@ -983,6 +984,63 @@ export function useUpdateTaskStatus(projectId: number | string | undefined | nul
                 queryClient.setQueryData(infiniteKey, ctx.prevInfinite);
             }
             toast.error(getApiErrorMessage(err, 'Failed to update task status. Please try again.'));
+        },
+        onSettled: (_data, err) => {
+            if (projectId != null && projectId !== '' && err != null) {
+                invalidateProjectTaskLists(queryClient, projectId);
+            }
+            invalidateDerivedTaskLists(queryClient);
+        },
+    });
+}
+
+/**
+ * Persist a Kanban column's manual order (drag-to-reorder).
+ *
+ * `orderedIds` is the column's tasks in their new top-to-bottom order. We optimistically stamp
+ * `boardPosition = index` on each so the board re-sorts instantly, then send one reorder request.
+ * On error we roll back; the SSE stream / error path reconciles from the server.
+ */
+export function useReorderTasks(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    const key = projectId != null && projectId !== '' ? projectKeys.tasks(projectId) : null;
+    const infiniteKey =
+        projectId != null && projectId !== '' ? projectKeys.tasksInfinite(projectId) : null;
+
+    const applyPositions = (tasks: Task[] | undefined, posById: Map<string, number>) => {
+        if (!tasks) return tasks;
+        return tasks.map((t) => (posById.has(t.id) ? { ...t, boardPosition: posById.get(t.id)! } : t));
+    };
+
+    return useMutation({
+        mutationFn: ({ columnId, orderedIds }: { columnId: string; orderedIds: string[] }) =>
+            reorderTasks(Number(projectId), columnId, orderedIds),
+        onMutate: async ({ orderedIds }) => {
+            if (!key) return {};
+            const posById = new Map(orderedIds.map((id, index) => [id, index]));
+            await queryClient.cancelQueries({ queryKey: key });
+            if (infiniteKey) await queryClient.cancelQueries({ queryKey: infiniteKey });
+            const prev = queryClient.getQueryData(key);
+            const prevInfinite = infiniteKey ? queryClient.getQueryData(infiniteKey) : undefined;
+            queryClient.setQueryData(key, (old: Task[] | undefined) => applyPositions(old, posById));
+            if (infiniteKey) {
+                type TasksPage = { tasks: Task[]; total: number; skip: number; limit: number };
+                queryClient.setQueryData<InfiniteData<TasksPage>>(infiniteKey, (old) => {
+                    if (!old?.pages?.length) return old;
+                    return {
+                        ...old,
+                        pages: old.pages.map((p) => ({ ...p, tasks: applyPositions(p.tasks, posById)! })),
+                    };
+                });
+            }
+            return { prev, prevInfinite };
+        },
+        onError: (err, _vars, ctx) => {
+            if (key && ctx?.prev != null) queryClient.setQueryData(key, ctx.prev);
+            if (infiniteKey && ctx?.prevInfinite != null) {
+                queryClient.setQueryData(infiniteKey, ctx.prevInfinite);
+            }
+            toast.error(getApiErrorMessage(err, 'Failed to reorder tasks. Please try again.'));
         },
         onSettled: (_data, err) => {
             if (projectId != null && projectId !== '' && err != null) {

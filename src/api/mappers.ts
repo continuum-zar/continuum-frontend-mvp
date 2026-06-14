@@ -94,6 +94,7 @@ export function mapTask(t: TaskAPIResponse): Task {
         ...(t.created_at != null && t.created_at !== '' ? { createdAtIso: t.created_at } : {}),
         ...(linkedBranches.length > 0 ? { linkedBranches } : {}),
         dependencyCount: Array.isArray(t.dependencies) ? t.dependencies.length : 0,
+        boardPosition: t.board_position ?? null,
     };
 }
 
