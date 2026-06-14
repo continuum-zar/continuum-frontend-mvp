@@ -32,6 +32,7 @@ import {
   useProjectKanbanBoard,
   useProjectMilestones,
   useProjectTasksInfinite,
+  useReorderTasks,
   useUpdateProjectKanbanBoard,
   useUpdateTaskStatus,
   getApiErrorMessage,
@@ -55,7 +56,7 @@ import {
   mapKanbanBoardFromApi,
   mapKanbanBoardToApi,
   newKanbanColumnId,
-  orderKanbanColumnTasksForDisplay,
+  orderKanbanColumnTasksByBoardPosition,
   resolveTaskColumnId,
   tasksForKanbanColumn,
   type KanbanColumnConfig,
@@ -105,6 +106,7 @@ export function GetStartedKanbanLive({
   const updateKanbanBoardMutation = useUpdateProjectKanbanBoard(projectId);
   const deleteKanbanColumnMutation = useDeleteProjectKanbanColumn(projectId);
   const updateStatusMutation = useUpdateTaskStatus(projectId);
+  const reorderTasksMutation = useReorderTasks(projectId);
   const deleteTaskMutation = useDeleteTask(projectId);
   const assignTaskMutation = useAssignTask();
   const removeTaskAssigneeMutation = useRemoveTaskAssignee();
@@ -246,7 +248,7 @@ export function GetStartedKanbanLive({
     const m: Record<string, Task[]> = {};
     for (const c of columns) {
       const forCol = tasksForKanbanColumn(filtered, c, columns, taskColumnPreference);
-      m[c.id] = orderKanbanColumnTasksForDisplay(c, forCol);
+      m[c.id] = orderKanbanColumnTasksByBoardPosition(c, forCol);
     }
     return m;
   }, [filtered, columns, taskColumnPreference]);
@@ -281,6 +283,65 @@ export function GetStartedKanbanLive({
     updateStatusMutation.mutate(
       { taskId, status: targetCol.id },
       {
+        onSettled: () => {
+          pendingMoveRef.current.delete(taskId);
+        },
+      },
+    );
+  };
+
+  /**
+   * Drop handler for board-view drag: places the task at the exact slot it was dropped (insert
+   * before `beforeTaskId`, or append when null) and persists the new column order via
+   * `PATCH /tasks/reorder`. A drop into a different column first updates the task's status, then
+   * reorders once that lands (the backend only positions tasks already in the column). Other views
+   * keep the status-only move.
+   */
+  const handleDropTask = (
+    taskId: string,
+    targetColumnId: string,
+    beforeTaskId: string | null,
+  ) => {
+    if (view !== "board") {
+      handleMoveToColumn(taskId, targetColumnId);
+      return;
+    }
+
+    const targetCol = columns.find((c) => c.id === targetColumnId);
+    const task = filtered.find((t) => t.id === taskId);
+    if (!task || !targetCol) return;
+
+    const sourceColId = resolveTaskColumnId(task, columns, taskColumnPreference);
+    const sameColumn = sourceColId === targetColumnId;
+
+    const targetIds = (columnTasks[targetColumnId] ?? [])
+      .map((t) => t.id)
+      .filter((id) => id !== taskId);
+    let insertAt = beforeTaskId ? targetIds.indexOf(beforeTaskId) : -1;
+    if (insertAt < 0) insertAt = targetIds.length;
+    const newOrder = [...targetIds.slice(0, insertAt), taskId, ...targetIds.slice(insertAt)];
+
+    if (sameColumn) {
+      const currentIds = (columnTasks[targetColumnId] ?? []).map((t) => t.id);
+      const unchanged =
+        currentIds.length === newOrder.length &&
+        currentIds.every((id, i) => id === newOrder[i]);
+      if (unchanged) return;
+      reorderTasksMutation.mutate({ columnId: targetColumnId, orderedIds: newOrder });
+      return;
+    }
+
+    // Cross-column: move (status change) first, then persist the new order once the move lands so
+    // the backend sees the task in the target column.
+    setTaskColumnPreference((prev) => ({ ...prev, [taskId]: targetColumnId }));
+    if (pendingMoveRef.current.has(taskId)) return;
+    pendingMoveRef.current.add(taskId);
+    updateStatusMutation.mutate(
+      { taskId, status: targetCol.id },
+      {
+        onSuccess: () => {
+          reorderTasksMutation.mutate({ columnId: targetColumnId, orderedIds: newOrder });
+        },
         onSettled: () => {
           pendingMoveRef.current.delete(taskId);
         },
@@ -501,10 +562,10 @@ export function GetStartedKanbanLive({
 
   const kanbanBoardRowRef = useRef<HTMLDivElement | null>(null);
 
-  const { draggingId, dragOverCol, cardPointerDown } = useKanbanPointerDrag({
+  const { draggingId, dragOverCol, activeCol, dropIndex, cardPointerDown } = useKanbanPointerDrag({
     boardScrollRef: kanbanBoardRowRef,
-    onDrop: (taskId, colId) => {
-      handleMoveToColumn(taskId, colId);
+    onDrop: (taskId, colId, beforeTaskId) => {
+      handleDropTask(taskId, colId, beforeTaskId);
     },
     getTaskColumn: (taskId) => {
       const task = filtered.find((t) => t.id === taskId);
@@ -533,7 +594,6 @@ export function GetStartedKanbanLive({
   });
 
   const renderLiveCard = (task: Task) => {
-    const isDragging = draggingId === task.id;
     const desc = task.description?.trim() ?? "";
     const { preview: descPreview, isTruncated: descTruncated } =
       kanbanTaskDescriptionPreview(desc);
@@ -594,21 +654,11 @@ export function GetStartedKanbanLive({
         onMoveTaskToMilestone={(milestoneId) => void handleMoveTaskToMilestone(task.id, milestoneId)}
       >
         <div
-          className={cn(
-            "content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100",
-            isDragging ? "pointer-events-none" : "cursor-open-hand",
-          )}
+          data-kanban-card={task.id}
+          className="content-stretch flex flex-col items-start relative shrink-0 w-full select-none cursor-open-hand"
           onPointerDown={cardPointerDown(task.id)}
-          onClick={() => {
-            if (!isDragging) navigate(taskHref);
-          }}
+          onClick={() => navigate(taskHref)}
         >
-          {isDragging ? (
-            <div
-              className="flex min-h-[152px] w-full shrink-0 flex-col items-center justify-center rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)] px-3 py-4"
-              aria-label="Original column — drop here to keep this task in this list"
-            />
-          ) : (
         <div
           className="border-border bg-white content-stretch flex flex-col items-start overflow-clip relative rounded-[8px] border border-solid shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full"
         >
@@ -667,7 +717,6 @@ export function GetStartedKanbanLive({
             </div>
           </div>
         </div>
-          )}
         </div>
       </KanbanTaskCardContextMenu>
     );
@@ -697,14 +746,14 @@ export function GetStartedKanbanLive({
     header: ReactNode,
     isColumnDragSource = false,
   ) => {
-    const isDropTarget = dragOverCol === columnId && draggingId !== null;
+    const isActiveDropColumn = activeCol === columnId && draggingId !== null;
     return (
       <div
         data-kanban-col={columnId}
         className={cn(
           "content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200",
           isColumnDragSource && "opacity-0",
-          isDropTarget && "bg-[#eef4f8]",
+          isActiveDropColumn && "bg-[#eef4f8]",
         )}
         style={{
           flexGrow: 1,
@@ -716,16 +765,11 @@ export function GetStartedKanbanLive({
             "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
         }}
       >
-        {isDropTarget ? (
-          <div
-            className="pointer-events-none absolute inset-x-[16px] top-0 h-[3px] rounded-full bg-primary"
-            aria-hidden
-          />
-        ) : null}
         <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
           {header}
         </div>
         <div
+          data-kanban-col-scroll
           className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto py-4"
           style={{
             maskImage:
@@ -735,16 +779,18 @@ export function GetStartedKanbanLive({
           }}
         >
           {children}
-          {isDropTarget ? (
-            <div
-              className="flex min-h-[152px] w-full shrink-0 flex-col items-center justify-center rounded-[8px] border-2 border-dashed border-primary bg-[rgba(36,181,248,0.06)] px-3 py-4"
-              aria-label="Drop here to move this task to this list"
-            />
-          ) : null}
         </div>
       </div>
     );
   };
+
+  /** Thin primary line marking where a dragged card will land within a column. */
+  const cardInsertionLine = (
+    <div
+      className="h-[3px] w-full shrink-0 rounded-full bg-primary shadow-[0_0_10px_color-mix(in_srgb,var(--primary)_35%,transparent)]"
+      aria-hidden
+    />
+  );
 
   const boardColumnIconSrc = (kind: KanbanColumnConfig["kind"]) => {
     if (kind === "in-progress") return imgLucideSquircleDashed;
@@ -787,6 +833,7 @@ export function GetStartedKanbanLive({
         showCreateTask={showCreateTask}
         onCreateTask={() => openCreateTaskInColumn(col.id)}
         kebabMenu={renderColumnKebabMenu(col)}
+        suppressAutoSortHint={(columnTasks[col.id] ?? []).some((t) => t.boardPosition != null)}
       />
     );
   };
@@ -858,12 +905,20 @@ export function GetStartedKanbanLive({
           const rawList = columnTasks[col.id] ?? [];
           const q = boardColumnSearchQuery[col.id] ?? "";
           const list = filterKanbanTasksBySearchQueryRespectingDrag(rawList, q, draggingId);
+          // Hide the in-flight card from its slot; the insertion line shows where it will land.
+          const visible = draggingId ? list.filter((t) => t.id !== draggingId) : list;
           const emptyTail = col.taskStatus === "todo" && milestoneId ? " for this milestone" : "";
           const searchFilterActive = q.trim().length > 0 && rawList.length > 0 && list.length === 0;
           const showDropBar =
             columnDrag.draggingColumnId != null &&
             columnDrag.dropInsertSlot != null &&
             columnDrag.dropInsertSlot === index;
+          const showInsertLine =
+            draggingId !== null && activeCol === col.id && dropIndex !== null;
+          const insertAt =
+            showInsertLine && dropIndex !== null
+              ? Math.max(0, Math.min(dropIndex, visible.length))
+              : -1;
           return (
             <Fragment key={col.id}>
               {showDropBar ? (
@@ -875,8 +930,14 @@ export function GetStartedKanbanLive({
               {colWrap(
                 col.id,
                 <>
-                  {list.map(renderLiveCard)}
-                  {list.length === 0 && (
+                  {visible.map((task, i) => (
+                    <Fragment key={task.id}>
+                      {insertAt === i ? cardInsertionLine : null}
+                      {renderLiveCard(task)}
+                    </Fragment>
+                  ))}
+                  {insertAt === visible.length ? cardInsertionLine : null}
+                  {visible.length === 0 && !showInsertLine && (
                     <p className="text-[13px] text-[#727d83]">
                       {searchFilterActive
                         ? "No tasks match your search."
