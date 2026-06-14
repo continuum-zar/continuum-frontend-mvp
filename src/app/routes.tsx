@@ -17,6 +17,8 @@ import { SsoCallback } from "./pages/auth/SsoCallback";
 import { Loading } from "./pages/auth/Loading";
 import { PostAuthBoardRedirect } from "./pages/auth/PostAuthBoardRedirect";
 import { ResetPassword } from "./pages/auth/ResetPassword";
+import { VerifyEmail } from "./pages/auth/VerifyEmail";
+import { EmailVerified } from "./pages/auth/EmailVerified";
 import { projectSprintHref } from "./data/dashboardPlaceholderProjects";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { RouteSkeleton } from "./components/ui/RouteSkeleton";
@@ -180,6 +182,14 @@ const appRoutes = [
   {
     path: "/reset-password",
     Component: ResetPassword,
+  },
+  {
+    path: "/verify-email",
+    Component: VerifyEmail,
+  },
+  {
+    path: "/email-verified",
+    Component: EmailVerified,
   },
   {
     path: "/sso-callback",

@@ -5,6 +5,7 @@ import { SESSION_INVITE_TOKEN_KEY } from '@/app/components/welcome/welcomeModalA
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import { isClerkEnabled } from '@/lib/clerkConfig';
+import { isEmailNotVerifiedError } from '@/lib/errorMessages';
 
 /**
  * Same UI as the legacy sign-up form. When Clerk is enabled the submit handler
@@ -38,6 +39,12 @@ function ClerkSignUpShell() {
             });
             navigate('/onboarding/usage', { replace: true });
         } catch (err: unknown) {
+            // Account created but email not verified yet → show the "check your
+            // inbox" page instead of a permission error.
+            if (isEmailNotVerifiedError(err)) {
+                navigate('/verify-email', { state: { email: form.email }, replace: true });
+                return;
+            }
             setClerkError(
                 (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
                     ? (err as { message: string }).message
@@ -111,6 +118,10 @@ function LegacySignUpShell() {
             });
             navigate('/onboarding/usage', { replace: true });
         } catch (err) {
+            if (isEmailNotVerifiedError(err)) {
+                navigate('/verify-email', { state: { email: form.email }, replace: true });
+                return;
+            }
             console.error('Registration failed:', err);
         } finally {
             setPending(false);

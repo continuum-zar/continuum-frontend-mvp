@@ -6,6 +6,7 @@ import { SESSION_INVITE_TOKEN_KEY } from '@/app/components/welcome/welcomeModalA
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import { isClerkEnabled } from '@/lib/clerkConfig';
+import { isEmailNotVerifiedError } from '@/lib/errorMessages';
 import {
   readLogoutDiagnostic,
   clearLogoutDiagnostic,
@@ -67,6 +68,11 @@ function ClerkLoginShell() {
         state: { from: 'login', ...(inviteToken ? { inviteToken } : {}) },
       });
     } catch (err: unknown) {
+      // Unverified account → route to the "check your inbox" page, not an error.
+      if (isEmailNotVerifiedError(err)) {
+        navigate('/verify-email', { state: { email }, replace: true });
+        return;
+      }
       setClerkError(
         (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
           ? (err as { message: string }).message
@@ -137,6 +143,10 @@ function LegacyLoginShell() {
         state: { from: 'login', ...(inviteToken ? { inviteToken } : {}) },
       });
     } catch (err) {
+      if (isEmailNotVerifiedError(err)) {
+        navigate('/verify-email', { state: { email }, replace: true });
+        return;
+      }
       console.error('Login error:', err);
     }
   };
