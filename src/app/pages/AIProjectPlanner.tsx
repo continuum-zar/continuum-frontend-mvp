@@ -36,6 +36,7 @@ import {
     fetchFigmaBlueprint,
     fetchRefinementSnapshot,
 } from '@/api/planner';
+import { useHasAICredits } from '@/api/aiCredits';
 import type {
     PlannerMessage,
     PlannerChoiceQuestion,
@@ -304,6 +305,8 @@ export function AIProjectPlanner({
     const generateMutation = useGeneratePlan();
     const architectureMutation = useGenerateArchitecture();
     const approveMutation = useApprovePlan();
+    // AI credit gate: block generating a plan when the balance is exhausted.
+    const hasAICredits = useHasAICredits();
     const applyRefinementMutation = useApplyPlanRefinement();
 
     useEffect(() => {
@@ -1298,10 +1301,19 @@ export function AIProjectPlanner({
                                     <button
                                         type="button"
                                         onClick={handleGeneratePlan}
-                                        disabled={!readyToPlan || generateMutation.isPending}
+                                        disabled={
+                                            !readyToPlan ||
+                                            generateMutation.isPending ||
+                                            !hasAICredits
+                                        }
+                                        title={
+                                            !hasAICredits
+                                                ? "You've run out of AI credits — they reset at the start of next month."
+                                                : undefined
+                                        }
                                         className={cn(
                                             'flex h-10 w-full items-center justify-center rounded-lg font-semibold transition-colors',
-                                            !readyToPlan || generateMutation.isPending
+                                            !readyToPlan || generateMutation.isPending || !hasAICredits
                                                 ? 'bg-[rgba(96,109,118,0.1)] text-[14px] text-[#606d76] opacity-50'
                                                 : 'bg-gradient-to-br from-[#24b5f8] to-[#5521fe] text-[14px] text-white shadow-sm hover:opacity-95',
                                         )}
@@ -1310,6 +1322,12 @@ export function AIProjectPlanner({
                                             ? 'Generating plan…'
                                             : generatePlanButtonLabel}
                                     </button>
+                                    {!hasAICredits && (
+                                        <p className="mt-2 text-center text-[10px] text-red-600">
+                                            You&apos;ve run out of AI credits. They reset at the start
+                                            of next month, or an admin can top you up.
+                                        </p>
+                                    )}
                                     {!readyToPlan && confidence > 0 && (
                                         <p className="mt-2 text-center text-[10px] text-muted-foreground">
                                             Provide more context to unlock plan generation
