@@ -1,5 +1,19 @@
 import { Link, useSearchParams } from 'react-router';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Check, AlertCircle } from 'lucide-react';
+
+/** Same spring check used for project-created / MCP-connected success. */
+function SuccessCheck() {
+    return (
+        <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+        >
+            <Check className="mx-auto size-16 text-emerald-500" aria-hidden />
+        </motion.div>
+    );
+}
 
 /**
  * Email-verification result page.
@@ -7,7 +21,10 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
  * The verification link in the email opens the backend endpoint
  * (`GET /api/v1/users/verify-email?token=…`), which verifies the token and
  * then redirects the browser here with `?status=success` or `?status=invalid`.
- * This page turns that into a friendly confirmation instead of raw JSON.
+ *
+ * On success this is a terminal confirmation: the original "Check your inbox"
+ * tab is polling and advances itself into onboarding, so this tab (often opened
+ * fresh by the email client) just tells the user they can close it.
  */
 export function EmailVerified() {
     const [searchParams] = useSearchParams();
@@ -24,9 +41,7 @@ export function EmailVerified() {
 
                 <div className="flex flex-col items-center gap-5 px-6 pb-9 pt-8 text-center">
                     {success ? (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1FB57A]/10">
-                            <CheckCircle2 className="h-6 w-6 text-[#1FB57A]" />
-                        </div>
+                        <SuccessCheck />
                     ) : (
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#E5484D]/10">
                             <AlertCircle className="h-6 w-6 text-[#E5484D]" />
@@ -39,17 +54,19 @@ export function EmailVerified() {
                         </h1>
                         <p className="m-0 text-sm leading-[1.4] text-[#595959]">
                             {success
-                                ? 'Your email address has been verified. You can now sign in to your account.'
+                                ? 'Your email address has been verified. You can close this window.'
                                 : 'This verification link is invalid or has already been used. Try signing in — if your email still isn’t verified, register again to get a fresh link.'}
                         </p>
                     </div>
 
-                    <Link
-                        to="/login"
-                        className="flex h-10 w-full items-center justify-center rounded-lg bg-[#24B5F8] px-4 py-2 text-sm font-semibold text-white shadow-[0px_3px_9.3px_0px_rgba(44,158,249,0.1)]"
-                    >
-                        {success ? 'Continue to sign in' : 'Back to sign in'}
-                    </Link>
+                    {!success && (
+                        <Link
+                            to="/login"
+                            className="flex h-10 w-full items-center justify-center rounded-lg bg-[#24B5F8] px-4 py-2 text-sm font-semibold text-white shadow-[0px_3px_9.3px_0px_rgba(44,158,249,0.1)]"
+                        >
+                            Back to sign in
+                        </Link>
+                    )}
                 </div>
             </div>
         </div>
