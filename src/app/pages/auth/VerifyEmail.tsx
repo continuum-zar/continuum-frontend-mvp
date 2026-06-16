@@ -1,18 +1,71 @@
-import { Link, useLocation } from 'react-router';
+import { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { Mail } from 'lucide-react';
+import { useAuthStore } from '../../../store/authStore';
+
+/** How often we re-check whether the email has been verified yet. */
+const VERIFY_POLL_INTERVAL_MS = 4000;
+
+/** Where the user lands once their email is confirmed. */
+const ONBOARDING_START = '/onboarding/usage';
 
 /**
  * "Awaiting email verification" screen.
  *
- * Users land here after registering (or trying to sign in) with an account
- * whose email has not been verified yet — the backend returns 403
- * `EMAIL_NOT_VERIFIED` and the sign-up / login handlers redirect here instead
- * of surfacing a permission error. The email address is passed via router
- * navigation state so we can show the user exactly where the link was sent.
+ * Users land here right after registering — the account exists but its email
+ * isn't verified yet, so the backend refuses authenticated requests with a 403
+ * `EMAIL_NOT_VERIFIED`. Registration already set an HttpOnly refresh cookie, so
+ * we don't need the password here: we poll `checkAuth()`, which silently
+ * refreshes a token from that cookie and calls `/users/me`. While the email is
+ * still unverified that call keeps 403-ing; the moment the user clicks the link
+ * in their inbox it returns 200, the store's `user` is populated, and we
+ * forward them straight into onboarding (instead of back to sign-in).
+ *
+ * Why poll via `checkAuth` (not a bare `GET /users/me`): when Clerk is enabled
+ * the axios 401-retry only refreshes Clerk sessions, so a bare request from a
+ * manual signup would 401 forever. `checkAuth` refreshes from the backend
+ * cookie directly, sidestepping that gate.
+ *
+ * Why key the redirect on `user` (not `isAuthenticated`): the refresh step
+ * flips `isAuthenticated` true *before* `/users/me` confirms verification, so
+ * navigating on it would bounce us to onboarding → AuthGuard → /login early.
+ * `user` is only set on a real `/users/me` 200, i.e. an actually-verified user.
+ *
+ * Because it relies on the persistent cookie rather than in-memory state, the
+ * polling keeps working even if this tab is reloaded.
  */
 export function VerifyEmail() {
     const location = useLocation();
+    const navigate = useNavigate();
     const email = (location.state as { email?: string } | null)?.email;
+
+    const checkAuth = useAuthStore((state) => state.checkAuth);
+
+    useEffect(() => {
+        let cancelled = false;
+        let timer: number | undefined;
+
+        const poll = async () => {
+            try {
+                await checkAuth(true);
+            } catch {
+                // 403 (still unverified) or a transient refresh blip — keep waiting.
+            }
+            if (cancelled) return;
+            // `user` is populated only when /users/me returns 200 → verified.
+            if (useAuthStore.getState().user) {
+                navigate(ONBOARDING_START, { replace: true });
+                return; // stop polling
+            }
+            timer = window.setTimeout(poll, VERIFY_POLL_INTERVAL_MS);
+        };
+
+        void poll();
+        return () => {
+            cancelled = true;
+            if (timer) window.clearTimeout(timer);
+        };
+    }, [checkAuth, navigate]);
 
     return (
         <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[#B2E6F7] to-[#FFFFFF] p-4">
@@ -22,7 +75,7 @@ export function VerifyEmail() {
                 </div>
 
                 <div className="flex flex-col items-center gap-5 px-6 pb-9 pt-8 text-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#24B5F8]/10">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full">
                         <Mail className="h-6 w-6 text-[#24B5F8]" />
                     </div>
 
@@ -35,20 +88,13 @@ export function VerifyEmail() {
                             ) : (
                                 'your email address'
                             )}
-                            . Click the link in that email to activate your account, then sign in.
+                            . Click the link in that email to activate your account.
                         </p>
                     </div>
 
                     <p className="m-0 text-xs leading-[1.4] text-[#9FA5A8]">
-                        Can&apos;t find it? Check your spam or junk folder. The link is valid for a single use.
+                        Keep this page open.
                     </p>
-
-                    <Link
-                        to="/login"
-                        className="flex h-10 w-full items-center justify-center rounded-lg bg-[#24B5F8] px-4 py-2 text-sm font-semibold text-white shadow-[0px_3px_9.3px_0px_rgba(44,158,249,0.1)]"
-                    >
-                        Back to sign in
-                    </Link>
                 </div>
             </div>
         </div>
