@@ -14,7 +14,7 @@ import {
 } from "@/app/components/ui/dropdown-menu";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
-import { EditProjectModal } from "../components/dashboard-placeholder/EditProjectModal";
+import { ProjectSettingsPanel } from "../components/dashboard-placeholder/project-settings/ProjectSettingsPanel";
 import { NotificationBell } from "../components/notifications/NotificationBell";
 import { AICreditsBadge } from "../components/AICreditsBadge";
 import {
@@ -493,10 +493,11 @@ export function WelcomeContinuumView() {
         }
       />
       {canEditProject && routeProjectId && (
-        <EditProjectModal
+        <ProjectSettingsPanel
           open={editProjectOpen}
           onOpenChange={setEditProjectOpen}
           projectId={Number(routeProjectId)}
+          projectName={projectQuery.data!.name}
           initialName={projectQuery.data!.name}
           initialDescription={projectQuery.data!.description}
           initialStartDateIso={projectQuery.data!.startDateIso}
