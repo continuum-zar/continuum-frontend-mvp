@@ -316,6 +316,27 @@ export async function updateTaskStatus(
     return data;
 }
 
+/**
+ * Persist the manual order of one Kanban column (drag-to-reorder).
+ *
+ * `columnId` is the column's id, which equals the tasks' stored status (e.g. `todo`,
+ * `in-progress`, `completed`, or a custom column id) — do NOT remap `in-progress` here, the
+ * backend stores it with the hyphen. `taskIds` is the column's tasks in their new top-to-bottom
+ * order; the backend assigns `board_position = index` to each. Returns the updated tasks.
+ */
+export async function reorderTasks(
+    projectId: number,
+    columnId: string,
+    taskIds: Array<number | string>
+): Promise<TaskAPIResponse[]> {
+    const { data } = await api.patch<TaskAPIResponse[]>(`/tasks/reorder`, {
+        project_id: projectId,
+        column_id: columnId,
+        task_ids: taskIds.map((id) => Number(id)),
+    });
+    return data;
+}
+
 /** Link or unlink task milestone. PATCH /tasks/{id}/milestone */
 export async function patchTaskMilestone(
     taskId: number | string,

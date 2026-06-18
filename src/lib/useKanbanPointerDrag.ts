@@ -4,15 +4,36 @@ import {
   isPointerInKanbanBoardHorizontalScrollZone,
   stepKanbanBoardHorizontalAutoScrollFromPointer,
 } from "./kanbanBoardHorizontalAutoScroll";
+import {
+  isPointerInKanbanColumnVerticalScrollZone,
+  stepKanbanColumnVerticalAutoScrollFromPointer,
+} from "./kanbanColumnVerticalAutoScroll";
+import { getKanbanCardInsertIndex } from "./kanbanCardReorder";
 import { setKanbanDragActive } from "./kanbanCursor";
 
 const DRAG_THRESHOLD_PX = 5;
 
 export interface UseKanbanPointerDragOptions {
-  onDrop: (taskId: string, columnId: string) => void;
+  /**
+   * Called on drop. `columnId` is the target column; `beforeTaskId` is the id of the card the
+   * dragged task should be inserted *before* (null = append to the end of the column). The same
+   * column id as the source means a within-column reorder.
+   */
+  onDrop: (taskId: string, columnId: string, beforeTaskId: string | null) => void;
   getTaskColumn: (taskId: string) => string | null;
   /** Horizontal scroll container for the board row; enables edge auto-scroll while dragging a card. */
   boardScrollRef?: React.RefObject<HTMLDivElement | null>;
+}
+
+/** Resolved drop target under the pointer: column id plus the insertion slot within it. */
+interface CardDropTarget {
+  colId: string | null;
+  /** Insertion index 0..n among the column's non-dragged cards. */
+  index: number;
+  /** Id of the card at `index` (the one we'd insert before), or null when appending at the end. */
+  beforeId: string | null;
+  /** The hovered column's vertical scroll container, for edge auto-scroll while dragging. */
+  scroller: HTMLElement | null;
 }
 
 /** In-flight pointer drag state for a task card (ghost, thresholds, latest pointer for scroll). */
@@ -36,7 +57,12 @@ export function useKanbanPointerDrag({
   boardScrollRef,
 }: UseKanbanPointerDragOptions) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  /** Hovered column that differs from the source column (kept for cross-column drop affordances). */
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  /** Hovered column regardless of source — drives the within-column insertion line. */
+  const [activeCol, setActiveCol] = useState<string | null>(null);
+  /** Insertion index within {@link activeCol} (0..n), or null when not over a column. */
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
 
   const drag = useRef<CardDragSession | null>(null);
   const autoScrollRafRef = useRef<number | null>(null);
@@ -55,17 +81,36 @@ export function useKanbanPointerDrag({
     }
   }, []);
 
-  const findColumn = useCallback(
-    (x: number, y: number, ghost: HTMLElement | null): string | null => {
+  /**
+   * Hit-test the pointer to the column under it and the insertion slot within that column.
+   * Cards carry `data-kanban-card="<taskId>"`; the dragged card is excluded from the measurement so
+   * indices line up with the list rendered while dragging (which also hides the dragged card).
+   */
+  const findDropTarget = useCallback(
+    (x: number, y: number, ghost: HTMLElement | null, draggedId: string): CardDropTarget => {
       if (ghost) ghost.style.display = "none";
       const els = document.elementsFromPoint(x, y);
       if (ghost) ghost.style.display = "";
+
+      let colEl: HTMLElement | null = null;
       for (const el of els) {
-        const col = (el as HTMLElement).closest<HTMLElement>("[data-kanban-col]");
-        const id = col?.dataset.kanbanCol;
-        if (id) return id;
+        const c = (el as HTMLElement).closest<HTMLElement>("[data-kanban-col]");
+        if (c) {
+          colEl = c;
+          break;
+        }
       }
-      return null;
+      if (!colEl) return { colId: null, index: 0, beforeId: null, scroller: null };
+
+      const colId = colEl.dataset.kanbanCol ?? null;
+      const cardEls = Array.from(
+        colEl.querySelectorAll<HTMLElement>("[data-kanban-card]"),
+      ).filter((el) => el.dataset.kanbanCard !== draggedId);
+      const rects = cardEls.map((el) => el.getBoundingClientRect());
+      const index = getKanbanCardInsertIndex(y, rects);
+      const beforeId = cardEls[index]?.dataset.kanbanCard ?? null;
+      const scroller = colEl.querySelector<HTMLElement>("[data-kanban-col-scroll]");
+      return { colId, index, beforeId, scroller };
     },
     [],
   );
@@ -77,6 +122,8 @@ export function useKanbanPointerDrag({
     drag.current = null;
     setDraggingId(null);
     setDragOverCol(null);
+    setActiveCol(null);
+    setDropIndex(null);
     setKanbanDragActive(false);
     document.body.style.removeProperty("user-select");
   }, [cancelAutoScroll]);
@@ -97,21 +144,33 @@ export function useKanbanPointerDrag({
   } | null>(null);
 
   useEffect(() => {
+    const applyHover = (target: CardDropTarget, draggedId: string) => {
+      const current = getTaskColumnRef.current(draggedId);
+      setActiveCol(target.colId);
+      setDropIndex(target.colId ? target.index : null);
+      setDragOverCol(target.colId && target.colId !== current ? target.colId : null);
+    };
+
     const scheduleAutoScroll = () => {
       if (autoScrollRafRef.current != null) return;
       const tick = () => {
         autoScrollRafRef.current = null;
-        const board = boardScrollRefStable.current?.current ?? null;
         const d = drag.current;
-        if (!board || !d?.active) return;
+        if (!d?.active) return;
 
-        const inZone = stepKanbanBoardHorizontalAutoScrollFromPointer(board, d.lastClientX);
+        const target = findDropTarget(d.lastClientX, d.lastClientY, d.ghost, d.taskId);
 
-        const col = findColumn(d.lastClientX, d.lastClientY, d.ghost);
-        const current = getTaskColumnRef.current(d.taskId);
-        setDragOverCol(col && col !== current ? col : null);
+        const board = boardScrollRefStable.current?.current ?? null;
+        const horizInZone = board
+          ? stepKanbanBoardHorizontalAutoScrollFromPointer(board, d.lastClientX)
+          : false;
+        const vertInZone = target.scroller
+          ? stepKanbanColumnVerticalAutoScrollFromPointer(target.scroller, d.lastClientY)
+          : false;
 
-        if (drag.current?.active && inZone) {
+        applyHover(target, d.taskId);
+
+        if (drag.current?.active && (horizInZone || vertInZone)) {
           autoScrollRafRef.current = requestAnimationFrame(tick);
         }
       };
@@ -165,15 +224,17 @@ export function useKanbanPointerDrag({
         d.ghost.style.top = `${e.clientY - d.offsetY}px`;
       }
 
-      const col = findColumn(e.clientX, e.clientY, d.ghost);
-      const current = getTaskColumnRef.current(d.taskId);
-      setDragOverCol(col && col !== current ? col : null);
+      const target = findDropTarget(e.clientX, e.clientY, d.ghost, d.taskId);
+      applyHover(target, d.taskId);
 
       const board = boardScrollRefStable.current?.current ?? null;
-      if (d.active && board && isPointerInKanbanBoardHorizontalScrollZone(board, e.clientX)) {
-        if (autoScrollRafRef.current == null) {
-          scheduleAutoScroll();
-        }
+      const inHorizZone =
+        !!board && isPointerInKanbanBoardHorizontalScrollZone(board, e.clientX);
+      const inVertZone =
+        !!target.scroller &&
+        isPointerInKanbanColumnVerticalScrollZone(target.scroller, e.clientY);
+      if (d.active && (inHorizZone || inVertZone) && autoScrollRafRef.current == null) {
+        scheduleAutoScroll();
       }
     };
 
@@ -188,10 +249,9 @@ export function useKanbanPointerDrag({
       document.removeEventListener("pointercancel", onUp);
 
       if (d.active) {
-        const col = findColumn(e.clientX, e.clientY, d.ghost);
-        const current = getTaskColumnRef.current(d.taskId);
-        if (col && col !== current) {
-          onDropRef.current(d.taskId, col);
+        const target = findDropTarget(e.clientX, e.clientY, d.ghost, d.taskId);
+        if (target.colId) {
+          onDropRef.current(d.taskId, target.colId, target.beforeId);
         }
         swallowNextClick();
       }
@@ -221,7 +281,7 @@ export function useKanbanPointerDrag({
       }
       cleanup();
     };
-  }, [findColumn, cleanup, swallowNextClick, cancelAutoScroll]);
+  }, [findDropTarget, cleanup, swallowNextClick, cancelAutoScroll]);
 
   const cardPointerDown = useCallback(
     (taskId: string) => (e: React.PointerEvent<HTMLDivElement>) => {
@@ -260,5 +320,5 @@ export function useKanbanPointerDrag({
     [],
   );
 
-  return { draggingId, dragOverCol, cardPointerDown };
+  return { draggingId, dragOverCol, activeCol, dropIndex, cardPointerDown };
 }

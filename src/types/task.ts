@@ -85,6 +85,8 @@ export interface TaskAPIResponse {
     comment_count?: number;
     project_name?: string | null;
     closure_summary?: string | null;
+    /** Manual within-column ordering on the Kanban board (lower sorts higher; null = auto-sort). */
+    board_position?: number | null;
     /** All linked repo/branch pairs (preferred). */
     linked_branches?: TaskLinkedBranch[] | null;
     /**
@@ -177,6 +179,11 @@ export interface Task {
     /** Repo/branch links for Kanban badges (from `linked_branches` or legacy fields). */
     linkedBranches?: TaskLinkedBranch[];
     dependencyCount?: number;
+    /**
+     * Manual within-column ordering on the Kanban board (`board_position`). Lower sorts higher;
+     * `null` means no manual position and falls back to the column's automatic sort.
+     */
+    boardPosition?: number | null;
 }
 
 export type ActivityType =

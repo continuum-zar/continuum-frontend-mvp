@@ -42,6 +42,29 @@ export function orderKanbanColumnTasksForDisplay(column: KanbanColumnConfig, tas
   return [...tasks];
 }
 
+/**
+ * Order a column's tasks honouring a user's manual drag-to-reorder choice (server `board_position`).
+ *
+ * Tasks with a manual `boardPosition` come first, sorted ascending (ties broken by id for a stable
+ * order); tasks without one (newly created, just moved in, etc.) are appended using the column's
+ * automatic sort. When no task in the column has a position, this is identical to
+ * {@link orderKanbanColumnTasksForDisplay}.
+ */
+export function orderKanbanColumnTasksByBoardPosition(
+  column: KanbanColumnConfig,
+  tasks: Task[],
+): Task[] {
+  const positioned = tasks.filter((t) => t.boardPosition != null);
+  if (positioned.length === 0) {
+    return orderKanbanColumnTasksForDisplay(column, tasks);
+  }
+  const unpositioned = tasks.filter((t) => t.boardPosition == null);
+  positioned.sort(
+    (a, b) => a.boardPosition! - b.boardPosition! || Number(a.id) - Number(b.id),
+  );
+  return [...positioned, ...orderKanbanColumnTasksForDisplay(column, unpositioned)];
+}
+
 /** Tooltip / aria copy for column headers: matches {@link orderKanbanColumnTasksForDisplay} behavior. */
 export type KanbanColumnAutoSortInfo = {
   description: string;
