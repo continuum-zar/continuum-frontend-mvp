@@ -27,7 +27,8 @@ describe('CommentBody', () => {
     it('renders a resolved mention with link styling and aria-label', () => {
         render(<CommentBody content="Hey @alice" mentions={[alice]} />);
         const mention = screen.getByRole('link', { name: 'Mention Alice Smith' });
-        expect(mention).toHaveTextContent('@alice');
+        // Mentions render the user's display name, not the raw @token.
+        expect(mention).toHaveTextContent('@Alice Smith');
         expect(mention).toHaveClass('text-[#1466ff]');
         expect(mention).toHaveClass('underline');
     });

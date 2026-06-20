@@ -5,7 +5,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/app/components/ui/popover";
-import { useProjectRecentActivity, useProjectTasks } from "@/api/hooks";
+import { useMyNotifications, useProjectRecentActivity, useProjectTasks } from "@/api/hooks";
+import { mentionNotificationHref } from "@/api/notifications";
 import { useAuthStore } from "@/store/authStore";
 import {
   countUnread,
@@ -68,6 +69,8 @@ export function NotificationBell({
   const lastSeenAt = useLastSeenAt(storageScope);
 
   const activityQuery = useProjectRecentActivity(scopeProjectId, { limit: 50 });
+  // @mention notifications for this project (shown above recent activity).
+  const mentionsQuery = useMyNotifications(scopeProjectId, { limit: 50 });
   // Project-scoped tasks for milestone filtering. Skipped entirely for project scope.
   const tasksQuery = useProjectTasks(
     scopeKind === "milestone" ? scopeProjectId : undefined,
@@ -93,15 +96,41 @@ export function NotificationBell({
     return filterByMilestoneTaskIds(items, milestoneTaskIds);
   }, [activityQuery.data, scopeKind, tasksQuery.isLoading, milestoneTaskIds]);
 
+  // Mention notifications, scoped to this bell. In milestone (sprint) scope keep
+  // only mentions on tasks that belong to the milestone.
+  const mentionRows = useMemo(() => {
+    const items = mentionsQuery.data?.items ?? [];
+    const scoped =
+      scopeKind === "milestone"
+        ? tasksQuery.isLoading
+          ? []
+          : items.filter((item) => milestoneTaskIds.has(item.task_id))
+        : items;
+    return scoped.map((item) => ({
+      key: `mention-${item.id}`,
+      title: item.title,
+      subtitle: item.body,
+      createdAt: item.created_at,
+      href: mentionNotificationHref(item),
+    }));
+  }, [mentionsQuery.data, scopeKind, tasksQuery.isLoading, milestoneTaskIds]);
+
   const isLoading =
-    activityQuery.isLoading || (scopeKind === "milestone" && tasksQuery.isLoading);
+    activityQuery.isLoading ||
+    mentionsQuery.isLoading ||
+    (scopeKind === "milestone" && tasksQuery.isLoading);
   const isError =
     activityQuery.isError || (scopeKind === "milestone" && tasksQuery.isError);
 
+  const mentionUnread = useMemo(() => {
+    if (lastSeenAt == null) return mentionRows.length;
+    return mentionRows.filter((m) => m.createdAt > lastSeenAt).length;
+  }, [mentionRows, lastSeenAt]);
+
   const unreadCount = useMemo(() => {
     if (isLoading) return 0;
-    return countUnread(filteredItems, lastSeenAt);
-  }, [filteredItems, lastSeenAt, isLoading]);
+    return countUnread(filteredItems, lastSeenAt) + mentionUnread;
+  }, [filteredItems, lastSeenAt, isLoading, mentionUnread]);
 
   const unreadLabel =
     unreadCount > UNREAD_CAP ? `${UNREAD_CAP}+` : String(unreadCount);
@@ -112,10 +141,18 @@ export function NotificationBell({
   useEffect(() => {
     if (!open) return;
     if (storageScope == null) return;
-    const newest = latestCreatedAt(filteredItems);
-    if (newest == null) return;
+    const newestActivity = latestCreatedAt(filteredItems);
+    const newestMention = mentionRows.reduce<string | null>(
+      (max, m) => (max == null || m.createdAt > max ? m.createdAt : max),
+      null,
+    );
+    const candidates = [newestActivity, newestMention].filter(
+      (v): v is string => v != null,
+    );
+    if (candidates.length === 0) return;
+    const newest = candidates.reduce((a, b) => (a > b ? a : b));
     writeLastSeenAt(storageScope, newest);
-  }, [open, filteredItems, storageScope]);
+  }, [open, filteredItems, mentionRows, storageScope]);
 
   const viewAllHref = useMemo(
     () => `${projectMainHref(String(scopeProjectId))}#recent-activity`,
@@ -180,10 +217,12 @@ export function NotificationBell({
                 }
           }
           items={filteredItems}
+          mentions={mentionRows}
           isLoading={isLoading}
           isError={isError}
           lastSeenAt={lastSeenAt}
           onViewAllClick={() => setOpen(false)}
+          onMentionClick={() => setOpen(false)}
         />
       </PopoverContent>
     </Popover>
