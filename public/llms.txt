@@ -1,0 +1,36 @@
+# Continuum
+
+> Continuum is the operating system for modern software teams. It connects delivery with profitability by bridging agile sprint planning, precise time tracking, and client invoicing in one workspace — so teams can plan work, track progress, and bill clients without switching tools.
+
+Continuum is a web-based project management and professional-services automation platform for software teams, agencies, and consultancies. It is used by project managers and developers to run day-to-day delivery (tasks, projects, sprints, time tracking, invoices) and gives clients a focused portal to follow project status and deliverables.
+
+## What Continuum does
+
+- **Sprint & task planning** — Plan work on a Kanban board with sprints, drag-and-drop task ordering, and an AI planner that drafts project plans from a brief.
+- **Frictionless time logging** — Log hours without leaving your workflow. Track time directly on tasks or retroactively fill in your week in seconds.
+- **Integrated invoicing** — Turn billable hours into professional client invoices with one click.
+- **Real-time project health** — Track velocity and see instantly whether a project is "On Track" or "At Risk", so deadlines are never a surprise.
+- **Client portal** — Clients see a reduced, role-appropriate surface to view project status and deliverables.
+- **Developer integrations** — Connect editors and AI tools (such as Cursor) over MCP to act on tasks directly from where developers work.
+
+## Who it is for
+
+- **Project managers** planning work, tracking progress, and managing billing.
+- **Developers** updating tasks and logging time with minimal friction.
+- **Clients** following project status through the client portal.
+
+## Key pages
+
+- [Home](https://continuumapp.co.za/): Product overview — delivery, time tracking, and invoicing in one workspace.
+- [Start for free](https://continuumapp.co.za/sign-up): Create a Continuum account.
+- [Log in](https://continuumapp.co.za/login): Sign in to an existing workspace.
+
+## Legal
+
+- [Terms of Service](https://continuumapp.co.za/terms)
+- [Privacy Policy](https://continuumapp.co.za/privacy)
+
+## Notes
+
+- Continuum is a single-page web application; the marketing pages above are public, while the workspace (tasks, projects, time, invoices) requires authentication.
+- Primary value proposition: eliminate administrative drag so teams can focus on shipping, while keeping delivery and profitability connected.

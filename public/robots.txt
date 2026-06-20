@@ -1,0 +1,59 @@
+# Continuum — robots.txt
+# Allow all standard search crawlers and AI answer engines to index the
+# public marketing pages. Authenticated app routes are intentionally not
+# linked from public pages and require login, so they are not indexed.
+
+User-agent: *
+Allow: /
+Disallow: /workspace
+Disallow: /onboarding
+Disallow: /loading
+Disallow: /reset-password
+Disallow: /mcp-oauth
+Disallow: /mcp-setup
+Disallow: /cursor-mcp
+
+# AI answer-engine / LLM crawlers — explicitly permitted.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+Sitemap: https://continuumapp.co.za/sitemap.xml

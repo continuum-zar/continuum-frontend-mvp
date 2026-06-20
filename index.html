@@ -5,7 +5,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f9fafb" />
     <link rel="icon" type="image/svg+xml" href="/landing/Favicon%20(512%20x%20512).svg" />
-    <title>Project Management Dashboard UI</title>
+
+    <title>Continuum — Project Management, Time Tracking & Invoicing for Software Teams</title>
+    <meta
+      name="description"
+      content="Continuum is the operating system for modern software teams — connecting agile sprint planning, frictionless time tracking, and one-click client invoicing in a single workspace. Start for free."
+    />
+    <link rel="canonical" href="https://continuumapp.co.za/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Continuum" />
+    <meta property="og:url" content="https://continuumapp.co.za/" />
+    <meta
+      property="og:title"
+      content="Continuum — Project Management, Time Tracking & Invoicing for Software Teams"
+    />
+    <meta
+      property="og:description"
+      content="Connect delivery with profitability. Plan sprints, track time without friction, and turn billable hours into client invoices with one click."
+    />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Continuum — Project Management, Time Tracking & Invoicing for Software Teams"
+    />
+    <meta
+      name="twitter:description"
+      content="Connect delivery with profitability. Plan sprints, track time without friction, and turn billable hours into client invoices with one click."
+    />
+
+    <!-- Structured data for search engines and AI answer engines -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://continuumapp.co.za/#organization",
+            "name": "Continuum",
+            "url": "https://continuumapp.co.za/",
+            "description": "The operating system for modern software teams — connecting delivery with profitability."
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Continuum",
+            "url": "https://continuumapp.co.za/",
+            "applicationCategory": "BusinessApplication",
+            "applicationSubCategory": "Project Management Software",
+            "operatingSystem": "Web",
+            "publisher": { "@id": "https://continuumapp.co.za/#organization" },
+            "description": "Continuum is the operating system for modern software teams. It connects agile sprint planning, precise time tracking, and client invoicing in one workspace so teams can plan work, track progress, and bill clients without switching tools.",
+            "featureList": [
+              "Agile sprint and task planning on a Kanban board",
+              "AI project planner",
+              "Frictionless time tracking on tasks",
+              "One-click client invoicing from billable hours",
+              "Real-time project health and velocity tracking",
+              "Client portal for project status and deliverables"
+            ],
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD",
+              "description": "Start for free"
+            }
+          }
+        ]
+      }
+    </script>
     <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
     <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
     <link rel="dns-prefetch" href="https://api.fontshare.com" />
@@ -84,13 +155,17 @@
         animation: boot-pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         animation-delay: 0.2s;
       }
-      .boot-loading__sr {
+      .boot-loading__sr,
+      .seo-fallback {
         position: absolute;
         width: 1px;
         height: 1px;
         overflow: hidden;
         clip: rect(0 0 0 0);
         white-space: nowrap;
+      }
+      .seo-fallback {
+        clip: rect(1px, 1px, 1px, 1px);
       }
       @keyframes boot-pulse-soft {
         0%,
@@ -126,6 +201,68 @@
           <p class="boot-loading__tagline">Time track with one click...</p>
           <span class="boot-loading__sr">Loading</span>
         </div>
+      </div>
+
+      <!--
+        Static, crawlable content for search engines and AI answer engines that do
+        not execute JavaScript. React replaces #root on mount, so users see the full
+        interactive landing page instead of this fallback. Keep this copy in sync with
+        src/app/pages/public/LandingPage.tsx.
+      -->
+      <div class="seo-fallback">
+        <h1>Continuum connects delivery with profitability</h1>
+        <p>
+          Continuum is the operating system for modern software teams. It seamlessly
+          bridges the gap between agile sprint planning, precise time tracking, and
+          client invoicing — so project managers and developers can plan work, track
+          progress, and bill clients without switching tools.
+        </p>
+        <h2>Designed for deep work</h2>
+        <p>
+          Eliminate administrative drag. Continuum gets out of the way so your team can
+          focus on shipping.
+        </p>
+        <h3>Frictionless time logging</h3>
+        <p>
+          Log hours without leaving your workflow. Track time directly on tasks or
+          retroactively fill your week in seconds, not hours.
+        </p>
+        <h3>Integrated invoicing</h3>
+        <p>Turn billable hours into professional client invoices with one click.</p>
+        <h3>Real-time project health</h3>
+        <p>
+          Never be surprised by a missed deadline. Track velocity and see instantly
+          whether a project is on track or at risk.
+        </p>
+        <h2>Built for software teams, agencies, and consultancies</h2>
+        <p>
+          Project managers and developers run delivery on a Kanban board with sprints,
+          drag-and-drop task ordering, and an AI planner that drafts project plans from a
+          brief. Clients get a focused portal to follow project status and deliverables.
+        </p>
+        <h2>Frequently asked questions</h2>
+        <h3>What is Continuum?</h3>
+        <p>
+          Continuum is a web-based project management platform for software teams,
+          agencies, and consultancies. It combines sprint planning, time tracking, and
+          client invoicing in one workspace so delivery and profitability stay connected.
+        </p>
+        <h3>Who is Continuum for?</h3>
+        <p>
+          Continuum is built for project managers and developers who run delivery day to
+          day, and for clients who want a simple way to follow project status and
+          deliverables through a dedicated portal.
+        </p>
+        <h3>How much does Continuum cost?</h3>
+        <p>You can start using Continuum for free.</p>
+        <nav aria-label="Continuum">
+          <ul>
+            <li><a href="/sign-up">Start Continuum for free</a></li>
+            <li><a href="/login">Log in to your workspace</a></li>
+            <li><a href="/terms">Terms of Service</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+          </ul>
+        </nav>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
