@@ -52,6 +52,8 @@ export { invitationKeys };
 import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
 import { fetchCursorMcpTaskDetail } from './cursorMcp';
+import { fetchMyNotifications, notificationKeys } from './notifications';
+export { notificationKeys };
 import {
     fetchGitHubInstallationRepositories,
     githubAppKeys,
@@ -632,6 +634,25 @@ export function useProjectRecentActivity(
     return useQuery({
         queryKey: ['projects', projectId, 'welcome-recent-activity', limit],
         queryFn: () => fetchWelcomeRecentActivityFeed(projectId!, { limit }),
+        enabled,
+        staleTime: STALE_SHORT_MS,
+        refetchOnWindowFocus: true,
+    });
+}
+
+/**
+ * The signed-in user's @mention notifications, scoped to one project. Powers the
+ * "Mentions" section of the notifications bell.
+ */
+export function useMyNotifications(
+    projectId: number | string | null | undefined,
+    options?: { limit?: number; enabled?: boolean },
+) {
+    const limit = options?.limit ?? 50;
+    const enabled = (options?.enabled ?? true) && projectId != null && projectId !== '';
+    return useQuery({
+        queryKey: notificationKeys.mine(projectId),
+        queryFn: () => fetchMyNotifications({ projectId, limit }),
         enabled,
         staleTime: STALE_SHORT_MS,
         refetchOnWindowFocus: true,

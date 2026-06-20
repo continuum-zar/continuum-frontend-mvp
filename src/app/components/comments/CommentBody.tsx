@@ -22,7 +22,8 @@ type CommentBodyProps = {
 function mentionTooltipText(user: CommentMentionUserAPI): string {
     const label = mentionDisplayLabel(user);
     const username = user.username?.trim();
-    if (username && label.toLowerCase() !== username.toLowerCase()) {
+    // Don't surface the raw username when it's an email (username == email).
+    if (username && !username.includes('@') && label.toLowerCase() !== username.toLowerCase()) {
         return `${label} (@${username})`;
     }
     return label;
@@ -36,6 +37,9 @@ function MentionLink({
     user?: CommentMentionUserAPI;
 }) {
     const profileHref = user ? userProfilePath(user.id) : undefined;
+    // Show the user's name (e.g. "@Jane Doe") rather than the raw @token,
+    // which may be an email address when username == email.
+    const displayText = user ? `@${mentionDisplayLabel(user)}` : text;
 
     const link = (
         <a
@@ -46,12 +50,12 @@ function MentionLink({
                 if (!profileHref) e.preventDefault();
             }}
         >
-            {text}
+            {displayText}
         </a>
     );
 
     if (!user) {
-        return <span className={MENTION_LINK_CLASS}>{text}</span>;
+        return <span className={MENTION_LINK_CLASS}>{displayText}</span>;
     }
 
     return (

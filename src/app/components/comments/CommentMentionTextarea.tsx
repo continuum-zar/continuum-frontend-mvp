@@ -234,9 +234,11 @@ export function CommentMentionTextarea({
                                     )}
                                 >
                                     <span className="truncate text-[#0b191f]">{member.displayName}</span>
-                                    <span className="truncate text-[12px] font-medium text-[#727d83]">
-                                        @{member.username}
-                                    </span>
+                                    {member.username && !member.username.includes('@') ? (
+                                        <span className="truncate text-[12px] font-medium text-[#727d83]">
+                                            @{member.username}
+                                        </span>
+                                    ) : null}
                                 </button>
                             );
                         }}

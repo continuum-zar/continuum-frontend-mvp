@@ -135,6 +135,7 @@ export {
     useTaskComments,
     useTaskCommentsInfinite,
     useCreateTaskComment,
+    useMyNotifications,
     useTaskAttachments,
     useUploadAttachment,
     useAddAttachmentLink,
