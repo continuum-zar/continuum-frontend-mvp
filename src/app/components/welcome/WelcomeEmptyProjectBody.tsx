@@ -660,9 +660,8 @@ function repositoryStatusSubtitle(
     if (total != null && total > 0 && processed != null) {
       return `${processed}/${total} file${total === 1 ? "" : "s"} indexed`;
     }
-    if (total === 0 && processed === 0) {
-      return "No eligible source files to index";
-    }
+    // total === 0 while still scanning means the file tree hasn't been fetched/filtered
+    // yet (a scan publishes "running" with total 0 before the tree is known).
     return "Indexing…";
   }
   const files = scan?.files_indexed ?? 0;
