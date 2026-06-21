@@ -18,11 +18,12 @@
  * page (apply phase) without coupling them to a shared shape.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { migrationEventsStreamUrl, migrationKeys } from "@/api/migrations";
 import { projectKeys } from "@/api/projects";
+import { useSseStream } from "@/hooks/useSseStream";
 import type {
     MigrationApplyDoneEvent,
     MigrationApplyDryRunDoneEvent,
@@ -64,19 +65,19 @@ export function useMigrationEvents(
 
     const enabled = options.enabled ?? true;
 
+    // Once a terminal event arrives we stop streaming — without this the shared
+    // hook's auto-reconnect would re-open a stream the backend has nothing left
+    // to send on. Reset when the job changes.
+    const [terminated, setTerminated] = useState(false);
     useEffect(() => {
-        if (!enabled || jobId === undefined) return;
+        setTerminated(false);
+    }, [jobId]);
 
-        let cancelled = false;
-        let es: EventSource | null = null;
-
-        const handleMessage = (e: MessageEvent) => {
-            let parsed: unknown;
-            try {
-                parsed = JSON.parse(e.data);
-            } catch {
-                return; // ignore non-JSON keepalives
-            }
+    useSseStream({
+        enabled: enabled && jobId !== undefined && !terminated,
+        resetKey: jobId,
+        getUrl: () => migrationEventsStreamUrl(jobId!),
+        onEvent: (parsed) => {
             if (!parsed || typeof parsed !== "object") return;
             const event = parsed as MigrationEvent;
             if (typeof event.type !== "string") return;
@@ -113,7 +114,9 @@ export function useMigrationEvents(
 
             // Refresh the canonical detail so the page (`useMigration(jobId)`)
             // sees the new status, warnings, stats.
-            qc.invalidateQueries({ queryKey: migrationKeys.detail(jobId) });
+            // onEvent only fires while streaming, which the hook only does when
+            // jobId is defined (see `enabled` above) — assert for the type.
+            qc.invalidateQueries({ queryKey: migrationKeys.detail(jobId!) });
 
             // When apply finishes, the imported project is fresh on the
             // backend but the sidebar's projects list query is still cached.
@@ -124,36 +127,10 @@ export function useMigrationEvents(
                 qc.invalidateQueries({ queryKey: projectKeys.list() });
             }
 
-            // Terminal events close the stream so we don't leak EventSources.
+            // Terminal events stop the stream so we don't keep reconnecting.
             if (TERMINAL_TYPES.has(event.type)) {
-                es?.close();
+                setTerminated(true);
             }
-        };
-
-        void (async () => {
-            let url: string;
-            try {
-                url = await migrationEventsStreamUrl(jobId);
-            } catch (err) {
-                console.debug("[useMigrationEvents] ticket mint failed", err);
-                return;
-            }
-            if (cancelled) return;
-            es = new EventSource(url);
-            es.addEventListener("message", handleMessage as EventListener);
-            es.onerror = () => {
-                // Network blip or page navigation; the browser closes the
-                // stream and we'll re-open on remount. Quiet by design.
-                es?.close();
-            };
-        })();
-
-        return () => {
-            cancelled = true;
-            if (es) {
-                es.removeEventListener("message", handleMessage as EventListener);
-                es.close();
-            }
-        };
-    }, [enabled, jobId, qc]);
+        },
+    });
 }

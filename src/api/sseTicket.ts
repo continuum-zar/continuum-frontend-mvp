@@ -13,28 +13,17 @@ export interface SseTicketResponse {
   expires_in: number;
 }
 
-let inFlight: Promise<string> | null = null;
-
 /**
- * Fetch a fresh SSE ticket. Concurrent callers within the same tick share one
- * request — the ticket is single-use, so each consumer still gets its own
- * after the first lands (a subsequent call returns a new ticket).
+ * Fetch a fresh SSE ticket.
  *
- * Each EventSource needs its own ticket; do not cache across reconnects.
+ * Tickets are single-use (the backend redeems them atomically with GETDEL), so
+ * every caller must get its own. We deliberately do NOT dedupe concurrent
+ * callers: sharing one in-flight request handed the same single-use ticket to
+ * multiple EventSource connects, and the second connect was rejected as already
+ * redeemed — flaky realtime. Each call mints a distinct ticket; do not cache
+ * across reconnects.
  */
 export async function getSseTicket(): Promise<string> {
-  if (inFlight) {
-    const t = await inFlight;
-    inFlight = null;
-    return t;
-  }
-  inFlight = (async () => {
-    const { data } = await api.post<SseTicketResponse>('/events/sse-ticket');
-    return data.ticket;
-  })();
-  try {
-    return await inFlight;
-  } finally {
-    inFlight = null;
-  }
+  const { data } = await api.post<SseTicketResponse>('/events/sse-ticket');
+  return data.ticket;
 }

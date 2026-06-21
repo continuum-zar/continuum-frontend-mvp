@@ -59,6 +59,7 @@ import { ProductivityRhythmHeatmapCard } from '../components/dashboard-charts/Pr
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
 import { getCurrentHeatmapHour, getTodayHeatmapDayLabel, HEATMAP_DAY_LABELS } from '@/lib/productivityRhythmLiveCell';
 import { projectPresenceEventsStreamUrl, type ProjectPresenceEvent } from '@/api/projectPresenceEvents';
+import { useSseStream } from '@/hooks/useSseStream';
 import {
   Bar,
   LineChart,
@@ -226,11 +227,27 @@ export function Dashboard({
     });
   }, [rhythmResponse]);
 
+  // Presence realtime over SSE. While the stream is healthy we disable the
+  // redundant 45s/15s polls below (they exist only as an SSE fallback); the
+  // hook flips `presenceSseConnected` false during outages so polling resumes.
+  const { connected: presenceSseConnected } = useSseStream({
+    enabled: hasProjectSelected && effectiveRole !== 'Client' && isAuthenticated && !!accessToken,
+    resetKey: selectedProject,
+    getUrl: () => projectPresenceEventsStreamUrl(selectedProject),
+    onEvent: (data) => {
+      const d = data as Partial<ProjectPresenceEvent>;
+      if (!d?.type || Number(d.project_id) !== Number(selectedProject)) return;
+      if (!['session_started', 'session_paused', 'session_resumed', 'session_stopped'].includes(d.type)) return;
+      void queryClient.invalidateQueries({ queryKey: ['project-active-work-sessions', selectedProject] });
+      void queryClient.invalidateQueries({ queryKey: ['my-active-work-session'] });
+    },
+  });
+
   const { data: activeWorkSessionsRaw, isLoading: activeSessionsLoading, isError: activeSessionsError } = useQuery({
     queryKey: ['project-active-work-sessions', selectedProject],
     queryFn: () => fetchProjectActiveWorkSessions(selectedProject),
     enabled: hasProjectSelected && isProjectPM,
-    refetchInterval: 45_000,
+    refetchInterval: presenceSseConnected ? false : 45_000,
     staleTime: 30_000,
     placeholderData: (previousData) => previousData,
   });
@@ -239,7 +256,7 @@ export function Dashboard({
     queryKey: ['my-active-work-session'],
     queryFn: fetchActiveWorkSession,
     enabled: hasProjectSelected && user != null && effectiveRole !== 'Client',
-    refetchInterval: 15_000,
+    refetchInterval: presenceSseConnected ? false : 15_000,
     staleTime: 5_000,
   });
 
@@ -249,44 +266,6 @@ export function Dashboard({
     enabled: myActiveWorkSession?.task_id != null,
     staleTime: 60_000,
   });
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !hasProjectSelected || effectiveRole === 'Client' || !isAuthenticated || !accessToken) {
-      return;
-    }
-    let cancelled = false;
-    let es: EventSource | null = null;
-    const onMessage = (ev: MessageEvent<string>) => {
-      try {
-        const data = JSON.parse(ev.data) as Partial<ProjectPresenceEvent>;
-        if (!data.type || Number(data.project_id) !== Number(selectedProject)) return;
-        if (!["session_started", "session_paused", "session_resumed", "session_stopped"].includes(data.type)) return;
-        void queryClient.invalidateQueries({ queryKey: ['project-active-work-sessions', selectedProject] });
-        void queryClient.invalidateQueries({ queryKey: ['my-active-work-session'] });
-      } catch {
-        // Ignore malformed payloads and keep stream alive.
-      }
-    };
-    void (async () => {
-      let url: string;
-      try {
-        url = await projectPresenceEventsStreamUrl(selectedProject);
-      } catch (err) {
-        console.debug('[Dashboard] failed to mint SSE ticket for presence stream', err);
-        return;
-      }
-      if (cancelled) return;
-      es = new EventSource(url);
-      es.addEventListener('message', onMessage as EventListener);
-    })();
-    return () => {
-      cancelled = true;
-      if (es) {
-        es.removeEventListener('message', onMessage as EventListener);
-        es.close();
-      }
-    };
-  }, [selectedProject, hasProjectSelected, effectiveRole, accessToken, isAuthenticated, queryClient]);
 
   const [liveClockTick, setLiveClockTick] = useState(0);
   useEffect(() => {
