@@ -47,6 +47,7 @@ import {
 } from "./ui/dialog";
 import { PlannerAssistantMarkdown } from "./planner/PlannerAssistantMarkdown";
 import { cn } from "./ui/utils";
+import { useSseStream } from "@/hooks/useSseStream";
 
 type BuildRunDrawerProps = {
   open: boolean;
@@ -222,63 +223,33 @@ export function BuildRunDrawer({
   const shouldStream =
     open && !!runId && !!accessToken && (status == null || isAgentRunActive(status));
 
-  useEffect(() => {
-    if (!shouldStream || !runId) return;
-    let cancelled = false;
-    let es: EventSource | null = null;
-
-    const handleMessage = (e: MessageEvent) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (typeof data === "object" && data && "seq" in data) {
-          const ev: AgentRunEvent = {
-            seq: Number(data.seq) || 0,
-            kind: data.kind as AgentEventKind,
-            payload: data.payload && typeof data.payload === "object" ? (data.payload as Record<string, unknown>) : {},
-            created_at:
-              typeof data.created_at === "string"
-                ? data.created_at
-                : new Date().toISOString(),
-          };
-          setLiveEvents((prev) => {
-            // Dedupe by seq; keep the highest-seq view of an entry.
-            const map = new Map<number, AgentRunEvent>();
-            for (const x of prev) map.set(x.seq, x);
-            map.set(ev.seq, ev);
-            return [...map.values()].sort((a, b) => a.seq - b.seq);
-          });
-        }
-      } catch {
-        // ignore non-JSON keepalives etc.
-      }
-    };
-
-    void (async () => {
-      let url: string;
-      try {
-        url = await agentRunEventsStreamUrl(taskId, runId);
-      } catch (err) {
-        console.debug("[BuildRunDrawer] failed to mint SSE ticket", err);
-        return;
-      }
-      if (cancelled) return;
-      es = new EventSource(url);
-      es.addEventListener("message", handleMessage as EventListener);
-      es.onerror = () => {
-        // Network blip / page navigation. The browser closes the stream and
-        // we'll re-open when the modal re-mounts. Avoid noisy logging.
-        es?.close();
+  useSseStream({
+    enabled: shouldStream,
+    resetKey: runId ?? undefined,
+    getUrl: () => agentRunEventsStreamUrl(taskId, runId!),
+    onEvent: (data) => {
+      if (!data || typeof data !== "object" || !("seq" in (data as object))) return;
+      const d = data as Record<string, unknown>;
+      const ev: AgentRunEvent = {
+        seq: Number(d.seq) || 0,
+        kind: d.kind as AgentEventKind,
+        payload: d.payload && typeof d.payload === "object" ? (d.payload as Record<string, unknown>) : {},
+        created_at: typeof d.created_at === "string" ? d.created_at : new Date().toISOString(),
       };
-    })();
-
-    return () => {
-      cancelled = true;
-      if (es) {
-        es.removeEventListener("message", handleMessage as EventListener);
-        es.close();
-      }
-    };
-  }, [shouldStream, runId, taskId, accessToken]);
+      setLiveEvents((prev) => {
+        // Dedupe by seq; keep the highest-seq view of an entry.
+        const map = new Map<number, AgentRunEvent>();
+        for (const x of prev) map.set(x.seq, x);
+        map.set(ev.seq, ev);
+        return [...map.values()].sort((a, b) => a.seq - b.seq);
+      });
+    },
+    onDropped: () => {
+      // Backpressure: we missed events. Refetch the authoritative run detail
+      // (it carries the full persisted event list) to resync.
+      void detailQuery.refetch();
+    },
+  });
 
   const merged: AgentRunEvent[] = useMemo(() => {
     const out = new Map<number, AgentRunEvent>();

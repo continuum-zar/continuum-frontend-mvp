@@ -24,6 +24,7 @@ import {
 import { cn } from "@/app/components/ui/utils";
 import { projectKeys } from "@/api/projects";
 import { projectTaskEventsStreamUrl } from "@/api/projectTaskEvents";
+import { useSseStream } from "@/hooks/useSseStream";
 import {
   useAssignTask,
   useRemoveTaskAssignee,
@@ -187,45 +188,18 @@ export function GetStartedKanbanLive({
     setTaskColumnPreference({});
   }, [projectId]);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !isAuthenticated || !accessToken) return;
-    let cancelled = false;
-    let es: EventSource | null = null;
-    const onMessage = (ev: MessageEvent<string>) => {
-      try {
-        const data = JSON.parse(ev.data) as { type?: string; project_id?: number };
-        if (data.type === "task_updated" && Number(data.project_id) === projectId) {
-          void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
-          void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(projectId) });
-        }
-      } catch {
-        /* ignore malformed */
+  useSseStream({
+    enabled: isAuthenticated && !!accessToken,
+    resetKey: projectId,
+    getUrl: () => projectTaskEventsStreamUrl(projectId),
+    onEvent: (data) => {
+      const d = data as { type?: string; project_id?: number };
+      if (d?.type === "task_updated" && Number(d.project_id) === projectId) {
+        void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+        void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(projectId) });
       }
-    };
-    void (async () => {
-      let url: string;
-      try {
-        url = await projectTaskEventsStreamUrl(projectId);
-      } catch (err) {
-        console.debug("[GetStartedKanbanLive] failed to mint SSE ticket", err);
-        return;
-      }
-      if (cancelled) return;
-      es = new EventSource(url);
-      es.addEventListener("message", onMessage as EventListener);
-      es.onerror = () => {
-        console.debug("[GetStartedKanbanLive] project task-events stream closed or errored");
-        es?.close();
-      };
-    })();
-    return () => {
-      cancelled = true;
-      if (es) {
-        es.removeEventListener("message", onMessage as EventListener);
-        es.close();
-      }
-    };
-  }, [projectId, accessToken, isAuthenticated, queryClient]);
+    },
+  });
 
   useEffect(() => {
     if (!kanbanBoardQuery.isSuccess || kanbanBoardQuery.data == null) return;
