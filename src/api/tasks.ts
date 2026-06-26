@@ -199,10 +199,18 @@ export async function updateTask(
         }
     }
     if (body.checklists !== undefined) {
-        payload.checklists = body.checklists;
+        // Drop blank in-progress rows so the editor's transient empty item doesn't
+        // trip the backend's min_length validation (which surfaces a misleading
+        // "string should have at least 1 character" toast). The server normalizer
+        // strips these too, so this only removes a round-trip that would 422.
+        payload.checklists = body.checklists.filter((item) => item.text.trim() !== '');
     }
     if (body.sections !== undefined) {
-        payload.sections = body.sections ?? [];
+        payload.sections = (body.sections ?? []).map((section) =>
+            section.type === 'checklist'
+                ? { ...section, items: section.items.filter((item) => item.text.trim() !== '') }
+                : section,
+        );
     }
     if (body.dependencies !== undefined) {
         payload.dependencies = body.dependencies ?? [];
@@ -265,8 +273,22 @@ export interface CreateTaskBody {
 
 /** Create a task. POST /tasks/ */
 export async function createTask(body: CreateTaskBody): Promise<TaskAPIResponse> {
+    // Strip blank checklist / section rows so an empty in-progress item doesn't
+    // trip the backend's min_length validation (see updateTask for context).
+    const checklists =
+        body.checklists != null ? body.checklists.filter((item) => item.text.trim() !== '') : body.checklists;
+    const sections =
+        body.sections != null
+            ? body.sections.map((section) =>
+                  section.type === 'checklist'
+                      ? { ...section, items: section.items.filter((item) => item.text.trim() !== '') }
+                      : section,
+              )
+            : body.sections;
     const { data } = await api.post<TaskAPIResponse>('/tasks/', {
         ...body,
+        checklists,
+        sections,
         priority: body.priority ?? 'medium',
     });
     return data;
