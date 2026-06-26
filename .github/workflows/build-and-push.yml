@@ -52,7 +52,7 @@ jobs:
       # GHA cache (type=gha) requires the docker-container buildx driver. We use driver: docker
       # above to avoid Docker Hub flakiness when booting buildkit; that driver cannot export GHA cache.
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
