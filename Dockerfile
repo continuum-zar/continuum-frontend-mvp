@@ -5,7 +5,11 @@ FROM node:22-slim AS build
 ENV NODE_ENV=production \
     NPM_CONFIG_UPDATE_NOTIFIER=false \
     NPM_CONFIG_FUND=false \
-    NPM_CONFIG_AUDIT=false
+    NPM_CONFIG_AUDIT=false \
+    # Give Node a larger heap so the Vite/Rollup build (mermaid + cytoscape +
+    # recharts + katex in one graph) doesn't hit the default old-space limit and
+    # get OOM-killed → retried. Raise if the build host has more RAM available.
+    NODE_OPTIONS=--max-old-space-size=4096
 
 WORKDIR /app
 
