@@ -35,6 +35,16 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+      // Honor the `_`-prefix convention for intentionally-unused params/vars
+      // (e.g. stub signatures like `userProfilePath(_userId)`).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
 ];
