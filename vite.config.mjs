@@ -234,10 +234,14 @@ export default defineConfig({
   assetsInclude: ['**/*.svg', '**/*.csv'],
 
   build: {
-    // Required for Sentry to symbolicate stack traces. The Sentry plugin
-    // deletes the .map files from `dist` after uploading so the deployed
-    // bundle stays the same size.
-    sourcemap: true,
+    // Source maps are only needed when Sentry is uploading them to symbolicate
+    // stack traces. Generating them is one of the most memory-intensive parts of a
+    // Rollup build (full source-map chains held in memory per chunk) and they bloat
+    // the artifact (155 .map files, some >3 MB). So generate 'hidden' maps ONLY when
+    // a Sentry upload is configured (the plugin deletes them from `dist` after upload);
+    // otherwise skip them entirely. This is the single biggest build-memory win and
+    // stops capped CI/Vercel runners from OOM-killing and retrying the build.
+    sourcemap: sentryUploadEnabled ? 'hidden' : false,
     rollupOptions: {
       output: {
         manualChunks: {
