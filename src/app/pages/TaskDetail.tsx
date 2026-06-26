@@ -446,94 +446,203 @@ function TaskNotFound() {
 
 type NamedChecklistItem = { id?: string; text: string; done: boolean };
 
-/** Render the items of a single named checklist section with drag-handle reordering. */
-function NamedSectionChecklistItems({
+/**
+ * A checklist: drag-reorderable rows with single-click-to-toggle /
+ * double-click-to-edit, an "Add item" button, and an empty-state line.
+ *
+ * Owns its edit/draft/drag state internally so it can be reused for both the
+ * default task checklist and every named checklist section — guaranteeing the
+ * two render and behave identically.
+ */
+function ChecklistItems({
   items,
   onItemsChange,
 }: {
   items: NamedChecklistItem[];
   onItemsChange: (next: NamedChecklistItem[]) => void;
 }) {
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const clickTimerRef = useRef<number | null>(null);
   const drag = useChecklistItemDrag((from, to) => onItemsChange(reorderChecklistItems(items, from, to)));
-  const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
-  const [pendingFocusIdx, setPendingFocusIdx] = useState<number | null>(null);
 
   useEffect(() => {
-    if (pendingFocusIdx === null) return;
-    const el = inputRefs.current.get(pendingFocusIdx);
-    if (el) {
-      el.focus();
-      setPendingFocusIdx(null);
-    }
-  }, [pendingFocusIdx, items]);
+    return () => {
+      if (clickTimerRef.current != null) {
+        window.clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = null;
+      }
+    };
+  }, []);
 
-  const addItemAndFocus = () => {
-    const next = [...items, { text: '', done: false }];
+  const startEdit = (idx: number) => {
+    setEditingIdx(idx);
+    setDraft(items[idx].text);
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 0);
+  };
+
+  const toggle = (idx: number) => {
+    onItemsChange(items.map((it, i) => (i === idx ? { ...it, done: !it.done } : it)));
+  };
+
+  /** Single click toggles the checkbox; a second click within 250ms cancels and starts editing instead. */
+  const handleRowClick = (idx: number) => {
+    if (editingIdx === idx) return;
+    if (clickTimerRef.current != null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      return;
+    }
+    clickTimerRef.current = window.setTimeout(() => {
+      clickTimerRef.current = null;
+      toggle(idx);
+    }, 250);
+  };
+
+  const handleRowDoubleClick = (idx: number) => {
+    if (clickTimerRef.current != null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+    startEdit(idx);
+  };
+
+  const saveEdit = () => {
+    if (editingIdx === null) return;
+    const trimmed = draft.trim();
+    onItemsChange(
+      trimmed
+        ? items.map((it, i) => (i === editingIdx ? { ...it, text: trimmed } : it))
+        : items.filter((_, i) => i !== editingIdx),
+    );
+    setEditingIdx(null);
+  };
+
+  /** Commit the current edit (or drop the row if empty) and immediately add a new empty row in edit mode. */
+  const saveEditAndAddNew = () => {
+    if (editingIdx === null) return;
+    const trimmed = draft.trim();
+    const committed = trimmed
+      ? items.map((it, i) => (i === editingIdx ? { ...it, text: trimmed } : it))
+      : items.filter((_, i) => i !== editingIdx);
+    const next = [...committed, { text: '', done: false }];
     onItemsChange(next);
-    setPendingFocusIdx(next.length - 1);
+    setEditingIdx(next.length - 1);
+    setDraft('');
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+  };
+
+  const addItem = () => {
+    const next = [...items, { text: 'New checklist', done: false }];
+    onItemsChange(next);
+    setEditingIdx(next.length - 1);
+    setDraft('New checklist');
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 0);
   };
 
   return (
-    <div className="space-y-2">
-      {items.map((item, itemIdx) => {
-        const isDragging = drag.draggingIdx === itemIdx;
-        const isTarget =
-          drag.draggingIdx !== null && drag.draggingIdx !== itemIdx && drag.overIdx === itemIdx;
-        return (
-          <div
-            key={itemIdx}
-            data-checklist-row
-            className={`group/row flex items-start gap-2 rounded-md -mx-1 px-1 py-0.5 ${isDragging ? 'opacity-40' : ''} ${isTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
-          >
-            <button
-              type="button"
-              onPointerDown={drag.onHandlePointerDown(itemIdx)}
-              aria-label="Reorder checklist item"
-              className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
-            >
-              <GripVertical size={14} strokeWidth={2} aria-hidden />
-            </button>
-            <button
-              type="button"
-              onClick={() => onItemsChange(items.map((it, i) => (i === itemIdx ? { ...it, done: !it.done } : it)))}
-              aria-pressed={item.done}
-              className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
-            >
-              {item.done ? <Check size={13} className="text-white" /> : null}
-            </button>
-            <input
-              ref={(el) => {
-                if (el) inputRefs.current.set(itemIdx, el);
-                else inputRefs.current.delete(itemIdx);
-              }}
-              type="text"
-              value={item.text}
-              onChange={(e) => onItemsChange(items.map((it, i) => (i === itemIdx ? { ...it, text: e.target.value } : it)))}
-              onBlur={() => {
-                if (!item.text.trim()) onItemsChange(items.filter((_, i) => i !== itemIdx));
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  addItemAndFocus();
-                }
-              }}
-              placeholder="Item"
-              className={`min-w-0 flex-1 border-0 bg-transparent text-[13px] outline-none ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
-            />
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => onItemsChange(items.filter((_, i) => i !== itemIdx))}
-              aria-label="Remove checklist item"
-              className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
-            >
-              <X size={12} strokeWidth={2} aria-hidden />
-            </button>
-          </div>
-        );
-      })}
+    <div className="space-y-4">
+      {items.length === 0 ? (
+        <p className="text-[13px] text-[#727d83]">No checklist items yet</p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((item, idx) => {
+            const isEditing = editingIdx === idx;
+            const isDragging = drag.draggingIdx === idx;
+            const isDragTarget =
+              drag.draggingIdx !== null && drag.draggingIdx !== idx && drag.overIdx === idx;
+            return (
+              <div
+                key={idx}
+                data-checklist-row
+                className={`group/row flex items-start gap-2 rounded-md -mx-1 px-1 py-0.5 ${isEditing ? '' : 'cursor-pointer select-none hover:bg-[#f3f5f7]'} ${isDragging ? 'opacity-40' : ''} ${isDragTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
+                onClick={isEditing ? undefined : () => handleRowClick(idx)}
+                onDoubleClick={isEditing ? undefined : () => handleRowDoubleClick(idx)}
+              >
+                <button
+                  type="button"
+                  onPointerDown={drag.onHandlePointerDown(idx)}
+                  onClick={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  aria-label="Reorder checklist item"
+                  className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
+                >
+                  <GripVertical size={14} strokeWidth={2} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRowClick(idx);
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    handleRowDoubleClick(idx);
+                  }}
+                  aria-pressed={item.done}
+                  className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+                >
+                  {item.done ? <Check size={13} className="text-white" /> : null}
+                </button>
+                {isEditing ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onBlur={saveEdit}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        saveEditAndAddNew();
+                      }
+                      if (e.key === 'Escape') setEditingIdx(null);
+                    }}
+                    className="min-w-0 flex-1 border-0 bg-transparent font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none"
+                  />
+                ) : (
+                  <p
+                    className={`min-w-0 flex-1 break-words font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
+                  >
+                    {item.text}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onItemsChange(items.filter((_, i) => i !== idx));
+                    if (editingIdx === idx) setEditingIdx(null);
+                  }}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  aria-label="Remove checklist item"
+                  className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                >
+                  <X size={12} strokeWidth={2} aria-hidden />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={addItem}
+        className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+      >
+        <Plus size={12} /> Add item
+      </button>
     </div>
   );
 }
@@ -611,8 +720,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState('');
   const [localChecklists, setLocalChecklists] = useState<Array<{ id?: string; text: string; done: boolean }>>([]);
-  const [editingChecklistIdx, setEditingChecklistIdx] = useState<number | null>(null);
-  const [checklistDraft, setChecklistDraft] = useState('');
   const [localSections, setLocalSections] = useState<TaskSection[]>([]);
   /** Track which section's name input is being actively edited (so its draft doesn't get clobbered by server sync). */
   const [editingSectionNameIdx, setEditingSectionNameIdx] = useState<number | null>(null);
@@ -852,8 +959,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   const commentTextareaRef = useAutosizeTextarea(commentDraft, { minPx: 80, maxPx: 220 });
   const tagInputRef = useRef<HTMLInputElement>(null);
   const effortInputRef = useRef<HTMLInputElement>(null);
-  const checklistInputRef = useRef<HTMLInputElement>(null);
-  const checklistClickTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     checklistInflightRef.current = false;
@@ -1112,95 +1217,6 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
     saveSections(next);
   };
 
-  const addChecklistItem = () => {
-    const next = [...localChecklists, { text: 'New checklist', done: false }];
-    saveChecklists(next);
-    setEditingChecklistIdx(next.length - 1);
-    setChecklistDraft('New checklist');
-    setTimeout(() => {
-      checklistInputRef.current?.focus();
-      checklistInputRef.current?.select();
-    }, 0);
-  };
-
-  const toggleChecklist = (idx: number) => {
-    const next = localChecklists.map((c, i) => i === idx ? { ...c, done: !c.done } : c);
-    saveChecklists(next);
-  };
-
-  const startEditChecklist = (idx: number) => {
-    setEditingChecklistIdx(idx);
-    setChecklistDraft(localChecklists[idx].text);
-    setTimeout(() => {
-      checklistInputRef.current?.focus();
-      checklistInputRef.current?.select();
-    }, 0);
-  };
-
-  /** Single click toggles the checkbox; a follow-up second click within 250ms cancels and starts editing instead. */
-  const handleChecklistRowClick = (idx: number) => {
-    if (editingChecklistIdx === idx) return;
-    if (checklistClickTimerRef.current != null) {
-      window.clearTimeout(checklistClickTimerRef.current);
-      checklistClickTimerRef.current = null;
-      return;
-    }
-    checklistClickTimerRef.current = window.setTimeout(() => {
-      checklistClickTimerRef.current = null;
-      toggleChecklist(idx);
-    }, 250);
-  };
-
-  const handleChecklistRowDoubleClick = (idx: number) => {
-    if (checklistClickTimerRef.current != null) {
-      window.clearTimeout(checklistClickTimerRef.current);
-      checklistClickTimerRef.current = null;
-    }
-    startEditChecklist(idx);
-  };
-
-  const defaultChecklistDrag = useChecklistItemDrag((from, to) => {
-    saveChecklists(reorderChecklistItems(localChecklists, from, to));
-  });
-
-  useEffect(() => {
-    return () => {
-      if (checklistClickTimerRef.current != null) {
-        window.clearTimeout(checklistClickTimerRef.current);
-        checklistClickTimerRef.current = null;
-      }
-    };
-  }, []);
-
-  const saveChecklistEdit = () => {
-    if (editingChecklistIdx === null) return;
-    const trimmed = checklistDraft.trim();
-    if (!trimmed) {
-      const next = localChecklists.filter((_, i) => i !== editingChecklistIdx);
-      saveChecklists(next);
-    } else {
-      const next = localChecklists.map((c, i) => i === editingChecklistIdx ? { ...c, text: trimmed } : c);
-      saveChecklists(next);
-    }
-    setEditingChecklistIdx(null);
-  };
-
-  /** Commit the current edit (or drop the row if empty) and immediately add a new empty row in edit mode. */
-  const saveChecklistEditAndAddNew = () => {
-    if (editingChecklistIdx === null) return;
-    const trimmed = checklistDraft.trim();
-    const committed = trimmed
-      ? localChecklists.map((c, i) => (i === editingChecklistIdx ? { ...c, text: trimmed } : c))
-      : localChecklists.filter((_, i) => i !== editingChecklistIdx);
-    const next = [...committed, { text: '', done: false }];
-    saveChecklists(next);
-    setEditingChecklistIdx(next.length - 1);
-    setChecklistDraft('');
-    setTimeout(() => {
-      checklistInputRef.current?.focus();
-    }, 0);
-  };
-
   /* ─ tags (labels) ─ */
   const startAddTag = () => {
     setTagDraft('New tag');
@@ -1442,100 +1458,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   <Plus size={16} />
                 </button>
               </div>
-              {localChecklists.length === 0 ? (
-                <p className="text-[13px] text-[#727d83]">No checklist items yet</p>
-              ) : (
-                <div className="space-y-2">
-                  {localChecklists.map((item, idx) => {
-                    const isEditing = editingChecklistIdx === idx;
-                    const isDragging = defaultChecklistDrag.draggingIdx === idx;
-                    const isDragTarget =
-                      defaultChecklistDrag.draggingIdx !== null &&
-                      defaultChecklistDrag.draggingIdx !== idx &&
-                      defaultChecklistDrag.overIdx === idx;
-                    return (
-                      <div
-                        key={idx}
-                        data-checklist-row
-                        className={`group/row flex items-start gap-2 rounded-md -mx-1 px-1 py-0.5 ${isEditing ? '' : 'cursor-pointer select-none hover:bg-[#f3f5f7]'} ${isDragging ? 'opacity-40' : ''} ${isDragTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
-                        onClick={isEditing ? undefined : () => handleChecklistRowClick(idx)}
-                        onDoubleClick={isEditing ? undefined : () => handleChecklistRowDoubleClick(idx)}
-                      >
-                        <button
-                          type="button"
-                          onPointerDown={defaultChecklistDrag.onHandlePointerDown(idx)}
-                          onClick={(e) => e.stopPropagation()}
-                          onDoubleClick={(e) => e.stopPropagation()}
-                          aria-label="Reorder checklist item"
-                          className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
-                        >
-                          <GripVertical size={14} strokeWidth={2} aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleChecklistRowClick(idx);
-                          }}
-                          onDoubleClick={(e) => {
-                            e.stopPropagation();
-                            handleChecklistRowDoubleClick(idx);
-                          }}
-                          aria-pressed={item.done}
-                          className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
-                        >
-                          {item.done ? <Check size={13} className="text-white" /> : null}
-                        </button>
-                        {isEditing ? (
-                          <input
-                            ref={checklistInputRef}
-                            type="text"
-                            value={checklistDraft}
-                            onChange={(e) => setChecklistDraft(e.target.value)}
-                            onBlur={saveChecklistEdit}
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                saveChecklistEditAndAddNew();
-                              }
-                              if (e.key === 'Escape') setEditingChecklistIdx(null);
-                            }}
-                            className="min-w-0 flex-1 border-0 bg-transparent font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none"
-                          />
-                        ) : (
-                          <p
-                            className={`min-w-0 flex-1 break-words font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
-                          >
-                            {item.text}
-                          </p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            saveChecklists(localChecklists.filter((_, i) => i !== idx));
-                            if (editingChecklistIdx === idx) setEditingChecklistIdx(null);
-                          }}
-                          onDoubleClick={(e) => e.stopPropagation()}
-                          aria-label="Remove checklist item"
-                          className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
-                        >
-                          <X size={12} strokeWidth={2} aria-hidden />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={addChecklistItem}
-                className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
-              >
-                <Plus size={12} /> Add item
-              </button>
+              <ChecklistItems items={localChecklists} onItemsChange={saveChecklists} />
             </section>
 
             {/* ─── Named checklist sections (created via the Checklist + button) ─── */}
@@ -1577,22 +1500,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       <X size={14} />
                     </button>
                   </div>
-                  {section.type === 'checklist' && (section.items ?? []).length > 0 ? (
-                    <NamedSectionChecklistItems
+                  {section.type === 'checklist' ? (
+                    <ChecklistItems
                       items={section.items ?? []}
                       onItemsChange={(next) => updateChecklistSection(sIdx, () => next)}
                     />
-                  ) : null}
-                  {section.type === 'checklist' ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateChecklistSection(sIdx, (items) => [...items, { text: '', done: false }])
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
-                    >
-                      <Plus size={12} /> Add item
-                    </button>
                   ) : (
                     <textarea
                       value={section.text ?? ''}
