@@ -165,6 +165,14 @@ export async function addMember(
     return data;
 }
 
+/** Remove a member from a project. DELETE /api/v1/projects/{id}/members/{userId}. */
+export async function removeMember(
+    projectId: number | string,
+    userId: number | string
+): Promise<void> {
+    await api.delete(`/projects/${projectId}/members/${userId}`);
+}
+
 /**
  * Unify `useParams()` string ids and `Number(id)` so React Query keys match; otherwise
  * invalidateQueries from mutations (number) does not refresh queries subscribed with a string id.

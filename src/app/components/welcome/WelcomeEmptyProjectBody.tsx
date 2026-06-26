@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { parseApiUtcDateTime } from "@/lib/parseApiUtcDateTime";
 import { playRepoIndexingCompleteSound } from "@/lib/playRepoIndexingCompleteSound";
 import { consumeGithubOAuthReopenWelcomeLinkRepoModal } from "@/lib/githubOAuthReturn";
-import { ArrowRightLeft, Download, ExternalLink, FileText, GitCommit, Link2, Loader2, RefreshCw, X } from "lucide-react";
+import { ArrowRightLeft, Download, ExternalLink, FileText, GitCommit, Link2, Loader2, RefreshCw, Trash2, X } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
 import { STALE_SHORT_MS, STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
@@ -27,11 +27,15 @@ import {
   useProjectAttachments,
   useProjectRepositories,
   useProjectMembers,
+  useRemoveMember,
   useScanRepository,
   useUnlinkRepository,
   useWikiScanStatus,
   fetchWelcomeRecentActivityFeed,
 } from "@/api";
+import { useMyProjectPermissions } from "@/api/rbacHooks";
+import { useAuthStore } from "@/store/authStore";
+import { ConfirmDialog } from "@/app/components/ui/confirm-dialog";
 import type { GitContributionClassification, GitContributionRead, ScanStatusResponse } from "@/api";
 import { toast } from "sonner";
 import type { Attachment } from "@/types/attachment";
@@ -72,18 +76,34 @@ function LiveTeamMemberCard({
   member,
   totalHours,
   tasksCompleted,
+  canRemove = false,
+  onRemove,
 }: {
   member: Member;
   /** null while contribution stats are loading */
   totalHours: number | null;
   tasksCompleted: number | null;
+  /** Whether the caller may remove this member from the project. */
+  canRemove?: boolean;
+  onRemove?: (member: Member) => void;
 }) {
   const bg = memberAvatarBackground(member.userId);
   const roleLine = projectMemberRoleLabel(member.role);
   const fmt = (n: number | null) =>
     n === null ? "…" : String(Math.round(Number(n)));
   return (
-    <div className="flex w-full max-w-[260px] shrink-0 flex-col gap-6 rounded-[12px] border border-solid border-[#ebedee] bg-white p-6 shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)]">
+    <div className="group relative flex w-full max-w-[260px] shrink-0 flex-col gap-6 rounded-[12px] border border-solid border-[#ebedee] bg-white p-6 shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)]">
+      {canRemove && (
+        <button
+          type="button"
+          onClick={() => onRemove?.(member)}
+          aria-label={`Remove ${member.name} from project`}
+          title="Remove from project"
+          className="absolute right-3 top-3 inline-flex size-7 items-center justify-center bg-transparent text-[#dc2626] opacity-0 transition-opacity hover:text-[#b91c1c] focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      )}
       <div className="flex h-10 w-full min-w-0 items-center">
         <div className="flex min-w-0 items-center gap-2">
           <div
@@ -790,7 +810,35 @@ export function WelcomeEmptyProjectBody({
 }) {
   const [addResourceOpen, setAddResourceOpen] = useState(false);
   const [linkRepoOpen, setLinkRepoOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const previouslyScanningRepoIdsRef = useRef<Set<number>>(new Set());
+
+  const currentUserId = useAuthStore((s) => {
+    const raw = s.user?.id;
+    const n = raw == null ? NaN : Number(raw);
+    return Number.isFinite(n) ? n : null;
+  });
+  const permissionsQuery = useMyProjectPermissions(projectId);
+  const canManageMembers =
+    (permissionsQuery.data?.is_owner ?? false) ||
+    (permissionsQuery.data?.permissions?.includes("members.invite") ?? false);
+  const removeMemberMutation = useRemoveMember(projectId);
+
+  /** A member can be removed only by a manager, and never the acting user themselves. */
+  const canRemoveMember = (member: Member) =>
+    canManageMembers && currentUserId != null && member.userId !== currentUserId;
+
+  const handleConfirmRemoveMember = () => {
+    if (!memberToRemove || removeMemberMutation.isPending) return;
+    // Defensive: never allow self-removal even if the dialog was somehow opened.
+    if (!canRemoveMember(memberToRemove)) {
+      setMemberToRemove(null);
+      return;
+    }
+    removeMemberMutation.mutate(memberToRemove.userId, {
+      onSuccess: () => setMemberToRemove(null),
+    });
+  };
 
   useEffect(() => {
     if (consumeGithubOAuthReopenWelcomeLinkRepoModal()) {
@@ -1008,12 +1056,34 @@ export function WelcomeEmptyProjectBody({
                   member={m}
                   totalHours={contributionsLoading ? null : (stats?.total_hours ?? 0)}
                   tasksCompleted={contributionsLoading ? null : (stats?.total_tasks_completed ?? 0)}
+                  canRemove={canRemoveMember(m)}
+                  onRemove={setMemberToRemove}
                 />
               );
             })}
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={memberToRemove != null}
+        onOpenChange={(next) => {
+          if (!next) setMemberToRemove(null);
+        }}
+        headerTitle="Remove member"
+        title="Remove this member?"
+        description={
+          <>
+            <span className="text-[#0b191f]">&ldquo;{memberToRemove?.name}&rdquo;</span> will be
+            removed from the project and lose access to its tasks and resources. This action cannot be
+            undone.
+          </>
+        }
+        confirmLabel="Remove"
+        pendingLabel="Removing…"
+        onConfirm={handleConfirmRemoveMember}
+        isPending={removeMemberMutation.isPending}
+      />
     </div>
   );
 }
