@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrandedLoadingPlaceholder } from "../components/ui/branded-loading";
+import { DashboardHomeContentSkeleton } from "../components/dashboard-placeholder/DashboardPlaceholderSkeletons";
 
 const Dashboard = lazy(() => import("./Dashboard").then((m) => ({ default: m.Dashboard })));
 const DashboardLeftRail = lazy(() =>
@@ -33,14 +33,7 @@ export function DashboardPlaceholderHome() {
               }}
             >
               <div className="mx-auto w-full max-w-[1500px] py-4">
-                <Suspense
-                  fallback={
-                    <BrandedLoadingPlaceholder
-                      className="h-full min-h-[60vh]"
-                      label="Loading your dashboard…"
-                    />
-                  }
-                >
+                <Suspense fallback={<DashboardHomeContentSkeleton />}>
                   <Dashboard hideKpiCards hideProductivityRhythm />
                 </Suspense>
               </div>

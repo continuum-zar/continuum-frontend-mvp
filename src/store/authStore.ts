@@ -1,9 +1,11 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { isAxiosError } from 'axios';
-import api from '../lib/api';
+import api, { silentRefresh } from '../lib/api';
 import { setSentryUser } from '../lib/sentry';
+import { clearStoredGoogleAccessToken } from '../lib/googleCalendarClient';
+import { MCP_OAUTH_CLIENT_LABEL_KEY, MCP_OAUTH_SESSION_KEY } from '../lib/mcpOauthSessionKeys';
 import { TIME_RECORDING_STORAGE_KEY } from '../lib/timeRecordingTimerStorage';
+import { SESSION_INVITE_TOKEN_KEY } from '../app/components/welcome/welcomeModalAssets';
 import { AuthState, AuthResponse } from '../types/auth';
 import { RegisterPayload, User } from '../types/user';
 
@@ -12,175 +14,197 @@ interface AuthActions {
     register: (payload: RegisterPayload) => Promise<void>;
     logout: () => Promise<void>;
     checkAuth: (force?: boolean) => Promise<void>;
-    setTokens: (accessToken: string, refreshToken: string) => void;
+    setAccessToken: (accessToken: string) => void;
     clearError: () => void;
 }
 
 type AuthStore = AuthState & AuthActions;
 
-export const useAuthStore = create<AuthStore>()(
-    persist(
-        (set, get) => ({
-            user: null,
-            isAuthenticated: false,
-            accessToken: null,
-            refreshToken: null,
-            isLoading: false,
-            isInitialized: false,
-            error: null,
+export const useAuthStore = create<AuthStore>()((set, get) => ({
+    user: null,
+    isAuthenticated: false,
+    accessToken: null,
+    authSource: null,
+    isLoading: false,
+    isInitialized: false,
+    error: null,
 
-            login: async (credentials) => {
-                set({ isLoading: true, error: null });
-                try {
-                    const response = await api.post<AuthResponse>('/auth/login', credentials);
-                    const { access_token, refresh_token } = response.data;
+    login: async (credentials) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.post<AuthResponse>('/auth/login', credentials);
+            const { access_token } = response.data;
 
-                    set({
-                        accessToken: access_token,
-                        refreshToken: refresh_token,
-                        isAuthenticated: true
-                    });
+            set({
+                accessToken: access_token,
+                isAuthenticated: true,
+                authSource: 'manual',
+            });
 
-                    // Fetch user info after login
-                    try {
-                        await get().checkAuth(true);
-                    } catch (err) {
-                        set({
-                            accessToken: null,
-                            refreshToken: null,
-                            isAuthenticated: false,
-                            user: null,
-                            isInitialized: true,
-                            isLoading: false
-                        });
-                        throw err;
-                    }
-                } catch (error) {
-                    set({
-                        error: isAxiosError(error) ? (error.response?.data?.message || 'Login failed') : 'Login failed',
-                        isLoading: false,
-                    });
-                    throw error;
-                }
-            },
+            try {
+                await get().checkAuth(true);
+            } catch (err) {
+                set({
+                    accessToken: null,
+                    isAuthenticated: false,
+                    user: null,
+                    isInitialized: true,
+                    isLoading: false,
+                });
+                throw err;
+            }
+        } catch (error) {
+            set({
+                error: isAxiosError(error) ? (error.response?.data?.message || 'Login failed') : 'Login failed',
+                isLoading: false,
+            });
+            throw error;
+        }
+    },
 
-            register: async (payload) => {
-                set({ isLoading: true, error: null });
-                try {
-                    const response = await api.post<AuthResponse>('/auth/register', payload);
-                    const { access_token, refresh_token } = response.data;
+    register: async (payload) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.post<AuthResponse>('/auth/register', payload);
+            const { access_token } = response.data;
 
-                    set({
-                        accessToken: access_token,
-                        refreshToken: refresh_token,
-                        isAuthenticated: true
-                    });
+            set({
+                accessToken: access_token,
+                isAuthenticated: true,
+                authSource: 'manual',
+            });
 
-                    // Fetch user info after registration
-                    try {
-                        await get().checkAuth(true);
-                    } catch (err) {
-                        set({
-                            accessToken: null,
-                            refreshToken: null,
-                            isAuthenticated: false,
-                            user: null,
-                            isInitialized: true,
-                            isLoading: false
-                        });
-                        throw err;
-                    }
-                } catch (error) {
-                    set({
-                        error: isAxiosError(error) ? (error.response?.data?.message || 'Registration failed') : 'Registration failed',
-                        isLoading: false,
-                    });
-                    throw error;
-                }
-            },
+            try {
+                await get().checkAuth(true);
+            } catch (err) {
+                set({
+                    accessToken: null,
+                    isAuthenticated: false,
+                    authSource: null,
+                    user: null,
+                    isInitialized: true,
+                    isLoading: false,
+                });
+                throw err;
+            }
+        } catch (error) {
+            set({
+                error: isAxiosError(error) ? (error.response?.data?.message || 'Registration failed') : 'Registration failed',
+                isLoading: false,
+            });
+            throw error;
+        }
+    },
 
-            logout: async () => {
-                set({ isLoading: true });
-                try {
-                    await api.post('/auth/logout');
-                } catch (error) {
-                    console.error('Logout request failed', error);
-                } finally {
+    logout: async () => {
+        set({ isLoading: true });
+        try {
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.error('Logout request failed', error);
+        } finally {
+            setSentryUser(null);
+            set({
+                user: null,
+                isAuthenticated: false,
+                accessToken: null,
+                authSource: null,
+                isLoading: false,
+                isInitialized: true,
+                error: null,
+            });
+            try {
+                localStorage.removeItem('auth-storage');
+                localStorage.removeItem(TIME_RECORDING_STORAGE_KEY);
+                clearStoredGoogleAccessToken();
+                sessionStorage.removeItem(SESSION_INVITE_TOKEN_KEY);
+                sessionStorage.removeItem(MCP_OAUTH_SESSION_KEY);
+                sessionStorage.removeItem(MCP_OAUTH_CLIENT_LABEL_KEY);
+            } catch {
+                /* noop */
+            }
+            // React Query cache is purged by AuthQueryCacheSync once isAuthenticated
+            // flips false — after unmount, so observers don't refetch unauthenticated.
+        }
+    },
+
+    checkAuth: async (force = false) => {
+        const { accessToken, isLoading } = get();
+
+        if (isLoading && !force) return;
+
+        // No in-memory access token: try a silent refresh (HttpOnly cookie path).
+        if (!accessToken) {
+            set({ isLoading: true });
+            try {
+                const result = await silentRefresh();
+                if (result.kind === 'unauthenticated') {
+                    setSentryUser(null);
                     set({
                         user: null,
                         isAuthenticated: false,
-                        accessToken: null,
-                        refreshToken: null,
+                        authSource: null,
                         isLoading: false,
                         isInitialized: true,
-                        error: null
                     });
-                    setSentryUser(null);
-                    localStorage.removeItem('auth-storage');
-                    try {
-                        localStorage.removeItem(TIME_RECORDING_STORAGE_KEY);
-                    } catch {
-                        /* noop */
-                    }
-                }
-            },
-
-            checkAuth: async (force = false) => {
-                const { accessToken, isLoading } = get();
-
-                // If no token, we are effectively "checked" and not authenticated
-                if (!accessToken) {
-                    set({ isInitialized: true, isAuthenticated: false, user: null });
                     return;
                 }
-
-                // If check is already in progress, avoid double call unless forced
-                if (isLoading && !force) return;
-
-                set({ isLoading: true });
-                try {
-                    const response = await api.get<User>('/users/me');
-                    set({
-                        user: response.data,
-                        isAuthenticated: true,
-                        isLoading: false,
-                        isInitialized: true
-                    });
-                    setSentryUser({ id: response.data.id, email: response.data.email });
-                } catch (error) {
-                    if (isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
-                        set({
-                            user: null,
-                            isAuthenticated: false,
-                            accessToken: null,
-                            refreshToken: null,
-                            isLoading: false,
-                            isInitialized: true
-                        });
-                    } else {
-                        set({ isLoading: false, isInitialized: true });
-                    }
-                    throw error;
+                if (result.kind === 'transient') {
+                    // Don't log the user out on a rate-limit / network blip — leave
+                    // auth state alone and let the next action retry. Mark
+                    // initialized so the loader doesn't hang forever.
+                    set({ isLoading: false, isInitialized: true });
+                    return;
                 }
-            },
-
-            setTokens: (accessToken, refreshToken) => {
+                set({ accessToken: result.token, isAuthenticated: true, authSource: 'manual' });
+            } catch {
+                setSentryUser(null);
                 set({
-                    accessToken,
-                    refreshToken,
-                    isAuthenticated: true,
+                    user: null,
+                    isAuthenticated: false,
+                    authSource: null,
+                    isLoading: false,
+                    isInitialized: true,
                 });
-            },
-
-            clearError: () => set({ error: null }),
-        }),
-        {
-            name: 'auth-storage',
-            storage: createJSONStorage(() => localStorage),
-            partialize: (state) => ({
-                accessToken: state.accessToken,
-                refreshToken: state.refreshToken,
-            }),
+                return;
+            }
+        } else {
+            set({ isLoading: true });
         }
-    )
-);
+
+        try {
+            const response = await api.get<User>('/users/me');
+            set({
+                user: response.data,
+                isAuthenticated: true,
+                isLoading: false,
+                isInitialized: true,
+            });
+            setSentryUser({ id: response.data.id, email: response.data.email });
+        } catch (error) {
+            if (isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
+                setSentryUser(null);
+                set({
+                    user: null,
+                    isAuthenticated: false,
+                    accessToken: null,
+                    authSource: null,
+                    isLoading: false,
+                    isInitialized: true,
+                });
+            } else {
+                set({ isLoading: false, isInitialized: true });
+            }
+            throw error;
+        }
+    },
+
+    setAccessToken: (accessToken) => {
+        set({
+            accessToken,
+            isAuthenticated: true,
+        });
+    },
+
+    clearError: () => set({ error: null }),
+}));

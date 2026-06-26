@@ -52,6 +52,8 @@ export { invitationKeys };
 import { createClient, fetchClient, clientKeys } from './clients';
 import type { ClientCreate } from './clients';
 import { fetchCursorMcpTaskDetail } from './cursorMcp';
+import { fetchMyNotifications, notificationKeys } from './notifications';
+export { notificationKeys };
 import {
     fetchGitHubInstallationRepositories,
     githubAppKeys,
@@ -85,6 +87,7 @@ import {
     setTaskAssignees,
     addTaskLabel,
     removeTaskLabel,
+    DuplicateTaskLinkedBranchError,
     type TaskChecklistItemUpdate,
     type TaskCommentsPageResult,
 } from './tasks';
@@ -95,6 +98,7 @@ import type { CreateLoggedHourBody } from './loggedHours';
 import { createRepositoryBranch } from './repositoryBranchCreate';
 import type { Repository } from '@/types/repository';
 import { appendLinkedBranchDeduped, repositoryLinkedName } from '@/lib/taskBranchNaming';
+import { getUserErrorMessage } from '@/lib/errorMessages';
 import { submitIssueReport } from './feedback';
 import type { SubmitIssueReportBody } from './feedback';
 import type { KanbanBoardColumnApi } from '@/types/kanban';
@@ -526,34 +530,9 @@ function optimisticApplyLinkedBranches(
     patchTaskInAssignedCreatedLists(queryClient, taskId, branches);
 }
 
-/** Normalize FastAPI error detail into a single message. */
+/** Normalize any thrown value into user-safe copy. Delegates to the shared helper. */
 export function getApiErrorMessage(err: unknown, fallback: string): string {
-    if (axios.isAxiosError(err)) {
-        const data = err.response?.data as { detail?: string | Array<{ msg?: string }> } | undefined;
-        const detail = data?.detail;
-        if (typeof detail === 'string') return detail;
-        if (Array.isArray(detail) && detail.length > 0) {
-            const messages = detail
-                .map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d)))
-                .filter(Boolean);
-            if (messages.length > 0) return messages.join('. ');
-        }
-        // No HTTP response: dropped connection, proxy/gateway timeout, DNS, CORS, client timeout, etc.
-        // The server may still have completed the request — err.message explains the client-side failure.
-        if (!err.response && err.message) return err.message;
-    } else {
-        const data = (err as { response?: { data?: { detail?: string | Array<{ msg?: string }> } } })?.response?.data;
-        const detail = data?.detail;
-        if (typeof detail === 'string') return detail;
-        if (Array.isArray(detail) && detail.length > 0) {
-            const messages = detail
-                .map((d) => (d && typeof d.msg === 'string' ? d.msg : String(d)))
-                .filter(Boolean);
-            return messages.length > 0 ? messages.join('. ') : fallback;
-        }
-    }
-    if (err instanceof Error && err.message) return err.message;
-    return fallback;
+    return getUserErrorMessage(err, fallback);
 }
 
 
@@ -655,6 +634,25 @@ export function useProjectRecentActivity(
     return useQuery({
         queryKey: ['projects', projectId, 'welcome-recent-activity', limit],
         queryFn: () => fetchWelcomeRecentActivityFeed(projectId!, { limit }),
+        enabled,
+        staleTime: STALE_SHORT_MS,
+        refetchOnWindowFocus: true,
+    });
+}
+
+/**
+ * The signed-in user's @mention notifications, scoped to one project. Powers the
+ * "Mentions" section of the notifications bell.
+ */
+export function useMyNotifications(
+    projectId: number | string | null | undefined,
+    options?: { limit?: number; enabled?: boolean },
+) {
+    const limit = options?.limit ?? 50;
+    const enabled = (options?.enabled ?? true) && projectId != null && projectId !== '';
+    return useQuery({
+        queryKey: notificationKeys.mine(projectId),
+        queryFn: () => fetchMyNotifications({ projectId, limit }),
         enabled,
         staleTime: STALE_SHORT_MS,
         refetchOnWindowFocus: true,
@@ -1263,7 +1261,11 @@ export function useUpdateTask() {
             if (ctx?.prevSnapshot != null) {
                 restoreTaskCachesFromSnapshot(queryClient, variables.taskId, ctx.prevSnapshot);
             }
-            toast.error(getApiErrorMessage(err, 'Failed to update task'));
+            const fallback =
+                variables.checklists !== undefined && isChecklistOnlyTaskUpdate(variables)
+                    ? "Couldn't save checklist changes. Reverted to last saved state."
+                    : 'Failed to update task';
+            toast.error(getApiErrorMessage(err, fallback));
         },
         onSettled: (_data, err, variables) => {
             if (err != null) return;
@@ -1390,6 +1392,9 @@ export function useCreateAndLinkTaskBranch() {
             try {
                 return await updateTask(taskId, { linked_branches: next });
             } catch (linkErr) {
+                if (linkErr instanceof DuplicateTaskLinkedBranchError) {
+                    throw linkErr;
+                }
                 throw Object.assign(
                     new Error(
                         'Branch was created on the remote but could not be linked to this task. Link it manually under Development.',
@@ -1434,6 +1439,10 @@ export function useCreateAndLinkTaskBranch() {
                     variables.taskId,
                     getTaskLinkedBranches(ctx.prevDetail),
                 );
+            }
+            if (err instanceof DuplicateTaskLinkedBranchError) {
+                toast.error(err.message);
+                return;
             }
             const status = axios.isAxiosError(err) ? err.response?.status : undefined;
             if (status === 409) {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { deploymentEventsStreamUrl } from "@/api/deployments";
+import { useSseStream } from "@/hooks/useSseStream";
 import {
   Dialog,
   DialogDescription,
@@ -39,91 +40,76 @@ export function DeploymentScheduledAlert() {
   const [scheduledAt, setScheduledAt] = useState<string | null>(null);
   const [minutesUntil, setMinutesUntil] = useState<number>(15);
 
-  const handleMessage = useCallback(
-    (ev: MessageEvent<string>) => {
-      try {
-        const data = JSON.parse(ev.data) as {
-          type?: string;
-          scheduled_at?: string;
-          minutes_until?: number;
-          auth_deployment_epoch?: number;
-        };
-        if (data.type === "session_invalidation") {
-          void (async () => {
-            await logout();
-            // This component mounts above <RouterProvider>, so useNavigate is invalid here — full navigation.
-            if (typeof window !== "undefined") {
-              window.location.replace("/login");
-            }
-          })();
-          return;
-        }
-        if (data.type === "deployment_scheduled" && data.scheduled_at) {
-          setScheduledAt(data.scheduled_at);
-          setMinutesUntil(typeof data.minutes_until === "number" ? data.minutes_until : 15);
-          setOpen(true);
-        }
-      } catch {
-        /* ignore malformed */
+  const handleEvent = useCallback(
+    (parsed: unknown) => {
+      const data = parsed as {
+        type?: string;
+        scheduled_at?: string;
+        minutes_until?: number;
+        auth_deployment_epoch?: number;
+      };
+      if (data?.type === "session_invalidation") {
+        void (async () => {
+          await logout();
+          // This component mounts above <RouterProvider>, so useNavigate is invalid here — full navigation.
+          if (typeof window !== "undefined") {
+            window.location.replace("/login");
+          }
+        })();
+        return;
+      }
+      if (data?.type === "deployment_scheduled" && data.scheduled_at) {
+        setScheduledAt(data.scheduled_at);
+        setMinutesUntil(typeof data.minutes_until === "number" ? data.minutes_until : 15);
+        setOpen(true);
       }
     },
     [logout],
   );
 
+  // Only connect once /users/me has confirmed the token + resolved the user.
+  // Avoids opening the stream before silent-refresh has populated the in-memory
+  // access token and stops the SSE from racing with the main data fetches.
+  const baseEligible = isInitialized && isAuthenticated && !!accessToken && !!user;
+
+  // Defer opening the stream off the initial-load critical path (preserves the
+  // previous requestIdleCallback behaviour); the shared hook then owns the
+  // EventSource lifecycle (fresh ticket per connect + backoff reconnect).
+  const [streamReady, setStreamReady] = useState(false);
   useEffect(() => {
-    // Only connect once /users/me has confirmed the token + resolved the user.
-    // Avoids opening the stream with a stale localStorage token on refresh and
-    // stops the SSE from racing with the main data fetches on the critical path.
-    if (!isInitialized || !isAuthenticated || !accessToken || !user) {
+    if (!baseEligible) {
+      setStreamReady(false);
       setOpen(false);
       return;
     }
-
     type IdleHandle = number;
     const win = window as Window & {
       requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => IdleHandle;
       cancelIdleCallback?: (handle: IdleHandle) => void;
     };
-
-    let es: EventSource | null = null;
     let idleHandle: IdleHandle | null = null;
     let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
-    let cancelled = false;
-
-    const openStream = () => {
-      if (cancelled) return;
-      const url = deploymentEventsStreamUrl(accessToken);
-      es = new EventSource(url);
-      es.addEventListener("message", handleMessage as EventListener);
-      // Silence the noisy "connection was interrupted" log on HMR/navigation —
-      // the browser cancels in-flight requests during refresh, which is not an
-      // actionable error for users. Downgrade to debug so it's still inspectable.
-      es.onerror = () => {
-        console.debug("[DeploymentScheduledAlert] SSE stream closed or errored");
-        es?.close();
-      };
-    };
-
+    const arm = () => setStreamReady(true);
     if (typeof win.requestIdleCallback === "function") {
-      idleHandle = win.requestIdleCallback(openStream, { timeout: 3_000 });
+      idleHandle = win.requestIdleCallback(arm, { timeout: 3_000 });
     } else {
-      timeoutHandle = setTimeout(openStream, 1_500);
+      timeoutHandle = setTimeout(arm, 1_500);
     }
-
     return () => {
-      cancelled = true;
       if (idleHandle != null && typeof win.cancelIdleCallback === "function") {
         win.cancelIdleCallback(idleHandle);
       }
       if (timeoutHandle != null) {
         clearTimeout(timeoutHandle);
       }
-      if (es) {
-        es.removeEventListener("message", handleMessage as EventListener);
-        es.close();
-      }
     };
-  }, [accessToken, isAuthenticated, isInitialized, user, handleMessage]);
+  }, [baseEligible]);
+
+  useSseStream({
+    enabled: streamReady,
+    getUrl: () => deploymentEventsStreamUrl(),
+    onEvent: handleEvent,
+  });
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>

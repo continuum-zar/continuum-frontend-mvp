@@ -24,6 +24,7 @@ import {
 import { cn } from "@/app/components/ui/utils";
 import { projectKeys } from "@/api/projects";
 import { projectTaskEventsStreamUrl } from "@/api/projectTaskEvents";
+import { useSseStream } from "@/hooks/useSseStream";
 import {
   useAssignTask,
   useRemoveTaskAssignee,
@@ -187,31 +188,18 @@ export function GetStartedKanbanLive({
     setTaskColumnPreference({});
   }, [projectId]);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !isAuthenticated || !accessToken) return;
-    const url = projectTaskEventsStreamUrl(projectId, accessToken);
-    const es = new EventSource(url);
-    const onMessage = (ev: MessageEvent<string>) => {
-      try {
-        const data = JSON.parse(ev.data) as { type?: string; project_id?: number };
-        if (data.type === "task_updated" && Number(data.project_id) === projectId) {
-          void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
-          void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(projectId) });
-        }
-      } catch {
-        /* ignore malformed */
+  useSseStream({
+    enabled: isAuthenticated && !!accessToken,
+    resetKey: projectId,
+    getUrl: () => projectTaskEventsStreamUrl(projectId),
+    onEvent: (data) => {
+      const d = data as { type?: string; project_id?: number };
+      if (d?.type === "task_updated" && Number(d.project_id) === projectId) {
+        void queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) });
+        void queryClient.invalidateQueries({ queryKey: projectKeys.tasksInfinite(projectId) });
       }
-    };
-    es.addEventListener("message", onMessage as EventListener);
-    es.onerror = () => {
-      console.debug("[GetStartedKanbanLive] project task-events stream closed or errored");
-      es.close();
-    };
-    return () => {
-      es.removeEventListener("message", onMessage as EventListener);
-      es.close();
-    };
-  }, [projectId, accessToken, isAuthenticated, queryClient]);
+    },
+  });
 
   useEffect(() => {
     if (!kanbanBoardQuery.isSuccess || kanbanBoardQuery.data == null) return;
@@ -594,6 +582,7 @@ export function GetStartedKanbanLive({
   });
 
   const renderLiveCard = (task: Task) => {
+    const isDragging = draggingId === task.id;
     const desc = task.description?.trim() ?? "";
     const { preview: descPreview, isTruncated: descTruncated } =
       kanbanTaskDescriptionPreview(desc);
@@ -654,11 +643,23 @@ export function GetStartedKanbanLive({
         onMoveTaskToMilestone={(milestoneId) => void handleMoveTaskToMilestone(task.id, milestoneId)}
       >
         <div
+          data-no-kanban-search-dismiss
           data-kanban-card={task.id}
-          className="content-stretch flex flex-col items-start relative shrink-0 w-full select-none cursor-open-hand"
+          className={cn(
+            "content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100",
+            isDragging ? "pointer-events-none" : "cursor-open-hand",
+          )}
           onPointerDown={cardPointerDown(task.id)}
-          onClick={() => navigate(taskHref)}
+          onClick={() => {
+            if (!isDragging) navigate(taskHref);
+          }}
         >
+          {isDragging ? (
+            <div
+              className="flex min-h-[152px] w-full shrink-0 flex-col items-center justify-center rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)] px-3 py-4"
+              aria-label="Original column — drop here to keep this task in this list"
+            />
+          ) : (
         <div
           className="border-border bg-white content-stretch flex flex-col items-start overflow-clip relative rounded-[8px] border border-solid shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full"
         >
@@ -717,6 +718,7 @@ export function GetStartedKanbanLive({
             </div>
           </div>
         </div>
+          )}
         </div>
       </KanbanTaskCardContextMenu>
     );

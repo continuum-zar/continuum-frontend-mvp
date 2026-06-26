@@ -6,6 +6,7 @@ import { enUS } from "date-fns/locale";
 import { CalendarDays, ChevronLeft, ChevronRight, ExternalLink, Loader2, LogIn, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
+import { getUserErrorMessage } from "@/lib/errorMessages";
 import type { Task } from "@/types/task";
 import {
   clearStoredGoogleAccessToken,
@@ -114,7 +115,7 @@ export function CalendarTaskView({ tasks, onOpenTask }: CalendarTaskViewProps) {
     setConnecting(true);
     requestGoogleCalendarAccessToken()
       .then(() => { setTokenVersion(n => n + 1); toast.success("Google Calendar connected"); })
-      .catch((e: unknown) => toast.error(e instanceof Error ? e.message : "Sign-in failed"))
+      .catch((e: unknown) => toast.error(getUserErrorMessage(e, "Google sign-in failed. Please try again.")))
       .finally(() => setConnecting(false));
   }, [hasClientId]);
 

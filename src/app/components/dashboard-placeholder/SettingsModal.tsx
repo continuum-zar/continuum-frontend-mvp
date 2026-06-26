@@ -12,12 +12,21 @@ import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
 import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { workspaceJoin } from "@/lib/workspacePaths";
+import { isClerkEnabled } from "@/lib/clerkConfig";
+import { ClerkAccountSettings } from "@/app/components/auth/ClerkAccountSettings";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
+
+type WindowWithClerk = Window & {
+  Clerk?: {
+    signOut?: (options?: { redirectUrl?: string }) => Promise<void>;
+  };
+};
 import { DiscordIntegrationModal } from "./DiscordIntegrationModal";
 import { FeedbackModal } from "./FeedbackModal";
 import { GithubIntegrationModal } from "./GithubIntegrationModal";
 import { AdminStatusPanel } from "./settings/AdminStatusPanel";
+import { AICreditsUsagePanel } from "./settings/AICreditsUsagePanel";
 import { DiscordTriggersSection } from "./settings/DiscordTriggersSection";
 import {
   Select,
@@ -58,8 +67,10 @@ const placeholderLinkClass =
 
 export type SettingsSection =
   | "general"
+  | "account"
   | "notification"
   | "invoice"
+  | "usage"
   | "integrations"
   | "support"
   | "status"
@@ -79,14 +90,22 @@ const NAV: { id: SettingsSection; label: string }[] = [
   { id: "general", label: "General" },
   { id: "notification", label: "Notifications" },
   { id: "invoice", label: "Invoice" },
+  { id: "usage", label: "Usage" },
   { id: "integrations", label: "Integrations" },
   { id: "support", label: "Support & legal" },
 ];
 
+const ACCOUNT_NAV_ITEM: { id: SettingsSection; label: string } = {
+  id: "account",
+  label: "Account",
+};
+
 const SECTION_TITLE: Record<SettingsSection, string> = {
   general: "General",
+  account: "Account",
   notification: "Notifications",
   invoice: "Invoice",
+  usage: "Usage & AI Credits",
   integrations: "Integrations",
   support: "Support & legal",
   status: "System Status",
@@ -104,6 +123,11 @@ export function SettingsModal({
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  // Continuum #1344: only fire Clerk's signOut when the session was actually
+  // acquired via Clerk. A manual login does not have a Clerk session — calling
+  // clerk.signOut() in that case is a no-op that incorrectly short-circuits
+  // before backend /auth/logout runs.
+  const authSource = useAuthStore((s) => s.authSource);
   const authLoading = useAuthStore((s) => s.isLoading);
   const checkAuth = useAuthStore((s) => s.checkAuth);
   const startWorkspaceTour = useWorkspaceTourStore((s) => s.startTour);
@@ -149,6 +173,10 @@ export function SettingsModal({
 
   const settingsNavItems = useMemo(() => {
     const items = [...NAV];
+    if (isClerkEnabled) {
+      // Place "Account" right after "General" so identity-related settings group together.
+      items.splice(1, 0, ACCOUNT_NAV_ITEM);
+    }
     if (isGlobalAdmin) {
       items.push({ id: "waitlist", label: "Waitlist" });
     }
@@ -211,6 +239,9 @@ export function SettingsModal({
       setSection("general");
     }
     if (section === "status" && !isGlobalAdmin) {
+      setSection("general");
+    }
+    if (section === "account" && !isClerkEnabled) {
       setSection("general");
     }
   }, [section, isGlobalAdmin]);
@@ -296,6 +327,19 @@ export function SettingsModal({
 
   const handleLogout = async () => {
     handleOpenChange(false);
+    // For Clerk-acquired sessions, tear down the Clerk session first so it
+    // doesn't get re-bridged into the store on the next render. For manual
+    // sessions there is no Clerk session to clear.
+    if (authSource === "clerk" && isClerkEnabled && typeof window !== "undefined") {
+      const clerk = (window as WindowWithClerk).Clerk;
+      if (clerk?.signOut) {
+        try {
+          await clerk.signOut();
+        } catch (err) {
+          console.error("Clerk signOut failed; continuing with backend logout", err);
+        }
+      }
+    }
     await logout();
     navigate("/login");
   };
@@ -475,6 +519,18 @@ export function SettingsModal({
                       </button>
                     </div>
                   ) : null}
+                </div>
+              )}
+
+              {section === "account" && isClerkEnabled && (
+                <div className="flex flex-col gap-2 pt-6">
+                  <ClerkAccountSettings />
+                </div>
+              )}
+
+              {section === "usage" && (
+                <div className="flex flex-col gap-2 pt-6">
+                  <AICreditsUsagePanel />
                 </div>
               )}
 

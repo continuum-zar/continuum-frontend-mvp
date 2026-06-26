@@ -57,8 +57,9 @@ import { useAuthStore } from '@/store/authStore';
 import { DashboardAnalyticsCharts } from '../components/dashboard-charts/DashboardAnalyticsCharts';
 import { ProductivityRhythmHeatmapCard } from '../components/dashboard-charts/ProductivityRhythmHeatmapCard';
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
-import { getCurrentHeatmapHour, getTodayHeatmapDayLabel } from '@/lib/productivityRhythmLiveCell';
+import { getCurrentHeatmapHour, getTodayHeatmapDayLabel, HEATMAP_DAY_LABELS } from '@/lib/productivityRhythmLiveCell';
 import { projectPresenceEventsStreamUrl, type ProjectPresenceEvent } from '@/api/projectPresenceEvents';
+import { useSseStream } from '@/hooks/useSseStream';
 import {
   Bar,
   LineChart,
@@ -212,8 +213,10 @@ export function Dashboard({
   const rhythmChartData = useMemo(() => {
     const dh = rhythmResponse?.day_hour;
     if (!dh) return [];
-    const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri'] as const;
-    const dayLabels: Record<string, string> = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri' };
+    const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+    const dayLabels: Record<string, string> = Object.fromEntries(
+      dayOrder.map((key, i) => [key, HEATMAP_DAY_LABELS[i] ?? key]),
+    );
     return dayOrder.map((dayKey) => {
       const row: Record<string, string | number> = { day: dayLabels[dayKey] ?? dayKey };
       const dayData = dh[dayKey] ?? {};
@@ -224,11 +227,27 @@ export function Dashboard({
     });
   }, [rhythmResponse]);
 
+  // Presence realtime over SSE. While the stream is healthy we disable the
+  // redundant 45s/15s polls below (they exist only as an SSE fallback); the
+  // hook flips `presenceSseConnected` false during outages so polling resumes.
+  const { connected: presenceSseConnected } = useSseStream({
+    enabled: hasProjectSelected && effectiveRole !== 'Client' && isAuthenticated && !!accessToken,
+    resetKey: selectedProject,
+    getUrl: () => projectPresenceEventsStreamUrl(selectedProject),
+    onEvent: (data) => {
+      const d = data as Partial<ProjectPresenceEvent>;
+      if (!d?.type || Number(d.project_id) !== Number(selectedProject)) return;
+      if (!['session_started', 'session_paused', 'session_resumed', 'session_stopped'].includes(d.type)) return;
+      void queryClient.invalidateQueries({ queryKey: ['project-active-work-sessions', selectedProject] });
+      void queryClient.invalidateQueries({ queryKey: ['my-active-work-session'] });
+    },
+  });
+
   const { data: activeWorkSessionsRaw, isLoading: activeSessionsLoading, isError: activeSessionsError } = useQuery({
     queryKey: ['project-active-work-sessions', selectedProject],
     queryFn: () => fetchProjectActiveWorkSessions(selectedProject),
     enabled: hasProjectSelected && isProjectPM,
-    refetchInterval: 45_000,
+    refetchInterval: presenceSseConnected ? false : 45_000,
     staleTime: 30_000,
     placeholderData: (previousData) => previousData,
   });
@@ -237,7 +256,7 @@ export function Dashboard({
     queryKey: ['my-active-work-session'],
     queryFn: fetchActiveWorkSession,
     enabled: hasProjectSelected && user != null && effectiveRole !== 'Client',
-    refetchInterval: 15_000,
+    refetchInterval: presenceSseConnected ? false : 15_000,
     staleTime: 5_000,
   });
 
@@ -247,30 +266,6 @@ export function Dashboard({
     enabled: myActiveWorkSession?.task_id != null,
     staleTime: 60_000,
   });
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !hasProjectSelected || effectiveRole === 'Client' || !isAuthenticated || !accessToken) {
-      return;
-    }
-    const url = projectPresenceEventsStreamUrl(selectedProject, accessToken);
-    const es = new EventSource(url);
-    const onMessage = (ev: MessageEvent<string>) => {
-      try {
-        const data = JSON.parse(ev.data) as Partial<ProjectPresenceEvent>;
-        if (!data.type || Number(data.project_id) !== Number(selectedProject)) return;
-        if (!["session_started", "session_paused", "session_resumed", "session_stopped"].includes(data.type)) return;
-        void queryClient.invalidateQueries({ queryKey: ['project-active-work-sessions', selectedProject] });
-        void queryClient.invalidateQueries({ queryKey: ['my-active-work-session'] });
-      } catch {
-        // Ignore malformed payloads and keep stream alive.
-      }
-    };
-    es.addEventListener('message', onMessage as EventListener);
-    return () => {
-      es.removeEventListener('message', onMessage as EventListener);
-      es.close();
-    };
-  }, [selectedProject, hasProjectSelected, effectiveRole, accessToken, isAuthenticated, queryClient]);
 
   const [liveClockTick, setLiveClockTick] = useState(0);
   useEffect(() => {
@@ -340,9 +335,6 @@ export function Dashboard({
     if (!s) return null;
     if (String(s.project_id ?? '') !== selectedProject) {
       return 'You have an active timer on another project. Pick that project in the dropdown above to see your live marker on the heatmap.';
-    }
-    if (getTodayHeatmapDayLabel() == null) {
-      return 'This heatmap only includes Monday–Friday. Your timer is still running; the live marker appears on weekdays.';
     }
     return null;
   }, [myActiveWorkSession, user, selectedProject, effectiveRole]);

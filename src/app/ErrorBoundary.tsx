@@ -1,9 +1,11 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { motion } from 'motion/react';
-import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 import * as Sentry from '@sentry/react';
-import { Button } from './components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/ui/card';
+import {
+  ErrorDialog,
+  ERROR_DIALOG_PRESETS,
+  errorDialogActions,
+} from './components/ui/error-dialog';
+import { getErrorCorrelationId, getUserErrorMessage } from '../lib/errorMessages';
 
 interface Props {
   children: ReactNode;
@@ -42,50 +44,27 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      const message = getUserErrorMessage(
+        this.state.error,
+        'An unexpected error occurred while rendering this page.',
+      );
+      const correlationId = getErrorCorrelationId(this.state.error);
+
       return (
-        <div className="min-h-screen w-full flex items-center justify-center p-4 bg-background">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="max-w-md w-full"
-          >
-            <Card className="border-destructive/20 shadow-lg overflow-hidden">
-              <div className="h-2 bg-destructive" />
-              <CardHeader className="text-center pb-2">
-                <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-                  <AlertTriangle className="w-6 h-6 text-destructive" />
-                </div>
-                <CardTitle className="text-2xl font-bold tracking-tight">Something went wrong</CardTitle>
-                <CardDescription className="text-base text-muted-foreground mt-2">
-                  An unexpected error occurred while rendering this page. We've been notified and are looking into it.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground/80 bg-muted/30 p-4 m-6 rounded-md border border-border/50">
-                <p className="font-mono break-words italic">
-                  {this.state.error?.message || 'Unknown error'}
-                </p>
-              </CardContent>
-              <CardFooter className="flex flex-col sm:flex-row gap-3 pt-2 pb-8 px-6">
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-1/2 flex items-center justify-center gap-2 h-11"
-                  onClick={this.handleGoHome}
-                >
-                  <Home className="w-4 h-4" />
-                  Go Home
-                </Button>
-                <Button
-                  variant="default"
-                  className="w-full sm:w-1/2 flex items-center justify-center gap-2 h-11"
-                  onClick={this.handleRetry}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Retry
-                </Button>
-              </CardFooter>
-            </Card>
-          </motion.div>
+        <div className="min-h-screen w-full bg-background">
+          <ErrorDialog
+            {...ERROR_DIALOG_PRESETS.generic}
+            description={message}
+            correlationId={correlationId}
+            technicalDetails={this.state.error?.message || undefined}
+            // Hard render failure — keep the dialog anchored; only the actions move you on.
+            open
+            hideClose
+            dismissible={false}
+            onOpenChange={() => {}}
+            primaryAction={errorDialogActions.retry(this.handleRetry)}
+            secondaryAction={errorDialogActions.goHome(this.handleGoHome)}
+          />
         </div>
       );
     }

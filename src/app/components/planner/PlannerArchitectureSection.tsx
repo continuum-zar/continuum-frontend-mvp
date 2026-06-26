@@ -3,6 +3,7 @@ import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { Loader2, RefreshCw } from 'lucide-react';
 import type { SystemArchitecture } from '@/api/planner';
 import { Button } from '@/app/components/ui/button';
+import { Skeleton } from '@/app/components/ui/skeleton';
 import { cn } from '@/app/components/ui/utils';
 
 const CARD_SHADOW =
@@ -19,6 +20,9 @@ async function ensureMermaid(): Promise<typeof import('mermaid').default> {
         startOnLoad: false,
         securityLevel: 'strict',
         theme: 'neutral',
+        // Native SVG <text> labels instead of <foreignObject> HTML: the DOMPurify pass
+        // in the render effect strips HTML content inside SVG, which would blank out HTML labels.
+        flowchart: { htmlLabels: false },
     });
     mermaidConfigured = true;
     return mermaid;
@@ -103,8 +107,16 @@ export function PlannerArchitectureSection({
                 const mermaid = await ensureMermaid();
                 const rid = `planner-arch-${Math.random().toString(36).slice(2)}`;
                 const { svg } = await mermaid.render(rid, diagram);
+                // Defense-in-depth: the diagram source is AI/backend-generated, so strip any
+                // scripts/handlers that survive mermaid's own strict-mode sanitization.
+                // svg-only profile: labels are native <text> (htmlLabels: false above), so
+                // nothing legitimate lives in the HTML namespace. Loaded lazily like mermaid.
+                const { default: DOMPurify } = await import('dompurify');
+                const safeSvg = DOMPurify.sanitize(svg, {
+                    USE_PROFILES: { svg: true, svgFilters: true },
+                });
                 if (!cancelled) {
-                    setSvgMarkup(svg);
+                    setSvgMarkup(safeSvg);
                     setDiagramError(null);
                 }
             } catch (e: unknown) {
@@ -213,8 +225,13 @@ export function PlannerArchitectureSection({
                                 </p>
                             </div>
                         ) : (
-                            <div className="flex h-full items-center justify-center">
-                                <Loader2 className="size-8 animate-spin text-[#2E96F9]" aria-hidden />
+                            <div
+                                className="flex h-full w-full items-center justify-center p-4"
+                                role="status"
+                                aria-busy="true"
+                                aria-label="Rendering architecture diagram"
+                            >
+                                <Skeleton className="size-full rounded-[12px]" />
                             </div>
                         )}
                     </div>

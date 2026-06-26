@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getCurrentHeatmapHour, getTodayHeatmapDayLabel } from "./productivityRhythmLiveCell";
+import { getCurrentHeatmapHour, getTodayHeatmapDayLabel, HEATMAP_DAY_LABELS } from "./productivityRhythmLiveCell";
 
 describe("productivityRhythmLiveCell", () => {
   afterEach(() => {
@@ -13,10 +13,20 @@ describe("productivityRhythmLiveCell", () => {
     expect(getCurrentHeatmapHour()).toBe(10);
   });
 
-  it("returns null on Sunday", () => {
+  it("returns Sun on Sunday", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 4, 3, 10, 0, 0));
-    expect(getTodayHeatmapDayLabel()).toBeNull();
+    expect(getTodayHeatmapDayLabel()).toBe("Sun");
+  });
+
+  it("returns Sat on Saturday", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 2, 10, 0, 0));
+    expect(getTodayHeatmapDayLabel()).toBe("Sat");
+  });
+
+  it("exports weekday labels Mon through Sun", () => {
+    expect(HEATMAP_DAY_LABELS).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
   });
 
   it("returns local hour on weekdays for full-day heatmap", () => {

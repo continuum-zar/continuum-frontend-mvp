@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router";
 import {
   ArrowRightLeft,
+  AtSign,
   BellOff,
   ExternalLink,
   GitCommit,
@@ -24,23 +25,41 @@ export type NotificationsPanelScope =
       viewAllHref: string;
     };
 
+/** A prepared @mention notification row (internal deep-link). */
+export type MentionNotificationRow = {
+  key: string;
+  /** Primary line, e.g. "Author mentioned you". */
+  title: string;
+  /** Secondary line — the comment excerpt. */
+  subtitle: string;
+  createdAt: string;
+  /** In-app (react-router) path to the comment. */
+  href: string;
+};
+
 type Props = {
   scope: NotificationsPanelScope;
   items: readonly WelcomeRecentActivityFeedItem[];
+  /** @mention notifications, newest first (shown above recent activity). */
+  mentions?: readonly MentionNotificationRow[];
   isLoading: boolean;
   isError: boolean;
   /** ISO timestamp of the user's last bell-open. Items strictly newer get a dot. */
   lastSeenAt: string | null;
   onViewAllClick?: () => void;
+  /** Called when an internal deep-link is clicked (e.g. to close the popover). */
+  onMentionClick?: () => void;
 };
 
 export function NotificationsPanel({
   scope,
   items,
+  mentions,
   isLoading,
   isError,
   lastSeenAt,
   onViewAllClick,
+  onMentionClick,
 }: Props) {
   const subtitle = scope.kind === "project" ? "Project activity" : "Sprint activity";
 
@@ -53,6 +72,14 @@ export function NotificationsPanel({
     rows.sort((a, b) => (b.formatted.createdAt ?? "").localeCompare(a.formatted.createdAt ?? ""));
     return rows;
   }, [items]);
+
+  const mentionRows = useMemo(() => {
+    const rows = [...(mentions ?? [])];
+    rows.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    return rows;
+  }, [mentions]);
+
+  const isEmpty = sortedRows.length === 0 && mentionRows.length === 0;
 
   return (
     <div
@@ -81,16 +108,83 @@ export function NotificationsPanel({
           icon={<BellOff className="size-5 text-[#9fa5a8]" aria-hidden />}
           message="Couldn't load notifications. Try again later."
         />
-      ) : sortedRows.length === 0 ? (
+      ) : isEmpty ? (
         <PanelStatus
           icon={<BellOff className="size-5 text-[#9fa5a8]" aria-hidden />}
           message="You're all caught up."
         />
       ) : (
+        <div className="flex max-h-[360px] flex-col overflow-y-auto">
+        {mentionRows.length > 0 ? (
+          <ul className="flex flex-col divide-y divide-[#ebedee]" aria-label="Mentions">
+            <li className="bg-[#fafbfc] px-4 py-1.5">
+              <p className="font-['Satoshi',sans-serif] text-[11px] font-semibold uppercase tracking-wide text-[#9fa5a8]">
+                Mentions
+              </p>
+            </li>
+            {mentionRows.map((m) => {
+              const isUnread = lastSeenAt == null || m.createdAt > lastSeenAt;
+              return (
+                <li
+                  key={m.key}
+                  className="bg-white transition-colors hover:bg-[#f7f8f9]"
+                >
+                  <Link
+                    to={m.href}
+                    onClick={onMentionClick}
+                    className="block text-inherit no-underline outline-none focus-visible:bg-[#f0f4ff]"
+                  >
+                    <article className="flex gap-3 px-4 py-3">
+                      <div className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-[#eef4ff]">
+                        <AtSign className="size-4 text-[#1466ff]" strokeWidth={2} aria-hidden />
+                        {isUnread ? (
+                          <span
+                            className="pointer-events-none absolute -left-1 top-1/2 -translate-y-1/2 size-2 rounded-full bg-[#1466ff] ring-2 ring-white"
+                            aria-hidden
+                          />
+                        ) : null}
+                      </div>
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <p
+                          className={cn(
+                            "truncate font-['Satoshi',sans-serif] text-[13px] leading-snug",
+                            isUnread
+                              ? "font-semibold text-[#0b191f]"
+                              : "font-medium text-[#0b191f]",
+                          )}
+                          title={m.title}
+                        >
+                          {m.title}
+                        </p>
+                        <p
+                          className="truncate font-['Satoshi',sans-serif] text-[12px] font-normal leading-snug text-[#727d83]"
+                          title={m.subtitle}
+                        >
+                          {m.subtitle}
+                        </p>
+                        <p className="mt-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium text-[#9fa5a8]">
+                          {formatRelativeShort(m.createdAt)}
+                        </p>
+                      </div>
+                    </article>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+        {sortedRows.length > 0 ? (
         <ul
-          className="flex max-h-[360px] flex-col divide-y divide-[#ebedee] overflow-y-auto"
+          className="flex flex-col divide-y divide-[#ebedee]"
           aria-label="Recent notifications"
         >
+          {mentionRows.length > 0 ? (
+            <li className="bg-[#fafbfc] px-4 py-1.5">
+              <p className="font-['Satoshi',sans-serif] text-[11px] font-semibold uppercase tracking-wide text-[#9fa5a8]">
+                Recent activity
+              </p>
+            </li>
+          ) : null}
           {sortedRows.map(({ formatted }) => {
             const isUnread = lastSeenAt == null || formatted.createdAt > lastSeenAt;
             const Row = (
@@ -159,6 +253,8 @@ export function NotificationsPanel({
             );
           })}
         </ul>
+        ) : null}
+        </div>
       )}
 
       <footer className="border-t border-[#ebedee] px-4 py-2">

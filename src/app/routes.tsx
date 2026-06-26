@@ -13,9 +13,12 @@ import {
 import { Login } from "./pages/auth/Login";
 import { WaitlistSignUp } from "./pages/auth/WaitlistSignUp";
 import { SignUp } from "./pages/auth/SignUp";
+import { SsoCallback } from "./pages/auth/SsoCallback";
 import { Loading } from "./pages/auth/Loading";
 import { PostAuthBoardRedirect } from "./pages/auth/PostAuthBoardRedirect";
 import { ResetPassword } from "./pages/auth/ResetPassword";
+import { VerifyEmail } from "./pages/auth/VerifyEmail";
+import { EmailVerified } from "./pages/auth/EmailVerified";
 import { projectSprintHref } from "./data/dashboardPlaceholderProjects";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { RouteSkeleton } from "./components/ui/RouteSkeleton";
@@ -59,6 +62,10 @@ const DashboardPlaceholderAIPlanner = lazy(() =>
     default: m.DashboardPlaceholderAIPlanner,
   }))
 );
+const MigrationsUploadPage = lazy(() => import("./pages/MigrationsUploadPage"));
+const MigrationsPreviewPage = lazy(() => import("./pages/MigrationsPreviewPage"));
+const MigrationsApplyPage = lazy(() => import("./pages/MigrationsApplyPage"));
+const MigrationsJobRedirect = lazy(() => import("./pages/MigrationsJobRedirect"));
 const DashboardPlaceholderGetStartedTimeLogs = lazy(() =>
   import("./pages/DashboardPlaceholderGetStartedTimeLogs").then((m) => ({
     default: m.DashboardPlaceholderGetStartedTimeLogs,
@@ -175,6 +182,18 @@ const appRoutes = [
   {
     path: "/reset-password",
     Component: ResetPassword,
+  },
+  {
+    path: "/verify-email",
+    Component: VerifyEmail,
+  },
+  {
+    path: "/email-verified",
+    Component: EmailVerified,
+  },
+  {
+    path: "/sso-callback",
+    Component: SsoCallback,
   },
   {
     path: "/loading",
@@ -425,6 +444,47 @@ const appRoutes = [
       <AuthGuard>
         <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
           <DashboardPlaceholderAIPlanner />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  /** Migration import wizard (Jira / Trello / Asana → Continuum). */
+  {
+    path: `${WORKSPACE_BASE}/migrations/new`,
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <MigrationsUploadPage />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: `${WORKSPACE_BASE}/migrations/:jobId/preview`,
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <MigrationsPreviewPage />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: `${WORKSPACE_BASE}/migrations/:jobId/apply`,
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <MigrationsApplyPage />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: `${WORKSPACE_BASE}/migrations/:jobId`,
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <MigrationsJobRedirect />
         </Suspense>
       </AuthGuard>
     ),

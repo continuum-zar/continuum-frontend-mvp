@@ -9,7 +9,9 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { MobileDesktopOnlyGate } from './components/MobileDesktopOnlyGate';
 import { AuthQueryCacheSync } from './components/AuthQueryCacheSync';
 import { AuthSessionBootstrap } from './components/AuthSessionBootstrap';
+import { ClerkSessionBridge } from './components/auth/ClerkSessionBridge';
 import { resetStaleChunkReloadCount } from '@/lib/staleClientChunk';
+import { isClerkEnabled } from '@/lib/clerkConfig';
 
 /**
  * SSE listener is a non-critical background feature — lazy-load it so the
@@ -34,7 +36,7 @@ function App() {
     <ErrorBoundary>
       <RoleProvider>
         <TimeTrackingProvider>
-          <AuthSessionBootstrap />
+          {isClerkEnabled ? <ClerkSessionBridge /> : <AuthSessionBootstrap />}
           <AuthQueryCacheSync />
           <Suspense fallback={null}>
             <DeploymentScheduledAlert />
