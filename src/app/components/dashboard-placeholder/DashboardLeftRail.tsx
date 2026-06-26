@@ -11,6 +11,7 @@ import { memberAvatarBackground } from "@/lib/memberAvatar";
 import type { Project } from "@/types/project";
 
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Skeleton } from "../ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
   DASHBOARD_WELCOME_PROJECT,
@@ -419,6 +420,8 @@ type DashboardPlaceholderProjectBlockProps = {
   projectParam: string | null;
   /** Milestone / sprint rows under the project; null when collapsed or none */
   sprintItems: SprintNavItem[] | null;
+  /** True while the expanded project's milestones are still loading for the first time. */
+  milestonesLoading?: boolean;
   plannerNavigationGuard?: PlannerNavigationGuardProps;
 };
 
@@ -429,6 +432,7 @@ function DashboardPlaceholderProjectBlock({
   pathname,
   projectParam,
   sprintItems,
+  milestonesLoading = false,
   plannerNavigationGuard,
 }: DashboardPlaceholderProjectBlockProps) {
   const navigate = useNavigate();
@@ -472,6 +476,23 @@ function DashboardPlaceholderProjectBlock({
           </p>
         </div>
       </Link>
+      {isExpanded && milestonesLoading && (sprintItems ?? []).length === 0 ? (
+        <div
+          role="status"
+          aria-label="Loading milestones"
+          className="flex w-full flex-col"
+        >
+          {[0, 1].map((i) => (
+            <div
+              key={i}
+              className="flex h-[40px] shrink-0 items-center gap-[8px] rounded-[8px] pl-[24px] pr-[12px]"
+            >
+              <Skeleton className="size-[16px] shrink-0 rounded-[4px]" />
+              <Skeleton className={cn("h-[14px]", i === 0 ? "w-[60%]" : "w-[45%]")} />
+            </div>
+          ))}
+        </div>
+      ) : null}
       {(sprintItems ?? []).map((item) => {
         const rows = sprintItems ?? [];
         const rowActive =
@@ -532,7 +553,9 @@ function ApiProjectBlock({
 }) {
   const projectId = project.id;
   const isExpanded = expandedProjectId === projectId;
-  const { data: milestonesRaw } = useProjectMilestones(isExpanded ? project.apiId : undefined);
+  const { data: milestonesRaw, isLoading: milestonesLoading } = useProjectMilestones(
+    isExpanded ? project.apiId : undefined,
+  );
   const milestones = milestonesRaw ?? [];
   const sprintItems = useMemo((): SprintNavItem[] | null => {
     if (!isExpanded || milestones.length === 0) return null;
@@ -551,6 +574,7 @@ function ApiProjectBlock({
       pathname={pathname}
       projectParam={projectParam}
       sprintItems={sprintItems}
+      milestonesLoading={isExpanded && milestonesLoading}
       plannerNavigationGuard={plannerNavigationGuard}
     />
   );
