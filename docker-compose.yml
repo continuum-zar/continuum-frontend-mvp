@@ -15,4 +15,9 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - VITE_PROXY_TARGET=http://host.docker.internal:8001
-    restart: unless-stopped
+    # This compose file runs the Vite DEV server (Dockerfile.dev) — a long-lived Node
+    # process holding the full module graph + chokidar file watchers (~300-600 MB RSS).
+    # It is for LOCAL DEVELOPMENT ONLY. Do NOT deploy it: production must use the
+    # multi-stage `Dockerfile` (nginx serving static files). `restart: "no"` keeps a
+    # forgotten dev container from being resurrected and held in memory indefinitely.
+    restart: "no"
