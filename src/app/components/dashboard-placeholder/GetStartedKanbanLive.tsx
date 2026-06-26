@@ -17,6 +17,7 @@ import { KanbanColumnHeaderKebabMenu } from "./KanbanColumnHeaderKebabMenu";
 import { filterKanbanTasksBySearchQueryRespectingDrag } from "./kanbanColumnSearchUtils";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "@/app/components/ui/dialog";
+import { ConfirmDialog } from "@/app/components/ui/confirm-dialog";
 import {
   KanbanBoardSkeleton,
   SprintKanbanListSkeleton,
@@ -1140,82 +1141,31 @@ export function GetStartedKanbanLive({
           </DialogPrimitive.Content>
         </DialogPortal>
       </Dialog>
-      <Dialog
+      <ConfirmDialog
         open={taskPendingDelete !== null}
         onOpenChange={(open) => {
           if (!open) setTaskPendingDelete(null);
         }}
-      >
-        <DialogPortal>
-          <DialogOverlay className="bg-black/25" />
-          <DialogPrimitive.Content
-            className={cn(
-              "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-            )}
-          >
-            <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
-              <DialogClose asChild>
-                <button
-                  type="button"
-                  className="inline-flex size-5 items-center justify-center text-[#606d76] transition-colors hover:text-[#0b191f]"
-                  aria-label="Close"
-                >
-                  <ArrowLeft className="size-5" />
-                </button>
-              </DialogClose>
-              <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
-                Delete task
-              </DialogPrimitive.Title>
-              <div className="size-5" />
-            </div>
-
-            <div className="flex w-full flex-col gap-6 px-9 py-6">
-              <div className="flex items-start gap-3">
-                <div className="flex shrink-0 items-start pt-0.5 text-[#dc2626]" aria-hidden>
-                  <Trash2 className="size-5" strokeWidth={1.75} />
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <p className="font-['Satoshi',sans-serif] text-[18px] font-medium leading-tight tracking-[-0.18px] text-[#0b191f]">
-                    Delete this task?
-                  </p>
-                  <DialogPrimitive.Description className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-[#606d76]">
-                    {taskPendingDelete?.title ? (
-                      <>
-                        <span className="text-[#0b191f]">“{taskPendingDelete.title}”</span>{" "}
-                        will be permanently removed. This action cannot be undone.
-                      </>
-                    ) : (
-                      "This task will be permanently removed. This action cannot be undone."
-                    )}
-                  </DialogPrimitive.Description>
-                </div>
-              </div>
-
-              <div className="flex w-full items-center justify-end gap-2">
-                <DialogClose asChild>
-                  <button
-                    type="button"
-                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] transition-colors duration-150 hover:bg-[#f5f7f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/10"
-                  >
-                    Cancel
-                  </button>
-                </DialogClose>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (taskPendingDelete) deleteTaskMutation.mutate(taskPendingDelete.id);
-                    setTaskPendingDelete(null);
-                  }}
-                  disabled={deleteTaskMutation.isPending}
-                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-[#dc2626] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {deleteTaskMutation.isPending ? "Deleting…" : "Delete"}
-                </button>
-              </div>
-            </div>
-          </DialogPrimitive.Content>
-        </DialogPortal>
-      </Dialog>
+        headerTitle="Delete task"
+        title="Delete this task?"
+        description={
+          taskPendingDelete?.title ? (
+            <>
+              <span className="text-[#0b191f]">“{taskPendingDelete.title}”</span> will be permanently
+              removed. This action cannot be undone.
+            </>
+          ) : (
+            "This task will be permanently removed. This action cannot be undone."
+          )
+        }
+        confirmLabel="Delete"
+        pendingLabel="Deleting…"
+        onConfirm={() => {
+          if (taskPendingDelete) deleteTaskMutation.mutate(taskPendingDelete.id);
+          setTaskPendingDelete(null);
+        }}
+        isPending={deleteTaskMutation.isPending}
+      />
     </>
   );
 }

@@ -127,6 +127,7 @@ export {
     useUpdateMilestone,
     useDeleteMilestone,
     useAddMember,
+    useRemoveMember,
     usePendingInvitations,
     useInvitationByToken,
     useAcceptInvitation,

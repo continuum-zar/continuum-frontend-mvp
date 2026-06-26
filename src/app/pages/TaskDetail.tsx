@@ -76,15 +76,8 @@ import { TaskLinkedBranchesSection } from '../components/TaskLinkedBranchesSecti
 import { AssignMemberModal } from '../components/AssignMemberModal';
 import { useChecklistItemDrag, reorderChecklistItems } from '@/lib/useChecklistItemDrag';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/app/components/ui/alert-dialog';
+  ConfirmDialog,
+} from '@/app/components/ui/confirm-dialog';
 import { BuildTaskModal } from '../components/BuildTaskModal';
 import { BuildRunDrawer } from '../components/BuildRunDrawer';
 import { ReviewRunDrawer } from '../components/ReviewRunDrawer';
@@ -2228,35 +2221,21 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
         taskId={taskId}
         currentAssigneeIds={assigneeUserIds}
       />
-      <AlertDialog
+      <ConfirmDialog
         open={deleteConfirmOpen}
-        onOpenChange={(next) => {
-          if (deleteTaskMutation.isPending) return;
-          setDeleteConfirmOpen(next);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this task?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently deletes &ldquo;{task.title}&rdquo; and its checklist, comments, time logs, and linked branches. This action can&apos;t be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteTaskMutation.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleConfirmDelete();
-              }}
-              disabled={deleteTaskMutation.isPending}
-              className="bg-[#dc2626] text-white hover:bg-[#b91c1c] focus-visible:ring-[#dc2626]/30"
-            >
-              {deleteTaskMutation.isPending ? 'Deleting…' : 'Delete task'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onOpenChange={setDeleteConfirmOpen}
+        headerTitle="Delete task"
+        title="Delete this task?"
+        description={
+          <>
+            This permanently deletes &ldquo;{task.title}&rdquo; and its checklist, comments, time logs, and linked branches. This action can&apos;t be undone.
+          </>
+        }
+        confirmLabel="Delete"
+        pendingLabel="Deleting…"
+        onConfirm={handleConfirmDelete}
+        isPending={deleteTaskMutation.isPending}
+      />
       <LogTimeModal
         open={logTimeOpen}
         onOpenChange={setLogTimeOpen}

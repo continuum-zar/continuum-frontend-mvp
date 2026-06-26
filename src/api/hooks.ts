@@ -26,6 +26,7 @@ import {
     deleteMilestone,
     fetchMembers,
     addMember,
+    removeMember,
     createProject,
     updateProject,
     deleteProject,
@@ -1114,6 +1115,26 @@ export function useAddMember(projectId: number | string | undefined | null) {
             const status = (err as { response?: { status?: number } })?.response?.status;
             let fallback = 'Failed to send invitation';
             if (status === 409) fallback = 'User is already a member or an invitation is already pending.';
+            toast.error(getApiErrorMessage(err, fallback));
+        },
+    });
+}
+
+export function useRemoveMember(projectId: number | string | undefined | null) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (userId: number | string) => removeMember(projectId!, userId),
+        onSuccess: () => {
+            if (projectId != null && projectId !== '') {
+                void queryClient.invalidateQueries({ queryKey: projectKeys.members(projectId) });
+            }
+            toast.success('Member removed');
+        },
+        onError: (err: unknown) => {
+            const status = (err as { response?: { status?: number } })?.response?.status;
+            let fallback = 'Failed to remove member';
+            if (status === 403) fallback = 'You do not have permission to remove this member.';
+            if (status === 404) fallback = 'Member not found.';
             toast.error(getApiErrorMessage(err, fallback));
         },
     });
