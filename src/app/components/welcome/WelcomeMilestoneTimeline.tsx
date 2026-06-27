@@ -21,7 +21,7 @@ import { cn } from "../ui/utils";
 const imgLucideGoal = mcpAsset("4c9029a9-ad80-4490-8581-35f0a2f32754");
 
 const addButtonClass =
-  "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]";
+  "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-border bg-card py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]";
 
 function formatTimelineDateLabel(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -86,7 +86,7 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
     <>
       <div className="flex w-full flex-col gap-4" data-tour="welcome-milestones">
         <div className="flex w-full items-center justify-between">
-          <p className="font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal whitespace-nowrap text-[#0b191f]">
+          <p className="font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal whitespace-nowrap text-foreground">
             Milestone timelines
           </p>
           <button
@@ -109,18 +109,18 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
         </div>
 
         {isLive && isLoading && (
-          <div className="flex min-h-[120px] w-full items-center justify-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+          <div className="flex min-h-[120px] w-full items-center justify-center font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
             Loading milestones…
           </div>
         )}
 
         {showEmptyLive && (
-          <div className="flex min-h-[185px] w-full flex-1 items-center justify-center rounded-[12px] bg-white p-6">
+          <div className="flex min-h-[185px] w-full flex-1 items-center justify-center rounded-[12px] bg-card p-6">
             <div className="flex flex-col items-center justify-center gap-4">
               <div className="relative size-12 shrink-0">
                 <img alt="" className="absolute block size-full max-w-none" src={imgLucideGoal} />
               </div>
-              <p className="font-['Satoshi',sans-serif] text-[16px] font-bold leading-normal text-[#727d83]">
+              <p className="font-['Satoshi',sans-serif] text-[16px] font-bold leading-normal text-muted-foreground">
                 No milestone connected
               </p>
             </div>
@@ -130,7 +130,7 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
         {((isLive && !isLoading && milestones.length > 0) || !isLive) && (
           <div className="relative flex flex-col gap-4">
             <div
-              className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
+              className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-muted"
               aria-hidden
             />
             {rows.map((m) => (
@@ -139,7 +139,7 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
                   {isLive ? (
                     <button
                       type="button"
-                      className="flex size-[50px] shrink-0 cursor-pointer items-center justify-center rounded-[99px] bg-[#edf0f3] outline-none transition-colors hover:bg-[#e4eaec] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40"
+                      className="flex size-[50px] shrink-0 cursor-pointer items-center justify-center rounded-[99px] bg-muted outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary/40"
                       aria-label={`Edit milestone ${m.title}`}
                       onClick={() => {
                         const ms = milestones.find((x) => x.id === m.id);
@@ -155,7 +155,7 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
                     >
                       {m.allTasksCompleted ? (
                         <CircleCheckBig
-                          className="pointer-events-none size-4 shrink-0 text-[#0b191f]"
+                          className="pointer-events-none size-4 shrink-0 text-foreground"
                           strokeWidth={2}
                           aria-hidden
                         />
@@ -169,10 +169,10 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
                       )}
                     </button>
                   ) : (
-                    <div className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
+                    <div className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-muted">
                       {m.allTasksCompleted ? (
                         <CircleCheckBig
-                          className="size-4 shrink-0 text-[#0b191f]"
+                          className="size-4 shrink-0 text-foreground"
                           strokeWidth={2}
                           aria-hidden
                         />
@@ -188,12 +188,12 @@ export function WelcomeMilestoneTimeline({ variant = "demo", projectId }: Welcom
                   )}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-center py-1.5 pl-4 pr-2 font-['Satoshi',sans-serif] font-medium leading-normal">
-                  <p className="w-[183px] max-w-full truncate text-[12px] text-[#727d83]">{m.dateLabel}</p>
+                  <p className="w-[183px] max-w-full truncate text-[12px] text-muted-foreground">{m.dateLabel}</p>
                   <div className="flex min-w-0 items-center gap-2">
-                    <p className="truncate text-[16px] text-[#0b191f]">{m.title}</p>
+                    <p className="truncate text-[16px] text-foreground">{m.title}</p>
                     <MilestoneSourceBadge source={m.source} compact />
                   </div>
-                  <p className="truncate text-[12px] text-[#727d83] whitespace-nowrap">{m.description}</p>
+                  <p className="truncate text-[12px] text-muted-foreground whitespace-nowrap">{m.description}</p>
                 </div>
               </div>
             ))}

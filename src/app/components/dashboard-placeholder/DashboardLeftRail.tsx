@@ -44,6 +44,7 @@ import { sortMilestonesForNav } from "@/lib/milestoneSort";
 import { useTimeTracking } from "@/app/context/TimeTrackingContext";
 import { LeftRailProjectSearchControls } from "./LeftRailProjectSearchControls";
 import { filterApiProjectsBySearchQuery } from "./leftRailProjectSearchUtils";
+import { ThemeToggle } from "../theme/ThemeToggle";
 
 const CreateProjectModal = lazy(() =>
   import("./CreateProjectModal").then((m) => ({ default: m.CreateProjectModal }))
@@ -110,8 +111,8 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
         className ||
         `content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] w-[47px] ${
           isSelectedNav
-            ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
-            : "bg-[#edf0f3]"
+            ? "rail-nav-selected border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)] dark:border-sidebar-border"
+            : "bg-muted"
         }`
       }
       id={
@@ -122,14 +123,6 @@ function Component2({ className, state = "Default", type = "Invoice" }: Componen
             : isDefaultAndMyTasks
               ? "node-7_31"
               : "node-7_19"
-      }
-      style={
-        isSelectedNav
-          ? {
-              backgroundImage:
-                "linear-gradient(90deg, rgb(215, 235, 254) 0%, rgb(215, 235, 254) 100%), linear-gradient(146.07354234425264deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(237, 240, 243) 0%, rgb(237, 240, 243) 100%)",
-            }
-          : undefined
       }
     >
       {type === "Invoice" && (
@@ -209,7 +202,7 @@ function Frame1({
           <TooltipTrigger asChild>
             <span>
               <Component2
-                className="content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] bg-[#edf0f3]"
+                className="content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] bg-muted"
                 state="Default"
                 type="Home"
               />
@@ -230,7 +223,7 @@ function Frame1({
             <span>
               <Component2
                 className={`content-stretch flex gap-[12px] h-[40px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 w-[47px] ${
-                  isInvoiceActive ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]" : "bg-[#edf0f3]"
+                  isInvoiceActive ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]" : "bg-muted"
                 }`}
                 state={isInvoiceActive ? "Selected" : "Default"}
                 type="Invoice"
@@ -254,7 +247,7 @@ function Frame1({
                 className={`content-stretch flex h-full w-full gap-[12px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 ${
                   isMyTasksActive
                     ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
-                    : "bg-[#edf0f3]"
+                    : "bg-muted"
                 }`}
                 state={isMyTasksActive ? "Selected" : "Default"}
                 type="My tasks"
@@ -278,7 +271,7 @@ function Frame1({
                 className={`content-stretch flex h-full w-full gap-[12px] items-center justify-center px-[12px] relative rounded-[8px] shrink-0 ${
                   isProductivityRhythmActive
                     ? "border-b border-solid border-white shadow-[0px_0px_1px_0px_rgba(16,115,213,0),0px_0px_1px_0px_rgba(16,115,213,0.02),0px_0px_1px_0px_rgba(16,115,213,0.06),0px_0px_1px_0px_rgba(16,115,213,0.1)]"
-                    : "bg-[#edf0f3]"
+                    : "bg-muted"
                 }`}
                 state={isProductivityRhythmActive ? "Selected" : "Default"}
                 type="Productivity rhythm"
@@ -320,10 +313,10 @@ function LeftRailTimerControls({
         onClick={onPrimary}
         className={`relative box-border flex size-[42px] shrink-0 items-center justify-center rounded-full outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${
           phase === "running"
-            ? "border-0 bg-[#eb4335] p-[2.5px]"
+            ? "border-0 bg-destructive p-[2.5px]"
             : phase === "paused"
-              ? "border-0 bg-[#24B5F8] p-[2.5px]"
-              : "border border-solid border-[#8a8f91] bg-white p-[2.5px]"
+              ? "border-0 bg-info p-[2.5px]"
+              : "border border-solid border-border bg-card p-[2.5px]"
         }`}
         aria-label={primaryLabel}
         aria-pressed={primaryPressed}
@@ -337,7 +330,7 @@ function LeftRailTimerControls({
                 <Play className="relative z-[1] size-[20px] shrink-0 fill-white text-white" aria-hidden />
               ) : (
                 /* Idle — Figma 13:338: large red record disc inside grey ring (not a play glyph). */
-                <span className="relative z-[1] size-[30px] shrink-0 rounded-full bg-[#eb4335]" aria-hidden />
+                <span className="relative z-[1] size-[30px] shrink-0 rounded-full bg-destructive" aria-hidden />
               )}
             </span>
           </TooltipTrigger>
@@ -350,7 +343,7 @@ function LeftRailTimerControls({
             <button
               type="button"
               onClick={onStop}
-              className="flex size-8 shrink-0 items-center justify-center rounded-full border border-solid border-[#ebedee] bg-white text-[#606d76] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full border border-solid border-border bg-card text-muted-foreground outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Finish and log time"
             >
               <Square className="size-3.5 fill-current" strokeWidth={0} aria-hidden />
@@ -461,9 +454,9 @@ function DashboardPlaceholderProjectBlock({
         className={cn(
           "content-stretch relative z-[2] flex h-[40px] w-full shrink-0 cursor-pointer items-center rounded-[8px] px-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
           "ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring",
-          overviewActive && "bg-[rgba(220,227,229,0.68)] font-medium text-[#0b191f] hover:bg-[rgba(205,214,220,0.85)]",
-          !overviewActive && parentWhileSprintActive && "bg-[rgba(237,240,243,0.72)] hover:bg-[rgba(225,232,236,0.9)]",
-          !overviewActive && !parentWhileSprintActive && "hover:bg-[#edf0f3]",
+          overviewActive && "bg-accent font-medium text-foreground hover:bg-accent",
+          !overviewActive && parentWhileSprintActive && "bg-muted hover:bg-accent",
+          !overviewActive && !parentWhileSprintActive && "hover:bg-muted",
         )}
         data-name={isExpanded ? "Component 69" : "Component 68"}
       >
@@ -471,7 +464,7 @@ function DashboardPlaceholderProjectBlock({
           <div className="relative shrink-0 size-[16px]">
             <img alt="" className="absolute block max-w-none size-full" src={folderIcon} />
           </div>
-          <p className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap text-left font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-[#0b191f]">
+          <p className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap text-left font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-foreground">
             {displayName}
           </p>
         </div>
@@ -517,15 +510,15 @@ function DashboardPlaceholderProjectBlock({
               "content-stretch z-[1] flex h-[40px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] pl-[24px] pr-[12px] text-inherit no-underline outline-none transition-colors duration-150 ease-out",
               "ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring",
               rowActive
-                ? "bg-[rgba(220,227,229,0.68)] font-medium hover:bg-[rgba(200,210,216,0.78)]"
-                : "hover:bg-[#edf0f3]",
+                ? "bg-accent font-medium hover:bg-accent"
+                : "hover:bg-muted",
             )}
             data-name="Component 70"
           >
             <div className="content-stretch flex min-h-px min-w-px flex-[1_0_0] gap-[8px] items-center relative">
               <CornerDownRight className="relative shrink-0 overflow-clip size-[16px]" />
               <p
-                className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-[#0b191f]"
+                className="relative min-h-px min-w-px flex-[1_0_0] overflow-hidden text-ellipsis whitespace-nowrap font-['Satoshi:Medium',sans-serif] text-[14px] leading-[normal] not-italic text-foreground"
                 title={item.label}
               >
                 {item.label}
@@ -697,7 +690,7 @@ export function DashboardLeftRail({
           ? user.email.slice(0, 2).toUpperCase()
           : "?"
       : "?";
-  const profileAvatarBg = user ? memberAvatarBackground(Number(user.id)) : "#f0f3f5";
+  const profileAvatarBg = user ? memberAvatarBackground(Number(user.id)) : "var(--muted)";
 
   const settingsTourSection = useWorkspaceTourStore((s) => s.settingsPanelSection);
   const tourSettingsModalOpen = useWorkspaceTourStore((s) => s.tourSettingsModalOpen);
@@ -757,7 +750,7 @@ export function DashboardLeftRail({
         <div className="content-stretch flex flex-col gap-[9.534px] items-center pb-[16px] pt-[32px] relative shrink-0 w-full" data-node-id="7:2822">
           <div className="content-stretch flex flex-col items-center relative shrink-0" data-node-id="7:2824">
             <p
-              className="relative shrink-0 text-center font-normal font-sarina-sans text-[26.219px] leading-[29.397px] tracking-[-0.5244px] whitespace-nowrap text-[#1A4659]"
+              className="relative shrink-0 text-center font-normal font-sarina-sans text-[26.219px] leading-[29.397px] tracking-[-0.5244px] whitespace-nowrap text-info"
               data-node-id="7:2825"
             >
               Continuum
@@ -781,14 +774,14 @@ export function DashboardLeftRail({
           className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden"
           data-node-id="7:2820"
         >
-          <div className="shrink-0 bg-[#f5f8fa]" data-node-id="7:2828">
+          <div className="shrink-0 bg-muted" data-node-id="7:2828">
             <div
               className="content-stretch flex items-center justify-between py-[8px] relative w-full z-[5]"
               data-node-id="I7:2828;2172:27463"
             >
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="I7:2828;2172:27464">
                 <p
-                  className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap"
+                  className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[14px] whitespace-nowrap"
                   data-node-id="I7:2828;2172:27466"
                 >
                   Projects
@@ -821,11 +814,11 @@ export function DashboardLeftRail({
                     align="start"
                     side="bottom"
                     sideOffset={6}
-                    className="z-[100] w-[min(260px,calc(100vw-2rem))] border border-solid border-[#ebedee] p-1 shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]"
+                    className="z-[100] w-[min(260px,calc(100vw-2rem))] border border-solid border-border p-1 shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]"
                   >
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-[#151515] outline-none transition-colors hover:bg-[#f5f7f8] focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => {
                         setCreateProjectMenuOpen(false);
                         setCreateProjectOpen(true);
@@ -841,7 +834,7 @@ export function DashboardLeftRail({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-[#151515] outline-none transition-colors hover:bg-[#f5f7f8] focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => {
                         setCreateProjectMenuOpen(false);
                         const go = () => {
@@ -865,14 +858,14 @@ export function DashboardLeftRail({
                     {isMigrationsEnabled ? (
                       <button
                         type="button"
-                        className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-[#151515] outline-none transition-colors hover:bg-[#f5f7f8] focus-visible:ring-2 focus-visible:ring-ring"
+                        className="flex h-10 w-full items-center gap-3 rounded-[6px] px-4 text-left font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring"
                         onClick={() => {
                           setCreateProjectMenuOpen(false);
                           void navigate(migrationsNewHref());
                         }}
                       >
                         <span
-                          className="relative flex h-[16px] w-[16px] shrink-0 items-center justify-center overflow-clip text-[#151515]"
+                          className="relative flex h-[16px] w-[16px] shrink-0 items-center justify-center overflow-clip text-foreground"
                           aria-hidden
                         >
                           <Upload className="size-[14px]" />
@@ -917,7 +910,7 @@ export function DashboardLeftRail({
                 />
               ))}
               {noApiProjectMatches ? (
-                <p className="px-[12px] py-[8px] font-['Satoshi:Medium',sans-serif] text-[13px] text-[#606d76]">
+                <p className="px-[12px] py-[8px] font-['Satoshi:Medium',sans-serif] text-[13px] text-muted-foreground">
                   No matching projects
                 </p>
               ) : null}
@@ -960,13 +953,13 @@ export function DashboardLeftRail({
               <div className="flex min-w-0 flex-1 flex-col justify-center gap-0 leading-none">
                 <p
                   className={`whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium ${
-                    timerPhase === "paused" ? "text-[#9a7b18]" : "text-[#0b191f]"
+                    timerPhase === "paused" ? "text-warning" : "text-foreground"
                   }`}
                 >
                   {formatHms(elapsedSec)}
                 </p>
                 {timerPhase === "paused" ? (
-                  <p className="mt-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium uppercase tracking-wide text-[#9a7b18]">
+                  <p className="mt-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium uppercase tracking-wide text-warning">
                     Paused
                   </p>
                 ) : null}
@@ -978,10 +971,10 @@ export function DashboardLeftRail({
                       aria-label="Select task"
                       title={sessionState !== "idle" ? "Stop timer to change task" : "Select ticket"}
                     >
-                      <span className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                      <span className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
                         {selectedTask ? selectedTask.title : "Select ticket"}
                       </span>
-                      <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
+                      <ChevronDown className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden />
                     </button>
                   </PopoverTrigger>
               </div>
@@ -1011,7 +1004,7 @@ export function DashboardLeftRail({
                     sideOffset={6}
                     collisionBoundary={railPickerBoundary ?? undefined}
                     collisionPadding={8}
-                    className="z-[100] w-[212px] min-w-[212px] max-w-[212px] border border-solid border-[#e9e9e9] p-0 shadow-lg"
+                    className="z-[100] w-[212px] min-w-[212px] max-w-[212px] border border-solid border-border p-0 shadow-lg"
                     onOpenAutoFocus={(e) => {
                       e.preventDefault();
                       taskSearchInputRef.current?.focus();
@@ -1022,29 +1015,29 @@ export function DashboardLeftRail({
                       the viewport bottom it can become ~0 and hide the list. Use min-h + fixed max on the list.
                     */}
                     <div className="flex max-h-[min(320px,70vh)] min-h-[168px] flex-col overflow-hidden rounded-[8px] bg-white">
-                      <div className="flex shrink-0 items-center gap-2 border-b border-[#f0f0f0] px-3 py-2">
-                        <Search className="size-4 shrink-0 text-[#9fa5a8]" strokeWidth={2} />
+                      <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+                        <Search className="size-4 shrink-0 text-muted-foreground" strokeWidth={2} />
                         <input
                           ref={taskSearchInputRef}
                           type="text"
                           value={taskSearch}
                           onChange={(e) => setTaskSearch(e.target.value)}
                           placeholder="Search tasks…"
-                          className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                          className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
                           aria-label="Search tasks"
                         />
                       </div>
                       <div className="scrollbar-hide min-h-[120px] max-h-[240px] overflow-y-auto py-1">
                         {allTasksPending ? (
-                          <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-[#9fa5a8]">
+                          <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-muted-foreground">
                             Loading…
                           </p>
                         ) : allTasksError ? (
-                          <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-[#c45c5c]">
+                          <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-destructive">
                             {getApiErrorMessage(allTasksErrorDetail, "Couldn’t load tasks")}
                           </p>
                         ) : filteredRailTasks.length === 0 ? (
-                          <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-[#9fa5a8]">
+                          <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-muted-foreground">
                             {allTasksForPicker.length === 0 ? "No tasks" : "No matches"}
                           </p>
                         ) : (
@@ -1057,18 +1050,18 @@ export function DashboardLeftRail({
                                 setTaskPickerOpen(false);
                               }}
                               className={cn(
-                                "flex w-full flex-col gap-0.5 px-3 py-2 text-left font-['Satoshi',sans-serif] text-[13px] transition-colors hover:bg-[#f5f7f8]",
-                                selectedTask?.id === t.id && "bg-[#f0f8ff]",
+                                "flex w-full flex-col gap-0.5 px-3 py-2 text-left font-['Satoshi',sans-serif] text-[13px] transition-colors hover:bg-card",
+                                selectedTask?.id === t.id && "bg-primary/10",
                               )}
                             >
                               <span className="flex w-full items-center gap-2">
-                                <span className="min-w-0 flex-1 truncate text-[#0b191f]">{t.title}</span>
+                                <span className="min-w-0 flex-1 truncate text-foreground">{t.title}</span>
                                 {selectedTask?.id === t.id ? (
-                                  <Check className="size-3.5 shrink-0 text-[#2798f5]" strokeWidth={2} />
+                                  <Check className="size-3.5 shrink-0 text-primary" strokeWidth={2} />
                                 ) : null}
                               </span>
                               {t.project ? (
-                                <span className="truncate text-[11px] font-medium text-[#727d83]">{t.project}</span>
+                                <span className="truncate text-[11px] font-medium text-muted-foreground">{t.project}</span>
                               ) : null}
                             </button>
                           ))
@@ -1087,18 +1080,19 @@ export function DashboardLeftRail({
           <div className="relative shrink-0 size-[16px]" data-name="lucide/settings" data-node-id="7:2839">
             <img alt="" className="absolute block max-w-none size-full" src={imgLucideSettings} />
           </div>
-          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="7:2841">
+          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-foreground text-[14px] whitespace-nowrap" data-node-id="7:2841">
             Settings
           </p>
         </div>
-        <div className="h-px w-full shrink-0 bg-[#ebedee]" data-node-id="7:2842" aria-hidden />
+        <div className="h-px w-full shrink-0 bg-muted" data-node-id="7:2842" aria-hidden />
+        <div className="flex w-full items-center gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               type="button"
               data-tour="rail-profile-settings"
               onClick={() => setSettingsOpen(true)}
-              className="content-stretch flex h-[40px] w-full shrink-0 cursor-pointer items-center justify-between rounded-[8px] border-0 bg-transparent p-0 text-left outline-none ring-offset-2 transition-colors hover:bg-[rgba(237,240,243,0.85)] focus-visible:ring-2 focus-visible:ring-ring"
+              className="content-stretch flex h-[40px] min-w-0 flex-1 shrink-0 cursor-pointer items-center justify-between rounded-[8px] border-0 bg-transparent p-0 text-left outline-none ring-offset-2 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
               data-name="Component 13"
               data-node-id="7:2843"
               aria-expanded={settingsOpen}
@@ -1117,10 +1111,10 @@ export function DashboardLeftRail({
               </div>
             </div>
             <div className="content-stretch flex min-w-0 flex-col font-['Satoshi:Medium',sans-serif] items-start justify-center leading-[normal] not-italic relative shrink-0">
-              <p className="relative max-w-[140px] shrink-0 truncate text-[#0b191f] text-[14px]" data-node-id="7:2847" title={profileName}>
+              <p className="relative max-w-[140px] shrink-0 truncate text-foreground text-[14px]" data-node-id="7:2847" title={profileName}>
                 {profileName}
               </p>
-              <p className="relative max-w-[140px] shrink-0 truncate text-[#727d83] text-[12px]" data-node-id="7:2848" title={profileEmail}>
+              <p className="relative max-w-[140px] shrink-0 truncate text-muted-foreground text-[12px]" data-node-id="7:2848" title={profileEmail}>
                 {profileEmail}
               </p>
             </div>
@@ -1136,6 +1130,8 @@ export function DashboardLeftRail({
           </TooltipTrigger>
           <TooltipContent side="right">Account and settings</TooltipContent>
         </Tooltip>
+          <ThemeToggle className="shrink-0" />
+        </div>
       </div>
       {createProjectOpen ? (
         <Suspense fallback={null}>

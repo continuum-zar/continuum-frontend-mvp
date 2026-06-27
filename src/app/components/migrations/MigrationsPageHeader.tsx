@@ -41,7 +41,7 @@ export function MigrationsPageHeader({
     return (
         <header
             className={cn(
-                "flex flex-col gap-2 border-b border-[#ebedee] px-6 pt-5 pb-4",
+                "flex flex-col gap-2 border-b border-border px-6 pt-5 pb-4",
                 className,
             )}
         >

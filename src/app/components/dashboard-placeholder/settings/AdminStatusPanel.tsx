@@ -33,7 +33,7 @@ export function AdminStatusPanel() {
       <section className="flex flex-col gap-4" aria-labelledby="admin-status-users-heading">
         <h3
           id="admin-status-users-heading"
-          className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]"
+          className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground"
         >
           User statistics
         </h3>
@@ -41,16 +41,16 @@ export function AdminStatusPanel() {
           {USER_STATS.map((stat) => (
             <div
               key={stat.label}
-              className="flex flex-col gap-1 rounded-[8px] border border-[#ebedee] bg-[#fafbfc] px-4 py-4"
+              className="flex flex-col gap-1 rounded-[8px] border border-border bg-background px-4 py-4"
             >
-              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                 {stat.label}
               </p>
-              <p className="font-['Satoshi',sans-serif] text-[32px] font-medium leading-tight text-[#0b191f]">
+              <p className="font-['Satoshi',sans-serif] text-[32px] font-medium leading-tight text-foreground">
                 {stat.value.toLocaleString()}
               </p>
               {"caption" in stat && stat.caption ? (
-                <p className="font-['Satoshi',sans-serif] text-[13px] font-normal leading-normal text-[#727d83]">
+                <p className="font-['Satoshi',sans-serif] text-[13px] font-normal leading-normal text-muted-foreground">
                   {stat.caption}
                 </p>
               ) : null}
@@ -62,15 +62,15 @@ export function AdminStatusPanel() {
       <section className="flex flex-col gap-4" aria-labelledby="admin-status-infra-heading">
         <h3
           id="admin-status-infra-heading"
-          className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]"
+          className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground"
         >
           Infrastructure
         </h3>
-        <ul className="flex flex-col overflow-hidden rounded-[8px] border border-[#ebedee]">
+        <ul className="flex flex-col overflow-hidden rounded-[8px] border border-border">
           {replicas.map((replica, index) => (
             <li
               key={replica.id}
-              className={index > 0 ? "border-t border-[#ebedee]" : undefined}
+              className={index > 0 ? "border-t border-border" : undefined}
             >
               <div className="flex items-center justify-between gap-4 px-4 py-4">
                 <div className="flex min-w-0 items-center gap-3">
@@ -78,16 +78,16 @@ export function AdminStatusPanel() {
                     {replica.flag}
                   </span>
                   <div className="flex min-w-0 flex-col gap-0.5">
-                    <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                       {replica.label}
                     </p>
-                    <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                    <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-muted-foreground">
                       {replica.location}
                     </p>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
-                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium tabular-nums text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium tabular-nums text-foreground">
                     {replica.uptimePercent.toFixed(2)}% uptime
                   </p>
                   <Badge

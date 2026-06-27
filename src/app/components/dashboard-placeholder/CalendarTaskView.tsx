@@ -83,7 +83,7 @@ export function CalendarTaskView({ tasks, onOpenTask }: CalendarTaskViewProps) {
     for (const t of tasks) {
       const d = parseTaskDueDate(t.dueDate);
       if (!d) continue;
-      out.push({ id: `task-${t.id}`, title: t.title, start: startOfDay(d), end: addDays(startOfDay(d), 1), allDay: true, kind: "task", taskId: t.id, color: "#0b191f", textColor: "#cfecff" });
+      out.push({ id: `task-${t.id}`, title: t.title, start: startOfDay(d), end: addDays(startOfDay(d), 1), allDay: true, kind: "task", taskId: t.id, color: "var(--primary)", textColor: "var(--primary-foreground)" });
     }
     return out;
   }, [tasks]);
@@ -132,45 +132,45 @@ export function CalendarTaskView({ tasks, onOpenTask }: CalendarTaskViewProps) {
 
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col gap-0 overflow-hidden rounded-[8px] border border-[#dadce0] bg-white font-['Satoshi',sans-serif] shadow-sm" role="region" aria-label="Calendar">
+    <div className="flex w-full min-w-0 flex-1 flex-col gap-0 overflow-hidden rounded-[8px] border border-border bg-card font-['Satoshi',sans-serif] shadow-sm" role="region" aria-label="Calendar">
       {/* Google Calendar-style header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#dadce0] px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
-          <button onClick={goToday} className="rounded-[4px] border border-[#dadce0] bg-white px-3 py-[5px] text-[13px] font-medium text-[#3c4043] hover:bg-[#f6f8fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a73e8]/40">
+          <button onClick={goToday} className="rounded-[4px] border border-border bg-card px-3 py-[5px] text-[13px] font-medium text-foreground hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
             Today
           </button>
           <div className="flex items-center">
-            <button onClick={prevMonth} className="flex size-8 items-center justify-center rounded-full text-[#3c4043] hover:bg-[#f1f3f4] focus-visible:outline-none" aria-label="Previous month">
+            <button onClick={prevMonth} className="flex size-8 items-center justify-center rounded-full text-foreground hover:bg-muted focus-visible:outline-none" aria-label="Previous month">
               <ChevronLeft className="size-5" aria-hidden />
             </button>
-            <button onClick={nextMonth} className="flex size-8 items-center justify-center rounded-full text-[#3c4043] hover:bg-[#f1f3f4] focus-visible:outline-none" aria-label="Next month">
+            <button onClick={nextMonth} className="flex size-8 items-center justify-center rounded-full text-foreground hover:bg-muted focus-visible:outline-none" aria-label="Next month">
               <ChevronRight className="size-5" aria-hidden />
             </button>
           </div>
-          <h2 className="text-[18px] font-normal text-[#3c4043]">
+          <h2 className="text-[18px] font-normal text-foreground">
             {format(current, "MMMM yyyy", { locale: enUS })}
           </h2>
-          {googleLoading && <Loader2 className="size-4 animate-spin text-[#1a73e8]" aria-hidden />}
+          {googleLoading && <Loader2 className="size-4 animate-spin text-primary" aria-hidden />}
         </div>
 
         <div className="flex items-center gap-2">
 
           {/* Legend */}
-          <div className="flex items-center gap-3 text-[12px] text-[#5f6368]">
-            <span className="flex items-center gap-1"><span className="size-2.5 rounded-sm bg-[#1a73e8]" />Google</span>
-            <span className="flex items-center gap-1"><span className="size-2.5 rounded-sm bg-[#0b191f]" />Tasks</span>
+          <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="size-2.5 rounded-sm bg-primary" />Google</span>
+            <span className="flex items-center gap-1"><span className="size-2.5 rounded-sm bg-primary" />Tasks</span>
           </div>
           {connected ? (
             <>
-              <button onClick={handleConnect} disabled={connecting} className="inline-flex h-8 items-center gap-1.5 rounded-[4px] border border-[#dadce0] bg-white px-3 text-[12px] font-medium text-[#3c4043] hover:bg-[#f6f8fc] disabled:opacity-50">
+              <button onClick={handleConnect} disabled={connecting} className="inline-flex h-8 items-center gap-1.5 rounded-[4px] border border-border bg-card px-3 text-[12px] font-medium text-foreground hover:bg-primary/10 disabled:opacity-50">
                 <RefreshCw className="size-3.5" aria-hidden />Reconnect
               </button>
-              <button onClick={handleDisconnect} className="inline-flex h-8 items-center gap-1.5 rounded-[4px] border border-[#dadce0] bg-white px-3 text-[12px] font-medium text-[#d93025] hover:bg-[#fce8e6]">
+              <button onClick={handleDisconnect} className="inline-flex h-8 items-center gap-1.5 rounded-[4px] border border-border bg-card px-3 text-[12px] font-medium text-destructive hover:bg-destructive/10">
                 Disconnect
               </button>
             </>
           ) : (
-            <button onClick={handleConnect} disabled={!hasClientId || connecting} className="inline-flex h-8 items-center gap-1.5 rounded-[4px] bg-[#1a73e8] px-3 text-[12px] font-medium text-white hover:bg-[#1557b0] disabled:opacity-50 focus-visible:outline-none">
+            <button onClick={handleConnect} disabled={!hasClientId || connecting} className="inline-flex h-8 items-center gap-1.5 rounded-[4px] bg-primary px-3 text-[12px] font-medium text-white hover:bg-primary disabled:opacity-50 focus-visible:outline-none">
               <LogIn className="size-3.5" aria-hidden />
               {connecting ? "Connecting…" : "Connect Google"}
             </button>
@@ -179,9 +179,9 @@ export function CalendarTaskView({ tasks, onOpenTask }: CalendarTaskViewProps) {
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 border-b border-[#dadce0]">
+      <div className="grid grid-cols-7 border-b border-border">
         {WEEKDAYS.map(d => (
-          <div key={d} className="py-2 text-center text-[11px] font-medium uppercase tracking-wide text-[#70757a]">{d}</div>
+          <div key={d} className="py-2 text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{d}</div>
         ))}
       </div>
 
@@ -198,16 +198,16 @@ export function CalendarTaskView({ tasks, onOpenTask }: CalendarTaskViewProps) {
             <div
               key={day.toISOString()}
               className={[
-                "flex min-h-[100px] flex-col border-b border-r border-[#dadce0] p-1",
-                !isCurrentMonth && "bg-[#f8f9fa]",
-                (isSat || isSun) && isCurrentMonth && "bg-[#fafafa]",
+                "flex min-h-[100px] flex-col border-b border-r border-border p-1",
+                !isCurrentMonth && "bg-card",
+                (isSat || isSun) && isCurrentMonth && "bg-card",
               ].filter(Boolean).join(" ")}
             >
               {/* Day number */}
               <div className="mb-1 flex justify-center">
                 <span className={[
                   "flex size-7 items-center justify-center rounded-full text-[13px]",
-                  isToday ? "bg-[#1a73e8] font-semibold text-white" : isCurrentMonth ? "font-medium text-[#3c4043]" : "text-[#b0b8c1]",
+                  isToday ? "bg-primary font-semibold text-white" : isCurrentMonth ? "font-medium text-foreground" : "text-muted-foreground",
                 ].join(" ")}>
                   {day.getDate()}
                 </span>
@@ -232,7 +232,7 @@ export function CalendarTaskView({ tasks, onOpenTask }: CalendarTaskViewProps) {
                   </button>
                 ))}
                 {dayEvents.length > 3 && (
-                  <span className="px-1 text-[11px] text-[#70757a]">+{dayEvents.length - 3} more</span>
+                  <span className="px-1 text-[11px] text-muted-foreground">+{dayEvents.length - 3} more</span>
                 )}
               </div>
             </div>
@@ -242,15 +242,15 @@ export function CalendarTaskView({ tasks, onOpenTask }: CalendarTaskViewProps) {
 
       {/* Bottom: not-connected prompt */}
       {!connected && !hasClientId && (
-        <div className="border-t border-[#dadce0] px-4 py-2 text-[12px] text-[#5f6368]">
-          Add <code className="rounded bg-[#f1f3f4] px-1">VITE_GOOGLE_CLIENT_ID</code> to <code className="rounded bg-[#f1f3f4] px-1">.env.local</code> to enable Google Calendar sync.
+        <div className="border-t border-border px-4 py-2 text-[12px] text-muted-foreground">
+          Add <code className="rounded bg-muted px-1">VITE_GOOGLE_CLIENT_ID</code> to <code className="rounded bg-muted px-1">.env.local</code> to enable Google Calendar sync.
         </div>
       )}
 
       {!connected && hasClientId && (
-        <div className="flex items-center gap-2 border-t border-[#dadce0] px-4 py-2">
-          <CalendarDays className="size-4 shrink-0 text-[#1a73e8]" aria-hidden />
-          <span className="text-[12px] text-[#5f6368]">Connect Google Calendar to see your events overlaid on this grid.</span>
+        <div className="flex items-center gap-2 border-t border-border px-4 py-2">
+          <CalendarDays className="size-4 shrink-0 text-primary" aria-hidden />
+          <span className="text-[12px] text-muted-foreground">Connect Google Calendar to see your events overlaid on this grid.</span>
         </div>
       )}
     </div>

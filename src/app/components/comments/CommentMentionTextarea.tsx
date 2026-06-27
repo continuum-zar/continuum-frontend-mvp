@@ -189,7 +189,7 @@ export function CommentMentionTextarea({
                 aria-activedescendant={activeDescendantId}
                 aria-describedby={mentionOpen ? liveRegionId : undefined}
                 className={cn(
-                    "w-full resize-none overflow-y-auto rounded-[8px] border border-[#e9e9e9] bg-white px-3 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] outline-none placeholder:text-[#727d83] focus:ring-2 focus:ring-[#24b5f8]/40 disabled:opacity-60",
+                    "w-full resize-none overflow-y-auto rounded-[8px] border border-border bg-card px-3 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-info/40 disabled:opacity-60",
                     className,
                 )}
             />
@@ -203,7 +203,7 @@ export function CommentMentionTextarea({
                     id={listboxId}
                     role="listbox"
                     aria-label="Mention suggestions"
-                    className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-[8px] border border-[#e9e9e9] bg-white py-1 shadow-lg"
+                    className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-[8px] border border-border bg-card py-1 shadow-lg"
                     style={{ maxHeight: MAX_DROPDOWN_HEIGHT }}
                 >
                     <VirtualList
@@ -229,13 +229,13 @@ export function CommentMentionTextarea({
                                     onClick={() => applyMention(member)}
                                     onMouseEnter={() => setSelectedIndex(index)}
                                     className={cn(
-                                        "flex w-full flex-col gap-0.5 px-3 py-2.5 text-left font-['Satoshi',sans-serif] text-[14px] transition-colors hover:bg-[#f5f7f8]",
-                                        selected && 'bg-[#f0f8ff]',
+                                        "flex w-full flex-col gap-0.5 px-3 py-2.5 text-left font-['Satoshi',sans-serif] text-[14px] transition-colors hover:bg-card",
+                                        selected && 'bg-primary/10',
                                     )}
                                 >
-                                    <span className="truncate text-[#0b191f]">{member.displayName}</span>
+                                    <span className="truncate text-foreground">{member.displayName}</span>
                                     {member.username && !member.username.includes('@') ? (
-                                        <span className="truncate text-[12px] font-medium text-[#727d83]">
+                                        <span className="truncate text-[12px] font-medium text-muted-foreground">
                                             @{member.username}
                                         </span>
                                     ) : null}

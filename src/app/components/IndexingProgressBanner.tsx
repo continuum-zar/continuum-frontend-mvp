@@ -17,7 +17,7 @@ export function IndexingProgressBanner({
 }: IndexingProgressBannerProps) {
     if (pollFailed) {
         return (
-            <p className="text-[13px] leading-[19px] text-amber-800">
+            <p className="text-[13px] leading-[19px] text-warning">
                 Could not load indexing progress. The answer will still appear when ready.
             </p>
         );
@@ -25,7 +25,7 @@ export function IndexingProgressBanner({
 
     if (progress?.status === 'error') {
         return (
-            <p className="text-[13px] leading-[19px] text-red-600">
+            <p className="text-[13px] leading-[19px] text-destructive">
                 {indexingProgressCaption(progress)}
             </p>
         );

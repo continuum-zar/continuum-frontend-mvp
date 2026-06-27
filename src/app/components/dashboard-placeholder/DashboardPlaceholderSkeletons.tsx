@@ -11,8 +11,8 @@ type DashboardTaskListTableSkeletonProps = {
 export function DashboardTaskListTableSkeleton({ rowCount = 8 }: DashboardTaskListTableSkeletonProps) {
   return (
     <>
-      <div className="relative z-10 shrink-0 border-b border-[#ebedee] bg-[#f0f3f5] px-6 pt-4">
-        <div className={`${TASK_TABLE_GRID} rounded-t-[8px] px-4 py-3 text-[16px] text-[#606d76]`}>
+      <div className="relative z-10 shrink-0 border-b border-border bg-muted px-6 pt-4">
+        <div className={`${TASK_TABLE_GRID} rounded-t-[8px] px-4 py-3 text-[16px] text-muted-foreground`}>
           <p>Task</p>
           <p>Project</p>
           <p>Description</p>
@@ -32,7 +32,7 @@ export function DashboardTaskListTableSkeleton({ rowCount = 8 }: DashboardTaskLi
         {Array.from({ length: rowCount }, (_, i) => (
           <div
             key={i}
-            className={`${TASK_TABLE_GRID} border-b border-[#ebedee] bg-white px-4 py-2`}
+            className={`${TASK_TABLE_GRID} border-b border-border bg-card px-4 py-2`}
             aria-hidden
           >
             <div className="flex min-w-0 items-center gap-2">
@@ -79,7 +79,7 @@ export function KanbanBoardSkeleton() {
             <Skeleton className="h-4 w-4 rounded" />
             <Skeleton className="h-4 w-28" />
           </div>
-          <div className="h-px w-full shrink-0 bg-[#e5e7eb]" />
+          <div className="h-px w-full shrink-0 bg-muted" />
           <div className="scrollbar-none flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pt-4">
             {[0, 1, 2].map((row) => (
               <Skeleton key={row} className="h-[120px] w-full shrink-0 rounded-[16px]" />
@@ -181,7 +181,7 @@ export function AIPlannerContentSkeleton() {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="flex flex-col gap-3 rounded-[12px] border border-[#ebedee] bg-white p-4"
+            className="flex flex-col gap-3 rounded-[12px] border border-border bg-card p-4"
             aria-hidden
           >
             <div className="flex items-center justify-between">
@@ -245,7 +245,7 @@ export function SprintKanbanListSkeleton() {
       aria-label="Loading tasks"
     >
       {[0, 1, 2].map((sec) => (
-        <div key={sec} className="flex flex-col gap-3 rounded-[16px] border border-[#ebedee] bg-[#f9fafb] p-4">
+        <div key={sec} className="flex flex-col gap-3 rounded-[16px] border border-border bg-muted p-4">
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-4 rounded" />
             <Skeleton className="h-5 w-36" />

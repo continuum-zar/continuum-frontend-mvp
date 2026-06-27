@@ -137,60 +137,60 @@ function MilestoneCard({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={cn(
-                    'overflow-hidden rounded-xl border border-[#edecea] bg-white',
+                    'overflow-hidden rounded-xl border border-border bg-card',
                     PLAN_CARD_SHADOW,
                 )}
             >
                 <CollapsibleTrigger asChild>
                     <button
                         type="button"
-                        className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-[#f9fafb]"
+                        className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted"
                     >
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="shrink-0 tabular-nums font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f]">
+                            <span className="shrink-0 tabular-nums font-['Satoshi',sans-serif] text-[13px] font-medium text-foreground">
                                 {index + 1}
                             </span>
                             <div className="min-w-0">
-                                <h4 className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                                <h4 className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
                                     {milestone.name}
                                 </h4>
                                 {milestone.description && (
-                                    <p className="mt-0.5 line-clamp-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#727d83]">
+                                    <p className="mt-0.5 line-clamp-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
                                         {milestone.description}
                                     </p>
                                 )}
                             </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
-                            <span className="rounded-full bg-[#edf0f3] px-2.5 py-1 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]">
+                            <span className="rounded-full bg-muted px-2.5 py-1 font-['Satoshi',sans-serif] text-[10px] font-medium text-muted-foreground">
                                 {milestone.tasks.length} tasks
                             </span>
                             {open ? (
-                                <ChevronDown className="size-4 text-[#727d83]" />
+                                <ChevronDown className="size-4 text-muted-foreground" />
                             ) : (
-                                <ChevronRight className="size-4 text-[#727d83]" />
+                                <ChevronRight className="size-4 text-muted-foreground" />
                             )}
                         </div>
                     </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                    <div className="space-y-2 border-t border-[#edecea] px-4 py-3">
+                    <div className="space-y-2 border-t border-border px-4 py-3">
                         {milestone.tasks.map((task, ti) => (
                             <div
                                 key={ti}
-                                className="flex items-start gap-3 rounded-lg bg-[#f9fafb] p-3 transition-colors hover:bg-[#f3f4f6]"
+                                className="flex items-start gap-3 rounded-lg bg-muted p-3 transition-colors hover:bg-card"
                             >
-                                <span className="mt-0.5 shrink-0 tabular-nums font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f]">
+                                <span className="mt-0.5 shrink-0 tabular-nums font-['Satoshi',sans-serif] text-[13px] font-medium text-foreground">
                                     {ti + 1}
                                 </span>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <span className="font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f]">
+                                        <span className="font-['Satoshi',sans-serif] text-[13px] font-medium text-foreground">
                                             {task.title}
                                         </span>
                                     </div>
                                     <div className="mt-1 flex flex-wrap items-center gap-2">
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-[#edf0f3] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]">
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-muted-foreground">
                                             <Flag
                                                 className={cn(
                                                     'size-3 shrink-0',
@@ -201,13 +201,13 @@ function MilestoneCard({
                                             {taskPriorityLabel(task.priority ?? 'medium')}
                                         </span>
                                         {task.estimated_hours != null ? (
-                                            <span className="rounded-full bg-[#edf0f3] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium tabular-nums text-[#606d76]">
+                                            <span className="rounded-full bg-muted px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium tabular-nums text-muted-foreground">
                                                 ~{task.estimated_hours} h
                                             </span>
                                         ) : null}
                                     </div>
                                     {task.description && (
-                                        <p className="mt-1 line-clamp-2 font-['Inter',sans-serif] text-[12px] leading-[18px] text-[#727d83]">
+                                        <p className="mt-1 line-clamp-2 font-['Inter',sans-serif] text-[12px] leading-[18px] text-muted-foreground">
                                             {task.description}
                                         </p>
                                     )}
@@ -216,7 +216,7 @@ function MilestoneCard({
                                             {task.labels.map((l, li) => (
                                                 <span
                                                     key={li}
-                                                    className="rounded bg-[#edf0f3] px-1.5 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]"
+                                                    className="rounded bg-muted px-1.5 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-muted-foreground"
                                                 >
                                                     {l}
                                                 </span>
@@ -687,7 +687,7 @@ export function AIProjectPlanner({
             toast.success('Project refined', {
                 icon: (
                     <Check
-                        className="size-5 shrink-0 text-[#0b191f]"
+                        className="size-5 shrink-0 text-foreground"
                         strokeWidth={2.5}
                         aria-hidden
                     />
@@ -765,16 +765,16 @@ export function AIProjectPlanner({
         >
             {/* Header — chat phase uses the in-canvas header (Figma 77:13461); other phases keep this bar */}
             {phase !== 'chat' && (
-                <div className="flex shrink-0 items-center justify-between border-b border-[#ebedee] bg-white px-6 py-4">
+                <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-4">
                     <div className="flex items-center gap-3">
                         <Button variant="ghost" size="icon" onClick={requestBackNavigation}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                         <div>
-                            <h1 className="font-['Satoshi',sans-serif] text-lg font-semibold text-[#0b191f]">
+                            <h1 className="font-['Satoshi',sans-serif] text-lg font-semibold text-foreground">
                                 AI Project Planner
                             </h1>
-                            <p className="font-['Satoshi',sans-serif] text-xs font-medium text-[#727d83]">
+                            <p className="font-['Satoshi',sans-serif] text-xs font-medium text-muted-foreground">
                                 {phase === 'plan_review' &&
                                     (refinementPayload ? 'Review proposed changes' : 'Review the generated plan')}
                                 {phase === 'creating' &&
@@ -806,12 +806,12 @@ export function AIProjectPlanner({
                                     <button
                                         type="button"
                                         onClick={requestBackNavigation}
-                                        className="inline-flex size-5 shrink-0 items-center justify-center rounded-md text-[#0b191f] transition-colors hover:bg-black/[0.04]"
+                                        className="inline-flex size-5 shrink-0 items-center justify-center rounded-md text-foreground transition-colors hover:bg-black/[0.04]"
                                         aria-label="Back"
                                     >
                                         <ArrowLeft className="size-5" strokeWidth={2} />
                                     </button>
-                                    <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                                    <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
                                         AI Project Planner
                                     </p>
                                     <div className="size-5 shrink-0" aria-hidden />
@@ -821,7 +821,7 @@ export function AIProjectPlanner({
                                     className="flex min-h-0 flex-1 flex-col overflow-hidden"
                                     style={{
                                         backgroundImage:
-                                            'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
+                                            'linear-gradient(180deg, var(--card) 0%, var(--muted) 100%)',
                                     }}
                                 >
                                     <div className="mx-auto flex h-full min-h-0 w-full max-w-[600px] min-w-[min(100%,403px)] flex-col">
@@ -834,7 +834,7 @@ export function AIProjectPlanner({
                                         ) : (
                                             <>
                                         {refinementPayload && (!baselinePlan || !lockMeta) ? (
-                                            <div className="mx-9 mb-2 shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-950">
+                                            <div className="mx-9 mb-2 shrink-0 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-center text-xs font-medium text-warning">
                                                 Loading current project plan for refinement…
                                             </div>
                                         ) : null}
@@ -851,10 +851,10 @@ export function AIProjectPlanner({
                                                             />
                                                         </div>
                                                         <div className="flex max-w-md flex-col gap-1 text-center leading-normal">
-                                                            <p className="font-['Satoshi',sans-serif] text-[20px] font-bold leading-normal text-[#727D83]">
+                                                            <p className="font-['Satoshi',sans-serif] text-[20px] font-bold leading-normal text-muted-foreground">
                                                                 {emptyStateTitle}
                                                             </p>
-                                                            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal text-[#727D83]">
+                                                            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal text-muted-foreground">
                                                                 {emptyStateBody}
                                                             </p>
                                                         </div>
@@ -884,7 +884,7 @@ export function AIProjectPlanner({
                                                         )}
                                                     >
                                                         {msg.role === 'user' ? (
-                                                            <div className="max-w-[85%] rounded-[32px] bg-[#edf0f3] px-4 py-2 text-left font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] whitespace-pre-wrap">
+                                                            <div className="max-w-[85%] rounded-[32px] bg-muted px-4 py-2 text-left font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-foreground whitespace-pre-wrap">
                                                                 {msg.content}
                                                             </div>
                                                         ) : (
@@ -939,7 +939,7 @@ export function AIProjectPlanner({
 
                                                 {chatMutation.isPending && (
                                                     <div className="flex w-full justify-start">
-                                                        <div className="flex items-center gap-2 font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#727d83]">
+                                                        <div className="flex items-center gap-2 font-['Inter',sans-serif] text-[13px] leading-[19px] text-muted-foreground">
                                                             <Loader2
                                                                 className="size-4 shrink-0 animate-spin"
                                                                 aria-hidden
@@ -961,27 +961,27 @@ export function AIProjectPlanner({
                                                         {fileContents.map((fc, i) => (
                                                             <span
                                                                 key={i}
-                                                                className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm"
+                                                                className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-border bg-card shadow-sm"
                                                             >
                                                                 <span
-                                                                    className="flex w-9 shrink-0 items-center justify-center self-stretch bg-[#edf0f3]"
+                                                                    className="flex w-9 shrink-0 items-center justify-center self-stretch bg-muted"
                                                                     aria-hidden
                                                                 >
                                                                     <FileText
-                                                                        className="size-4 shrink-0 text-[#606d76]"
+                                                                        className="size-4 shrink-0 text-muted-foreground"
                                                                         strokeWidth={1.75}
                                                                     />
                                                                 </span>
                                                                 <TruncatedText
                                                                     text={fc.filename}
-                                                                    className="max-w-[220px] border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[320px]"
+                                                                    className="max-w-[220px] border-l border-solid border-border px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-foreground sm:max-w-[320px]"
                                                                 />
                                                                 <button
                                                                     type="button"
                                                                     onClick={() =>
                                                                         handleRemoveFile(i)
                                                                     }
-                                                                    className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-[#606d76] hover:text-[#0b191f]"
+                                                                    className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-muted-foreground hover:text-foreground"
                                                                     aria-label={`Remove ${fc.filename}`}
                                                                 >
                                                                     <X className="size-3.5" strokeWidth={2} />
@@ -989,13 +989,13 @@ export function AIProjectPlanner({
                                                             </span>
                                                         ))}
                                                         {figmaContext && (
-                                                            <span className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm">
+                                                            <span className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-border bg-card shadow-sm">
                                                                 <span
-                                                                    className="flex w-9 shrink-0 items-center justify-center self-stretch bg-[#e7f2fc]"
+                                                                    className="flex w-9 shrink-0 items-center justify-center self-stretch bg-primary/10"
                                                                     aria-hidden
                                                                 >
                                                                     <Link2
-                                                                        className="size-4 shrink-0 text-[#2f6df6]"
+                                                                        className="size-4 shrink-0 text-primary"
                                                                         strokeWidth={1.75}
                                                                     />
                                                                 </span>
@@ -1005,12 +1005,12 @@ export function AIProjectPlanner({
                                                                             ? ` · ${figmaContext.blueprint.pruned_node_count} nodes · ${countBlueprintAnnotations(figmaContext.blueprint)} annotations`
                                                                             : ''
                                                                     }`}
-                                                                    className="max-w-[260px] border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f] sm:max-w-[360px]"
+                                                                    className="max-w-[260px] border-l border-solid border-border px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-foreground sm:max-w-[360px]"
                                                                 />
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setFigmaContext(null)}
-                                                                    className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-[#606d76] hover:text-[#0b191f]"
+                                                                    className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-muted-foreground hover:text-foreground"
                                                                     aria-label="Remove Figma design"
                                                                 >
                                                                     <X className="size-3.5" strokeWidth={2} />
@@ -1030,10 +1030,10 @@ export function AIProjectPlanner({
 
                                                 <div
                                                     className={cn(
-                                                        'overflow-hidden rounded-[14px] border border-solid border-[#edecea] bg-white shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]',
+                                                        'overflow-hidden rounded-[14px] border border-solid border-border bg-card shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]',
                                                     )}
                                                 >
-                                                    <div className="relative flex min-h-[88px] shrink-0 flex-col gap-1 bg-white pb-[7px] pt-[11px]">
+                                                    <div className="relative flex min-h-[88px] shrink-0 flex-col gap-1 bg-card pb-[7px] pt-[11px]">
                                                         <div className="relative flex w-full min-h-0 items-start justify-center px-[13px]">
                                                             <label
                                                                 className="sr-only"
@@ -1072,7 +1072,7 @@ export function AIProjectPlanner({
                                                                     handleSend();
                                                                 }}
                                                                 rows={1}
-                                                                className="max-h-[200px] min-h-[40px] w-full resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
+                                                                className="max-h-[200px] min-h-[40px] w-full resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-foreground opacity-50 placeholder:text-muted-foreground placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0"
                                                             />
                                                         </div>
                                                         <div className="flex shrink-0 items-center justify-between px-[11px]">
@@ -1096,7 +1096,7 @@ export function AIProjectPlanner({
                                                                 >
                                                                     {uploadMutation.isPending ||
                                                                     meetingUploadMutation.isPending ? (
-                                                                        <Loader2 className="h-[18px] w-[18px] animate-spin text-[#727d83]" />
+                                                                        <Loader2 className="h-[18px] w-[18px] animate-spin text-muted-foreground" />
                                                                     ) : (
                                                                         <img
                                                                             src={
@@ -1115,7 +1115,7 @@ export function AIProjectPlanner({
                                                                         <button
                                                                             type="button"
                                                                             onClick={handleAttachFigma}
-                                                                            className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-sm p-0 text-[#606d76] transition-colors hover:bg-[#edf0f3] hover:text-[#0b191f]"
+                                                                            className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-sm p-0 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                                                                             aria-label="Attach Figma design"
                                                                         >
                                                                             <img
@@ -1142,7 +1142,7 @@ export function AIProjectPlanner({
                                                                         setAutoMode((v) => !v)
                                                                     }
                                                                     className={cn(
-                                                                        "font-['Satoshi',sans-serif] text-[13px] font-medium tracking-[-0.13px] text-[#727d83] transition-opacity",
+                                                                        "font-['Satoshi',sans-serif] text-[13px] font-medium tracking-[-0.13px] text-muted-foreground transition-opacity",
                                                                         autoMode && 'opacity-100',
                                                                         !autoMode &&
                                                                             'line-through opacity-40',
@@ -1154,7 +1154,7 @@ export function AIProjectPlanner({
                                                                     <button
                                                                         type="button"
                                                                         onClick={handleStopChat}
-                                                                        className="flex size-[26px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-[999px] bg-[#e7f2fc]"
+                                                                        className="flex size-[26px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-[999px] bg-primary/10"
                                                                         aria-label="Stop generating"
                                                                     >
                                                                         <span className="relative inline-flex size-3 shrink-0 items-center justify-center">
@@ -1177,10 +1177,10 @@ export function AIProjectPlanner({
                                                                         disabled={!input.trim()}
                                                                         aria-label="Send message"
                                                                         className={cn(
-                                                                            'relative flex size-[26px] shrink-0 items-center justify-center rounded-[999px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#2E96F9] focus-visible:ring-offset-2 disabled:pointer-events-none',
+                                                                            'relative flex size-[26px] shrink-0 items-center justify-center rounded-[999px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none',
                                                                             input.trim()
-                                                                                ? 'cursor-pointer bg-[#2E96F9] text-white'
-                                                                                : 'cursor-default bg-[#f9f9f8] text-[#727d83] opacity-40',
+                                                                                ? 'cursor-pointer bg-primary text-white'
+                                                                                : 'cursor-default bg-card text-muted-foreground opacity-40',
                                                                         )}
                                                                     >
                                                                         <ArrowUp
@@ -1203,9 +1203,9 @@ export function AIProjectPlanner({
                             </div>
 
                             {/* Confidence & context — Figma 77:13510, 77:13667 */}
-                            <aside className="relative hidden h-full min-h-0 w-[362px] shrink-0 flex-col border-l border-[#ebedee] bg-gradient-to-b from-white to-[#f9f9f9] lg:flex">
+                            <aside className="relative hidden h-full min-h-0 w-[362px] shrink-0 flex-col border-l border-border bg-gradient-to-b from-card to-muted lg:flex">
                                 <div className="scrollbar-none min-h-0 flex-1 space-y-6 overflow-y-auto pl-9 pr-[52px] pt-4 pb-28">
-                                    <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                                    <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
                                         Confidence Index
                                     </p>
 
@@ -1215,8 +1215,8 @@ export function AIProjectPlanner({
                                             className={cn(
                                                 "min-w-0 font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal",
                                                 readyToPlan
-                                                    ? 'flex-1 text-emerald-600'
-                                                    : 'max-w-[147px] text-[#eb4335]',
+                                                    ? 'flex-1 text-success'
+                                                    : 'max-w-[147px] text-destructive',
                                             )}
                                         >
                                             {readyToPlan ? (
@@ -1233,7 +1233,7 @@ export function AIProjectPlanner({
                                     {showMissingContextSection ? (
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                                            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                                                 Missing context
                                             </p>
                                         </div>
@@ -1247,16 +1247,16 @@ export function AIProjectPlanner({
                                                         className={cn(
                                                             'mt-0.5 size-4 shrink-0',
                                                             emphasizeMissingContextRows
-                                                                ? 'text-[#eb4335]'
-                                                                : 'text-[#0b191f]',
+                                                                ? 'text-destructive'
+                                                                : 'text-foreground',
                                                         )}
                                                     />
                                                     <p
                                                         className={cn(
                                                             'flex-1 px-4 py-1 font-sans text-[13px] leading-[19px]',
                                                             emphasizeMissingContextRows
-                                                                ? 'text-[#eb4335]'
-                                                                : 'text-[#0b191f]',
+                                                                ? 'text-destructive'
+                                                                : 'text-foreground',
                                                         )}
                                                     >
                                                         {area}
@@ -1269,24 +1269,24 @@ export function AIProjectPlanner({
 
                                     {fileContents.length > 0 && (
                                         <div>
-                                            <p className="mb-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#727d83]">
+                                            <p className="mb-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
                                                 Uploaded files
                                             </p>
                                             <div className="space-y-2">
                                                 {fileContents.map((fc, i) => (
                                                     <div
                                                         key={i}
-                                                        className="flex min-w-0 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white"
+                                                        className="flex min-w-0 items-stretch overflow-hidden rounded-[8px] border border-solid border-border bg-card"
                                                     >
-                                                        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
+                                                        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-muted">
                                                             <FileText
-                                                                className="size-4 shrink-0 text-[#606d76]"
+                                                                className="size-4 shrink-0 text-muted-foreground"
                                                                 strokeWidth={1.75}
                                                                 aria-hidden
                                                             />
                                                         </div>
-                                                        <div className="flex min-h-[44px] min-w-0 flex-1 items-center border-l border-solid border-[#ededed] px-3 py-1.5">
-                                                            <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal text-[#0b191f]">
+                                                        <div className="flex min-h-[44px] min-w-0 flex-1 items-center border-l border-solid border-border px-3 py-1.5">
+                                                            <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal text-foreground">
                                                                 {fc.filename}
                                                             </p>
                                                         </div>
@@ -1297,7 +1297,7 @@ export function AIProjectPlanner({
                                     )}
                                 </div>
 
-                                <div className="absolute bottom-0 left-0 right-0 border-t border-[#ebedee] bg-white px-9 py-4">
+                                <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-card px-9 py-4">
                                     <button
                                         type="button"
                                         onClick={handleGeneratePlan}
@@ -1314,7 +1314,7 @@ export function AIProjectPlanner({
                                         className={cn(
                                             'flex h-10 w-full items-center justify-center rounded-lg font-semibold transition-colors',
                                             !readyToPlan || generateMutation.isPending || !hasAICredits
-                                                ? 'bg-[rgba(96,109,118,0.1)] text-[14px] text-[#606d76] opacity-50'
+                                                ? 'bg-muted text-[14px] text-muted-foreground opacity-50'
                                                 : 'bg-gradient-to-br from-[#24b5f8] to-[#5521fe] text-[14px] text-white shadow-sm hover:opacity-95',
                                         )}
                                     >
@@ -1323,7 +1323,7 @@ export function AIProjectPlanner({
                                             : generatePlanButtonLabel}
                                     </button>
                                     {!hasAICredits && (
-                                        <p className="mt-2 text-center text-[10px] text-red-600">
+                                        <p className="mt-2 text-center text-[10px] text-destructive">
                                             You&apos;ve run out of AI credits. They reset at the start
                                             of next month, or an admin can top you up.
                                         </p>
@@ -1348,7 +1348,7 @@ export function AIProjectPlanner({
                             className="scrollbar-none min-h-0 flex-1 overflow-auto"
                             style={{
                                 backgroundImage:
-                                    'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
+                                    'linear-gradient(180deg, var(--card) 0%, var(--muted) 100%)',
                             }}
                         >
                             <div
@@ -1358,13 +1358,13 @@ export function AIProjectPlanner({
                                 )}
                             >
                                 <div>
-                                    <span className="mb-3 inline-flex rounded-full bg-[#edf0f3] px-3 py-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                                    <span className="mb-3 inline-flex rounded-full bg-muted px-3 py-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
                                         Generated Plan
                                     </span>
-                                    <h2 className="mb-2 font-['Satoshi',sans-serif] text-[24px] font-bold leading-tight tracking-tight text-[#0b191f]">
+                                    <h2 className="mb-2 font-['Satoshi',sans-serif] text-[24px] font-bold leading-tight tracking-tight text-foreground">
                                         {plan.project_name}
                                     </h2>
-                                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-[#727d83]">
+                                    <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-muted-foreground">
                                         {plan.project_description}
                                     </p>
                                 </div>
@@ -1372,14 +1372,14 @@ export function AIProjectPlanner({
                                 {plan.summary && (
                                     <div
                                         className={cn(
-                                            'rounded-2xl border border-[#edecea] bg-white p-5',
+                                            'rounded-2xl border border-border bg-card p-5',
                                             PLAN_CARD_SHADOW,
                                         )}
                                     >
-                                        <h3 className="mb-2 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f]">
+                                        <h3 className="mb-2 font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground">
                                             Plan Summary
                                         </h3>
-                                        <p className="whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] leading-[21px] text-[#606d76]">
+                                        <p className="whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] leading-[21px] text-muted-foreground">
                                             {plan.summary}
                                         </p>
                                     </div>
@@ -1413,19 +1413,19 @@ export function AIProjectPlanner({
                                 {figmaContext && (
                                     <div
                                         className={cn(
-                                            'rounded-2xl border border-[#dbeafe] bg-[#f8fbff] p-5',
+                                            'rounded-2xl border border-primary/30 bg-primary/10 p-5',
                                             PLAN_CARD_SHADOW,
                                         )}
                                     >
                                         <div className="flex items-start gap-3">
-                                            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e7f2fc]">
-                                                <Link2 className="size-4 text-[#2f6df6]" />
+                                            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                                                <Link2 className="size-4 text-primary" />
                                             </span>
                                             <div className="min-w-0">
-                                                <h3 className="font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f]">
+                                                <h3 className="font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground">
                                                     Figma Design Context
                                                 </h3>
-                                                <p className="mt-1 font-['Inter',sans-serif] text-[13px] leading-[20px] text-[#606d76]">
+                                                <p className="mt-1 font-['Inter',sans-serif] text-[13px] leading-[20px] text-muted-foreground">
                                                     This plan used {figmaContext.source_name || 'the attached Figma design'}
                                                     {figmaContext.node_id ? ` (${figmaContext.node_id})` : ''} as design evidence.
                                                     Review frontend and design-system tasks against the linked frame.
@@ -1435,7 +1435,7 @@ export function AIProjectPlanner({
                                                         href={figmaContext.url}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="mt-2 inline-flex max-w-full truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#2f6df6] hover:underline"
+                                                        className="mt-2 inline-flex max-w-full truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-primary hover:underline"
                                                     >
                                                         Open Figma reference
                                                     </a>
@@ -1463,14 +1463,14 @@ export function AIProjectPlanner({
                                                 <div
                                                     key={label}
                                                     className={cn(
-                                                        'rounded-xl border border-[#edecea] bg-white p-5 text-center',
+                                                        'rounded-xl border border-border bg-card p-5 text-center',
                                                         PLAN_CARD_SHADOW,
                                                     )}
                                                 >
-                                                    <div className="font-['Satoshi',sans-serif] text-[28px] font-bold leading-none text-[#0b191f]">
+                                                    <div className="font-['Satoshi',sans-serif] text-[28px] font-bold leading-none text-foreground">
                                                         {value}
                                                     </div>
-                                                    <div className="mt-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                                                    <div className="mt-2 font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
                                                         {label}
                                                     </div>
                                                 </div>
@@ -1478,7 +1478,7 @@ export function AIProjectPlanner({
                                         </div>
 
                                         <div>
-                                            <h3 className="mb-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                                            <h3 className="mb-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                                                 Milestones
                                             </h3>
                                             <div className="space-y-3">
@@ -1497,7 +1497,7 @@ export function AIProjectPlanner({
                                 {refinementPayload ? (
                                     !baselinePlan || !lockMeta ? (
                                         <div
-                                            className="flex flex-col gap-3 rounded-xl border border-[#ebedee] bg-white px-5 py-6 shadow-sm"
+                                            className="flex flex-col gap-3 rounded-xl border border-border bg-card px-5 py-6 shadow-sm"
                                             role="status"
                                             aria-busy="true"
                                             aria-label="Loading baseline comparison"
@@ -1523,15 +1523,15 @@ export function AIProjectPlanner({
                                 ) : null}
 
                                 {meetingId != null && refinementPayload ? (
-                                    <div className="rounded-xl border border-[#ebedee] bg-white p-5 shadow-sm">
-                                        <p className="font-['Satoshi',sans-serif] text-[13px] font-semibold uppercase tracking-wide text-[#0b191f]">
+                                    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                                        <p className="font-['Satoshi',sans-serif] text-[13px] font-semibold uppercase tracking-wide text-foreground">
                                             Meeting plan — how should it land?
                                         </p>
-                                        <p className="mt-1 font-['Satoshi',sans-serif] text-[13px] text-[#606d76]">
+                                        <p className="mt-1 font-['Satoshi',sans-serif] text-[13px] text-muted-foreground">
                                             This plan was generated from an uploaded meeting recording.
                                         </p>
                                         <div className="mt-3 flex flex-col gap-2">
-                                            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#edecea] px-3 py-2 text-[13px]">
+                                            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border px-3 py-2 text-[13px]">
                                                 <input
                                                     type="radio"
                                                     name="meeting-merge-mode"
@@ -1541,13 +1541,13 @@ export function AIProjectPlanner({
                                                     className="mt-1"
                                                 />
                                                 <span>
-                                                    <span className="font-medium text-[#0b191f]">Merge into project</span>
-                                                    <span className="block text-[#606d76]">
+                                                    <span className="font-medium text-foreground">Merge into project</span>
+                                                    <span className="block text-muted-foreground">
                                                         New milestones land alongside existing ones.
                                                     </span>
                                                 </span>
                                             </label>
-                                            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#edecea] px-3 py-2 text-[13px]">
+                                            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border px-3 py-2 text-[13px]">
                                                 <input
                                                     type="radio"
                                                     name="meeting-merge-mode"
@@ -1557,8 +1557,8 @@ export function AIProjectPlanner({
                                                     className="mt-1"
                                                 />
                                                 <span>
-                                                    <span className="font-medium text-[#0b191f]">Keep as isolated milestone</span>
-                                                    <span className="block text-[#606d76]">
+                                                    <span className="font-medium text-foreground">Keep as isolated milestone</span>
+                                                    <span className="block text-muted-foreground">
                                                         Bundle the meeting&apos;s tasks into a single milestone marked as AI-generated.
                                                     </span>
                                                 </span>
@@ -1567,11 +1567,11 @@ export function AIProjectPlanner({
                                     </div>
                                 ) : null}
 
-                                <div className="flex items-center justify-between border-t border-[#ebedee] pt-8">
+                                <div className="flex items-center justify-between border-t border-border pt-8">
                                     <button
                                         type="button"
                                         onClick={handleBackToChat}
-                                        className="inline-flex h-11 items-center gap-2 rounded-lg border border-[#edecea] bg-white px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-sm transition-colors hover:bg-[#f9fafb]"
+                                        className="inline-flex h-11 items-center gap-2 rounded-lg border border-border bg-card px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
                                     >
                                         <ArrowLeft className="size-4 shrink-0" />
                                         Back to Chat
@@ -1622,17 +1622,17 @@ export function AIProjectPlanner({
                             className="flex flex-1 items-center justify-center"
                             style={{
                                 backgroundImage:
-                                    'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
+                                    'linear-gradient(180deg, var(--card) 0%, var(--muted) 100%)',
                             }}
                         >
                             <div className="space-y-4 px-6 text-center">
                                 {phase === 'creating' ? (
                                     <>
-                                        <Loader2 className="mx-auto size-12 animate-spin text-[#2E96F9]" />
-                                        <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]">
+                                        <Loader2 className="mx-auto size-12 animate-spin text-primary" />
+                                        <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-foreground">
                                             {refinementPayload ? 'Applying updates…' : 'Creating your project...'}
                                         </h3>
-                                        <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
+                                        <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                                             {refinementPayload
                                                 ? 'Saving milestones and tasks'
                                                 : 'Setting up milestones and tasks'}
@@ -1649,12 +1649,12 @@ export function AIProjectPlanner({
                                                 damping: 15,
                                             }}
                                         >
-                                            <Check className="mx-auto size-16 text-emerald-500" />
+                                            <Check className="mx-auto size-16 text-success" />
                                         </motion.div>
-                                        <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]">
+                                        <h3 className="font-['Satoshi',sans-serif] text-[18px] font-semibold text-foreground">
                                             {refinementPayload ? 'Plan updated!' : 'Project created!'}
                                         </h3>
-                                        <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
+                                        <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                                             Redirecting to your project board...
                                         </p>
                                     </>
@@ -1670,23 +1670,23 @@ export function AIProjectPlanner({
                     <DialogPrimitive.Content
                         aria-describedby={undefined}
                         className={cn(
-                            'fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
+                            'fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
                         )}
                     >
                         <DialogPrimitive.Title className="sr-only">
                             Attach Figma design
                         </DialogPrimitive.Title>
-                        <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+                        <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-border bg-card px-9 py-4">
                             <DialogClose asChild>
                                 <button
                                     type="button"
-                                    className="inline-flex size-5 items-center justify-center text-[#606d76]"
+                                    className="inline-flex size-5 items-center justify-center text-muted-foreground"
                                     aria-label="Close"
                                 >
                                     <ArrowLeft className="size-5" />
                                 </button>
                             </DialogClose>
-                            <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+                            <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
                                 Attach Figma Design
                             </p>
                             <div className="size-5" />
@@ -1695,13 +1695,13 @@ export function AIProjectPlanner({
                             className="flex w-full flex-col gap-5 px-9 py-6"
                             style={{
                                 backgroundImage:
-                                    'linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)',
+                                    'linear-gradient(90deg, var(--card) 0%, var(--card) 100%)',
                             }}
                         >
-                            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                                 Paste a Figma design or frame URL
                             </p>
-                            <p className="font-['Inter',sans-serif] text-[12px] leading-[18px] text-[#727d83]">
+                            <p className="font-['Inter',sans-serif] text-[12px] leading-[18px] text-muted-foreground">
                                 Add layer-name hints like <code>&amp;logic: submit-form</code>,{' '}
                                 <code>&amp;data: user.email</code>, or{' '}
                                 <code>&amp;api: PATCH /users/me</code> so Continuum can create
@@ -1718,13 +1718,13 @@ export function AIProjectPlanner({
                                     void handleAttachFigmaFromModal();
                                 }}
                                 placeholder="https://www.figma.com/design/..."
-                                className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76]/40 focus-visible:border-[#1466ff]"
+                                className="h-10 w-full rounded-[8px] border border-border bg-background px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none placeholder:text-muted-foreground/40 focus-visible:border-primary"
                             />
                             <div className="flex w-full justify-end gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setFigmaModalOpen(false)}
-                                    className="h-10 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="h-10 rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                                 >
                                     Cancel
                                 </button>
@@ -1735,8 +1735,8 @@ export function AIProjectPlanner({
                                     className={cn(
                                         "h-10 rounded-[8px] px-4 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors",
                                         figmaUrlInput.trim() && !figmaBlueprintLoading
-                                            ? 'bg-[#1466ff] hover:bg-[#0051e6]'
-                                            : 'bg-[rgba(96,109,118,0.1)] text-[#606d76]/50',
+                                            ? 'bg-primary hover:bg-primary'
+                                            : 'bg-muted text-muted-foreground/50',
                                     )}
                                 >
                                     {figmaBlueprintLoading ? (

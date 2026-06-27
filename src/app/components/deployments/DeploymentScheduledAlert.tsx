@@ -117,14 +117,14 @@ export function DeploymentScheduledAlert() {
         <DialogOverlay className="z-[200] bg-black/60" />
         <DialogPrimitive.Content
           className={cn(
-            "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[201] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border border-[#ebedee] p-6 font-['Satoshi',sans-serif] shadow-lg duration-200 sm:max-w-md",
+            "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[201] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border border-border p-6 font-['Satoshi',sans-serif] shadow-lg duration-200 sm:max-w-md",
           )}
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle className="text-[#0b191f]">Deployment scheduled</DialogTitle>
-            <DialogDescription className="text-left text-[15px] leading-relaxed text-[#606d76]">
+            <DialogTitle className="text-foreground">Deployment scheduled</DialogTitle>
+            <DialogDescription className="text-left text-[15px] leading-relaxed text-muted-foreground">
               A production deployment is planned in approximately {minutesUntil} minutes
               {scheduledAt ? ` (around ${formatScheduledAt(scheduledAt)})` : ""}. Please save your work now. The app may
               be briefly unavailable during the update.
@@ -133,7 +133,7 @@ export function DeploymentScheduledAlert() {
           <DialogFooter>
             <button
               type="button"
-              className="w-full rounded-[8px] bg-[#0b191f] px-4 py-2.5 text-[14px] font-medium text-white hover:bg-[#152a35] sm:w-auto"
+              className="w-full rounded-[8px] bg-primary px-4 py-2.5 text-[14px] font-medium text-primary-foreground hover:bg-primary/90 sm:w-auto"
               onClick={() => setOpen(false)}
             >
               I understand

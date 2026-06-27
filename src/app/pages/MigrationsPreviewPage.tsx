@@ -139,7 +139,7 @@ export default function MigrationsPreviewPage() {
                     />
                 </div>
             </div>
-            <div className="flex items-center justify-between border-t border-[#ebedee] px-6 py-3">
+            <div className="flex items-center justify-between border-t border-border px-6 py-3">
                 <Button
                     type="button"
                     variant="ghost"

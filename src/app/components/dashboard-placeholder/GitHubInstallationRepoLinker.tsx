@@ -157,51 +157,51 @@ export function GitHubInstallationRepoLinker({
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-[14px] leading-relaxed text-[#606d76]">
+      <p className="text-[14px] leading-relaxed text-muted-foreground">
         Link the GitHub App to this project. After you authorize on GitHub, choose a repository to link for webhooks and
         indexing.
       </p>
 
-      <div className="flex flex-col gap-2 rounded-[8px] border border-[#e9e9e9] bg-white px-4 py-3">
+      <div className="flex flex-col gap-2 rounded-[8px] border border-border bg-card px-4 py-3">
         <div className="flex items-center gap-2">
-          <Github className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
-          <p className="text-[15px] font-semibold text-[#0b191f]">Connection</p>
+          <Github className="size-5 shrink-0 text-foreground" strokeWidth={1.5} aria-hidden />
+          <p className="text-[15px] font-semibold text-foreground">Connection</p>
         </div>
         {reposQuery.isLoading ? (
-          <p className="flex items-center gap-2 text-[14px] text-[#606d76]">
+          <p className="flex items-center gap-2 text-[14px] text-muted-foreground">
             <Loader2 className="size-4 animate-spin" aria-hidden />
             Checking status…
           </p>
         ) : reposQuery.isError ? (
           <>
             {notConnected ? (
-              <p className="text-[14px] text-[#606d76]">
-                Not connected yet. Use <span className="font-medium text-[#0b191f]">Connect to GitHub</span> to authorize
+              <p className="text-[14px] text-muted-foreground">
+                Not connected yet. Use <span className="font-medium text-foreground">Connect to GitHub</span> to authorize
                 the app for this project.
               </p>
             ) : accessExpired ? (
-              <p className="text-[14px] text-[#0b191f]">
+              <p className="text-[14px] text-foreground">
                 <span className="font-medium">Your GitHub access has expired.</span>{" "}
                 Reconnect so Continuum can list repositories and keep indexing up to date.
               </p>
             ) : forbidden ? (
-              <p className="text-[14px] text-[#0b191f]">
+              <p className="text-[14px] text-foreground">
                 You don&apos;t have access to this project&apos;s GitHub data. Ask a project admin to connect or grant
                 access.
               </p>
             ) : serviceUnavailable ? (
-              <p className="text-[14px] text-[#0b191f]">
+              <p className="text-[14px] text-foreground">
                 GitHub App integration isn&apos;t configured on the server (missing app credentials).
               </p>
             ) : (
-              <p className="text-[14px] text-[#0b191f]">
+              <p className="text-[14px] text-foreground">
                 {getApiErrorMessage(reposQuery.error, "Could not load GitHub status.")}
               </p>
             )}
           </>
         ) : connected ? (
-          <p className="flex items-center gap-2 text-[14px] font-medium text-[#0b191f]">
-            <span className="flex size-5 items-center justify-center rounded-full bg-[#22c55e]">
+          <p className="flex items-center gap-2 text-[14px] font-medium text-foreground">
+            <span className="flex size-5 items-center justify-center rounded-full bg-success">
               <Check className="size-3.5 text-white" strokeWidth={2.5} aria-hidden />
             </span>
             Connected — {reposQuery.data?.length ?? 0} repo
@@ -210,7 +210,7 @@ export function GitHubInstallationRepoLinker({
         ) : null}
 
         {connectBusy ? (
-          <div className="mt-1 inline-flex h-10 items-center gap-2 text-[14px] text-[#606d76]">
+          <div className="mt-1 inline-flex h-10 items-center gap-2 text-[14px] text-muted-foreground">
             <Loader2 className="size-4 animate-spin" aria-hidden />
             Redirecting…
           </div>
@@ -248,10 +248,10 @@ export function GitHubInstallationRepoLinker({
 
       {connected && (reposQuery.data?.length ?? 0) > 0 ? (
         <div className="flex flex-col gap-3">
-          <p className="text-[13px] font-semibold text-[#252014]">Repositories</p>
+          <p className="text-[13px] font-semibold text-foreground">Repositories</p>
           <div className="relative">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9fa5a8]"
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
               strokeWidth={1.5}
               aria-hidden
             />
@@ -260,7 +260,7 @@ export function GitHubInstallationRepoLinker({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by owner or name…"
-              className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white py-2 pr-3 pl-10 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-10 w-full rounded-[8px] border border-border bg-card py-2 pr-3 pl-10 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Search repositories"
             />
           </div>
@@ -276,20 +276,20 @@ export function GitHubInstallationRepoLinker({
                     disabled={isLinked}
                     onClick={() => setSelectedGithubRepoId(r.id)}
                     className={cn(
-                      "flex w-full flex-col rounded-[6px] border px-3 py-2 text-left font-['Inter',sans-serif] text-[13px] text-[#0b191f] transition-colors",
+                      "flex w-full flex-col rounded-[6px] border px-3 py-2 text-left font-['Inter',sans-serif] text-[13px] text-foreground transition-colors",
                       isLinked
-                        ? "cursor-not-allowed border-[#f0f0f0] bg-[#f5f5f5] opacity-70"
+                        ? "cursor-not-allowed border-border bg-card opacity-70"
                         : isSelected
-                          ? "border-[#5521FE] bg-[#f5f3ff]"
-                          : "border-[#f0f0f0] bg-[#fafafa] hover:border-[#d4d4d4]",
+                          ? "border-[#5521FE] bg-[#f5f3ff] dark:bg-primary/10"
+                          : "border-border bg-card hover:border-border",
                     )}
                   >
                     <span className="font-medium">
                       <span>{r.owner.login}</span>
-                      <span className="text-[#606d76]"> / </span>
+                      <span className="text-muted-foreground"> / </span>
                       <span>{r.name}</span>
                       {isLinked ? (
-                        <span className="ml-2 inline-block rounded-full bg-[#e8e8e8] px-2 py-0.5 text-[11px] font-medium text-[#606d76]">
+                        <span className="ml-2 inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                           Already linked
                         </span>
                       ) : null}
@@ -300,7 +300,7 @@ export function GitHubInstallationRepoLinker({
             })}
           </ul>
           {filteredRepos.length === 0 ? (
-            <p className="text-[13px] text-[#606d76]">No repositories match your search.</p>
+            <p className="text-[13px] text-muted-foreground">No repositories match your search.</p>
           ) : null}
           <button
             type="button"
@@ -319,7 +319,7 @@ export function GitHubInstallationRepoLinker({
               "inline-flex h-10 w-full items-center justify-center rounded-[8px] text-[14px] font-semibold transition-[filter,opacity]",
               selectedRepo && !selectedAlreadyLinked && !linkMutation.isPending
                 ? "text-white hover:brightness-105"
-                : "cursor-not-allowed bg-[rgba(96,109,118,0.1)] text-[#606d76]/70",
+                : "cursor-not-allowed bg-muted text-muted-foreground/70",
             )}
           >
             {linkMutation.isPending ? (
@@ -335,7 +335,7 @@ export function GitHubInstallationRepoLinker({
       ) : null}
 
       {connected && reposQuery.data?.length === 0 ? (
-        <p className="text-[13px] text-[#606d76]">
+        <p className="text-[13px] text-muted-foreground">
           Installation is linked, but no repositories were returned yet. Confirm the GitHub App is installed on your org
           or account with repository access.
         </p>

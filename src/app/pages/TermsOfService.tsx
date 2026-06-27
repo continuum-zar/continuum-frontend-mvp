@@ -36,14 +36,14 @@ export function TermsOfService() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] font-['Satoshi',sans-serif]">
+    <div className="min-h-screen bg-background font-['Satoshi',sans-serif]">
       {!isAuthenticated && <LegalTopNav />}
       <div className="mx-auto max-w-[820px] px-5 py-10 sm:py-14">
         {isAuthenticated && (
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="mb-8 inline-flex items-center gap-1 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 text-[14px] font-medium text-[#0b191f] outline-none ring-offset-2 transition-colors hover:bg-[#f9f9f9] focus-visible:ring-2 focus-visible:ring-ring"
+            className="mb-8 inline-flex items-center gap-1 rounded-[8px] border border-border bg-card px-3 py-2 text-[14px] font-medium text-foreground outline-none ring-offset-2 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ChevronLeft className="size-4 shrink-0" strokeWidth={1.75} aria-hidden />
             Back
@@ -51,22 +51,22 @@ export function TermsOfService() {
         )}
 
         <main>
-          <header className="mb-10 border-b border-[#ebedee] pb-8">
-            <h1 className="text-[32px] font-semibold leading-tight text-[#0b191f]">
+          <header className="mb-10 border-b border-border pb-8">
+            <h1 className="text-[32px] font-semibold leading-tight text-foreground">
               Terms of Service
             </h1>
-            <p className="mt-3 max-w-[640px] text-[16px] leading-relaxed text-[#4a565c]">
+            <p className="mt-3 max-w-[640px] text-[16px] leading-relaxed text-foreground">
               These Terms govern your access to and use of Continuum, a project
               and work-management platform. Please read them carefully, because
               by using Continuum you agree to be bound by them.
             </p>
-            <p className="mt-4 text-[13px] font-medium uppercase tracking-wide text-[#8a949a]">
+            <p className="mt-4 text-[13px] font-medium uppercase tracking-wide text-muted-foreground">
               Last updated: {LAST_UPDATED}
             </p>
           </header>
 
           <nav aria-label="On this page" className="mb-10">
-            <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-[#8a949a]">
+            <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
               On this page
             </h2>
             <ol className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
@@ -74,7 +74,7 @@ export function TermsOfService() {
                 <li key={s.id}>
                   <a
                     href={`#${s.id}`}
-                    className="text-[14px] text-[#4a565c] underline-offset-2 outline-none hover:text-[#0b191f] hover:underline focus-visible:underline"
+                    className="text-[14px] text-foreground underline-offset-2 outline-none hover:text-foreground hover:underline focus-visible:underline"
                   >
                     {s.title}
                   </a>
@@ -83,7 +83,7 @@ export function TermsOfService() {
             </ol>
           </nav>
 
-          <div className="space-y-10 text-[15px] leading-7 text-[#3a464c]">
+          <div className="space-y-10 text-[15px] leading-7 text-foreground">
             <Section id="acceptance" title="1. Acceptance of these Terms">
               <p>
                 These Terms of Service (the &ldquo;Terms&rdquo;) form a binding
@@ -321,7 +321,7 @@ function Section({
     <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-6 space-y-3">
       <h2
         id={`${id}-heading`}
-        className="text-[18px] font-semibold text-[#0b191f]"
+        className="text-[18px] font-semibold text-foreground"
       >
         {title}
       </h2>
@@ -334,7 +334,7 @@ function ContactLink() {
   return (
     <a
       href={`mailto:${CONTACT_EMAIL}`}
-      className="font-medium text-[#2563eb] underline underline-offset-2 outline-none hover:text-[#1d4ed8] focus-visible:ring-2 focus-visible:ring-ring"
+      className="font-medium text-primary underline underline-offset-2 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
     >
       {CONTACT_EMAIL}
     </a>

@@ -65,11 +65,11 @@ const STATUS_LABEL: Record<AgentRunStatus, string> = {
 };
 
 const STATUS_TONE: Record<AgentRunStatus, string> = {
-  queued: "bg-[#f0f3f5] text-[#0b191f]",
-  running: "bg-[#24B5F8]/15 text-[#0b191f]",
-  succeeded: "bg-[#10b981]/15 text-[#065f46]",
-  failed: "bg-[#f87171]/15 text-[#991b1b]",
-  cancelled: "bg-[#fde68a]/40 text-[#92400e]",
+  queued: "bg-muted text-foreground",
+  running: "bg-info/15 text-foreground",
+  succeeded: "bg-success/15 text-foreground",
+  failed: "bg-destructive/15 text-destructive",
+  cancelled: "bg-warning/40 text-warning",
 };
 
 function shortSha(sha: string | null | undefined): string {
@@ -83,8 +83,8 @@ const VERDICT_LABEL: Record<ReviewVerdict, string> = {
 };
 
 const VERDICT_TONE: Record<ReviewVerdict, string> = {
-  ready_to_merge: "bg-[#10b981]/15 text-[#065f46]",
-  issues_found: "bg-[#fde68a]/40 text-[#92400e]",
+  ready_to_merge: "bg-success/15 text-foreground",
+  issues_found: "bg-warning/40 text-warning",
 };
 
 function VerdictPill({ verdict }: { verdict: ReviewVerdict }) {
@@ -115,7 +115,7 @@ function ReviewSummary({
   // Pending / running — no terminal result yet.
   if (!review || (pending && !isReviewRunTerminal(review?.status ?? "queued"))) {
     return (
-      <div className="flex items-center gap-2 text-[12px] text-[#606d76]">
+      <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
         <Loader2 size={12} className="animate-spin" />
         Reviewing diff against task requirements…
       </div>
@@ -125,12 +125,12 @@ function ReviewSummary({
   if (review.status === "failed") {
     return (
       <div className="flex flex-col gap-1 text-[12px]">
-        <div className="flex items-center gap-2 text-[#991b1b]">
+        <div className="flex items-center gap-2 text-destructive">
           <AlertCircle size={12} />
           <span className="font-medium">Review failed</span>
         </div>
         {review.error ? (
-          <p className="whitespace-pre-wrap leading-relaxed text-[#727d83]">
+          <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">
             {review.error}
           </p>
         ) : null}
@@ -140,7 +140,7 @@ function ReviewSummary({
 
   if (review.status === "cancelled") {
     return (
-      <p className="text-[12px] text-[#727d83]">Review was cancelled.</p>
+      <p className="text-[12px] text-muted-foreground">Review was cancelled.</p>
     );
   }
 
@@ -151,7 +151,7 @@ function ReviewSummary({
       <div className="flex flex-wrap items-center gap-2">
         {review.verdict ? <VerdictPill verdict={review.verdict} /> : null}
         {issueCount > 0 ? (
-          <span className="text-[12px] text-[#606d76]">
+          <span className="text-[12px] text-muted-foreground">
             {issueCount} issue{issueCount === 1 ? "" : "s"}
           </span>
         ) : null}
@@ -160,20 +160,20 @@ function ReviewSummary({
             href={review.github_comment_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[12px] font-medium text-[#0369a1] hover:underline"
+            className="inline-flex items-center gap-1 text-[12px] font-medium text-info hover:underline"
           >
             View review on PR
             <ExternalLink size={10} aria-hidden />
           </a>
         ) : null}
         {review.delivery_target === "task_comment" && review.task_comment_id ? (
-          <span className="text-[12px] text-[#727d83]">
+          <span className="text-[12px] text-muted-foreground">
             Posted as comment on this task
           </span>
         ) : null}
       </div>
       {review.summary ? (
-        <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-[#3c4a52]">
+        <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-foreground">
           {review.summary}
         </p>
       ) : null}
@@ -329,10 +329,10 @@ export function BuildRunDrawer({
           {/* Header */}
           <div className="z-[3] flex shrink-0 items-center gap-3 border-b border-border bg-muted/40 px-5 py-3">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-medium text-[#0b191f]">
+              <p className="truncate text-[14px] font-medium text-foreground">
                 Agent build {runId ? `· ${runId.slice(0, 8)}` : ""}
               </p>
-              <p className="truncate text-[12px] text-[#727d83]">
+              <p className="truncate text-[12px] text-muted-foreground">
                 {detail
                   ? `${detail.linked_repo} • ${detail.linked_branch} • ${
                       detail.mode === "open_pr" ? "PR mode" : "Direct push"
@@ -344,7 +344,7 @@ export function BuildRunDrawer({
             <DialogClose asChild>
               <button
                 type="button"
-                className="inline-flex size-8 items-center justify-center rounded-md text-[#606d76] hover:bg-[#f0f3f5] hover:text-[#0b191f]"
+                className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="Close"
               >
                 <X className="size-4" strokeWidth={2} />
@@ -356,12 +356,12 @@ export function BuildRunDrawer({
               checklist once the run is done. */}
           <div className="z-[2] min-h-0 flex-1 overflow-y-auto bg-background px-5 py-4">
             {detailQuery.isLoading && steps.length === 0 ? (
-              <div className="flex items-center gap-2 text-[13px] text-[#727d83]">
+              <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
                 <Loader2 size={14} className="animate-spin" />
                 Loading run…
               </div>
             ) : steps.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-[13px] text-[#727d83]">
+              <div className="flex h-full items-center justify-center text-[13px] text-muted-foreground">
                 Waiting for the agent to start…
               </div>
             ) : isActive ? (
@@ -373,15 +373,15 @@ export function BuildRunDrawer({
             )}
 
             {detail?.error && isTerminal && status === "failed" ? (
-              <div className="mt-3 rounded-[8px] border border-[#f87171]/40 bg-[#f87171]/10 p-3 text-[13px] text-[#991b1b]">
+              <div className="mt-3 rounded-[8px] border border-destructive/40 bg-destructive/10 p-3 text-[13px] text-destructive">
                 <p className="font-medium">Run failed</p>
                 <p className="mt-1 whitespace-pre-wrap leading-relaxed">{detail.error}</p>
               </div>
             ) : null}
 
             {detail?.summary && isTerminal && status === "succeeded" && !merged.some((m) => m.kind === "final_message") ? (
-              <div className="mt-3 rounded-[10px] border border-[#24B5F8]/30 bg-[#24B5F8]/5 p-4">
-                <p className="mb-1 text-[12px] font-medium uppercase tracking-wide text-[#0369a1]">
+              <div className="mt-3 rounded-[10px] border border-info/30 bg-info/5 p-4">
+                <p className="mb-1 text-[12px] font-medium uppercase tracking-wide text-info">
                   Agent summary
                 </p>
                 <PlannerAssistantMarkdown content={detail.summary} />
@@ -392,7 +392,7 @@ export function BuildRunDrawer({
           {/* Review summary banner — sits between the feed and the footer
               so users see the verdict alongside the build outcome. */}
           {showReviewArea && (review || reviewInFlight || startReviewMutation.isPending) ? (
-            <div className="z-[3] shrink-0 border-t border-border bg-white px-5 py-3">
+            <div className="z-[3] shrink-0 border-t border-border bg-card px-5 py-3">
               <ReviewSummary
                 review={review}
                 pending={reviewInFlight || startReviewMutation.isPending}
@@ -402,7 +402,7 @@ export function BuildRunDrawer({
 
           {/* Footer */}
           <div className="z-[3] flex shrink-0 items-center justify-between gap-3 border-t border-border bg-muted/40 px-5 py-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-3 text-[12px] text-[#727d83]">
+            <div className="flex min-w-0 flex-wrap items-center gap-3 text-[12px] text-muted-foreground">
               {detail?.commit_sha ? (
                 <span className="inline-flex items-center gap-1">
                   <GitCommit size={12} aria-hidden />
@@ -414,7 +414,7 @@ export function BuildRunDrawer({
                   href={detail.pr_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[#0369a1] hover:underline"
+                  className="inline-flex items-center gap-1 text-info hover:underline"
                 >
                   <GitPullRequest size={12} aria-hidden />
                   View PR
@@ -434,7 +434,7 @@ export function BuildRunDrawer({
                   type="button"
                   onClick={handleCancel}
                   disabled={cancelMutation.isPending}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-[#f87171]/50 bg-white px-3 text-[13px] font-medium text-[#991b1b] hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-destructive/50 bg-card px-3 text-[13px] font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {cancelMutation.isPending ? (
                     <Loader2 size={13} className="animate-spin" />
@@ -475,7 +475,7 @@ export function BuildRunDrawer({
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="inline-flex h-9 items-center rounded-[8px] border border-[#ebedee] bg-white px-3 text-[13px] font-medium text-[#0b191f] hover:bg-[#f9fafb]"
+                  className="inline-flex h-9 items-center rounded-[8px] border border-border bg-card px-3 text-[13px] font-medium text-foreground hover:bg-muted"
                 >
                   Close
                 </button>

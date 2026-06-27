@@ -28,9 +28,8 @@ export default function Usage() {
 
   return (
     <div
-      className={onboardingRootClassName}
+      className={`${onboardingRootClassName} [background:linear-gradient(180deg,#B2E6F7_-17.26%,#FFFFFF_17.31%)] dark:[background:linear-gradient(180deg,#0b1f2e_-17.26%,#0f172a_17.31%)]`}
       style={{
-        background: "linear-gradient(180deg, #B2E6F7 -17.26%, #FFFFFF 17.31%)",
         paddingTop: "40px",
         paddingBottom: "40px",
       }}
@@ -44,7 +43,7 @@ export default function Usage() {
           className="flex items-center gap-3 hover:opacity-70 transition-opacity"
           style={{ marginLeft: "0" }}
         >
-          <ChevronLeft size={20} style={{ color: "#252014" }} />
+          <ChevronLeft size={20} style={{ color: "var(--foreground)" }} />
           <span
             className="font-sarina"
             style={{
@@ -52,7 +51,7 @@ export default function Usage() {
               fontSize: "20.89px",
               lineHeight: "23.42px",
               letterSpacing: "-0.02em",
-              color: "#252014",
+              color: "var(--foreground)",
               textAlign: "center",
             }}
           >
@@ -70,7 +69,7 @@ export default function Usage() {
               fontSize: "28px",
               lineHeight: "100%",
               letterSpacing: "-0.02em",
-              color: "#0B191F",
+              color: "var(--foreground)",
             }}
           >
             How do you want to use Continuum?
@@ -83,7 +82,7 @@ export default function Usage() {
               fontStyle: "normal",
               lineHeight: "normal",
               letterSpacing: "-0.48px",
-              color: "#727D83",
+              color: "var(--muted-foreground)",
               textAlign: "center",
             }}
           >

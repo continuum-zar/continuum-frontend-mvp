@@ -71,7 +71,7 @@ const MODAL_SHADOW =
   "shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]";
 
 const BODY_GRADIENT =
-  "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)";
+  "linear-gradient(90deg, var(--card) 0%, var(--card) 100%), linear-gradient(90deg, var(--muted) 0%, var(--muted) 100%)";
 
 function ActionButton({
   action,
@@ -90,8 +90,8 @@ function ActionButton({
       className={cn(
         "inline-flex h-10 min-w-[100px] items-center justify-center gap-2 rounded-[8px] px-5 text-[14px] font-semibold transition-colors",
         variant === "primary"
-          ? "bg-[#2798f5] text-white hover:bg-[#1e87e0] disabled:cursor-not-allowed disabled:bg-[rgba(96,109,118,0.1)] disabled:text-[#606d76]/50"
-          : "border border-[#e9e9e9] bg-white text-[#252014] hover:bg-[#f5f7f8] disabled:cursor-not-allowed disabled:opacity-50",
+          ? "bg-primary text-white hover:bg-primary disabled:cursor-not-allowed disabled:bg-muted-foreground/10 disabled:text-muted-foreground/50"
+          : "border border-border bg-card text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
       )}
     >
       {action.loading ? <RefreshCw className="size-4 animate-spin" aria-hidden /> : null}
@@ -126,19 +126,19 @@ export function ErrorDialog({
           onInteractOutside={dismissible ? undefined : (e) => e.preventDefault()}
           onEscapeKeyDown={dismissible ? undefined : (e) => e.preventDefault()}
           className={cn(
-            "fixed top-1/2 left-1/2 z-[201] flex max-h-[min(90vh,560px)] w-[calc(100%-2rem)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white font-['Satoshi',sans-serif] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            "fixed top-1/2 left-1/2 z-[201] flex max-h-[min(90vh,560px)] w-[calc(100%-2rem)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card font-['Satoshi',sans-serif] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
             MODAL_SHADOW,
           )}
         >
           {/* Header — ArrowLeft close · centered title · spacer */}
-          <div className="grid w-full shrink-0 grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="grid w-full shrink-0 grid-cols-[20px_1fr_20px] items-center border-b border-border bg-card px-9 py-4">
             {hideClose ? (
               <div className="size-5" aria-hidden />
             ) : (
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="inline-flex size-5 items-center justify-center text-[#606d76]"
+                  className="inline-flex size-5 items-center justify-center text-muted-foreground"
                   aria-label="Close"
                 >
                   <ArrowLeft className="size-5" />
@@ -146,8 +146,8 @@ export function ErrorDialog({
               </DialogClose>
             )}
             <div className="flex items-center justify-center gap-2">
-              {Icon ? <Icon className="size-5 shrink-0 text-[#606d76]" aria-hidden /> : null}
-              <DialogPrimitive.Title className="text-center text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+              {Icon ? <Icon className="size-5 shrink-0 text-muted-foreground" aria-hidden /> : null}
+              <DialogPrimitive.Title className="text-center text-[16px] font-medium tracking-[-0.16px] text-foreground">
                 {title}
               </DialogPrimitive.Title>
             </div>
@@ -161,30 +161,30 @@ export function ErrorDialog({
           >
             <div className="flex flex-col gap-3 text-left">
               {code != null ? (
-                <p className="text-[13px] font-medium text-[#606d76]/60">Error {code}</p>
+                <p className="text-[13px] font-medium text-muted-foreground/60">Error {code}</p>
               ) : null}
 
               {description ? (
-                <DialogPrimitive.Description className="text-[15px] leading-relaxed text-[#606d76]">
+                <DialogPrimitive.Description className="text-[15px] leading-relaxed text-muted-foreground">
                   {description}
                 </DialogPrimitive.Description>
               ) : null}
 
               {correlationId ? (
-                <div className="flex items-center justify-between gap-3 rounded-[8px] border border-[#e9e9e9] bg-white px-4 py-2.5">
-                  <span className="text-[13px] font-medium text-[#606d76]">Error ID</span>
-                  <code className="truncate font-mono text-[12px] text-[#0b191f]">
+                <div className="flex items-center justify-between gap-3 rounded-[8px] border border-border bg-card px-4 py-2.5">
+                  <span className="text-[13px] font-medium text-muted-foreground">Error ID</span>
+                  <code className="truncate font-mono text-[12px] text-foreground">
                     {correlationId}
                   </code>
                 </div>
               ) : null}
 
               {technicalDetails ? (
-                <details className="rounded-[8px] border border-[#e9e9e9] bg-white px-4 py-2.5">
-                  <summary className="cursor-pointer list-none text-[13px] font-medium text-[#606d76] select-none">
+                <details className="rounded-[8px] border border-border bg-card px-4 py-2.5">
+                  <summary className="cursor-pointer list-none text-[13px] font-medium text-muted-foreground select-none">
                     Technical details
                   </summary>
-                  <p className="mt-2 font-mono text-[12px] leading-[18px] break-words text-[#606d76]">
+                  <p className="mt-2 font-mono text-[12px] leading-[18px] break-words text-muted-foreground">
                     {technicalDetails}
                   </p>
                 </details>
@@ -194,7 +194,7 @@ export function ErrorDialog({
 
           {/* Footer */}
           {hasFooter ? (
-            <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-[#e5e7eb] bg-[#f9f9f9] px-9 py-4 sm:flex-row sm:justify-end">
+            <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-border bg-card px-9 py-4 sm:flex-row sm:justify-end">
               {secondaryAction ? (
                 <ActionButton action={secondaryAction} defaultVariant="secondary" />
               ) : null}

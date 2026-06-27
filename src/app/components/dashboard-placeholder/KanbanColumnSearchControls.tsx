@@ -62,7 +62,7 @@ export function KanbanColumnSearchControls({
           placeholder="Search tasks…"
           autoComplete="off"
           className={cn(
-            "h-8 rounded-[8px] border border-[#e9e9e9] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-[#0b191f]/10",
+            "h-8 rounded-[8px] border border-border bg-card px-3 font-['Satoshi',sans-serif] text-[14px] text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-foreground/10",
             inputWidth,
           )}
           aria-label="Filter tasks in this column"
@@ -71,7 +71,7 @@ export function KanbanColumnSearchControls({
       <button
         type="button"
         onClick={() => (open ? onClose() : onOpen())}
-        className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/15"
+        className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
         aria-label={open ? "Close column search" : "Search tasks in this column"}
         aria-expanded={open}
       >

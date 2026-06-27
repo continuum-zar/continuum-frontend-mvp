@@ -33,29 +33,29 @@ function TourCardBody({
   isLast,
 }: Omit<GuidedTourStepPanelProps, "style" | "reduceMotion" | "placement">) {
   return (
-    <div className="rounded-[8px] bg-black px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.45)]">
-      <p id="guided-tour-title" className="mb-2 font-['Satoshi',sans-serif] text-[15px] font-semibold text-white">
+    <div className="rounded-[8px] bg-foreground px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.45)]">
+      <p id="guided-tour-title" className="mb-2 font-['Satoshi',sans-serif] text-[15px] font-semibold text-background">
         {title}
       </p>
-      <div className="mb-4 text-white/95">{children}</div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
-        <span className="font-['Satoshi',sans-serif] text-[11px] font-medium text-white/50">{stepLabel}</span>
+      <div className="mb-4 text-background/95">{children}</div>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-background/10 pt-3">
+        <span className="font-['Satoshi',sans-serif] text-[11px] font-medium text-background/50">{stepLabel}</span>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-8 text-white/80 hover:bg-white/10 hover:text-white"
+            className="h-8 text-background/80 hover:bg-background/10 hover:text-background"
             onClick={onSkip}
           >
             Skip tour
           </Button>
           {canGoBack ? (
-            <Button type="button" variant="outline" size="sm" className="h-8 border-white/25 bg-white/5 text-white hover:bg-white/10" onClick={onBack}>
+            <Button type="button" variant="outline" size="sm" className="h-8 border-background/25 bg-background/5 text-background hover:bg-background/10" onClick={onBack}>
               Back
             </Button>
           ) : null}
-          <Button type="button" size="sm" className="h-8 bg-white text-[#0b191f] hover:bg-white/90" onClick={onNext}>
+          <Button type="button" size="sm" className="h-8 bg-background text-foreground hover:bg-background/90" onClick={onNext}>
             {isLast ? "Done" : "Next"}
           </Button>
         </div>
@@ -101,7 +101,7 @@ export const GuidedTourStepPanel = forwardRef<HTMLDivElement, GuidedTourStepPane
         </div>
         <div className="pointer-events-none flex shrink-0 flex-col justify-center py-1" aria-hidden>
           <div
-            className="size-0 border-y-[8px] border-l-[8px] border-y-transparent border-l-black"
+            className="size-0 border-y-[8px] border-l-[8px] border-y-transparent border-l-foreground"
             style={{ filter: "drop-shadow(1px 0 0 rgba(255,255,255,0.06))" }}
           />
         </div>
@@ -125,7 +125,7 @@ export const GuidedTourStepPanel = forwardRef<HTMLDivElement, GuidedTourStepPane
       >
         <div className="pointer-events-none flex shrink-0 flex-col justify-center py-1" aria-hidden>
           <div
-            className="size-0 border-y-[8px] border-r-[8px] border-y-transparent border-r-black"
+            className="size-0 border-y-[8px] border-r-[8px] border-y-transparent border-r-foreground"
             style={{ filter: "drop-shadow(-1px 0 0 rgba(255,255,255,0.06))" }}
           />
         </div>
@@ -158,7 +158,7 @@ export const GuidedTourStepPanel = forwardRef<HTMLDivElement, GuidedTourStepPane
           aria-hidden
         >
           <div
-            className="mx-auto size-0 border-x-[8px] border-b-[8px] border-x-transparent border-b-black"
+            className="mx-auto size-0 border-x-[8px] border-b-[8px] border-x-transparent border-b-foreground"
             style={{ filter: "drop-shadow(0 -1px 0 rgba(255,255,255,0.06))" }}
           />
         </div>
@@ -171,7 +171,7 @@ export const GuidedTourStepPanel = forwardRef<HTMLDivElement, GuidedTourStepPane
             aria-hidden
           >
             <div
-              className="size-0 border-x-[8px] border-t-[8px] border-x-transparent border-t-black"
+              className="size-0 border-x-[8px] border-t-[8px] border-x-transparent border-t-foreground"
               style={{ filter: "drop-shadow(0 1px 0 rgba(255,255,255,0.06))" }}
             />
           </div>

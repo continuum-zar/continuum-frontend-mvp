@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router';
 import { router } from './routes';
 import { Toaster } from './components/ui/sonner';
+import { ThemeColorMetaSync } from './components/theme/ThemeColorMetaSync';
 import { TimeTrackingProvider } from './context/TimeTrackingContext';
 import { RoleProvider } from './context/RoleContext';
 
@@ -45,6 +46,7 @@ function App() {
             <RouterProvider router={router} />
           </MobileDesktopOnlyGate>
           <Toaster />
+          <ThemeColorMetaSync />
         </TimeTrackingProvider>
       </RoleProvider>
     </ErrorBoundary>

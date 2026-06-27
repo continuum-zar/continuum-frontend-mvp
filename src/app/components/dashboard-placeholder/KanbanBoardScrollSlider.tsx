@@ -174,16 +174,16 @@ export function KanbanBoardScrollSlider({ scrollRef, className }: Props) {
       tabIndex={disabled ? -1 : 0}
       onPointerDown={disabled ? undefined : onPointerDown}
       onKeyDown={disabled ? undefined : onKeyDown}
-      className={`relative z-[20] w-full select-none px-3 py-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40 ${
+      className={`relative z-[20] w-full select-none px-3 py-[6px] outline-none focus-visible:ring-2 focus-visible:ring-info/40 ${
         disabled ? "cursor-default opacity-40" : "cursor-pointer"
       } ${className ?? ""}`}
     >
       <div
         ref={innerTrackRef}
-        className="relative mx-[6px] h-2 overflow-hidden rounded-[4px] bg-[#e4e8eb]"
+        className="relative mx-[6px] h-2 overflow-hidden rounded-[4px] bg-muted"
       >
         <div
-          className="absolute inset-y-0 left-0 rounded-[4px] bg-[#0b191f]"
+          className="absolute inset-y-0 left-0 rounded-[4px] bg-foreground"
           style={{ width: `${pct}%` }}
         />
       </div>

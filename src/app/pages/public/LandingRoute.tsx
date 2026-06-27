@@ -38,7 +38,7 @@ export function LandingRoute() {
 
   if (!isInitialized && accessToken) {
     return (
-      <div className="flex min-h-screen flex-col space-y-3 bg-[#f9fafb] p-8">
+      <div className="flex min-h-screen flex-col space-y-3 bg-muted p-8">
         <Skeleton className="h-[125px] w-full rounded-xl" />
         <div className="space-y-2">
           <Skeleton className="h-4 w-[250px]" />
@@ -74,7 +74,7 @@ export function LandingRoute() {
   }
 
   return (
-    <main className="relative h-[2870px] min-h-screen w-full overflow-hidden bg-[#f9fafb]">
+    <main className="relative h-[2870px] min-h-screen w-full overflow-hidden bg-muted">
       <LandingPage />
     </main>
   );

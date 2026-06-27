@@ -34,12 +34,13 @@ export function MobileDesktopOnlyScreen() {
     <div
       className="flex min-h-[100dvh] w-full flex-col"
       style={{
-        background: "linear-gradient(180deg, #b2e6f7 0%, #ffffff 50%)",
+        background:
+          "linear-gradient(180deg, color-mix(in srgb, var(--info) 30%, var(--background)) 0%, var(--background) 50%)",
       }}
     >
       <header className="flex shrink-0 justify-center pt-7">
         <p
-          className="text-center font-sarina-sans text-[21.405px] leading-6 tracking-[-0.4281px] text-[#0b191f]"
+          className="text-center font-sarina-sans text-[21.405px] leading-6 tracking-[-0.4281px] text-foreground"
           aria-label="Continuum"
         >
           Continuum
@@ -48,26 +49,26 @@ export function MobileDesktopOnlyScreen() {
 
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-5 pb-10 pt-6">
         <div className="flex w-full max-w-[362px] flex-col items-center gap-4 text-center">
-          <div className="flex size-[68px] shrink-0 items-center justify-center text-[#0b191f]" aria-hidden>
+          <div className="flex size-[68px] shrink-0 items-center justify-center text-foreground" aria-hidden>
             <LaptopMinimalCheck className="size-[68px]" strokeWidth={1.25} />
           </div>
 
           <h1 className="w-full min-w-0 text-[24px] leading-normal tracking-[-0.48px]">
-            <span className="font-['Satoshi',sans-serif] font-bold not-italic text-[#0b191f]">We&apos;re</span>
-            <span className="font-['Satoshi',sans-serif] font-bold text-[#0b191f]"> </span>
+            <span className="font-['Satoshi',sans-serif] font-bold not-italic text-foreground">We&apos;re</span>
+            <span className="font-['Satoshi',sans-serif] font-bold text-foreground"> </span>
             <span
               className="bg-clip-text font-sarina-sans font-normal not-italic text-transparent"
               style={{ backgroundImage: HEADLINE_GRADIENT }}
             >
               better
             </span>
-            <span className="font-['Satoshi',sans-serif] font-bold text-[#0b191f]"> </span>
-            <span className="font-['Satoshi',sans-serif] font-bold not-italic text-[#0b191f]">
+            <span className="font-['Satoshi',sans-serif] font-bold text-foreground"> </span>
+            <span className="font-['Satoshi',sans-serif] font-bold not-italic text-foreground">
               on the big screen
             </span>
           </h1>
 
-          <p className="font-['Satoshi',sans-serif] font-medium text-[16px] leading-normal tracking-[-0.32px] text-[#727d83]">
+          <p className="font-['Satoshi',sans-serif] font-medium text-[16px] leading-normal tracking-[-0.32px] text-muted-foreground">
             To get the full experience, please open this application on a desktop or laptop.
           </p>
         </div>

@@ -107,21 +107,21 @@ export function ProjectSettingsPanel({
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
-            "fixed left-1/2 top-1/2 z-[90] flex h-[min(894px,92vh)] w-[min(1344px,95vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            "fixed left-1/2 top-1/2 z-[90] flex h-[min(894px,92vh)] w-[min(1344px,95vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           )}
         >
           <DialogPrimitive.Title className="sr-only">Project settings</DialogPrimitive.Title>
 
           {/* Sidebar */}
-          <div className="flex h-full w-[249px] shrink-0 flex-col justify-between border-r border-[#ebedee] bg-[#edf0f3] px-4 pb-4 pt-6">
+          <div className="flex h-full w-[249px] shrink-0 flex-col justify-between border-r border-border bg-muted px-4 pb-4 pt-6">
             <div className="flex w-full flex-col gap-4">
-              <div className="flex h-10 w-full items-center gap-2 rounded-[999px] border border-[rgba(96,109,118,0.2)] bg-[#edf0f3] px-4">
-                <Search className="size-4 shrink-0 text-[#606d76]" />
+              <div className="flex h-10 w-full items-center gap-2 rounded-[999px] border border-border bg-muted px-4">
+                <Search className="size-4 shrink-0 text-muted-foreground" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search"
-                  className="w-full bg-transparent font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] placeholder:text-[#606d76] focus:outline-none"
+                  className="w-full bg-transparent font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
               </div>
               <nav className="flex w-full flex-col">
@@ -135,8 +135,8 @@ export function ProjectSettingsPanel({
                       className={cn(
                         "flex h-10 w-full items-center rounded-[8px] px-4 text-left font-['Satoshi',sans-serif] text-[16px] font-medium transition-colors",
                         active
-                          ? "border border-[#ededed] bg-white text-[#0b191f] shadow-[0px_1px_0.5px_rgba(14,14,34,0.03)]"
-                          : "text-[#606d76] hover:text-[#0b191f]",
+                          ? "border border-border bg-card text-foreground shadow-[0px_1px_0.5px_rgba(14,14,34,0.03)]"
+                          : "text-muted-foreground hover:text-foreground",
                       )}
                     >
                       {TAB_TITLES[item]}
@@ -146,8 +146,8 @@ export function ProjectSettingsPanel({
               </nav>
             </div>
             <div className="flex w-full flex-col gap-2">
-              <div className="h-px w-full bg-[rgba(96,109,118,0.2)]" />
-              <p className="truncate font-['Satoshi',sans-serif] text-[16px] font-medium text-[#252014]">
+              <div className="h-px w-full bg-border" />
+              <p className="truncate font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                 {projectName || "Project"}
               </p>
             </div>
@@ -155,14 +155,14 @@ export function ProjectSettingsPanel({
 
           {/* Content */}
           <div className="flex h-full min-w-px flex-1 flex-col">
-            <div className="sticky top-0 z-[2] flex h-16 shrink-0 items-center justify-between border-b border-[#ebedee] bg-white px-4">
-              <p className="font-['Satoshi',sans-serif] text-[20px] font-medium text-[#0b191f]">
+            <div className="sticky top-0 z-[2] flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-4">
+              <p className="font-['Satoshi',sans-serif] text-[20px] font-medium text-foreground">
                 {TAB_TITLES[tab]}
               </p>
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
-                className="flex size-9 items-center justify-center rounded-full text-[#0b191f] transition-colors hover:bg-[#f0f3f5]"
+                className="flex size-9 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted"
                 aria-label="Close"
               >
                 <X className="size-5" />

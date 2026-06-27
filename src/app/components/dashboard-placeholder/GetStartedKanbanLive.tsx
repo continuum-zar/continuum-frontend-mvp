@@ -657,17 +657,17 @@ export function GetStartedKanbanLive({
         >
           {isDragging ? (
             <div
-              className="flex min-h-[152px] w-full shrink-0 flex-col items-center justify-center rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)] px-3 py-4"
+              className="flex min-h-[152px] w-full shrink-0 flex-col items-center justify-center rounded-[8px] border-2 border-dashed border-border bg-card/45 px-3 py-4"
               aria-label="Original column — drop here to keep this task in this list"
             />
           ) : (
         <div
-          className="border-border bg-white content-stretch flex flex-col items-start overflow-clip relative rounded-[8px] border border-solid shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full"
+          className="border-border bg-card content-stretch flex flex-col items-start overflow-clip relative rounded-[8px] border border-solid shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full"
         >
           <div className="content-stretch flex flex-col gap-[16px] items-start p-[14px] relative shrink-0 w-full">
             <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
               <div className="content-stretch flex gap-[12px] items-start justify-between relative shrink-0 w-full">
-                <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[16px] tracking-[-0.16px]">
+                <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-foreground text-[16px] tracking-[-0.16px]">
                   {task.title}
                 </p>
                 <Flag
@@ -678,7 +678,7 @@ export function GetStartedKanbanLive({
               </div>
               {descPreview ? (
                 <p
-                  className="font-['Satoshi:Medium',sans-serif] line-clamp-2 leading-[normal] not-italic relative shrink-0 w-full text-[#606d76] text-[14px]"
+                  className="font-['Satoshi:Medium',sans-serif] line-clamp-2 leading-[normal] not-italic relative shrink-0 w-full text-muted-foreground text-[14px]"
                   title={descTruncated ? desc : undefined}
                 >
                   {descPreview}
@@ -686,7 +686,7 @@ export function GetStartedKanbanLive({
               ) : null}
             </div>
             <div
-              className="relative h-[2px] w-full shrink-0 overflow-hidden bg-[#ebedee]"
+              className="relative h-[2px] w-full shrink-0 overflow-hidden bg-muted"
               role="progressbar"
               aria-valuenow={checklistPct}
               aria-valuemin={0}
@@ -694,7 +694,7 @@ export function GetStartedKanbanLive({
               aria-label="Checklist progress"
             >
               <div
-                className="absolute inset-y-0 left-0 bg-[#08090A]"
+                className="absolute inset-y-0 left-0 bg-foreground"
                 style={{ width: `${checklistPct}%` }}
               />
             </div>
@@ -737,7 +737,7 @@ export function GetStartedKanbanLive({
 
   if (tasksQuery.isError) {
     return (
-      <div className="content-stretch relative z-[1] flex w-full min-h-[200px] flex-1 items-center justify-center gap-[16px] px-4 text-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+      <div className="content-stretch relative z-[1] flex w-full min-h-[200px] flex-1 items-center justify-center gap-[16px] px-4 text-center font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
         Could not load tasks for this project.
       </div>
     );
@@ -756,7 +756,7 @@ export function GetStartedKanbanLive({
         className={cn(
           "content-stretch flex h-full min-h-0 flex-col items-start overflow-hidden p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200",
           isColumnDragSource && "opacity-0",
-          isActiveDropColumn && "bg-[#eef4f8]",
+          isActiveDropColumn && "bg-info/10",
         )}
         style={{
           flexGrow: 1,
@@ -765,10 +765,10 @@ export function GetStartedKanbanLive({
           width: "350px",
           minWidth: "350px",
           backgroundImage:
-            "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)",
+            "linear-gradient(90deg, var(--muted) 0%, var(--muted) 100%)",
         }}
       >
-        <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
+        <div className="flex w-full shrink-0 flex-col gap-4 bg-muted">
           {header}
         </div>
         <div
@@ -806,7 +806,7 @@ export function GetStartedKanbanLive({
     const reorderHandle = (
       <button
         type="button"
-        className="inline-flex size-[24px] shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent p-0 text-[#727d83] active:cursor-grabbing hover:text-[#0b191f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/15 motion-reduce:transition-none"
+        className="inline-flex size-[24px] shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent p-0 text-muted-foreground active:cursor-grabbing hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 motion-reduce:transition-none"
         aria-label={`Reorder column: ${col.title}`}
         onPointerDown={(e) => {
           e.preventDefault();
@@ -941,7 +941,7 @@ export function GetStartedKanbanLive({
                   ))}
                   {insertAt === visible.length ? cardInsertionLine : null}
                   {visible.length === 0 && !showInsertLine && (
-                    <p className="text-[13px] text-[#727d83]">
+                    <p className="text-[13px] text-muted-foreground">
                       {searchFilterActive
                         ? "No tasks match your search."
                         : `No tasks in ${col.title}${emptyTail}.`}
@@ -999,27 +999,27 @@ export function GetStartedKanbanLive({
           <DialogOverlay className="bg-black/25" />
           <DialogPrimitive.Content
             className={cn(
-              "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+              "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
             )}
           >
-            <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+            <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-border bg-card px-9 py-4">
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="inline-flex size-5 items-center justify-center text-[#606d76] transition-colors hover:text-[#0b191f]"
+                  className="inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
                   aria-label="Close"
                 >
                   <ArrowLeft className="size-5" />
                 </button>
               </DialogClose>
-              <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+              <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
                 Add column
               </DialogPrimitive.Title>
               <div className="size-5" />
             </div>
             <div className="flex w-full flex-col gap-5 px-9 py-6">
               <div className="flex flex-col gap-2">
-                <label htmlFor="kanban-new-col-title" className="font-['Satoshi',sans-serif] text-[13px] font-medium text-[#606d76]">
+                <label htmlFor="kanban-new-col-title" className="font-['Satoshi',sans-serif] text-[13px] font-medium text-muted-foreground">
                   Column name
                 </label>
                 <input
@@ -1027,24 +1027,24 @@ export function GetStartedKanbanLive({
                   value={newColumnTitle}
                   onChange={(e) => setNewColumnTitle(e.target.value)}
                   placeholder="e.g. Backlog, Review, Blocked"
-                  className="font-['Satoshi',sans-serif] h-11 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-3 text-[14px] text-[#0b191f] outline-none ring-0 placeholder:text-[#9fa5a8] focus:border-[#0b191f]/20 focus:ring-2 focus:ring-[#0b191f]/10"
+                  className="font-['Satoshi',sans-serif] h-11 w-full rounded-[8px] border border-border bg-card px-3 text-[14px] text-foreground outline-none ring-0 placeholder:text-muted-foreground focus:border-foreground/20 focus:ring-2 focus:ring-foreground/10"
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label htmlFor="kanban-new-col-status" className="font-['Satoshi',sans-serif] text-[13px] font-medium text-[#606d76]">
+                <label htmlFor="kanban-new-col-status" className="font-['Satoshi',sans-serif] text-[13px] font-medium text-muted-foreground">
                   Task status for this column
                 </label>
                 <select
                   id="kanban-new-col-status"
                   value={newColumnStatus}
                   onChange={(e) => setNewColumnStatus(e.target.value as TaskStatus)}
-                  className="font-['Satoshi',sans-serif] h-11 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-3 text-[14px] text-[#0b191f] outline-none focus:border-[#0b191f]/20 focus:ring-2 focus:ring-[#0b191f]/10"
+                  className="font-['Satoshi',sans-serif] h-11 w-full rounded-[8px] border border-border bg-card px-3 text-[14px] text-foreground outline-none focus:border-foreground/20 focus:ring-2 focus:ring-foreground/10"
                 >
                   <option value="todo">To-do</option>
                   <option value="in-progress">In progress</option>
                   <option value="done">Done</option>
                 </select>
-                <p className="font-['Satoshi',sans-serif] text-[12px] leading-relaxed text-[#727d83]">
+                <p className="font-['Satoshi',sans-serif] text-[12px] leading-relaxed text-muted-foreground">
                   Tasks dropped here update to this status. You can add several columns that share a status to split work visually.
                 </p>
               </div>
@@ -1052,7 +1052,7 @@ export function GetStartedKanbanLive({
                 <DialogClose asChild>
                   <button
                     type="button"
-                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] transition-colors duration-150 hover:bg-[#f5f7f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/10"
+                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-border bg-card px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground transition-colors duration-150 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/10"
                   >
                     Cancel
                   </button>
@@ -1060,7 +1060,7 @@ export function GetStartedKanbanLive({
                 <button
                   type="button"
                   onClick={confirmAddColumn}
-                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-[#0b191f] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#1a2d36] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/20"
+                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-primary px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
                 >
                   Add column
                 </button>
@@ -1079,20 +1079,20 @@ export function GetStartedKanbanLive({
           <DialogOverlay className="bg-black/25" />
           <DialogPrimitive.Content
             className={cn(
-              "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+              "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
             )}
           >
-            <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+            <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-border bg-card px-9 py-4">
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="inline-flex size-5 items-center justify-center text-[#606d76] transition-colors hover:text-[#0b191f]"
+                  className="inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
                   aria-label="Close"
                 >
                   <ArrowLeft className="size-5" />
                 </button>
               </DialogClose>
-              <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+              <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
                 Delete list
               </DialogPrimitive.Title>
               <div className="size-5" />
@@ -1100,17 +1100,17 @@ export function GetStartedKanbanLive({
 
             <div className="flex w-full flex-col gap-6 px-9 py-6">
               <div className="flex items-start gap-3">
-                <div className="flex shrink-0 items-start pt-0.5 text-[#dc2626]" aria-hidden>
+                <div className="flex shrink-0 items-start pt-0.5 text-destructive" aria-hidden>
                   <Trash2 className="size-5" strokeWidth={1.75} />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <p className="font-['Satoshi',sans-serif] text-[18px] font-medium leading-tight tracking-[-0.18px] text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[18px] font-medium leading-tight tracking-[-0.18px] text-foreground">
                     Remove this list?
                   </p>
-                  <DialogPrimitive.Description className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-[#606d76]">
+                  <DialogPrimitive.Description className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-muted-foreground">
                     {columnPendingDelete?.title ? (
                       <>
-                        <span className="text-[#0b191f]">“{columnPendingDelete.title}”</span> will be removed from the
+                        <span className="text-foreground">“{columnPendingDelete.title}”</span> will be removed from the
                         board. Tasks in this list stay on the project and move to another column with the same status.
                       </>
                     ) : (
@@ -1124,7 +1124,7 @@ export function GetStartedKanbanLive({
                 <DialogClose asChild>
                   <button
                     type="button"
-                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] transition-colors duration-150 hover:bg-[#f5f7f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/10"
+                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-border bg-card px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground transition-colors duration-150 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/10"
                   >
                     Cancel
                   </button>
@@ -1132,7 +1132,7 @@ export function GetStartedKanbanLive({
                 <button
                   type="button"
                   onClick={confirmDeleteColumn}
-                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-[#dc2626] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30"
+                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-destructive px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
                 >
                   Delete list
                 </button>
@@ -1151,7 +1151,7 @@ export function GetStartedKanbanLive({
         description={
           taskPendingDelete?.title ? (
             <>
-              <span className="text-[#0b191f]">“{taskPendingDelete.title}”</span> will be permanently
+              <span className="text-foreground">“{taskPendingDelete.title}”</span> will be permanently
               removed. This action cannot be undone.
             </>
           ) : (

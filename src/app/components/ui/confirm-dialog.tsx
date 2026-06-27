@@ -64,20 +64,20 @@ export function ConfirmDialog({
         <DialogOverlay className="bg-black/25" />
         <DialogPrimitive.Content
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           )}
         >
-          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-border bg-card px-9 py-4">
             <DialogClose asChild>
               <button
                 type="button"
-                className="inline-flex size-5 items-center justify-center text-[#606d76] transition-colors hover:text-[#0b191f]"
+                className="inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
                 aria-label="Close"
               >
                 <ArrowLeft className="size-5" />
               </button>
             </DialogClose>
-            <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+            <DialogPrimitive.Title className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
               {headerTitle}
             </DialogPrimitive.Title>
             <div className="size-5" />
@@ -88,17 +88,17 @@ export function ConfirmDialog({
               <div
                 className={cn(
                   "flex shrink-0 items-start pt-0.5",
-                  destructive ? "text-[#dc2626]" : "text-[#606d76]",
+                  destructive ? "text-destructive" : "text-muted-foreground",
                 )}
                 aria-hidden
               >
                 <Icon className="size-5" strokeWidth={1.75} />
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <p className="font-['Satoshi',sans-serif] text-[18px] font-medium leading-tight tracking-[-0.18px] text-[#0b191f]">
+                <p className="font-['Satoshi',sans-serif] text-[18px] font-medium leading-tight tracking-[-0.18px] text-foreground">
                   {title}
                 </p>
-                <DialogPrimitive.Description className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-[#606d76]">
+                <DialogPrimitive.Description className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-muted-foreground">
                   {description}
                 </DialogPrimitive.Description>
               </div>
@@ -109,7 +109,7 @@ export function ConfirmDialog({
                 <button
                   type="button"
                   disabled={isPending}
-                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] transition-colors duration-150 hover:bg-[#f5f7f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-border bg-card px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground transition-colors duration-150 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {cancelLabel}
                 </button>
@@ -121,8 +121,8 @@ export function ConfirmDialog({
                 className={cn(
                   "inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60",
                   destructive
-                    ? "bg-[#dc2626] hover:bg-[#b91c1c] focus-visible:ring-[#dc2626]/30"
-                    : "bg-[#0b191f] hover:bg-[#0b191f]/90 focus-visible:ring-[#0b191f]/30",
+                    ? "bg-destructive hover:bg-destructive focus-visible:ring-destructive/30"
+                    : "bg-primary hover:bg-primary/90 focus-visible:ring-primary/30",
                 )}
               >
                 {isPending && pendingLabel ? pendingLabel : confirmLabel}

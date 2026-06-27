@@ -49,16 +49,16 @@ export function PlannerArchitecturePlaceholder({
     return (
         <div
             className={cn(
-                'rounded-2xl border border-dashed border-[#dbeafe] bg-[#f8fbff] p-5',
+                'rounded-2xl border border-dashed border-primary/30 bg-primary/10 p-5',
                 CARD_SHADOW,
             )}
         >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h3 className="font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f]">
+                    <h3 className="font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground">
                         System architecture
                     </h3>
-                    <p className="mt-1 font-['Inter',sans-serif] text-[13px] leading-[20px] text-[#606d76]">
+                    <p className="mt-1 font-['Inter',sans-serif] text-[13px] leading-[20px] text-muted-foreground">
                         Generate a high-level architecture map: clients, services, data stores, async
                         paths, integrations, and trust zones—grounded in your chat and attachments.
                     </p>
@@ -145,7 +145,7 @@ export function PlannerArchitectureSection({
     return (
         <section
             className={cn(
-                'rounded-2xl border border-[#edecea] bg-white p-5',
+                'rounded-2xl border border-border bg-card p-5',
                 CARD_SHADOW,
             )}
             aria-labelledby={sectionTitleId}
@@ -153,7 +153,7 @@ export function PlannerArchitectureSection({
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <h3
                     id={sectionTitleId}
-                    className="font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f]"
+                    className="font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground"
                 >
                     System architecture
                 </h3>
@@ -179,7 +179,7 @@ export function PlannerArchitectureSection({
             {architecture.overview ? (
                 <p
                     id={overviewId}
-                    className="mt-3 font-['Inter',sans-serif] text-[13px] leading-[21px] text-[#606d76]"
+                    className="mt-3 font-['Inter',sans-serif] text-[13px] leading-[21px] text-muted-foreground"
                 >
                     {architecture.overview}
                 </p>
@@ -192,7 +192,7 @@ export function PlannerArchitectureSection({
                         supported.
                     </p>
                     <div
-                        className="relative h-[min(420px,55vh)] w-full overflow-hidden rounded-xl border border-[#edecea] bg-[#fafafa]"
+                        className="relative h-[min(420px,55vh)] w-full overflow-hidden rounded-xl border border-border bg-card"
                         role="img"
                         aria-describedby={architecture.overview ? overviewId : undefined}
                         aria-label="System architecture diagram"
@@ -217,10 +217,10 @@ export function PlannerArchitectureSection({
                             </TransformWrapper>
                         ) : diagramError ? (
                             <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
-                                <p className="font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76]">
+                                <p className="font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
                                     Could not render the diagram preview.
                                 </p>
-                                <p className="font-['Inter',sans-serif] text-[11px] text-[#727d83]">
+                                <p className="font-['Inter',sans-serif] text-[11px] text-muted-foreground">
                                     {diagramError}
                                 </p>
                             </div>
@@ -268,21 +268,21 @@ export function PlannerArchitectureSection({
                 <div className="mt-4 space-y-4">
                     {architecture.components.length > 0 ? (
                         <div>
-                            <h4 className="mb-2 font-['Satoshi',sans-serif] text-[12px] font-semibold text-[#0b191f]">
+                            <h4 className="mb-2 font-['Satoshi',sans-serif] text-[12px] font-semibold text-foreground">
                                 Components
                             </h4>
                             <ul className="space-y-2">
                                 {architecture.components.map((c) => (
                                     <li
                                         key={c.id}
-                                        className="rounded-lg border border-[#edecea] bg-[#f9fafb] px-3 py-2"
+                                        className="rounded-lg border border-border bg-muted px-3 py-2"
                                     >
-                                        <span className="font-['Satoshi',sans-serif] text-[12px] font-medium text-[#0b191f]">
+                                        <span className="font-['Satoshi',sans-serif] text-[12px] font-medium text-foreground">
                                             {c.name}{' '}
-                                            <span className="font-normal text-[#606d76]">({c.kind})</span>
+                                            <span className="font-normal text-muted-foreground">({c.kind})</span>
                                         </span>
                                         {c.description ? (
-                                            <p className="mt-1 font-['Inter',sans-serif] text-[12px] text-[#727d83]">
+                                            <p className="mt-1 font-['Inter',sans-serif] text-[12px] text-muted-foreground">
                                                 {c.description}
                                             </p>
                                         ) : null}
@@ -293,20 +293,20 @@ export function PlannerArchitectureSection({
                     ) : null}
                     {architecture.data_flows.length > 0 ? (
                         <div>
-                            <h4 className="mb-2 font-['Satoshi',sans-serif] text-[12px] font-semibold text-[#0b191f]">
+                            <h4 className="mb-2 font-['Satoshi',sans-serif] text-[12px] font-semibold text-foreground">
                                 Data flows
                             </h4>
                             <ul className="space-y-1.5">
                                 {architecture.data_flows.map((flow, i) => (
                                     <li
                                         key={`${flow.source_id}-${flow.target_id}-${i}`}
-                                        className="font-['Inter',sans-serif] text-[12px] text-[#606d76]"
+                                        className="font-['Inter',sans-serif] text-[12px] text-muted-foreground"
                                     >
-                                        <span className="font-medium text-[#0b191f]">{flow.source_id}</span>
+                                        <span className="font-medium text-foreground">{flow.source_id}</span>
                                         {' → '}
-                                        <span className="font-medium text-[#0b191f]">{flow.target_id}</span>
+                                        <span className="font-medium text-foreground">{flow.target_id}</span>
                                         {flow.label ? (
-                                            <span className="text-[#727d83]"> — {flow.label}</span>
+                                            <span className="text-muted-foreground"> — {flow.label}</span>
                                         ) : null}
                                     </li>
                                 ))}

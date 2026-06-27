@@ -47,7 +47,7 @@ export function VirtualList<T>({
   onEndReached,
   endReachedOffset = 72,
   timelineLineLeftPx,
-  timelineLineClassName = 'bg-[#e4eaec]',
+  timelineLineClassName = 'bg-muted',
   fixedHeight = false,
 }: VirtualListProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null);

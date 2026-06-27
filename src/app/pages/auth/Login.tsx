@@ -243,18 +243,19 @@ function LoginLayout(props: {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[#A8E5FE] to-[#FAF8F4] p-10">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[#A8E5FE] to-[#FAF8F4] dark:from-[#0b1f2e] dark:to-[#0f172a] p-10">
       <div className="w-[345px] overflow-hidden rounded-2xl shadow-[0px_4px_24px_rgba(0,0,0,0.1)]">
-        <div className="flex h-[118px] w-[345px] flex-col items-center gap-4 border-b border-[#F5F5F5] bg-white px-6 pb-6 pt-9">
+        <div className="flex h-[118px] w-[345px] flex-col items-center gap-4 border-b border-border bg-card px-6 pb-6 pt-9">
           <div className="flex h-[58px] w-[219px] flex-col items-center gap-3">
-            <img src="/auth/Continuum.svg" alt="Continuum Logo" className="h-[37px] w-[219px]" />
-            <p className="text-center text-xs font-medium leading-[100%] tracking-[-0.12px] text-[#252014] opacity-80">
+            {/* Monochrome (#252014) wordmark — invert in dark mode so it reads light on the dark card. */}
+            <img src="/auth/Continuum.svg" alt="Continuum Logo" className="h-[37px] w-[219px] dark:invert" />
+            <p className="text-center text-xs font-medium leading-[100%] tracking-[-0.12px] text-foreground opacity-80">
               Time track with one click.
             </p>
           </div>
         </div>
 
-        <div className="flex w-[345px] flex-col gap-6 bg-[#F8F9F9] px-6 pb-6 pt-6">
+        <div className="flex w-[345px] flex-col gap-6 bg-card px-6 pb-6 pt-6">
           <div className="flex h-[88px] w-[297px] flex-col gap-2">
             <SocialButton
               {...googleProps}
@@ -270,7 +271,7 @@ function LoginLayout(props: {
 
           <form onSubmit={handleSubmit} className="flex w-[297px] flex-col gap-2">
             <div className="flex w-[297px] flex-col gap-1">
-              <label htmlFor="email" className="text-sm font-medium text-[#252014]">Email</label>
+              <label htmlFor="email" className="text-sm font-medium text-foreground">Email</label>
               <input
                 id="email"
                 type="email"
@@ -280,13 +281,13 @@ function LoginLayout(props: {
                 placeholder="What's your email address?"
                 required
                 disabled={submitPending}
-                className="h-10 w-[297px] rounded-lg border border-[#E9E9E9] bg-white px-4 py-2 text-sm text-[#252014] outline-none"
+                className="h-10 w-[297px] rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground outline-none"
               />
-              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
+              {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
             </div>
 
             <div className="flex w-[297px] flex-col gap-1">
-              <label htmlFor="password" className="text-sm font-medium text-[#252014]">Password</label>
+              <label htmlFor="password" className="text-sm font-medium text-foreground">Password</label>
               <input
                 id="password"
                 type="password"
@@ -296,13 +297,13 @@ function LoginLayout(props: {
                 placeholder="What's your password?"
                 required
                 disabled={submitPending}
-                className="h-10 w-[297px] rounded-lg border border-[#E9E9E9] bg-white px-4 py-2 text-sm text-[#252014] outline-none"
+                className="h-10 w-[297px] rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground outline-none"
               />
-              {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
+              {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password}</p>}
             </div>
 
             <span
-              className="self-end cursor-not-allowed text-xs text-[#252014] opacity-60"
+              className="self-end cursor-not-allowed text-xs text-foreground opacity-60"
               title="Forgot password is currently unavailable"
               aria-disabled="true"
             >
@@ -313,7 +314,7 @@ function LoginLayout(props: {
               <button
                 type="submit"
                 disabled={submitDisabled}
-                className="flex h-10 w-[297px] cursor-pointer items-center justify-center rounded-lg border-none bg-[#24B5F8] px-4 py-2 shadow-[0px_3px_9.3px_0px_rgba(44,158,249,0.1)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-10 w-[297px] cursor-pointer items-center justify-center rounded-lg border-none bg-info px-4 py-2 shadow-[0px_3px_9.3px_0px_rgba(44,158,249,0.1)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitPending ? (
                   <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -322,16 +323,16 @@ function LoginLayout(props: {
                 )}
               </button>
 
-              {error && <p className="text-center text-xs text-red-600">{error}</p>}
+              {error && <p className="text-center text-xs text-destructive">{error}</p>}
 
               {!error && logoutBanner && (
-                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
-                  <p className="text-center text-xs text-amber-800">
+                <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2">
+                  <p className="text-center text-xs text-warning">
                     {logoutMessage(logoutBanner)}
                   </p>
                   <button
                     type="button"
-                    className="mt-1 block w-full text-center text-[10px] text-amber-700 underline"
+                    className="mt-1 block w-full text-center text-[10px] text-warning underline"
                     onClick={() => {
                       clearLogoutDiagnostic();
                       setLogoutBanner(null);
@@ -343,14 +344,14 @@ function LoginLayout(props: {
               )}
 
               <div className="flex items-center justify-center gap-1">
-                <p className="text-sm text-[#9FA5A8]">Don't have an account?</p>
+                <p className="text-sm text-muted-foreground">Don't have an account?</p>
                 <Link
                   to={
                     footer.get('invite_token')?.trim()
                       ? `/register?invite_token=${encodeURIComponent(footer.get('invite_token')!.trim())}`
                       : '/sign-up'
                   }
-                  className="text-sm text-[#252014] no-underline"
+                  className="text-sm text-foreground no-underline"
                 >
                   Sign up
                 </Link>
@@ -361,12 +362,12 @@ function LoginLayout(props: {
       </div>
 
       <div className="absolute mt-[590px] flex h-12 w-[345px] items-center justify-center px-4">
-        <p className="text-center text-[11px] font-medium leading-[1.4] text-[#252014] opacity-60">
+        <p className="text-center text-[11px] font-medium leading-[1.4] text-foreground opacity-60">
           By clicking "Sign in" or "Continue" above, you acknowledge that you have read and understood, and agree to
           Continuum's{' '}
           <Link
             to="/terms"
-            className="text-[#252014] underline opacity-80 transition-opacity hover:opacity-100"
+            className="text-foreground underline opacity-80 transition-opacity hover:opacity-100"
           >
             Terms of Service
           </Link>
@@ -386,16 +387,16 @@ function SocialButton(props: ButtonProps & { iconSrc: string; label: string }): 
       disabled={disabled}
       title={title}
       onClick={onClick}
-      className={`relative flex h-10 w-[297px] items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4 py-2 ${
+      className={`relative flex h-10 w-[297px] items-center justify-center rounded-lg border border-border bg-card px-4 py-2 ${
         disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
       }`}
     >
       {pending ? (
-        <Loader2 className="absolute left-4 h-5 w-5 animate-spin text-[#252014]" />
+        <Loader2 className="absolute left-4 h-5 w-5 animate-spin text-foreground" />
       ) : (
         <img src={iconSrc} alt="" className="absolute left-4 h-5 w-5" />
       )}
-      <span className="text-sm font-medium leading-[100%] text-[#252014]">{label}</span>
+      <span className="text-sm font-medium leading-[100%] text-foreground">{label}</span>
     </button>
   );
 }

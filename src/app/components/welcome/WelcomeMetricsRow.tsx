@@ -18,7 +18,7 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
   return (
     <div
       data-tour="welcome-metrics-row"
-      className={`relative mx-auto flex w-full max-w-[815px] shrink-0 flex-wrap items-center rounded-[12px] bg-white sm:gap-x-10 ${
+      className={`relative mx-auto flex w-full max-w-[815px] shrink-0 flex-wrap items-center rounded-[12px] bg-card sm:gap-x-10 ${
         empty ? "justify-between gap-x-6 gap-y-6" : "justify-center gap-x-8 gap-y-6"
       }`}
       data-name="Welcome metrics"
@@ -28,7 +28,7 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
       <div className="relative flex shrink-0 items-center gap-6" data-node-id="11:5685">
         <div className="relative h-[81.592px] w-[82.864px] shrink-0" data-node-id="11:5686">
           <p
-            className="absolute top-[28px] left-1/2 z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
+            className="absolute top-[28px] left-1/2 z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis"
             data-node-id="11:5687"
           >
             {empty ? "0" : "1.17"}
@@ -51,13 +51,13 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
             </div>
           </div>
           <p
-            className="absolute top-[66px] left-[11.86px] overflow-hidden font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis opacity-50"
+            className="absolute top-[66px] left-[11.86px] overflow-hidden font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis opacity-50"
             data-node-id="11:5690"
           >
             0
           </p>
           <p
-            className="absolute top-[66px] left-[69.86px] -translate-x-full overflow-hidden text-right font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis opacity-50"
+            className="absolute top-[66px] left-[69.86px] -translate-x-full overflow-hidden text-right font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis opacity-50"
             data-node-id="11:5691"
           >
             3
@@ -66,11 +66,11 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
         <div className="relative flex shrink-0 flex-col items-start" data-node-id="11:5692">
           <div className="relative flex w-[122px] shrink-0 flex-col items-start" data-node-id="11:5693">
             <div className="relative flex w-full shrink-0 flex-col items-start gap-1" data-node-id="11:5694">
-              <p className="relative w-[122px] shrink-0 overflow-hidden font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis" data-node-id="11:5695">
+              <p className="relative w-[122px] shrink-0 overflow-hidden font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis" data-node-id="11:5695">
                 Efficiency Rate
               </p>
               <div className="relative flex w-full shrink-0 items-center justify-center" data-node-id="11:5696">
-                <p className="relative min-h-px min-w-px flex-1 font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-[#727d83]" data-node-id="11:5697">
+                <p className="relative min-h-px min-w-px flex-1 font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-muted-foreground" data-node-id="11:5697">
                   {empty ? "No data yet" : "Safe Zone"}
                 </p>
               </div>
@@ -83,7 +83,7 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
       <div className="relative flex shrink-0 items-center gap-6" data-node-id="11:5699">
         <div className="relative h-[81.592px] w-[82.864px] shrink-0" data-node-id="11:5700">
           <p
-            className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
+            className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis"
             data-node-id="11:5701"
           >
             {empty ? "0" : "46"}
@@ -109,11 +109,11 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
         <div className="relative flex shrink-0 flex-col items-start" data-node-id="11:5704">
           <div className="relative flex w-[124px] shrink-0 flex-col items-start" data-node-id="11:5705">
             <div className="relative flex w-full shrink-0 flex-col items-start gap-1" data-node-id="11:5706">
-              <p className="relative shrink-0 overflow-hidden font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis" data-node-id="11:5707">
+              <p className="relative shrink-0 overflow-hidden font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis" data-node-id="11:5707">
                 Tasks Completed
               </p>
               <div className="relative flex w-full shrink-0 items-center" data-node-id="11:5708">
-                <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-[#727d83]" data-node-id="11:5709">
+                <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-muted-foreground" data-node-id="11:5709">
                   {empty ? "of 0 Total Points" : "of 150 Total Points"}
                 </p>
               </div>
@@ -126,7 +126,7 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
       <div className="relative flex shrink-0 items-center gap-6" data-node-id="11:5711">
         <div className="relative h-[81.592px] w-[82.864px] shrink-0" data-name="Component 145" data-node-id="11:5712">
           <p
-            className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis"
+            className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis"
             data-node-id="I11:5712;3310:12281"
           >
             {empty ? "0" : "12"}
@@ -147,7 +147,7 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
         </div>
         <div className="relative flex shrink-0 flex-col items-start" data-node-id="11:5713">
           <div className="relative flex shrink-0 flex-col items-start gap-1" data-node-id="11:5714">
-            <p className="relative shrink-0 overflow-hidden font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis" data-node-id="11:5715">
+            <p className="relative shrink-0 overflow-hidden font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis" data-node-id="11:5715">
               Commits
             </p>
             <div className="relative flex w-full shrink-0 flex-col items-start" data-node-id="11:5716">
@@ -157,7 +157,7 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
                     <img alt="" className="block size-full max-w-none" src={imgLegendShipped} />
                   </div>
                 </div>
-                <p className="relative shrink-0 overflow-hidden font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] whitespace-nowrap text-[#727d83] text-ellipsis" data-node-id="11:5719">
+                <p className="relative shrink-0 overflow-hidden font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] whitespace-nowrap text-muted-foreground text-ellipsis" data-node-id="11:5719">
                   Shipped
                 </p>
               </div>
@@ -167,7 +167,7 @@ export function WelcomeMetricsRow({ empty = false }: WelcomeMetricsRowProps) {
                     <img alt="" className="block size-full max-w-none" src={imgLegendProgress} />
                   </div>
                 </div>
-                <p className="relative shrink-0 overflow-hidden font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] whitespace-nowrap text-[#727d83] text-ellipsis" data-node-id="11:5722">
+                <p className="relative shrink-0 overflow-hidden font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] whitespace-nowrap text-muted-foreground text-ellipsis" data-node-id="11:5722">
                   In Progress
                 </p>
               </div>

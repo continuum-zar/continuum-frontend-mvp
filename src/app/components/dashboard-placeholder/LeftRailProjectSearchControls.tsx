@@ -16,7 +16,7 @@ export type LeftRailProjectSearchControlsProps = {
 };
 
 const pillClassName =
-  "bg-[#edf0f3] content-stretch flex gap-[8px] h-[40px] items-center px-[16px] py-[8px] relative rounded-[999px] shrink-0 w-full";
+  "bg-muted content-stretch flex gap-[8px] h-[40px] items-center px-[16px] py-[8px] relative rounded-[999px] shrink-0 w-full";
 
 /**
  * Full-width pill search for the workspace left rail.
@@ -52,7 +52,7 @@ export function LeftRailProjectSearchControls({
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Search projects…"
             autoComplete="off"
-            className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi:Medium',sans-serif] text-[14px] text-[#0b191f] outline-none placeholder:text-[#606d76] focus-visible:ring-0"
+            className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi:Medium',sans-serif] text-[14px] text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-0"
             aria-label="Search projects"
           />
         </div>
@@ -62,7 +62,7 @@ export function LeftRailProjectSearchControls({
           onClick={onOpen}
           className={cn(
             pillClassName,
-            "cursor-pointer border-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/15",
+            "cursor-pointer border-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15",
           )}
           aria-label="Search projects"
           aria-expanded={false}
@@ -71,7 +71,7 @@ export function LeftRailProjectSearchControls({
           <div className="relative shrink-0 size-[16px]" aria-hidden>
             <img alt="" className="absolute block max-w-none size-full" src={searchIconSrc} />
           </div>
-          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] text-center whitespace-nowrap">
+          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[14px] text-center whitespace-nowrap">
             Search Projects
           </p>
         </button>

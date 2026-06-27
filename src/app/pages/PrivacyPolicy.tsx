@@ -34,14 +34,14 @@ export function PrivacyPolicy() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] font-['Satoshi',sans-serif]">
+    <div className="min-h-screen bg-background font-['Satoshi',sans-serif]">
       {!isAuthenticated && <LegalTopNav />}
       <div className="mx-auto max-w-[820px] px-5 py-10 sm:py-14">
         {isAuthenticated && (
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="mb-8 inline-flex items-center gap-1 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 text-[14px] font-medium text-[#0b191f] outline-none ring-offset-2 transition-colors hover:bg-[#f9f9f9] focus-visible:ring-2 focus-visible:ring-ring"
+            className="mb-8 inline-flex items-center gap-1 rounded-[8px] border border-border bg-card px-3 py-2 text-[14px] font-medium text-foreground outline-none ring-offset-2 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ChevronLeft className="size-4 shrink-0" strokeWidth={1.75} aria-hidden />
             Back
@@ -49,23 +49,23 @@ export function PrivacyPolicy() {
         )}
 
         <main>
-          <header className="mb-10 border-b border-[#ebedee] pb-8">
-            <h1 className="text-[32px] font-semibold leading-tight text-[#0b191f]">
+          <header className="mb-10 border-b border-border pb-8">
+            <h1 className="text-[32px] font-semibold leading-tight text-foreground">
               Privacy Policy
             </h1>
-            <p className="mt-3 max-w-[660px] text-[16px] leading-relaxed text-[#4a565c]">
+            <p className="mt-3 max-w-[660px] text-[16px] leading-relaxed text-foreground">
               This policy explains how Continuum collects, uses, shares and
               protects your personal information, and the rights you have under
               the Protection of Personal Information Act, 2013 (POPIA) of South
               Africa.
             </p>
-            <p className="mt-4 text-[13px] font-medium uppercase tracking-wide text-[#8a949a]">
+            <p className="mt-4 text-[13px] font-medium uppercase tracking-wide text-muted-foreground">
               Last updated: {LAST_UPDATED}
             </p>
           </header>
 
           <nav aria-label="On this page" className="mb-10">
-            <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-[#8a949a]">
+            <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
               On this page
             </h2>
             <ol className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
@@ -73,7 +73,7 @@ export function PrivacyPolicy() {
                 <li key={s.id}>
                   <a
                     href={`#${s.id}`}
-                    className="text-[14px] text-[#4a565c] underline-offset-2 outline-none hover:text-[#0b191f] hover:underline focus-visible:underline"
+                    className="text-[14px] text-foreground underline-offset-2 outline-none hover:text-foreground hover:underline focus-visible:underline"
                   >
                     {s.title}
                   </a>
@@ -82,7 +82,7 @@ export function PrivacyPolicy() {
             </ol>
           </nav>
 
-          <div className="space-y-10 text-[15px] leading-7 text-[#3a464c]">
+          <div className="space-y-10 text-[15px] leading-7 text-foreground">
             <Section id="intro" title="1. Introduction">
               <p>
                 Continuum (&ldquo;Continuum&rdquo;, &ldquo;we&rdquo;,
@@ -123,35 +123,35 @@ export function PrivacyPolicy() {
               <p>We collect the following categories of personal information:</p>
               <ul className="list-disc space-y-1.5 pl-5">
                 <li>
-                  <span className="font-medium text-[#0b191f]">
+                  <span className="font-medium text-foreground">
                     Account information
                   </span>
                   , such as your name, email address, password (stored in hashed
                   form), role and profile details.
                 </li>
                 <li>
-                  <span className="font-medium text-[#0b191f]">
+                  <span className="font-medium text-foreground">
                     Workspace content
                   </span>
                   , such as projects, tasks, comments, time entries, invoices
                   and files you or your team create within the Service.
                 </li>
                 <li>
-                  <span className="font-medium text-[#0b191f]">
+                  <span className="font-medium text-foreground">
                     Usage and device data
                   </span>
                   , such as log data, IP address, browser type, and how you
                   interact with the Service, used to keep it secure and reliable.
                 </li>
                 <li>
-                  <span className="font-medium text-[#0b191f]">
+                  <span className="font-medium text-foreground">
                     Billing information
                   </span>
                   , such as the details necessary to process subscriptions and
                   payments.
                 </li>
                 <li>
-                  <span className="font-medium text-[#0b191f]">
+                  <span className="font-medium text-foreground">
                     Communications
                   </span>
                   , such as messages you send us, including support requests and
@@ -218,20 +218,20 @@ export function PrivacyPolicy() {
               </p>
               <ul className="list-disc space-y-1.5 pl-5">
                 <li>
-                  <span className="font-medium text-[#0b191f]">operators</span>,
+                  <span className="font-medium text-foreground">operators</span>,
                   such as trusted service providers (including hosting, payment
                   and email providers) who process data on our behalf under
                   written agreements and appropriate safeguards;
                 </li>
                 <li>
-                  <span className="font-medium text-[#0b191f]">
+                  <span className="font-medium text-foreground">
                     members of your workspace
                   </span>
                   , where content is visible to other users in line with the
                   permissions assigned to them;
                 </li>
                 <li>
-                  <span className="font-medium text-[#0b191f]">
+                  <span className="font-medium text-foreground">
                     authorities
                   </span>
                   , where required by law or to protect rights, safety or the
@@ -367,7 +367,7 @@ function Section({
     <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-6 space-y-3">
       <h2
         id={`${id}-heading`}
-        className="text-[18px] font-semibold text-[#0b191f]"
+        className="text-[18px] font-semibold text-foreground"
       >
         {title}
       </h2>
@@ -380,7 +380,7 @@ function ContactLink() {
   return (
     <a
       href={`mailto:${CONTACT_EMAIL}`}
-      className="font-medium text-[#2563eb] underline underline-offset-2 outline-none hover:text-[#1d4ed8] focus-visible:ring-2 focus-visible:ring-ring"
+      className="font-medium text-primary underline underline-offset-2 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
     >
       {CONTACT_EMAIL}
     </a>

@@ -22,8 +22,8 @@ export function KanbanColumnAutoSortHint({ info, className }: KanbanColumnAutoSo
           type="button"
           className={cn(
             "inline-flex size-[24px] shrink-0 cursor-help items-center justify-center rounded-[4px] border-0 bg-transparent p-0",
-            "text-[#606d76] hover:text-[#0b191f] motion-reduce:transition-none",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/15",
+            "text-muted-foreground hover:text-foreground motion-reduce:transition-none",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15",
             className,
           )}
           aria-label={info.description}

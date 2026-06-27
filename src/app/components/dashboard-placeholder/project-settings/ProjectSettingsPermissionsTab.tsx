@@ -66,7 +66,7 @@ export function ProjectSettingsPermissionsTab({
   return (
     <div className="mx-auto flex w-full max-w-[860px] flex-col gap-8 px-6 py-6">
       {/* Category tabs + role context picker */}
-      <div className="flex items-center justify-between gap-4 border-b border-[#ebedee]">
+      <div className="flex items-center justify-between gap-4 border-b border-border">
         <div className="flex flex-wrap items-center gap-1">
           {PERMISSION_CATEGORIES.map((cat) => {
             const active = cat.key === category;
@@ -78,8 +78,8 @@ export function ProjectSettingsPermissionsTab({
                 className={cn(
                   "relative -mb-px px-3 py-2 font-['Satoshi',sans-serif] text-[16px] font-medium transition-colors",
                   active
-                    ? "text-[#0b191f] after:absolute after:inset-x-3 after:-bottom-px after:h-[2px] after:rounded-full after:bg-[#0b191f]"
-                    : "text-[#606d76] hover:text-[#0b191f]",
+                    ? "text-foreground after:absolute after:inset-x-3 after:-bottom-px after:h-[2px] after:rounded-full after:bg-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {cat.label}
@@ -93,10 +93,10 @@ export function ProjectSettingsPermissionsTab({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="mb-2 flex shrink-0 items-center gap-1.5 rounded-[8px] border border-[#e9e9e9] bg-white px-3 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] hover:bg-[#f5f7f8]"
+                className="mb-2 flex shrink-0 items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground hover:bg-muted"
               >
-                <span className="text-[#9aa4ab]">Role:</span> {selectedRole.name}
-                <ChevronDown className="size-4 text-[#606d76]" />
+                <span className="text-muted-foreground">Role:</span> {selectedRole.name}
+                <ChevronDown className="size-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[180px]">
@@ -111,7 +111,7 @@ export function ProjectSettingsPermissionsTab({
       </div>
 
       {selectedRole?.is_system && (
-        <div className="rounded-[8px] bg-[#f0f3f5] px-4 py-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+        <div className="rounded-[8px] bg-muted px-4 py-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
           The Project Owner role has every permission and cannot be edited.
         </div>
       )}
@@ -124,7 +124,7 @@ export function ProjectSettingsPermissionsTab({
           onToggle={handleToggle}
         />
       ) : (
-        <p className="py-6 text-center text-[14px] text-[#606d76]">Loading permissions…</p>
+        <p className="py-6 text-center text-[14px] text-muted-foreground">Loading permissions…</p>
       )}
     </div>
   );

@@ -47,14 +47,14 @@ export function isAllowedRedirectUrl(url: string): boolean {
 
 /** Matches `DashboardPlaceholderHome` / `WorkspaceShellSkeleton` workspace shell. */
 const PLACEHOLDER_PAGE_GRADIENT =
-    'linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)';
+    'linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, var(--background) 0%, var(--background) 100%)';
 
 const PLACEHOLDER_MAIN_PANEL_SHADOW =
     'shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]';
 
-const phTitle = "font-['Satoshi',sans-serif] text-[18px] font-semibold text-[#0b191f]";
-const phBody = "font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]";
-const phHint = "font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#727d83]";
+const phTitle = "font-['Satoshi',sans-serif] text-[18px] font-semibold text-foreground";
+const phBody = "font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground";
+const phHint = "font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-muted-foreground";
 
 /** Standalone page: same gradient and card styling as dashboard placeholder, without the left rail. */
 function McpOAuthShell({ children }: { children: React.ReactNode }) {
@@ -66,7 +66,7 @@ function McpOAuthShell({ children }: { children: React.ReactNode }) {
             <div className="flex flex-1 flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
                 <section
                     className={cn(
-                        'w-full max-w-[520px] rounded-[8px] border border-[#ebedee] border-solid bg-white px-8 py-12 sm:px-10 sm:py-14',
+                        'w-full max-w-[520px] rounded-[8px] border border-border border-solid bg-card px-8 py-12 sm:px-10 sm:py-14',
                         PLACEHOLDER_MAIN_PANEL_SHADOW
                     )}
                 >
@@ -107,7 +107,7 @@ function PlannerSuccessCheck() {
                 damping: 15,
             }}
         >
-            <Check className="mx-auto size-16 text-emerald-500" aria-hidden />
+            <Check className="mx-auto size-16 text-success" aria-hidden />
         </motion.div>
     );
 }
@@ -485,7 +485,7 @@ function McpOAuthInner() {
                         type="button"
                         variant="outline"
                         onClick={handleCloseWindow}
-                        className="h-11 min-w-[200px] border-[#ebedee] bg-white font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] hover:bg-[#f9fafb]"
+                        className="h-11 min-w-[200px] border-border bg-card font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground hover:bg-muted"
                     >
                         Close this window
                     </Button>
@@ -512,7 +512,7 @@ function McpOAuthInner() {
                             type="button"
                             variant="outline"
                             onClick={handleCloseWindow}
-                            className="h-11 min-w-[200px] border-[#ebedee] bg-white font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] hover:bg-[#f9fafb]"
+                            className="h-11 min-w-[200px] border-border bg-card font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground hover:bg-muted"
                         >
                             Close this window
                         </Button>

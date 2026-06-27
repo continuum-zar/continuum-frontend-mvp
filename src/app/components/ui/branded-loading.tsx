@@ -38,11 +38,11 @@ export function BrandedLoadingPlaceholder({
             >
                 Continuum
             </p>
-            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#595959]">
+            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                 {label}
             </p>
             {hint ? (
-                <p className="max-w-sm text-center font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#727d83]">
+                <p className="max-w-sm text-center font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-muted-foreground">
                     {hint}
                 </p>
             ) : null}

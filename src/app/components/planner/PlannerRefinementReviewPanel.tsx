@@ -20,13 +20,13 @@ type PlannerRefinementReviewPanelProps = {
 function changeBadgeClass(change: MilestoneDiffSection['change'] | TaskDiffRow['change']) {
     switch (change) {
         case 'added':
-            return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+            return 'bg-success/10 text-success border-success/30';
         case 'removed':
-            return 'bg-red-50 text-red-800 border-red-200';
+            return 'bg-destructive/10 text-destructive border-destructive/30';
         case 'modified':
-            return 'bg-amber-50 text-amber-900 border-amber-200';
+            return 'bg-warning/10 text-warning border-warning/30';
         default:
-            return 'bg-slate-50 text-slate-600 border-slate-200';
+            return 'bg-muted text-muted-foreground border-border';
     }
 }
 
@@ -53,11 +53,11 @@ function TaskDiffAccordionRow({ task }: { task: TaskDiffRow }) {
 
     return (
         <Collapsible open={open} onOpenChange={setOpen}>
-            <div className="overflow-hidden rounded-lg border border-[#eceff1] bg-white">
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
                 <CollapsibleTrigger asChild>
                     <button
                         type="button"
-                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f9fafb]"
+                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted"
                     >
                         <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
@@ -69,36 +69,36 @@ function TaskDiffAccordionRow({ task }: { task: TaskDiffRow }) {
                                 >
                                     {task.change}
                                 </span>
-                                <span className="font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f]">
+                                <span className="font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground">
                                     {task.title}
                                 </span>
                                 {task.locked && (
-                                    <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
+                                    <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                                         Locked
                                     </span>
                                 )}
                             </div>
                             {task.detail && (
-                                <p className="mt-1 text-xs text-[#727d83]">{task.detail}</p>
+                                <p className="mt-1 text-xs text-muted-foreground">{task.detail}</p>
                             )}
                         </div>
                         {open ? (
-                            <ChevronDown className="size-4 shrink-0 text-[#727d83]" />
+                            <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                         ) : (
-                            <ChevronRight className="size-4 shrink-0 text-[#727d83]" />
+                            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                         )}
                     </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                    <div className="border-t border-[#f0f2f3] bg-[#fcfcfd] p-3">
+                    <div className="border-t border-border bg-muted p-3">
                         {!hasSnapshots ? (
-                            <p className="text-sm text-[#727d83]">
+                            <p className="text-sm text-muted-foreground">
                                 No task snapshots available for side-by-side preview.
                             </p>
                         ) : (
                             <div className="flex flex-col gap-4 md:flex-row md:items-stretch">
                                 <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#727d83]">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                         Before (baseline)
                                     </p>
                                     <PlannedTaskReviewPreview
@@ -108,9 +108,9 @@ function TaskDiffAccordionRow({ task }: { task: TaskDiffRow }) {
                                         column="baseline"
                                     />
                                 </div>
-                                <div className="hidden w-px shrink-0 bg-[#ebedee] md:block" aria-hidden />
+                                <div className="hidden w-px shrink-0 bg-muted md:block" aria-hidden />
                                 <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#727d83]">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                         After (proposed)
                                     </p>
                                     <PlannedTaskReviewPreview
@@ -156,14 +156,14 @@ export function PlannerRefinementReviewPanel({
     const inner = (
         <>
             {embedded ? (
-                <div className="rounded-xl border border-[#ebedee] bg-white p-5 shadow-sm">
-                    <h3 className="font-['Satoshi',sans-serif] text-[18px] font-bold text-[#0b191f]">
+                <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                    <h3 className="font-['Satoshi',sans-serif] text-[18px] font-bold text-foreground">
                         Review proposed changes
                     </h3>
-                    <p className="mt-2 text-[14px] text-[#606d76]">
+                    <p className="mt-2 text-[14px] text-muted-foreground">
                         Expand each changed task to compare baseline and proposed versions side by side.
                     </p>
-                    <p className="mt-1 text-[13px] text-[#727d83]">
+                    <p className="mt-1 text-[13px] text-muted-foreground">
                         {changedTaskCount} changed {changedTaskCount === 1 ? 'task' : 'tasks'} across{' '}
                         {changedSections.length} {changedSections.length === 1 ? 'milestone' : 'milestones'}.
                     </p>
@@ -171,7 +171,7 @@ export function PlannerRefinementReviewPanel({
             ) : null}
 
             {changedSections.length === 0 ? (
-                    <div className="rounded-xl border border-[#ebedee] bg-white p-6 text-sm text-[#606d76]">
+                    <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
                         No changed tasks were found compared to the loaded baseline.
                     </div>
                 ) : (
@@ -179,7 +179,7 @@ export function PlannerRefinementReviewPanel({
                         {changedSections.map((section) => (
                             <section
                                 key={section.key}
-                                className="rounded-xl border border-[#ebedee] bg-white p-4 shadow-sm"
+                                className="rounded-xl border border-border bg-card p-4 shadow-sm"
                             >
                                 <div className="mb-3 flex flex-wrap items-center gap-2">
                                     <span
@@ -190,7 +190,7 @@ export function PlannerRefinementReviewPanel({
                                     >
                                         {section.change}
                                     </span>
-                                    <h3 className="font-['Satoshi',sans-serif] text-[16px] font-semibold text-[#0b191f]">
+                                    <h3 className="font-['Satoshi',sans-serif] text-[16px] font-semibold text-foreground">
                                         {section.name}
                                     </h3>
                                 </div>
@@ -205,7 +205,7 @@ export function PlannerRefinementReviewPanel({
                 )}
 
             {!hideFooter ? (
-                <div className="sticky bottom-0 z-10 mt-4 flex items-center justify-between gap-3 border-t border-[#ebedee] bg-white/95 px-1 py-4 backdrop-blur">
+                <div className="sticky bottom-0 z-10 mt-4 flex items-center justify-between gap-3 border-t border-border bg-card/95 px-1 py-4 backdrop-blur">
                     <Button
                         type="button"
                         variant="outline"
@@ -218,7 +218,7 @@ export function PlannerRefinementReviewPanel({
                     </Button>
                     <Button
                         type="button"
-                        className="inline-flex h-11 items-center gap-2 bg-[#0b191f] text-white hover:bg-[#1a2d36]"
+                        className="inline-flex h-11 items-center gap-2 bg-foreground text-background hover:bg-foreground/90"
                         onClick={onApply}
                         disabled={isApplying || changedSections.length === 0}
                     >
@@ -248,19 +248,19 @@ export function PlannerRefinementReviewPanel({
             className="scrollbar-none min-h-0 flex-1 overflow-auto"
             style={{
                 backgroundImage:
-                    'linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%)',
+                    'linear-gradient(180deg, var(--background) 0%, var(--muted) 100%)',
             }}
         >
             <div className="mx-auto flex max-w-7xl flex-col gap-6 px-8 py-8">
-                <div className="rounded-xl border border-[#ebedee] bg-white p-5 shadow-sm">
-                    <h2 className="font-['Satoshi',sans-serif] text-[24px] font-bold text-[#0b191f]">
+                <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                    <h2 className="font-['Satoshi',sans-serif] text-[24px] font-bold text-foreground">
                         Review proposed plan changes
                     </h2>
-                    <p className="mt-2 text-[14px] text-[#606d76]">
+                    <p className="mt-2 text-[14px] text-muted-foreground">
                         Expand each changed task to compare baseline and proposed versions side by side (like the task
                         detail view).
                     </p>
-                    <p className="mt-1 text-[13px] text-[#727d83]">
+                    <p className="mt-1 text-[13px] text-muted-foreground">
                         {changedTaskCount} changed {changedTaskCount === 1 ? 'task' : 'tasks'} across{' '}
                         {changedSections.length} {changedSections.length === 1 ? 'milestone' : 'milestones'}.
                     </p>

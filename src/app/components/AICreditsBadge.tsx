@@ -28,9 +28,9 @@ export function AICreditsBadge() {
     const low = !exhausted && balance <= lowThreshold;
 
     const tone = exhausted
-        ? 'text-red-600 dark:text-red-400'
+        ? 'text-destructive'
         : low
-          ? 'text-amber-600 dark:text-amber-400'
+          ? 'text-warning'
           : 'text-muted-foreground';
 
     return (
@@ -58,9 +58,9 @@ export function AICreditsBadge() {
                         <div
                             className={
                                 exhausted
-                                    ? 'h-full bg-red-500'
+                                    ? 'h-full bg-destructive'
                                     : low
-                                      ? 'h-full bg-amber-500'
+                                      ? 'h-full bg-warning'
                                       : 'h-full bg-primary'
                             }
                             style={{
@@ -69,7 +69,7 @@ export function AICreditsBadge() {
                         />
                     </div>
                     {exhausted ? (
-                        <p className="text-xs text-red-600 dark:text-red-400">
+                        <p className="text-xs text-destructive">
                             You&apos;ve used all your AI credits. They reset on{' '}
                             {formatResetDate(reset_at)}.
                         </p>

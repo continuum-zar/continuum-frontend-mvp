@@ -35,7 +35,7 @@ const copyLinkTextGradient =
   "linear-gradient(165.94870676317367deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(11, 25, 31) 0%, rgb(11, 25, 31) 100%)";
 
 const inputShellClass =
-  "w-full rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40";
+  "w-full rounded-[8px] border border-solid border-border bg-card px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-info/40";
 
 /** Backend + UI — matches ProjectBoard invite */
 const PROJECT_MEMBER_ROLE_VALUES = ["developer", "client", "project_manager"] as const;
@@ -154,12 +154,12 @@ export function WelcomeShareProjectModal({
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(92vh,900px)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(92vh,900px)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
           )}
         >
           <DialogPrimitive.Title className="sr-only">Share this project</DialogPrimitive.Title>
 
-          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-border bg-card px-9 py-4">
             <DialogClose asChild>
               <button
                 type="button"
@@ -172,7 +172,7 @@ export function WelcomeShareProjectModal({
               </button>
             </DialogClose>
             <div className="pointer-events-none absolute left-1/2 top-[25px] flex -translate-x-1/2 flex-col items-center gap-3">
-              <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+              <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
                 Share this project
               </p>
             </div>
@@ -189,13 +189,7 @@ export function WelcomeShareProjectModal({
             </DialogClose>
           </div>
 
-          <div
-            className="z-[2] min-h-0 flex-1 overflow-x-clip overflow-y-auto px-9 py-6"
-            style={{
-              backgroundImage:
-                "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
-            }}
-          >
+          <div className="z-[2] min-h-0 flex-1 overflow-x-clip overflow-y-auto bg-card px-9 py-6">
             <div className="flex w-full flex-col gap-6 pb-6">
               <div className="flex w-full flex-col gap-6">
                 <div className="flex w-full min-w-0 items-stretch justify-center gap-4">
@@ -207,7 +201,7 @@ export function WelcomeShareProjectModal({
                         onChange={(e) => setEmail(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleInvite()}
                         placeholder="Email address"
-                        className={cn(inputShellClass, "pr-12 placeholder:text-[#606d76]")}
+                        className={cn(inputShellClass, "pr-12 placeholder:text-muted-foreground")}
                         autoComplete="email"
                         disabled={isLive && addMemberMutation.isPending}
                       />
@@ -225,7 +219,7 @@ export function WelcomeShareProjectModal({
                       onChange={(e) => setInviteRole(e.target.value as ProjectMemberRoleValue)}
                       className={cn(
                         inputShellClass,
-                        "cursor-pointer appearance-none pr-12 text-[#0b191f]",
+                        "cursor-pointer appearance-none pr-12 text-foreground",
                       )}
                       aria-label="Role for invitation"
                       disabled={isLive && addMemberMutation.isPending}
@@ -246,7 +240,7 @@ export function WelcomeShareProjectModal({
                     onClick={() => {
                       if (isLive) handleInvite();
                     }}
-                    className="inline-flex min-w-[88px] shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-0 px-4 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-bold text-white outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex min-w-[88px] shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-0 px-4 py-2.5 font-['Satoshi',sans-serif] text-[14px] font-bold text-white outline-none focus-visible:ring-2 focus-visible:ring-info/50 disabled:cursor-not-allowed disabled:opacity-50"
                     style={{ backgroundImage: inviteButtonGradient }}
                   >
                     {isLive && addMemberMutation.isPending ? "Sending…" : "Invite"}
@@ -254,7 +248,7 @@ export function WelcomeShareProjectModal({
                 </div>
                 <div className="flex w-full flex-col gap-4">
                   <div className="flex w-full items-center justify-between">
-                    <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                       Who has access
                     </p>
                   </div>
@@ -264,20 +258,20 @@ export function WelcomeShareProjectModal({
                       <div className="flex flex-col gap-4 py-1">
                         {[0, 1, 2].map((i) => (
                           <div key={i} className="flex w-full items-center gap-2 pr-2">
-                            <div className="size-8 shrink-0 animate-pulse rounded-[999px] bg-[#e4eaec]" />
+                            <div className="size-8 shrink-0 animate-pulse rounded-[999px] bg-muted" />
                             <div className="min-w-0 flex-1 space-y-2 py-1">
-                              <div className="h-4 w-40 animate-pulse rounded bg-[#e4eaec]" />
-                              <div className="h-3 w-56 animate-pulse rounded bg-[#e4eaec]" />
+                              <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+                              <div className="h-3 w-56 animate-pulse rounded bg-muted" />
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : isLive && membersQuery.isError ? (
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#c02626]">
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-destructive">
                         Couldn’t load members. Try again.
                       </p>
                     ) : isLive && liveMembers.length === 0 ? (
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#727d83]">
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                         No members yet. Invite someone by email above.
                       </p>
                     ) : isLive ? (
@@ -300,11 +294,11 @@ export function WelcomeShareProjectModal({
                               </span>
                             </div>
                             <div className="flex min-w-0 flex-1 flex-col justify-center px-2 py-1.5">
-                              <p className="w-full truncate font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                              <p className="w-full truncate font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                                 {primary}
                               </p>
                               {secondary ? (
-                                <p className="w-full truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#727d83]">
+                                <p className="w-full truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
                                   {secondary}
                                 </p>
                               ) : null}
@@ -315,7 +309,7 @@ export function WelcomeShareProjectModal({
                                 disabled
                                 title="Role changes are not available yet"
                                 className={cn(
-                                  "cursor-not-allowed appearance-none rounded-[16px] border-0 bg-[#f0f3f5] px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] opacity-90 outline-none",
+                                  "cursor-not-allowed appearance-none rounded-[16px] border-0 bg-muted px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground opacity-90 outline-none",
                                 )}
                                 aria-label={`Role for ${primary}`}
                               >
@@ -339,7 +333,7 @@ export function WelcomeShareProjectModal({
                           className="flex w-full items-center gap-2 overflow-hidden rounded-[8px] pr-2"
                         >
                           <div
-                            className="flex size-8 shrink-0 items-center justify-center rounded-[999px] border-[1.333px] border-solid border-white bg-[#e19c02]"
+                            className="flex size-8 shrink-0 items-center justify-center rounded-[999px] border-[1.333px] border-solid border-white bg-warning"
                             aria-hidden
                           >
                             <span className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-[0.4] text-white">
@@ -347,10 +341,10 @@ export function WelcomeShareProjectModal({
                             </span>
                           </div>
                           <div className="flex min-w-0 flex-1 flex-col justify-center px-2 py-1.5">
-                            <p className="w-full font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                            <p className="w-full font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                               {row.primary}
                             </p>
-                            <p className="w-full font-['Satoshi',sans-serif] text-[12px] font-medium text-[#727d83]">
+                            <p className="w-full font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
                               {row.secondary}
                             </p>
                           </div>
@@ -366,7 +360,7 @@ export function WelcomeShareProjectModal({
                                 });
                               }}
                               className={cn(
-                                "cursor-pointer appearance-none rounded-[16px] border-0 bg-[#f0f3f5] px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40",
+                                "cursor-pointer appearance-none rounded-[16px] border-0 bg-muted px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-info/40",
                               )}
                               aria-label={`Role for ${row.primary}`}
                             >
@@ -389,11 +383,11 @@ export function WelcomeShareProjectModal({
             </div>
           </div>
 
-          <div className="z-[1] flex w-full shrink-0 items-center justify-end border-t border-solid border-[#ebedee] bg-white px-9 py-4">
+          <div className="z-[1] flex w-full shrink-0 items-center justify-end border-t border-solid border-border bg-card px-9 py-4">
             <div className="flex w-full max-w-[528px] items-center justify-end">
               <button
                 type="button"
-                className="inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-0 bg-white px-4 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/50"
+                className="inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-0 bg-card px-4 py-2 outline-none focus-visible:ring-2 focus-visible:ring-info/50"
                 onClick={() => {
                   void navigator.clipboard?.writeText(copyHref);
                 }}

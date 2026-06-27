@@ -99,16 +99,16 @@ function GanttNameOnlyTable({
         return (
           <div
             key={task.id}
-            className={`flex items-center border-b border-[#edf1f4] px-2 ${
-              index % 2 === 0 ? "bg-white" : "bg-[#fbfcfd]"
-            } ${isSelected ? "ring-1 ring-inset ring-[#c7d3da]" : ""}`}
+            className={`flex items-center border-b border-border px-2 ${
+              index % 2 === 0 ? "bg-card" : "bg-muted"
+            } ${isSelected ? "ring-1 ring-inset ring-border" : ""}`}
             style={{ height: rowHeight }}
           >
             <span className="mr-1 inline-flex size-5 shrink-0" aria-hidden />
             <button
               type="button"
               className={`min-w-0 flex-1 truncate text-left ${
-                isParent ? "font-semibold text-[#2f3d45]" : "text-[#3c4b53]"
+                isParent ? "font-semibold text-foreground" : "text-foreground"
               }`}
               title={task.name}
               onClick={() => setSelectedTask(task.id)}
@@ -126,24 +126,24 @@ function GanttTaskTooltip({ task, fontSize, fontFamily }: TooltipProps) {
   const isMilestone = task.type === "project";
   return (
     <div
-      className="w-[260px] rounded-[10px] border border-[#dce4ea] bg-white p-3 shadow-[0_8px_24px_rgba(11,25,31,0.12)]"
+      className="w-[260px] rounded-[10px] border border-border bg-card p-3 shadow-[0_8px_24px_rgba(11,25,31,0.12)]"
       style={{ fontFamily, fontSize }}
     >
-      <p className="truncate text-[13px] font-semibold text-[#1d2b33]" title={task.name}>
+      <p className="truncate text-[13px] font-semibold text-foreground" title={task.name}>
         {task.name}
       </p>
-      <div className="mt-2 space-y-1 text-[12px] text-[#5b6870]">
+      <div className="mt-2 space-y-1 text-[12px] text-muted-foreground">
         <p>
-          <span className="font-medium text-[#36454d]">From:</span> {formatShortDate(task.start)}
+          <span className="font-medium text-foreground">From:</span> {formatShortDate(task.start)}
         </p>
         <p>
-          <span className="font-medium text-[#36454d]">To:</span> {formatShortDate(task.end)}
+          <span className="font-medium text-foreground">To:</span> {formatShortDate(task.end)}
         </p>
         <p>
-          <span className="font-medium text-[#36454d]">Progress:</span> {task.progress}%
+          <span className="font-medium text-foreground">Progress:</span> {task.progress}%
         </p>
         <p>
-          <span className="font-medium text-[#36454d]">Type:</span> {isMilestone ? "Milestone" : "Task"}
+          <span className="font-medium text-foreground">Type:</span> {isMilestone ? "Milestone" : "Task"}
         </p>
       </div>
     </div>
@@ -185,13 +185,13 @@ export function GanttChartView({
       };
       return (
         <div
-          className="relative flex items-center border-b border-[#e9edf0] bg-[#f8fafb] px-3 text-[#4c5961]"
+          className="relative flex items-center border-b border-border bg-muted px-3 text-foreground"
           style={{ height: headerHeight, width: rowWidth, fontFamily, fontSize }}
         >
           <span className="font-medium">Name</span>
           {/* Drag handle */}
           <div
-            className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none bg-transparent transition-colors hover:bg-[#c7d3da]/60 active:bg-[#a8b8c2]/80"
+            className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none bg-transparent transition-colors hover:bg-muted/60 active:bg-muted-foreground/80"
             onPointerDown={onPointerDown}
             role="separator"
             aria-orientation="vertical"
@@ -251,10 +251,10 @@ export function GanttChartView({
           progress: taskProgressPct(task),
           project: `milestone-${key}`,
           styles: {
-            backgroundColor: "#cfecff",
-            backgroundSelectedColor: "#9bd8ff",
-            progressColor: "#043e59",
-            progressSelectedColor: "#0b191f",
+            backgroundColor: "var(--secondary)",
+            backgroundSelectedColor: "var(--accent)",
+            progressColor: "var(--primary)",
+            progressSelectedColor: "var(--primary)",
           },
         };
       });
@@ -291,10 +291,10 @@ export function GanttChartView({
         progress: milestoneProgress,
         hideChildren: collapsedMilestones[key] ?? false,
         styles: {
-          backgroundColor: "#d1d5db",
-          backgroundSelectedColor: "#b8bec4",
-          progressColor: "#0b191f",
-          progressSelectedColor: "#1a2e3a",
+          backgroundColor: "var(--muted)",
+          backgroundSelectedColor: "var(--accent)",
+          progressColor: "var(--primary)",
+          progressSelectedColor: "var(--primary)",
         },
       });
       out.push(...orderedChildren);
@@ -349,7 +349,7 @@ export function GanttChartView({
       text.setAttribute("data-gantt-week-label", "1");
       text.setAttribute("x", String(GANTT_COLUMN_WIDTH_DAY * i + GANTT_COLUMN_WIDTH_DAY * 0.5));
       text.setAttribute("y", "14");
-      text.setAttribute("fill", "#37434b");
+      text.setAttribute("fill", "var(--muted-foreground)");
       text.setAttribute("font-size", "12");
       text.setAttribute("font-family", "'Satoshi', sans-serif");
       text.textContent = formatIsoDate(date);
@@ -360,7 +360,7 @@ export function GanttChartView({
   if ((tasks ?? []).length === 0) {
     return (
       <div
-        className="flex min-h-[280px] w-full flex-1 items-center justify-center rounded-[8px] border border-[#ebedee] bg-[#f9fafb] px-4 font-['Satoshi',sans-serif] text-[14px] text-[#727d83]"
+        className="flex min-h-[280px] w-full flex-1 items-center justify-center rounded-[8px] border border-border bg-muted px-4 font-['Satoshi',sans-serif] text-[14px] text-muted-foreground"
         role="status"
       >
         No tasks in this sprint — add tasks to see the Gantt chart.
@@ -371,7 +371,7 @@ export function GanttChartView({
   return (
     <div
       ref={ganttRootRef}
-      className="gantt-readable scrollbar-none flex w-full min-w-0 flex-1 flex-col overflow-auto rounded-[8px] border border-[#ebedee] bg-white font-['Satoshi',sans-serif]"
+      className="gantt-readable scrollbar-none flex w-full min-w-0 flex-1 flex-col overflow-auto rounded-[8px] border border-border bg-card font-['Satoshi',sans-serif]"
       role="region"
       aria-label="Gantt chart of sprint tasks"
     >
@@ -385,10 +385,10 @@ export function GanttChartView({
           rowHeight={36}
           preStepsCount={GANTT_PRE_STEPS_DAY}
           barCornerRadius={4}
-          barProgressColor="#043e59"
-          barProgressSelectedColor="#0b191f"
-          barBackgroundColor="#cfecff"
-          barBackgroundSelectedColor="#9bd8ff"
+          barProgressColor="var(--primary)"
+          barProgressSelectedColor="var(--primary)"
+          barBackgroundColor="var(--secondary)"
+          barBackgroundSelectedColor="var(--accent)"
           fontFamily="'Satoshi', sans-serif"
           fontSize="13px"
           TaskListHeader={GanttNameOnlyHeader}
@@ -414,7 +414,7 @@ export function GanttChartView({
           padding-inline: 10px;
           font-size: 12px;
           line-height: 1.3;
-          color: #27333a;
+          color: var(--foreground);
         }
         .gantt-readable ._34SS0 {
           min-height: 36px;
@@ -422,7 +422,7 @@ export function GanttChartView({
         .gantt-readable ._2QjE6 {
           padding-right: 6px;
           font-size: 11px;
-          color: #4b5961;
+          color: var(--muted-foreground);
         }
         .gantt-readable ._3zRJQ {
           display: none;

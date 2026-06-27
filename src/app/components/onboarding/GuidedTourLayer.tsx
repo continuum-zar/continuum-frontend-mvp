@@ -252,7 +252,7 @@ export function GuidedTourLayer() {
       ) : null}
       {targetRect ? (
         <div
-          className="pointer-events-none fixed z-[115] rounded-[10px] ring-2 ring-[#24B5F8] ring-offset-2 ring-offset-transparent"
+          className="pointer-events-none fixed z-[115] rounded-[10px] ring-2 ring-info ring-offset-2 ring-offset-transparent"
           style={{
             top: targetRect.top - 4,
             left: targetRect.left - 4,

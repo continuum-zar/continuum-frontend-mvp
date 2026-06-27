@@ -4,6 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f9fafb" />
+    <!--
+      No-flash theme bootstrap: runs synchronously before first paint so the
+      correct theme (and matching boot-screen colors) is applied before React
+      mounts. Mirrors next-themes (storageKey "theme", class attribute,
+      defaultTheme "system") so the in-app toggle and this script stay in sync.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme");
+          var systemDark = window.matchMedia(
+            "(prefers-color-scheme: dark)"
+          ).matches;
+          var isDark =
+            stored === "dark" || ((!stored || stored === "system") && systemDark);
+          var root = document.documentElement;
+          root.classList.toggle("dark", isDark);
+          root.style.colorScheme = isDark ? "dark" : "light";
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", isDark ? "#0f172a" : "#f9fafb");
+        } catch (e) {
+          /* localStorage / matchMedia unavailable — fall back to light. */
+        }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/landing/Favicon%20(512%20x%20512).svg" />
 
     <title>Continuum — Project Management, Time Tracking & Invoicing for Software Teams</title>
@@ -130,6 +155,17 @@
         --boot-gradient-end: #faf8f4;
         --boot-text: #0b191f;
         --boot-tagline: rgba(4, 89, 128, 0.8);
+      }
+      /*
+       * Dark boot screen — the no-flash script above sets `.dark` on <html>
+       * before first paint, so these apply on the very first frame and the
+       * loading screen matches the app's dark theme (no bright flash).
+       */
+      html.dark {
+        --boot-gradient-start: #0b1f2e;
+        --boot-gradient-end: #0f172a;
+        --boot-text: #f8fafc;
+        --boot-tagline: rgba(148, 163, 184, 0.85);
       }
       html,
       body {

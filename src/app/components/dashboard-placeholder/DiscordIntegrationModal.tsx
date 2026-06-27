@@ -164,18 +164,18 @@ export function DiscordIntegrationModal({
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,560px)] w-[calc(100%-2rem)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white font-['Satoshi',sans-serif] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            "fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,560px)] w-[calc(100%-2rem)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card font-['Satoshi',sans-serif] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           )}
         >
           <DialogPrimitive.Title className="sr-only">
             Discord webhook
           </DialogPrimitive.Title>
 
-          <div className="grid w-full grid-cols-[20px_1fr_20px] shrink-0 items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="grid w-full grid-cols-[20px_1fr_20px] shrink-0 items-center border-b border-border bg-card px-9 py-4">
             <DialogClose asChild>
               <button
                 type="button"
-                className="inline-flex size-5 items-center justify-center text-[#606d76]"
+                className="inline-flex size-5 items-center justify-center text-muted-foreground"
                 aria-label="Close"
               >
                 <ArrowLeft className="size-5" />
@@ -188,7 +188,7 @@ export function DiscordIntegrationModal({
                 aria-hidden
                 className="size-5 shrink-0"
               />
-              <p className="text-center text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+              <p className="text-center text-[16px] font-medium tracking-[-0.16px] text-foreground">
                 Discord webhook
               </p>
             </div>
@@ -203,23 +203,23 @@ export function DiscordIntegrationModal({
             }}
           >
             {selectedProjectId == null ? (
-              <p className="text-left text-[15px] leading-relaxed text-[#606d76]">
+              <p className="text-left text-[15px] leading-relaxed text-muted-foreground">
                 No project available yet. Create a project first, then link one
                 Discord webhook per project.
               </p>
             ) : integrationsQuery.isLoading ? (
-              <div className="flex items-center justify-center gap-2 py-10 text-[14px] text-[#606d76]">
-                <Loader2 className="size-5 animate-spin text-[#606d76]" />
+              <div className="flex items-center justify-center gap-2 py-10 text-[14px] text-muted-foreground">
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
                 Loading…
               </div>
             ) : integrationsQuery.isError ? (
-              <p className="text-[14px] text-[#0b191f]">
+              <p className="text-[14px] text-foreground">
                 Couldn’t load integration settings. Try again later.
               </p>
             ) : (
               <div className="flex flex-col gap-5">
                 <label className="flex flex-col gap-1">
-                  <span className="text-[14px] font-medium text-[#606d76]">
+                  <span className="text-[14px] font-medium text-muted-foreground">
                     Project
                   </span>
                   <Select
@@ -229,8 +229,8 @@ export function DiscordIntegrationModal({
                   >
                     <SelectTrigger
                       className={cn(
-                        "h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] shadow-none focus:ring-2 focus:ring-ring",
-                        "[&_svg]:size-6 [&_svg]:opacity-100 [&_svg]:text-[#0b191f]",
+                        "h-10 w-full rounded-[8px] border border-border bg-card px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground shadow-none focus:ring-2 focus:ring-ring",
+                        "[&_svg]:size-6 [&_svg]:opacity-100 [&_svg]:text-foreground",
                       )}
                       aria-label="Project for Discord webhook"
                     >
@@ -256,7 +256,7 @@ export function DiscordIntegrationModal({
                   </Select>
                 </label>
 
-                <p className="text-[14px] leading-relaxed text-[#606d76]">
+                <p className="text-[14px] leading-relaxed text-muted-foreground">
                   In Discord: Server Settings → Integrations → Webhooks. Paste
                   the webhook URL below and link it to this project. Choose
                   which events fire under Settings → Notifications.
@@ -264,7 +264,7 @@ export function DiscordIntegrationModal({
                 <div className="flex flex-col gap-1">
                   <label
                     htmlFor="discord-webhook-url"
-                    className="text-[14px] font-medium text-[#606d76]"
+                    className="text-[14px] font-medium text-muted-foreground"
                   >
                     Webhook URL
                   </label>
@@ -275,18 +275,18 @@ export function DiscordIntegrationModal({
                     placeholder="https://discord.com/api/webhooks/..."
                     value={webhookUrl}
                     onChange={(e) => setWebhookUrl(e.target.value)}
-                    className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-4 text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#606d76]/40 focus-visible:border-[#1466ff] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
+                    className="h-10 w-full rounded-[8px] border border-border bg-card px-4 text-[16px] font-medium text-foreground outline-none placeholder:text-muted-foreground/40 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
                   />
                 </div>
               </div>
             )}
           </div>
 
-          <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-[#e5e7eb] bg-[#f9f9f9] px-9 py-4 sm:flex-row sm:justify-end">
+          <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-border bg-card px-9 py-4 sm:flex-row sm:justify-end">
             <DialogClose asChild>
               <button
                 type="button"
-                className="inline-flex h-10 min-w-[100px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 text-[14px] font-semibold text-[#252014] transition-colors hover:bg-[#f5f7f8]"
+                className="inline-flex h-10 min-w-[100px] items-center justify-center rounded-[8px] border border-border bg-card px-5 text-[14px] font-semibold text-foreground transition-colors hover:bg-accent"
               >
                 Cancel
               </button>
@@ -297,9 +297,9 @@ export function DiscordIntegrationModal({
                 onClick={() => testIntegration.mutate(discordIntegration.id)}
                 disabled={!canTest}
                 className={cn(
-                  "inline-flex h-10 min-w-[100px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 text-[14px] font-semibold text-[#252014] transition-colors",
+                  "inline-flex h-10 min-w-[100px] items-center justify-center rounded-[8px] border border-border bg-card px-5 text-[14px] font-semibold text-foreground transition-colors",
                   canTest
-                    ? "hover:bg-[#f5f7f8]"
+                    ? "hover:bg-accent"
                     : "cursor-not-allowed opacity-50",
                 )}
               >
@@ -322,7 +322,7 @@ export function DiscordIntegrationModal({
                   "inline-flex h-10 min-w-[100px] items-center justify-center rounded-[8px] px-5 text-[14px] font-semibold transition-[filter,opacity] duration-200",
                   canSubmit
                     ? "text-white hover:brightness-105"
-                    : "cursor-not-allowed bg-[rgba(96,109,118,0.1)] text-[#606d76]/50",
+                    : "cursor-not-allowed bg-muted text-muted-foreground/50",
                 )}
               >
                 {busy ? (

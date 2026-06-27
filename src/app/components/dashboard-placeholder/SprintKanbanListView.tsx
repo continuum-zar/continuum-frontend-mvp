@@ -133,17 +133,17 @@ export function SprintKanbanListView({
       >
         {isDragging ? (
           <div
-            className="list-kanban-drag-surface flex h-[52px] w-full shrink-0 items-center justify-center rounded-[8px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.55)] px-4"
+            className="list-kanban-drag-surface flex h-[52px] w-full shrink-0 items-center justify-center rounded-[8px] border-2 border-dashed border-border bg-card/55 px-4"
             aria-label="Original column — drop here to keep this task in this list"
           />
         ) : (
         <div
-          className="list-kanban-drag-surface bg-white flex w-full items-center gap-[24px] border-b border-[#ebedee] border-solid px-[16px] py-[6px] text-left transition-colors hover:bg-[#fafbfc]"
+          className="list-kanban-drag-surface bg-card flex w-full items-center gap-[24px] border-b border-border border-solid px-[16px] py-[6px] text-left transition-colors hover:bg-background"
         >
         <div className="content-stretch flex w-[380px] shrink-0 flex-col gap-1.5">
           <div className="flex min-w-0 items-center gap-[8px]">
-            <GripVertical className="size-4 shrink-0 text-[#9fa5a8]" aria-hidden />
-            <p className="font-['Satoshi:Medium',sans-serif] relative min-w-0 shrink truncate text-[16px] text-[#131617]">
+            <GripVertical className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <p className="font-['Satoshi:Medium',sans-serif] relative min-w-0 shrink truncate text-[16px] text-foreground">
               {task.title}
             </p>
           </div>
@@ -157,7 +157,7 @@ export function SprintKanbanListView({
           </div>
         </div>
         <p
-          className="font-['Satoshi:Medium',sans-serif] relative h-[38px] w-[245px] shrink-0 overflow-hidden text-[14px] leading-[1.35] text-[#727d83]"
+          className="font-['Satoshi:Medium',sans-serif] relative h-[38px] w-[245px] shrink-0 overflow-hidden text-[14px] leading-[1.35] text-muted-foreground"
           style={{
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -175,7 +175,7 @@ export function SprintKanbanListView({
             variant="row"
           />
         </div>
-        <p className="font-['Satoshi:Medium',sans-serif] w-[124px] shrink-0 overflow-hidden text-[14px] text-ellipsis whitespace-nowrap text-[#697378]">
+        <p className="font-['Satoshi:Medium',sans-serif] w-[124px] shrink-0 overflow-hidden text-[14px] text-ellipsis whitespace-nowrap text-muted-foreground">
           {formatDueLong(task.dueDate)}
         </p>
         <div className="content-stretch flex w-[52px] shrink-0 items-center justify-center">
@@ -192,9 +192,9 @@ export function SprintKanbanListView({
             aria-valuemax={100}
             aria-label="Checklist progress"
           >
-            <div className="relative mx-[6px] h-2 overflow-hidden rounded-[4px] bg-[#e4e8eb]">
+            <div className="relative mx-[6px] h-2 overflow-hidden rounded-[4px] bg-muted">
               <div
-                className="absolute inset-y-0 left-0 rounded-[4px] bg-[#0b191f]"
+                className="absolute inset-y-0 left-0 rounded-[4px] bg-foreground"
                 style={{ width: `${checklistPct}%` }}
               />
             </div>
@@ -251,11 +251,11 @@ export function SprintKanbanListView({
               <div className="relative size-[16px] shrink-0">
                 <img alt="" className="absolute block max-w-none size-full" src={iconSrcForKanbanColumnKind(col.kind)} />
               </div>
-              <p className="font-['Satoshi:Medium',sans-serif] min-w-0 flex-1 truncate text-[14px] leading-[normal] not-italic text-[#606d76]">
+              <p className="font-['Satoshi:Medium',sans-serif] min-w-0 flex-1 truncate text-[14px] leading-[normal] not-italic text-muted-foreground">
                 {col.title}
               </p>
               <ChevronDown
-                className={cn("size-4 shrink-0 text-[#606d76] transition-transform", isOpen && "-rotate-180")}
+                className={cn("size-4 shrink-0 text-muted-foreground transition-transform", isOpen && "-rotate-180")}
                 aria-hidden
               />
             </button>
@@ -266,23 +266,23 @@ export function SprintKanbanListView({
 
         {isOpen && (
           <div className="content-stretch flex w-full flex-col items-start overflow-clip rounded-tl-[8px] rounded-tr-[8px]">
-            <div className="border-[#ebedee] bg-[#f0f3f5] content-stretch flex w-full shrink-0 gap-[24px] border-b border-solid px-[16px] py-[12px]">
+            <div className="border-border bg-muted content-stretch flex w-full shrink-0 gap-[24px] border-b border-solid px-[16px] py-[12px]">
               <div className="content-stretch flex w-[380px] shrink-0 items-center">
-                <p className="font-['Satoshi:Medium',sans-serif] text-[16px] text-[#606d76]">Task</p>
+                <p className="font-['Satoshi:Medium',sans-serif] text-[16px] text-muted-foreground">Task</p>
               </div>
-              <p className="font-['Satoshi:Medium',sans-serif] w-[245px] shrink-0 overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-[#606d76]">
+              <p className="font-['Satoshi:Medium',sans-serif] w-[245px] shrink-0 overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-muted-foreground">
                 Description
               </p>
-              <p className="font-['Satoshi:Medium',sans-serif] w-[72px] shrink-0 overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-[#606d76]">
+              <p className="font-['Satoshi:Medium',sans-serif] w-[72px] shrink-0 overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-muted-foreground">
                 Assignee
               </p>
-              <p className="font-['Satoshi:Medium',sans-serif] w-[124px] shrink-0 overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-[#606d76]">
+              <p className="font-['Satoshi:Medium',sans-serif] w-[124px] shrink-0 overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-muted-foreground">
                 Due Date
               </p>
-              <p className="font-['Satoshi:Medium',sans-serif] w-[52px] shrink-0 overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-[#606d76]">
+              <p className="font-['Satoshi:Medium',sans-serif] w-[52px] shrink-0 overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-muted-foreground">
                 Priority
               </p>
-              <p className="font-['Satoshi:Medium',sans-serif] min-w-0 flex-[1_0_0] overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-[#606d76]">
+              <p className="font-['Satoshi:Medium',sans-serif] min-w-0 flex-[1_0_0] overflow-hidden text-[16px] text-ellipsis whitespace-nowrap text-muted-foreground">
                 Progress
               </p>
               <div className="w-[24px] shrink-0" aria-hidden />
@@ -292,7 +292,7 @@ export function SprintKanbanListView({
               className={cn(
                 "relative flex w-full flex-col items-stretch overflow-clip rounded-b-[8px] transition-colors duration-200",
                 list.length === 0 ? "min-h-[52px]" : "min-h-0",
-                dragOverCol === col.id && draggingId !== null && "bg-[rgba(249,250,251,0.75)]",
+                dragOverCol === col.id && draggingId !== null && "bg-muted/75",
               )}
             >
               {dragOverCol === col.id && draggingId !== null ? (
@@ -302,7 +302,7 @@ export function SprintKanbanListView({
                 />
               ) : null}
               {list.length === 0 ? (
-                <p className="px-4 py-6 font-['Satoshi',sans-serif] text-[13px] text-[#727d83]">
+                <p className="px-4 py-6 font-['Satoshi',sans-serif] text-[13px] text-muted-foreground">
                   {searchFilterActive ? "No tasks match your search." : emptyMsg}
                 </p>
               ) : (
@@ -321,7 +321,7 @@ export function SprintKanbanListView({
               )}
               {dragOverCol === col.id && draggingId !== null ? (
                 <div
-                  className="mx-3 mb-3 mt-2 flex min-h-[52px] items-center justify-center rounded-[8px] border-2 border-dashed border-primary bg-[rgba(36,181,248,0.06)]"
+                  className="mx-3 mb-3 mt-2 flex min-h-[52px] items-center justify-center rounded-[8px] border-2 border-dashed border-primary bg-primary/5"
                   aria-label="Drop here to move this task to this list"
                 />
               ) : null}

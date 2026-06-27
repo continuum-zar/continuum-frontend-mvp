@@ -11,7 +11,7 @@ const imgLucideMessageCircle = mcpAsset("ff8c6057-7f55-46be-8899-4cb59d2eda1a");
 const pillShell =
   "content-stretch flex gap-[4px] items-center justify-center px-[4px] py-[2px] relative rounded-[16px] shrink-0";
 const pillText =
-  "font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap";
+  "font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap";
 
 type KanbanTaskMetaPillsProps = {
   attachments: number;
@@ -55,11 +55,11 @@ export function KanbanTaskMetaPills({
         <p className={pillText}>{comments}</p>
       </div>
       <div className={`${pillShell}${faded}`} title="Linked branches">
-        <GitBranch size={14} className="shrink-0 text-[#606d76]" aria-hidden />
+        <GitBranch size={14} className="shrink-0 text-muted-foreground" aria-hidden />
         <p className={pillText}>{branchCount}</p>
       </div>
       <div className={`${pillShell}${faded}`} title="Dependencies">
-        <Link2 size={14} className="shrink-0 text-[#606d76]" aria-hidden />
+        <Link2 size={14} className="shrink-0 text-muted-foreground" aria-hidden />
         <p className={pillText}>{dependencyCount}</p>
       </div>
     </div>

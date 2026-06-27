@@ -236,13 +236,13 @@ export function AssignMemberModal({
                           </div>
                           <div className="flex min-w-0 flex-1 flex-col justify-center">
                             <p
-                              className="truncate font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f]"
+                              className="truncate font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-foreground"
                               id={`${rowId}-label`}
                             >
                               {primary}
                             </p>
                             {secondary ? (
-                              <p className="truncate font-['Inter',sans-serif] text-[12px] font-normal leading-[18px] text-[#727d83]">
+                              <p className="truncate font-['Inter',sans-serif] text-[12px] font-normal leading-[18px] text-muted-foreground">
                                 {secondary}
                               </p>
                             ) : null}
@@ -259,10 +259,10 @@ export function AssignMemberModal({
                                 toggleMember(m.userId, !isAssigned);
                               }}
                               className={cn(
-                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40",
+                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black outline-none focus-visible:ring-2 focus-visible:ring-info/40",
                                 isAssigned
-                                  ? "bg-[#24B5F8]"
-                                  : "bg-[#f9f9f9]",
+                                  ? "bg-info"
+                                  : "bg-card",
                                 assignBusy && "cursor-not-allowed opacity-50",
                               )}
                             >
@@ -273,7 +273,7 @@ export function AssignMemberModal({
                             {isAssigned ? (
                               <button
                                 type="button"
-                                className="shrink-0 font-['Inter',sans-serif] text-[13px] font-medium text-[#727d83] transition-colors hover:text-[#0b191f] disabled:pointer-events-none disabled:opacity-50"
+                                className="shrink-0 font-['Inter',sans-serif] text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
                                 disabled={assignBusy}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -307,7 +307,7 @@ export function AssignMemberModal({
               disabled={!taskId || setAssigneesMutation.isPending}
               onClick={saveDraft}
               className={cn(
-                "rounded-lg bg-[#0b191f] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90",
+                "rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90",
                 (!taskId || setAssigneesMutation.isPending) && "pointer-events-none opacity-50",
               )}
             >

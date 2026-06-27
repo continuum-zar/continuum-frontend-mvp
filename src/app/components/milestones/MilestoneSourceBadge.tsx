@@ -31,7 +31,7 @@ export function MilestoneSourceBadge({
                 <TooltipTrigger asChild>
                     <span
                         className={cn(
-                            'inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]',
+                            'inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[#4f46e5]',
                             className,
                         )}
                         aria-label="Generated from a meeting"
@@ -49,7 +49,7 @@ export function MilestoneSourceBadge({
             <TooltipTrigger asChild>
                 <span
                     className={cn(
-                        "inline-flex h-5 shrink-0 items-center gap-1 rounded-full bg-[#eef2ff] px-2 font-['Satoshi',sans-serif] text-[10px] font-semibold uppercase tracking-wide text-[#4f46e5]",
+                        "inline-flex h-5 shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 font-['Satoshi',sans-serif] text-[10px] font-semibold uppercase tracking-wide text-[#4f46e5]",
                         className,
                     )}
                 >

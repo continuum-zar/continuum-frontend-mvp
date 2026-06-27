@@ -68,8 +68,8 @@ export default function UsageOptionCard(props: UsageOptionCardProps) {
         minHeight: "140px",
         borderRadius: "16px",
         padding: "36px",
-        border: isActive ? "1.5px solid #0B191F" : "1px solid #D3D7DA",
-        backgroundColor: "white",
+        border: isActive ? "1.5px solid var(--foreground)" : "1px solid var(--border)",
+        backgroundColor: "var(--card)",
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
@@ -100,7 +100,7 @@ export default function UsageOptionCard(props: UsageOptionCardProps) {
             fontSize: "20px",
             lineHeight: "100%",
             letterSpacing: "0%",
-            color: isActive ? "#0B191F" : "#727D83",
+            color: isActive ? "var(--foreground)" : "var(--muted-foreground)",
             transition: "color 0.2s ease",
           }}
         >
@@ -113,7 +113,7 @@ export default function UsageOptionCard(props: UsageOptionCardProps) {
             fontSize: "16px",
             lineHeight: "100%",
             letterSpacing: "0%",
-            color: isActive ? "#0B191F" : "#727D83",
+            color: isActive ? "var(--foreground)" : "var(--muted-foreground)",
             opacity: isActive ? 1 : 0.9,
             transition: "color 0.2s ease, opacity 0.2s ease",
           }}

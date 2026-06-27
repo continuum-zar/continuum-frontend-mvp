@@ -805,7 +805,7 @@ export function WelcomeAiChatModal({
             if (taskReviewOpen) e.preventDefault();
           }}
           className={cn(
-            "isolate data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2 fixed z-50 flex flex-col items-start overflow-hidden rounded-[19px] border border-solid border-[#edecea] bg-white shadow-[0px_86px_24px_0px_rgba(11,25,31,0),0px_55px_22px_0px_rgba(11,25,31,0.01),0px_31px_19px_0px_rgba(11,25,31,0.03),0px_14px_14px_0px_rgba(11,25,31,0.04),0px_3px_8px_0px_rgba(11,25,31,0.05)] duration-200",
+            "isolate data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2 fixed z-50 flex flex-col items-start overflow-hidden rounded-[19px] border border-solid border-border bg-card shadow-[0px_86px_24px_0px_rgba(11,25,31,0),0px_55px_22px_0px_rgba(11,25,31,0.01),0px_31px_19px_0px_rgba(11,25,31,0.03),0px_14px_14px_0px_rgba(11,25,31,0.04),0px_3px_8px_0px_rgba(11,25,31,0.05)] duration-200",
             "bottom-6 right-6 top-auto left-auto max-h-[min(537px,calc(100vh-32px))] w-[min(395px,calc(100vw-32px))] max-w-[395px] translate-x-0 translate-y-0",
             "h-[537px] outline-none",
           )}
@@ -817,14 +817,14 @@ export function WelcomeAiChatModal({
           <div
             className={cn(
               "relative z-10 flex w-full shrink-0 items-center justify-between",
-              isChat ? "bg-white px-[15px] pb-0 pt-[15px]" : "bg-white py-2 pl-2 pr-4",
+              isChat ? "bg-card px-[15px] pb-0 pt-[15px]" : "bg-card py-2 pl-2 pr-4",
             )}
           >
             <div className="relative flex min-w-0 shrink items-center gap-1.5 rounded-[40px] py-1 pr-2 pl-2">
               <p
                 className={cn(
                   "relative min-w-0 shrink truncate font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal]",
-                  usePromptInHeader ? "text-[#727d83]" : "text-[#151515]",
+                  usePromptInHeader ? "text-muted-foreground" : "text-foreground",
                 )}
               >
                 {usePromptInHeader ? (useReportingApi ? reportingHeaderSubtitle ?? "" : selectedPrompt) : "New AI chat"}
@@ -860,7 +860,7 @@ export function WelcomeAiChatModal({
               )}
               <button
                 type="button"
-                className="relative flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-[24px] border-0 bg-white p-0 text-[#727d83]"
+                className="relative flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-[24px] border-0 bg-card p-0 text-muted-foreground"
                 aria-label={isChat ? "Minimize" : "Close"}
                 onClick={() => onOpenChange(false)}
               >
@@ -882,10 +882,10 @@ export function WelcomeAiChatModal({
           {!isChat ? (
             <>
               <div className="relative z-[1] flex h-[494px] w-full shrink-0 flex-col items-start">
-                <div className="relative flex min-h-0 w-full min-w-0 max-w-[395px] flex-1 flex-col items-start gap-4 overflow-x-clip overflow-y-auto bg-white px-4 pb-[137px] pt-12">
+                <div className="relative flex min-h-0 w-full min-w-0 max-w-[395px] flex-1 flex-col items-start gap-4 overflow-x-clip overflow-y-auto bg-card px-4 pb-[137px] pt-12">
                   <div className="relative flex w-full shrink-0 flex-col items-start gap-[15px]">
                     <div className="relative flex w-full shrink-0 items-start">
-                      <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[15.75px] font-medium not-italic leading-[normal] text-[#0b191f]">
+                      <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[15.75px] font-medium not-italic leading-[normal] text-foreground">
                         {showQuickActions
                           ? "Ask me about your project"
                           : "Describe the work, I'll draft the tasks"}
@@ -900,11 +900,11 @@ export function WelcomeAiChatModal({
                           type="button"
                           onClick={() => startPrompt(label)}
                           className={cn(
-                            "relative flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-[32px] border border-solid border-[#ededed] bg-white px-4 py-2",
+                            "relative flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-[32px] border border-solid border-border bg-card px-4 py-2",
                             i === 0 ? "text-left" : "",
                           )}
                         >
-                          <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#727d83]">
+                          <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-muted-foreground">
                             {label}
                           </p>
                         </button>
@@ -919,11 +919,11 @@ export function WelcomeAiChatModal({
                           type="button"
                           onClick={() => void runGetStartedPrompt(label)}
                           className={cn(
-                            "relative flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-[32px] border border-solid border-[#ededed] bg-white px-4 py-2",
+                            "relative flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-[32px] border border-solid border-border bg-card px-4 py-2",
                             i === 0 ? "text-left" : "",
                           )}
                         >
-                          <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#727d83]">
+                          <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-muted-foreground">
                             {label}
                           </p>
                         </button>
@@ -932,10 +932,10 @@ export function WelcomeAiChatModal({
                   ) : null}
                 </div>
 
-                <div className="pointer-events-none absolute bottom-0 left-0 flex w-full max-w-[395px] flex-col items-center bg-gradient-to-b from-[rgba(255,255,255,0)] to-[25.182%] to-white px-4 pb-[27px]">
+                <div className="pointer-events-none absolute bottom-0 left-0 flex w-full max-w-[395px] flex-col items-center bg-gradient-to-b from-transparent to-[25.182%] to-card px-4 pb-[27px]">
                   <div className="pointer-events-auto w-full">
                     {useReportingApi && (
-                      <div className="relative mb-[-11px] flex w-full shrink-0 items-center justify-center rounded-tl-[14px] rounded-tr-[14px] bg-[#e7f2fc] px-2.5 pb-[21px] pt-2.5">
+                      <div className="relative mb-[-11px] flex w-full shrink-0 items-center justify-center rounded-tl-[14px] rounded-tr-[14px] bg-primary/10 px-2.5 pb-[21px] pt-2.5">
                         <div className="relative flex w-[346px] max-w-full shrink-0 items-center gap-2">
                           <div className="relative flex shrink-0 items-center">
                             <div className="relative size-[13px] shrink-0 overflow-clip">
@@ -946,12 +946,12 @@ export function WelcomeAiChatModal({
                               </div>
                             </div>
                           </div>
-                          <p className="relative shrink-0 whitespace-nowrap font-['Inter',sans-serif] text-[11px] font-medium not-italic leading-[0] text-[#727d83]">
+                          <p className="relative shrink-0 whitespace-nowrap font-['Inter',sans-serif] text-[11px] font-medium not-italic leading-[0] text-muted-foreground">
                             <span className="leading-[normal]">The AI is restricted to reporting on system states. </span>
                             <button
                               type="button"
                               title={REPORTING_LEARN_MORE}
-                              className="border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[11px] font-medium not-italic leading-normal text-[#2E96F9]"
+                              className="border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[11px] font-medium not-italic leading-normal text-primary"
                             >
                               Learn more
                             </button>
@@ -1019,15 +1019,15 @@ export function WelcomeAiChatModal({
             />
           ) : (
             <div className="relative z-[5] flex min-h-0 w-full flex-1 flex-col">
-              <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-x-clip overflow-y-auto bg-white px-[15px] pb-4 pt-12">
+              <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-x-clip overflow-y-auto bg-card px-[15px] pb-4 pt-12">
                 <div className="flex w-full flex-col items-end justify-center gap-4">
-                  <div className="flex w-full items-start justify-center gap-2 whitespace-nowrap text-center font-['Inter',sans-serif] text-[11px] font-medium leading-[normal] text-[#727d83]">
+                  <div className="flex w-full items-start justify-center gap-2 whitespace-nowrap text-center font-['Inter',sans-serif] text-[11px] font-medium leading-[normal] text-muted-foreground">
                     <p>Today</p>
                     <p>Continuum AI</p>
                   </div>
                   <div className="flex w-full justify-end">
-                    <div className="max-w-[min(100%,340px)] rounded-[32px] bg-[#edf0f3] px-4 py-2">
-                      <p className="whitespace-pre-wrap break-words text-left font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#0b191f]">
+                    <div className="max-w-[min(100%,340px)] rounded-[32px] bg-muted px-4 py-2">
+                      <p className="whitespace-pre-wrap break-words text-left font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-foreground">
                         {selectedPrompt}
                       </p>
                     </div>
@@ -1040,7 +1040,7 @@ export function WelcomeAiChatModal({
                           <div className="flex w-full flex-col items-start gap-2">
                             <div className="flex w-full items-center gap-2 opacity-50">
                               <SpinnerGradientThinking />
-                              <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
+                              <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-foreground">
                                 Thinking...
                               </p>
                             </div>
@@ -1058,7 +1058,7 @@ export function WelcomeAiChatModal({
                               <div className="relative size-4 shrink-0">
                                 <img alt="" className="absolute block size-full max-w-none" src={imgChevronRightThought} />
                               </div>
-                              <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
+                              <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-foreground">
                                 Thought
                               </p>
                             </div>
@@ -1077,13 +1077,13 @@ export function WelcomeAiChatModal({
                               <div className="relative size-4 shrink-0">
                                 <img alt="" className="absolute block size-full max-w-none" src={imgChevronRightThought} />
                               </div>
-                              <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
+                              <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-foreground">
                                 Thought
                               </p>
                             </div>
 
                             {apiError ? (
-                              <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-[#dc2626]">
+                              <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-destructive">
                                 {apiError}
                               </p>
                             ) : (
@@ -1094,7 +1094,7 @@ export function WelcomeAiChatModal({
                                   </div>
                                 ) : null}
                                 {generatedSummary ? (
-                                  <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-[#0b191f]">
+                                  <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-foreground">
                                     {generatedSummary}
                                   </p>
                                 ) : null}
@@ -1117,7 +1117,7 @@ export function WelcomeAiChatModal({
                                   <button
                                     type="button"
                                     onClick={() => void proceedToCreateFromPlan()}
-                                    className="mt-1 flex w-full items-center justify-center gap-2 rounded-[8px] bg-[#2798f5] px-4 py-2 font-['Satoshi',sans-serif] text-[13px] font-bold text-white outline-none transition-colors hover:bg-[#1e87e0]"
+                                    className="mt-1 flex w-full items-center justify-center gap-2 rounded-[8px] bg-primary px-4 py-2 font-['Satoshi',sans-serif] text-[13px] font-bold text-white outline-none transition-colors hover:bg-primary"
                                   >
                                     Create tasks from this plan
                                   </button>
@@ -1125,7 +1125,7 @@ export function WelcomeAiChatModal({
 
                                 {generatedTasks.length > 0 && (
                                   <>
-                                    <div className="mt-1 w-full rounded-[12px] border border-solid border-[#ededed] bg-white p-3">
+                                    <div className="mt-1 w-full rounded-[12px] border border-solid border-border bg-card p-3">
                                       <ul className="flex flex-col gap-1">
                                         {generatedTasks.map((task, i) => (
                                           <li key={`${task.title}-${i}`} className="list-none">
@@ -1135,11 +1135,11 @@ export function WelcomeAiChatModal({
                                                 setTaskReviewIndex(i);
                                                 setTaskReviewOpen(true);
                                               }}
-                                              className="w-full rounded-md border-0 bg-transparent py-1.5 text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f] transition-colors hover:bg-[#f5f5f5]"
+                                              className="w-full rounded-md border-0 bg-transparent py-1.5 text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-foreground transition-colors hover:bg-card"
                                             >
                                               <span className="block">{task.title}</span>
                                               <span className="mt-1 flex flex-wrap items-center gap-2">
-                                                <span className="inline-flex items-center gap-1 rounded-full bg-[#f3f4f6] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]">
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-muted-foreground">
                                                   <Flag
                                                     className={cn(
                                                       "size-3 shrink-0",
@@ -1150,19 +1150,19 @@ export function WelcomeAiChatModal({
                                                   {taskPriorityLabel(task.priority ?? "medium")}
                                                 </span>
                                                 {task.estimated_hours != null ? (
-                                                  <span className="rounded-full bg-[#edf0f3] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium tabular-nums text-[#606d76]">
+                                                  <span className="rounded-full bg-muted px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium tabular-nums text-muted-foreground">
                                                     ~{task.estimated_hours} h
                                                   </span>
                                                 ) : null}
                                               </span>
                                               {task.resources?.length ? (
-                                                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#e7f2fc] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#2f6df6]">
+                                                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-primary">
                                                   <Link2 className="size-3" aria-hidden />
                                                   {task.resources.length} Figma resource{task.resources.length === 1 ? "" : "s"}
                                                 </span>
                                               ) : null}
                                               {task.dependency_indexes?.length ? (
-                                                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#f3f4f6] px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-[#606d76]">
+                                                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 font-['Satoshi',sans-serif] text-[10px] font-medium text-muted-foreground">
                                                   Depends on {task.dependency_indexes.length} task{task.dependency_indexes.length === 1 ? "" : "s"}
                                                 </span>
                                               ) : null}
@@ -1179,10 +1179,10 @@ export function WelcomeAiChatModal({
                                       className={cn(
                                         "mt-2 flex w-full items-center justify-center gap-2 rounded-[8px] px-4 py-2 font-['Satoshi',sans-serif] text-[13px] font-bold outline-none transition-colors",
                                         confirmed
-                                          ? "cursor-default bg-[#d7fede] text-[#108e27]"
+                                          ? "cursor-default bg-success/10 text-success"
                                           : confirming
-                                            ? "cursor-wait bg-[#2798f5]/80 text-white"
-                                            : "cursor-pointer bg-[#2798f5] text-white hover:bg-[#1e87e0]",
+                                            ? "cursor-wait bg-primary/80 text-white"
+                                            : "cursor-pointer bg-primary text-white hover:bg-primary",
                                       )}
                                     >
                                       {confirmed ? (
@@ -1266,16 +1266,16 @@ function ModeSwitcher({
 }) {
   const segmentClass = (active: boolean) =>
     cn(
-      "shrink-0 cursor-pointer rounded-[999px] border-0 px-2.5 py-0.5 font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] tracking-[-0.12px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#2E96F9] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50",
+      "shrink-0 cursor-pointer rounded-[999px] border-0 px-2.5 py-0.5 font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] tracking-[-0.12px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50",
       active
-        ? "bg-white text-[#0b191f] shadow-[0px_1px_2px_0px_rgba(14,14,34,0.08)]"
-        : "bg-transparent text-[#727d83] hover:text-[#0b191f]",
+        ? "bg-card text-foreground shadow-[0px_1px_2px_0px_rgba(14,14,34,0.08)]"
+        : "bg-transparent text-muted-foreground hover:text-foreground",
     );
   return (
     <div
       role="radiogroup"
       aria-label="Assistant mode"
-      className="inline-flex shrink-0 items-center gap-0.5 rounded-[999px] bg-[#f3f5f7] p-0.5"
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-[999px] bg-muted p-0.5"
     >
       <button
         type="button"
@@ -1362,7 +1362,7 @@ function ComposerWelcome({
               a.isImage && a.previewUrl ? (
                 <span
                   key={a.id}
-                  className="relative inline-flex overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm"
+                  className="relative inline-flex overflow-hidden rounded-[8px] border border-solid border-border bg-card shadow-sm"
                 >
                   <img
                     src={a.previewUrl}
@@ -1381,24 +1381,24 @@ function ComposerWelcome({
               ) : (
                 <span
                   key={a.id}
-                  className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] bg-white shadow-sm"
+                  className="inline-flex max-w-full items-stretch overflow-hidden rounded-[8px] border border-solid border-border bg-card shadow-sm"
                 >
                   <span
-                    className="flex w-9 shrink-0 items-center justify-center self-stretch bg-[#edf0f3]"
+                    className="flex w-9 shrink-0 items-center justify-center self-stretch bg-muted"
                     aria-hidden
                   >
                     <FileText
-                      className="size-4 shrink-0 text-[#606d76]"
+                      className="size-4 shrink-0 text-muted-foreground"
                       strokeWidth={1.75}
                     />
                   </span>
-                  <span className="min-w-0 max-w-[180px] truncate border-l border-solid border-[#ededed] px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-[#0b191f]">
+                  <span className="min-w-0 max-w-[180px] truncate border-l border-solid border-border px-2.5 py-1.5 font-['Satoshi',sans-serif] text-[13px] font-medium leading-normal text-foreground">
                     {a.fileContent.filename}
                   </span>
                   <button
                     type="button"
                     onClick={() => onRemoveAttachment(a.id)}
-                    className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-[#606d76] hover:text-[#0b191f]"
+                    className="inline-flex shrink-0 items-center justify-center self-center pr-1.5 text-muted-foreground hover:text-foreground"
                     aria-label={`Remove ${a.fileContent.filename}`}
                   >
                     <X className="size-3.5" strokeWidth={2} />
@@ -1409,7 +1409,7 @@ function ComposerWelcome({
           </div>
         )}
 
-        <div className="flex min-h-[88px] flex-col items-stretch gap-1 rounded-[14px] border border-solid border-[#edecea] bg-white pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
+        <div className="flex min-h-[88px] flex-col items-stretch gap-1 rounded-[14px] border border-solid border-border bg-card pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
           <div className="relative flex w-full min-h-0 items-start justify-center px-[13px]">
             <label className="sr-only" htmlFor={inputId}>
               Message
@@ -1437,7 +1437,7 @@ function ComposerWelcome({
               minRows={1}
               maxRows={9}
               disabled={disabled}
-              className="w-full min-h-[40px] resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-[#0b191f] opacity-50 placeholder:text-[#727d83] placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0 disabled:opacity-40"
+              className="w-full min-h-[40px] resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[1.35] tracking-[-0.13px] text-foreground opacity-50 placeholder:text-muted-foreground placeholder:opacity-50 focus:opacity-100 focus:outline-none focus:ring-0 disabled:opacity-40"
             />
           </div>
           <div className="relative flex w-full shrink-0 items-center justify-between gap-2 px-[11px]">
@@ -1451,7 +1451,7 @@ function ComposerWelcome({
               >
                 {uploadPending ? (
                   <Loader2
-                    className="size-[18px] animate-spin text-[#727d83]"
+                    className="size-[18px] animate-spin text-muted-foreground"
                     aria-hidden
                   />
                 ) : (
@@ -1471,7 +1471,7 @@ function ComposerWelcome({
               ) : null}
             </div>
             <div className="relative flex shrink-0 items-center gap-2.5">
-              <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#727d83]">
+              <p className="relative shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-muted-foreground">
                 Auto
               </p>
               <button
@@ -1480,10 +1480,10 @@ function ComposerWelcome({
                 onClick={() => onSubmit?.()}
                 aria-label="Send message"
                 className={cn(
-                  "relative flex size-[26px] shrink-0 items-center justify-center rounded-[999px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#2E96F9] focus-visible:ring-offset-2 disabled:pointer-events-none",
+                  "relative flex size-[26px] shrink-0 items-center justify-center rounded-[999px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none",
                   canSend
-                    ? "cursor-pointer bg-[#2E96F9] text-white"
-                    : "cursor-default bg-[#f9f9f8] text-[#727d83] opacity-40",
+                    ? "cursor-pointer bg-primary text-white"
+                    : "cursor-default bg-card text-muted-foreground opacity-40",
                 )}
               >
                 <ArrowUp className="size-[18px] shrink-0" strokeWidth={2} aria-hidden />
@@ -1555,7 +1555,7 @@ function SourceContextPicker({
 
   return (
     <div className="mb-2 flex w-full flex-col gap-1.5">
-      <p className="font-['Inter',sans-serif] text-[11px] font-medium leading-[normal] text-[#727d83]">
+      <p className="font-['Inter',sans-serif] text-[11px] font-medium leading-[normal] text-muted-foreground">
         Source context (optional)
       </p>
       {rows.map((row) => (
@@ -1577,7 +1577,7 @@ function SourceContextPicker({
         type="button"
         onClick={handleAddRow}
         disabled={!canAddRow}
-        className="flex h-7 w-fit items-center gap-1 rounded-[6px] px-2 font-['Inter',sans-serif] text-[12px] font-medium text-[#2E96F9] outline-none transition-colors hover:bg-[#eaf3fe] focus-visible:bg-[#eaf3fe] disabled:cursor-not-allowed disabled:text-[#9aa4ab] disabled:hover:bg-transparent"
+        className="flex h-7 w-fit items-center gap-1 rounded-[6px] px-2 font-['Inter',sans-serif] text-[12px] font-medium text-primary outline-none transition-colors hover:bg-primary/10 focus-visible:bg-primary/10 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:hover:bg-transparent"
       >
         <span aria-hidden>+</span>
         <span>Add source</span>
@@ -1685,16 +1685,16 @@ function SourceContextRow({
             setBranchOpen(false);
           }}
           disabled={reposLoading || reposError}
-          className="flex h-8 w-full items-center gap-1.5 rounded-[8px] border border-solid border-[#ededed] bg-white px-2.5 font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f] outline-none transition-colors hover:border-[#cdd2d5] focus-visible:border-[#2E96F9] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-8 w-full items-center gap-1.5 rounded-[8px] border border-solid border-border bg-card px-2.5 font-['Satoshi',sans-serif] text-[13px] font-medium text-foreground outline-none transition-colors hover:border-border focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           {reposLoading ? (
-            <Loader2 className="size-3.5 shrink-0 animate-spin text-[#727d83]" aria-hidden />
+            <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" aria-hidden />
           ) : null}
           <TruncatedText
             text={repoButtonLabel}
             className={cn(
               "flex-1 text-left",
-              !selectedRepo && !reposLoading ? "text-[#727d83]" : "",
+              !selectedRepo && !reposLoading ? "text-muted-foreground" : "",
             )}
           />
           {selectedRepo ? (
@@ -1705,19 +1705,19 @@ function SourceContextRow({
                 onSelectRepo(null);
               }}
               aria-label="Clear repository"
-              className="inline-flex size-4 shrink-0 items-center justify-center rounded-[4px] text-[#727d83] hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+              className="inline-flex size-4 shrink-0 items-center justify-center rounded-[4px] text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <X className="size-3" strokeWidth={2} aria-hidden />
             </button>
           ) : (
-            <ChevronDownIcon className="size-3.5 shrink-0 text-[#727d83]" aria-hidden />
+            <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
           )}
         </button>
         {repoOpen && !reposLoading && !reposError && availableRepos.length > 0 && (
           <div
             role="listbox"
             aria-label="Repositories"
-            className="absolute bottom-full left-0 z-30 mb-1 max-h-[200px] w-full overflow-y-auto rounded-[8px] border border-solid border-[#ededed] bg-white py-1 shadow-[0px_8px_16px_0px_rgba(11,25,31,0.08)]"
+            className="absolute bottom-full left-0 z-30 mb-1 max-h-[200px] w-full overflow-y-auto rounded-[8px] border border-solid border-border bg-card py-1 shadow-[0px_8px_16px_0px_rgba(11,25,31,0.08)]"
           >
             {availableRepos.map((r) => {
               const isSelected = selectedRepo?.id === r.id;
@@ -1732,14 +1732,14 @@ function SourceContextRow({
                     setRepoOpen(false);
                   }}
                   className={cn(
-                    "flex w-full items-start gap-2 px-2.5 py-1.5 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-[#f5f7f8]",
-                    isSelected ? "font-medium text-[#0b191f]" : "text-[#606d76]",
+                    "flex w-full items-start gap-2 px-2.5 py-1.5 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-card",
+                    isSelected ? "font-medium text-foreground" : "text-muted-foreground",
                   )}
                 >
                   <TruncatedText text={r.repositoryName} className="flex-1" />
                   {isSelected ? (
                     <Check
-                      className="size-3.5 shrink-0 text-[#2E96F9]"
+                      className="size-3.5 shrink-0 text-primary"
                       strokeWidth={2.5}
                       aria-hidden
                     />
@@ -1762,30 +1762,30 @@ function SourceContextRow({
             setRepoOpen(false);
           }}
           disabled={branchDisabled}
-          className="flex h-8 w-full items-center gap-1.5 rounded-[8px] border border-solid border-[#ededed] bg-white px-2.5 font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f] outline-none transition-colors hover:border-[#cdd2d5] focus-visible:border-[#2E96F9] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-8 w-full items-center gap-1.5 rounded-[8px] border border-solid border-border bg-card px-2.5 font-['Satoshi',sans-serif] text-[13px] font-medium text-foreground outline-none transition-colors hover:border-border focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <GitBranch className="size-3.5 shrink-0 text-[#727d83]" aria-hidden />
+          <GitBranch className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
           <TruncatedText
             text={branchButtonLabel}
             className={cn(
               "flex-1 text-left",
-              !row.branch ? "text-[#727d83]" : "",
+              !row.branch ? "text-muted-foreground" : "",
             )}
           />
-          <ChevronDownIcon className="size-3.5 shrink-0 text-[#727d83]" aria-hidden />
+          <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
         </button>
         {branchOpen && !branchesLoading && selectedRepo != null && (
           <div
             role="listbox"
             aria-label="Branches"
-            className="absolute bottom-full left-0 z-30 mb-1 max-h-[200px] w-full overflow-y-auto rounded-[8px] border border-solid border-[#ededed] bg-white py-1 shadow-[0px_8px_16px_0px_rgba(11,25,31,0.08)]"
+            className="absolute bottom-full left-0 z-30 mb-1 max-h-[200px] w-full overflow-y-auto rounded-[8px] border border-solid border-border bg-card py-1 shadow-[0px_8px_16px_0px_rgba(11,25,31,0.08)]"
           >
             {branchesError ? (
-              <p className="px-2.5 py-1.5 font-['Inter',sans-serif] text-[12px] text-[#dc2626]">
+              <p className="px-2.5 py-1.5 font-['Inter',sans-serif] text-[12px] text-destructive">
                 Couldn&apos;t load branches.
               </p>
             ) : branches.length === 0 ? (
-              <p className="px-2.5 py-1.5 font-['Inter',sans-serif] text-[12px] text-[#727d83]">
+              <p className="px-2.5 py-1.5 font-['Inter',sans-serif] text-[12px] text-muted-foreground">
                 No branches found.
               </p>
             ) : (
@@ -1802,19 +1802,19 @@ function SourceContextRow({
                       setBranchOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center gap-2 px-2.5 py-1.5 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-[#f5f7f8]",
-                      isSelected ? "font-medium text-[#0b191f]" : "text-[#606d76]",
+                      "flex w-full items-center gap-2 px-2.5 py-1.5 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-card",
+                      isSelected ? "font-medium text-foreground" : "text-muted-foreground",
                     )}
                   >
                     <TruncatedText text={b.name} className="flex-1" />
                     {b.default ? (
-                      <span className="shrink-0 font-['Inter',sans-serif] text-[10px] uppercase tracking-[0.06em] text-[#727d83]">
+                      <span className="shrink-0 font-['Inter',sans-serif] text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
                         default
                       </span>
                     ) : null}
                     {isSelected ? (
                       <Check
-                        className="size-3.5 shrink-0 text-[#2E96F9]"
+                        className="size-3.5 shrink-0 text-primary"
                         strokeWidth={2.5}
                         aria-hidden
                       />
@@ -1832,7 +1832,7 @@ function SourceContextRow({
           type="button"
           onClick={onRemove}
           aria-label="Remove source"
-          className="inline-flex size-7 shrink-0 items-center justify-center rounded-[6px] text-[#727d83] outline-none hover:bg-[#f3f5f7] hover:text-[#0b191f] focus-visible:bg-[#f3f5f7]"
+          className="inline-flex size-7 shrink-0 items-center justify-center rounded-[6px] text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:bg-muted"
         >
           <X className="size-3.5" strokeWidth={2} aria-hidden />
         </button>
@@ -1883,9 +1883,9 @@ function ReportingAssistantPanel({
 }) {
   return (
     <div className="relative z-[5] flex min-h-0 w-full flex-1 flex-col">
-      <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-x-clip overflow-y-auto bg-white px-[15px] pb-4 pt-12">
+      <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-x-clip overflow-y-auto bg-card px-[15px] pb-4 pt-12">
         <div className="flex w-full flex-col items-stretch justify-start gap-4">
-          <div className="flex w-full items-start justify-center gap-2 whitespace-nowrap text-center font-['Inter',sans-serif] text-[11px] font-medium leading-[normal] text-[#727d83]">
+          <div className="flex w-full items-start justify-center gap-2 whitespace-nowrap text-center font-['Inter',sans-serif] text-[11px] font-medium leading-[normal] text-muted-foreground">
             <p>Today</p>
             <p>Continuum AI</p>
           </div>
@@ -1893,8 +1893,8 @@ function ReportingAssistantPanel({
             <Fragment key={m.id}>
               {m.role === "user" ? (
                 <div className="flex w-full justify-end">
-                  <div className="flex max-w-[min(100%,340px)] shrink-0 items-center justify-center rounded-[32px] bg-[#edf0f3] px-4 py-2">
-                    <p className="max-w-full whitespace-pre-wrap break-words text-left font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#0b191f]">
+                  <div className="flex max-w-[min(100%,340px)] shrink-0 items-center justify-center rounded-[32px] bg-muted px-4 py-2">
+                    <p className="max-w-full whitespace-pre-wrap break-words text-left font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-foreground">
                       {m.content}
                     </p>
                   </div>
@@ -1905,19 +1905,19 @@ function ReportingAssistantPanel({
                     <div className="relative size-4 shrink-0">
                       <img alt="" className="absolute block size-full max-w-none" src={imgChevronRightThought} />
                     </div>
-                    <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
+                    <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-foreground">
                       Thought
                     </p>
                   </div>
                   {m.isError ? (
-                    <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-[#dc2626]">
+                    <p className="w-full font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] not-italic text-destructive">
                       {m.content}
                     </p>
                   ) : (
                     <PlannerAssistantMarkdown content={m.content} />
                   )}
                   {typeof m.confidence === "number" && m.confidence < 0.5 && !m.isError && (
-                    <p className="w-full font-['Inter',sans-serif] text-[11px] font-normal leading-[normal] text-[#b45309]">
+                    <p className="w-full font-['Inter',sans-serif] text-[11px] font-normal leading-[normal] text-warning">
                       Lower confidence — verify against the project dashboard if needed.
                     </p>
                   )}
@@ -1933,7 +1933,7 @@ function ReportingAssistantPanel({
               />
               <div className="flex w-full items-center gap-2 opacity-50">
                 <SpinnerGradientThinking />
-                <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
+                <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-foreground">
                   Thinking...
                 </p>
               </div>
@@ -1968,18 +1968,14 @@ function ReportingAssistantPanel({
 function GetStartedTaskBar({ onStop }: { onStop: () => void }) {
   return (
     <div className="pointer-events-auto w-full max-w-[368px] shadow-[0px_12px_24px_rgba(11,25,31,0.12)]">
-      <div className="flex items-center gap-2 rounded-[16px] bg-[#0b191f] py-2 pl-4 pr-2">
-        <p className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-white">
+      <div className="flex items-center gap-2 rounded-[16px] bg-foreground py-2 pl-4 pr-2">
+        <p className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-background">
           Generating tasks...
         </p>
         <button
           type="button"
           onClick={onStop}
-          className="flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-lg px-4 py-2 font-['Satoshi',sans-serif] text-[14px] font-bold leading-[normal] text-white outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-white"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, rgb(235, 67, 53) 0%, rgb(235, 67, 53) 100%)",
-          }}
+          className="flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-destructive px-4 py-2 font-['Satoshi',sans-serif] text-[14px] font-bold leading-[normal] text-white outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-white"
         >
           Stop
         </button>
@@ -1992,9 +1988,9 @@ function GetStartedTaskBar({ onStop }: { onStop: () => void }) {
 function ComposerThinking({ onStop }: { onStop?: () => void }) {
   return (
     <div>
-      <div className="flex h-[88px] shrink-0 flex-col items-start justify-between rounded-[14px] border border-solid border-[#edecea] bg-white pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
+      <div className="flex h-[88px] shrink-0 flex-col items-start justify-between rounded-[14px] border border-solid border-border bg-card pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
         <div className="relative flex w-full shrink-0 items-center px-[13px]">
-          <p className="min-h-0 flex-1 font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#727d83] opacity-50">
+          <p className="min-h-0 flex-1 font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-muted-foreground opacity-50">
             Do anything with AI...
           </p>
         </div>
@@ -2016,13 +2012,13 @@ function ComposerThinking({ onStop }: { onStop?: () => void }) {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2.5">
-            <p className="shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#727d83]">
+            <p className="shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-muted-foreground">
               Auto
             </p>
             <button
               type="button"
               onClick={onStop}
-              className="flex size-[26px] shrink-0 cursor-pointer items-center justify-center overflow-clip rounded-[999px] bg-[#e7f2fc] disabled:cursor-default disabled:opacity-50"
+              className="flex size-[26px] shrink-0 cursor-pointer items-center justify-center overflow-clip rounded-[999px] bg-primary/10 disabled:cursor-default disabled:opacity-50"
               aria-label="Stop generating"
               disabled={!onStop}
             >
@@ -2041,10 +2037,10 @@ function ComposerThinking({ onStop }: { onStop?: () => void }) {
 function ComposerResponded() {
   return (
     <div>
-      <div className="flex h-[88px] shrink-0 flex-col items-start justify-between rounded-[14px] border border-solid border-[#edecea] bg-white pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
+      <div className="flex h-[88px] shrink-0 flex-col items-start justify-between rounded-[14px] border border-solid border-border bg-card pb-[7px] pt-[11px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]">
         <div className="relative flex w-full shrink-0 items-center gap-2.5 px-[13px]">
-          <div className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-[13px] h-5 w-px rounded-[999px] bg-[#1466ff]" aria-hidden />
-          <p className="min-h-0 flex-1 pl-2 font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#727d83] opacity-50">
+          <div className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-[13px] h-5 w-px rounded-[999px] bg-primary" aria-hidden />
+          <p className="min-h-0 flex-1 pl-2 font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-muted-foreground opacity-50">
             Do anything with AI...
           </p>
         </div>
@@ -2066,10 +2062,10 @@ function ComposerResponded() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2.5">
-            <p className="shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-[#727d83]">
+            <p className="shrink-0 whitespace-nowrap font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] tracking-[-0.13px] text-muted-foreground">
               Auto
             </p>
-            <div className="flex size-[26px] shrink-0 items-center justify-center rounded-[999px] bg-[#f9f9f8]">
+            <div className="flex size-[26px] shrink-0 items-center justify-center rounded-[999px] bg-card">
               <div className="relative size-[18px] shrink-0 overflow-clip opacity-20">
                 <div className="absolute inset-[20.83%]">
                   <div className="absolute inset-[-3.57%]">

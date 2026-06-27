@@ -256,12 +256,12 @@ export function TaskLinkedBranchesSection({
   };
 
   if (reposLoading) {
-    return <div className="h-[46px] w-full animate-pulse rounded-[8px] bg-[#e4eaec]" />;
+    return <div className="h-[46px] w-full animate-pulse rounded-[8px] bg-muted" />;
   }
 
   if (projectRepos.length === 0) {
     return (
-      <p className="text-[13px] leading-snug text-[#727d83]">
+      <p className="text-[13px] leading-snug text-muted-foreground">
         Link a repository to this project first (project settings or onboarding), then you can attach branches to this
         task.
       </p>
@@ -280,13 +280,13 @@ export function TaskLinkedBranchesSection({
           return (
             <li
               key={row.key}
-              className="flex flex-col gap-2 rounded-[8px] border border-[#e9e9e9] bg-white p-3 sm:flex-row sm:items-stretch"
+              className="flex flex-col gap-2 rounded-[8px] border border-border bg-card p-3 sm:flex-row sm:items-stretch"
             >
               <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
                 {isOrphan ? (
-                  <div className="flex min-h-[46px] min-w-0 flex-1 flex-col justify-center rounded-[8px] border border-dashed border-[#e9e9e9] bg-[#f9fafb] px-3 py-2">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-[#727d83]">Repository (not in project)</p>
-                    <p className="truncate font-mono text-[14px] font-medium text-[#0b191f]">{row.orphanRepoName}</p>
+                  <div className="flex min-h-[46px] min-w-0 flex-1 flex-col justify-center rounded-[8px] border border-dashed border-border bg-muted px-3 py-2">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Repository (not in project)</p>
+                    <p className="truncate font-mono text-[14px] font-medium text-foreground">{row.orphanRepoName}</p>
                   </div>
                 ) : (
                   <div className="relative min-w-0 flex-1">
@@ -296,16 +296,16 @@ export function TaskLinkedBranchesSection({
                         setOpenRepoKey((k) => (k === row.key ? null : row.key));
                         setOpenBranchKey(null);
                       }}
-                      className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-3"
+                      className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-border bg-card px-3"
                     >
-                      <span className="min-w-0 truncate text-left text-[14px] font-medium text-[#0b191f]">
+                      <span className="min-w-0 truncate text-left text-[14px] font-medium text-foreground">
                         {repo ? repositoryLinkedName(repo) || repo.repositoryName : 'Select repository'}
                       </span>
                       <ChevronDown size={16} className="shrink-0" />
                     </button>
                     {openRepoKey === row.key && (
                       <div
-                        className="absolute left-0 top-full z-30 mt-1 max-h-[240px] min-w-full w-max max-w-[min(28rem,calc(100vw-2rem))] overflow-y-auto overflow-x-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md"
+                        className="absolute left-0 top-full z-30 mt-1 max-h-[240px] min-w-full w-max max-w-[min(28rem,calc(100vw-2rem))] overflow-y-auto overflow-x-hidden rounded-[8px] border border-border bg-card shadow-md"
                         role="listbox"
                         aria-label="Repositories"
                       >
@@ -317,8 +317,8 @@ export function TaskLinkedBranchesSection({
                               type="button"
                               role="option"
                               onClick={() => selectRepo(row.key, r)}
-                              className={`flex w-full items-start px-3 py-2.5 text-left text-[14px] font-medium hover:bg-[#f0f3f5] ${
-                                row.repoId === r.id ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                              className={`flex w-full items-start px-3 py-2.5 text-left text-[14px] font-medium hover:bg-muted ${
+                                row.repoId === r.id ? 'bg-muted text-foreground' : 'text-muted-foreground'
                               }`}
                             >
                               <span className="min-w-0 flex-1 break-words">{name}</span>
@@ -332,9 +332,9 @@ export function TaskLinkedBranchesSection({
 
                 <div className="relative min-w-0 flex-1">
                   {isOrphan ? (
-                    <div className="flex min-h-[46px] min-w-0 flex-col justify-center rounded-[8px] border border-[#e9e9e9] bg-[#f9fafb] px-3 py-2">
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-[#727d83]">Branch</p>
-                      <p className="truncate font-mono text-[14px] font-medium text-[#0b191f]">{row.branchName ?? '—'}</p>
+                    <div className="flex min-h-[46px] min-w-0 flex-col justify-center rounded-[8px] border border-border bg-muted px-3 py-2">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Branch</p>
+                      <p className="truncate font-mono text-[14px] font-medium text-foreground">{row.branchName ?? '—'}</p>
                     </div>
                   ) : (
                     <>
@@ -346,21 +346,21 @@ export function TaskLinkedBranchesSection({
                           setOpenBranchKey((k) => (k === row.key ? null : row.key));
                           setOpenRepoKey(null);
                         }}
-                        className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-3 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-border bg-card px-3 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <span className="min-w-0 truncate text-left text-[14px] font-medium text-[#0b191f]">
+                        <span className="min-w-0 truncate text-left text-[14px] font-medium text-foreground">
                           {bLoading ? 'Loading branches…' : row.branchName?.trim() ? row.branchName : 'Select branch'}
                         </span>
                         <ChevronDown size={16} className="shrink-0" />
                       </button>
                       {openBranchKey === row.key && !bLoading && (
                         <div
-                          className="absolute left-0 top-full z-30 mt-1 max-h-[240px] min-w-full w-max max-w-[min(28rem,calc(100vw-2rem))] overflow-y-auto overflow-x-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md"
+                          className="absolute left-0 top-full z-30 mt-1 max-h-[240px] min-w-full w-max max-w-[min(28rem,calc(100vw-2rem))] overflow-y-auto overflow-x-hidden rounded-[8px] border border-border bg-card shadow-md"
                           role="listbox"
                           aria-label="Branches"
                         >
                           {branchList.length === 0 ? (
-                            <p className="px-3 py-2.5 text-[13px] text-[#727d83]">No branches found.</p>
+                            <p className="px-3 py-2.5 text-[13px] text-muted-foreground">No branches found.</p>
                           ) : (
                             branchList.map((b) => (
                               <button
@@ -369,14 +369,14 @@ export function TaskLinkedBranchesSection({
                                 role="option"
                                 onClick={() => selectBranch(row.key, b.name)}
                                 disabled={replaceBranchesMutation.isPending}
-                                className={`flex w-full items-start gap-2 px-3 py-2.5 text-left text-[14px] font-medium hover:bg-[#f0f3f5] disabled:opacity-50 ${
-                                  row.branchName === b.name ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                                className={`flex w-full items-start gap-2 px-3 py-2.5 text-left text-[14px] font-medium hover:bg-muted disabled:opacity-50 ${
+                                  row.branchName === b.name ? 'bg-muted text-foreground' : 'text-muted-foreground'
                                 }`}
                               >
-                                <GitBranch size={14} className="mt-0.5 shrink-0 text-[#727d83]" aria-hidden />
+                                <GitBranch size={14} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
                                 <span className="min-w-0 flex-1 break-words">{b.name}</span>
                                 {b.default ? (
-                                  <span className="shrink-0 self-center text-[11px] uppercase text-[#727d83]">default</span>
+                                  <span className="shrink-0 self-center text-[11px] uppercase text-muted-foreground">default</span>
                                 ) : null}
                               </button>
                             ))
@@ -393,7 +393,7 @@ export function TaskLinkedBranchesSection({
                   type="button"
                   onClick={() => removeRow(row.key)}
                   disabled={replaceBranchesMutation.isPending}
-                  className="inline-flex h-[46px] w-full items-center justify-center rounded-[8px] border border-transparent px-2 text-[#727d83] hover:bg-[#f0f3f5] hover:text-[#0b191f] disabled:opacity-50 sm:w-10"
+                  className="inline-flex h-[46px] w-full items-center justify-center rounded-[8px] border border-transparent px-2 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 sm:w-10"
                   aria-label="Remove branch link"
                 >
                   <Trash2 size={18} />
@@ -409,7 +409,7 @@ export function TaskLinkedBranchesSection({
           type="button"
           onClick={addRow}
           disabled={replaceBranchesMutation.isPending || createBranchMutation.isPending}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-dashed border-[#e9e9e9] bg-white py-2.5 text-[14px] font-medium text-[#606d76] hover:border-[#24B5F8]/50 hover:text-[#0b191f] disabled:opacity-50 sm:w-auto sm:justify-start sm:px-3"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-dashed border-border bg-card py-2.5 text-[14px] font-medium text-muted-foreground hover:border-info/50 hover:text-foreground disabled:opacity-50 sm:w-auto sm:justify-start sm:px-3"
         >
           {replaceBranchesMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus size={16} />}
           Add branch link
@@ -423,7 +423,7 @@ export function TaskLinkedBranchesSection({
           disabled={
             projectRepos.length === 0 || replaceBranchesMutation.isPending || createBranchMutation.isPending
           }
-          className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-[#e9e9e9] bg-white py-2.5 text-[14px] font-medium text-[#606d76] hover:border-[#24B5F8]/50 hover:text-[#0b191f] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:justify-start sm:px-3"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-border bg-card py-2.5 text-[14px] font-medium text-muted-foreground hover:border-info/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:justify-start sm:px-3"
         >
           {createBranchMutation.isPending ? (
             <Loader2 className="size-4 animate-spin" />
@@ -442,7 +442,7 @@ export function TaskLinkedBranchesSection({
         }}
       >
         <DialogContent
-          className="gap-0 overflow-hidden rounded-[16px] border border-[#e9e9e9] p-0 sm:max-w-md"
+          className="gap-0 overflow-hidden rounded-[16px] border border-border p-0 sm:max-w-md"
           onPointerDownOutside={(e) => {
             if (createBranchMutation.isPending) e.preventDefault();
           }}
@@ -450,25 +450,25 @@ export function TaskLinkedBranchesSection({
             if (createBranchMutation.isPending) e.preventDefault();
           }}
         >
-          <DialogHeader className="border-b border-[#e9e9e9] px-6 py-4 text-left">
-            <DialogTitle className="text-[16px] font-medium text-[#0b191f]">Create branch</DialogTitle>
-            <DialogDescription className="text-[13px] leading-snug text-[#727d83]">
+          <DialogHeader className="border-b border-border px-6 py-4 text-left">
+            <DialogTitle className="text-[16px] font-medium text-foreground">Create branch</DialogTitle>
+            <DialogDescription className="text-[13px] leading-snug text-muted-foreground">
               A new branch will be created on the provider and linked to this task.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 px-6 py-4">
             <div>
-              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-[#727d83]">Branch name</p>
-              <p className="break-all rounded-[8px] border border-[#e9e9e9] bg-[#f9fafb] px-3 py-2 font-mono text-[14px] font-medium text-[#0b191f]">
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Branch name</p>
+              <p className="break-all rounded-[8px] border border-border bg-muted px-3 py-2 font-mono text-[14px] font-medium text-foreground">
                 {generatedBranchName}
               </p>
             </div>
 
             <div>
-              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-[#727d83]">Repository</p>
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Repository</p>
               <div
-                className="max-h-[240px] overflow-y-auto rounded-[8px] border border-[#e9e9e9]"
+                className="max-h-[240px] overflow-y-auto rounded-[8px] border border-border"
                 role="listbox"
                 aria-label="Repositories"
               >
@@ -483,8 +483,8 @@ export function TaskLinkedBranchesSection({
                       aria-selected={selected}
                       onClick={() => setCreateBranchRepoId(r.id)}
                       disabled={createBranchMutation.isPending}
-                      className={`flex w-full items-start border-b border-[#e9e9e9] px-3 py-2.5 text-left text-[14px] font-medium last:border-b-0 hover:bg-[#f0f3f5] disabled:opacity-50 ${
-                        selected ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                      className={`flex w-full items-start border-b border-border px-3 py-2.5 text-left text-[14px] font-medium last:border-b-0 hover:bg-muted disabled:opacity-50 ${
+                        selected ? 'bg-muted text-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       <span className="min-w-0 flex-1 break-words">{name}</span>
@@ -495,12 +495,12 @@ export function TaskLinkedBranchesSection({
             </div>
           </div>
 
-          <DialogFooter className="gap-2 border-t border-[#e9e9e9] px-6 py-4 sm:justify-end">
+          <DialogFooter className="gap-2 border-t border-border px-6 py-4 sm:justify-end">
             <button
               type="button"
               onClick={() => setCreateBranchOpen(false)}
               disabled={createBranchMutation.isPending}
-              className="inline-flex h-10 items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-4 text-[14px] font-medium text-[#606d76] hover:bg-[#f0f3f5] disabled:opacity-50"
+              className="inline-flex h-10 items-center justify-center rounded-[8px] border border-border bg-card px-4 text-[14px] font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
             >
               Cancel
             </button>
@@ -508,7 +508,7 @@ export function TaskLinkedBranchesSection({
               type="button"
               onClick={confirmCreateBranch}
               disabled={createBranchRepoId == null || createBranchMutation.isPending}
-              className="inline-flex h-10 min-w-[140px] items-center justify-center gap-2 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white hover:bg-[#1aa8eb] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-10 min-w-[140px] items-center justify-center gap-2 rounded-[8px] bg-info px-4 text-[14px] font-medium text-white hover:bg-info disabled:cursor-not-allowed disabled:opacity-50"
             >
               {createBranchMutation.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
               Create branch

@@ -10,7 +10,7 @@ import {
 import type { CommentMentionUserAPI } from '@/types/comment';
 
 const MENTION_LINK_CLASS =
-    'cursor-pointer font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 hover:text-[#0d52cc]';
+    'cursor-pointer font-medium text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary';
 
 type CommentBodyProps = {
     content: string;

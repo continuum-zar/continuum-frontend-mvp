@@ -29,7 +29,7 @@ describe('CommentBody', () => {
         const mention = screen.getByRole('link', { name: 'Mention Alice Smith' });
         // Mentions render the user's display name, not the raw @token.
         expect(mention).toHaveTextContent('@Alice Smith');
-        expect(mention).toHaveClass('text-[#1466ff]');
+        expect(mention).toHaveClass('text-primary');
         expect(mention).toHaveClass('underline');
     });
 

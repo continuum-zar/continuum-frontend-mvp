@@ -31,19 +31,19 @@ export function KanbanAssigneeAvatars({
   if (ids.length === 0) {
     if (variant === "row") {
       return (
-        <span className="font-['Satoshi:Medium',sans-serif] truncate text-[12px] text-[#727d83]">—</span>
+        <span className="font-['Satoshi:Medium',sans-serif] truncate text-[12px] text-muted-foreground">—</span>
       );
     }
     return (
       <div className="flex min-w-0 max-w-full items-center gap-1.5">
         <div
-          className="flex shrink-0 items-center justify-center rounded-[999px] border border-dashed border-[#cdd2d5] bg-[#fafbfc]"
+          className="flex shrink-0 items-center justify-center rounded-[999px] border border-dashed border-border bg-background"
           style={{ width: sizePx, height: sizePx }}
           title="Unassigned"
         >
-          <span className="text-[10px] text-[#727d83]">—</span>
+          <span className="text-[10px] text-muted-foreground">—</span>
         </div>
-        <span className="truncate font-['Satoshi:Medium',sans-serif] text-[11px] text-[#727d83]">
+        <span className="truncate font-['Satoshi:Medium',sans-serif] text-[11px] text-muted-foreground">
           Unassigned
         </span>
       </div>
@@ -61,7 +61,7 @@ export function KanbanAssigneeAvatars({
           return (
             <div
               key={userId}
-              className="content-stretch flex shrink-0 items-center justify-center rounded-[999px] border border-solid border-white"
+              className="content-stretch flex shrink-0 items-center justify-center rounded-[999px] border border-solid border-card"
               style={{
                 width: sizePx,
                 height: sizePx,
@@ -79,7 +79,7 @@ export function KanbanAssigneeAvatars({
         })}
         {overflow > 0 ? (
           <div
-            className="content-stretch flex shrink-0 items-center justify-center rounded-[999px] border border-solid border-white bg-[#f5f7f8]"
+            className="content-stretch flex shrink-0 items-center justify-center rounded-[999px] border border-solid border-card bg-card"
             style={{
               width: sizePx,
               height: sizePx,
@@ -88,7 +88,7 @@ export function KanbanAssigneeAvatars({
             }}
             title={`${overflow} more assignee${overflow === 1 ? "" : "s"}`}
           >
-            <span className="font-['Satoshi:Medium',sans-serif] text-[8px] leading-none text-[#727d83]">
+            <span className="font-['Satoshi:Medium',sans-serif] text-[8px] leading-none text-muted-foreground">
               +{overflow}
             </span>
           </div>

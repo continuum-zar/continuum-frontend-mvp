@@ -2,7 +2,7 @@ import { useCallback, useId, useState } from 'react';
 import type { PlannerChoiceQuestion } from '@/api/planner';
 import { cn } from '@/app/components/ui/utils';
 
-const baseLabel = "font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f]";
+const baseLabel = "font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-foreground";
 
 type PlannerChoiceQuestionsProps = {
     questions: PlannerChoiceQuestion[];
@@ -68,27 +68,27 @@ export function PlannerChoiceQuestions({
                 return (
                     <div
                         key={q.id}
-                        className="w-full min-w-0 rounded-[10px] border border-solid border-[#ededed] bg-white p-3 shadow-sm"
+                        className="w-full min-w-0 rounded-[10px] border border-solid border-border bg-card p-3 shadow-sm"
                     >
-                        <p className={cn('mb-2.5 font-[\'Satoshi\',sans-serif] text-[14px] font-semibold text-[#0b191f]')}>
+                        <p className={cn('mb-2.5 font-[\'Satoshi\',sans-serif] text-[14px] font-semibold text-foreground')}>
                             {q.prompt}
                         </p>
                         {submitted ? (
-                            <p className="font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#0b191f]">
-                                <span className="text-[#727d83]">Your answer: </span>
+                            <p className="font-['Inter',sans-serif] text-[13px] leading-[19px] text-foreground">
+                                <span className="text-muted-foreground">Your answer: </span>
                                 {submittedAnswers[q.id] ?? '—'}
                             </p>
                         ) : pendingPick ? (
                             <div className="flex flex-col gap-2">
-                                <p className="font-['Inter',sans-serif] text-[13px] leading-[19px] text-[#0b191f]">
-                                    <span className="text-[#727d83]">Your answer: </span>
+                                <p className="font-['Inter',sans-serif] text-[13px] leading-[19px] text-foreground">
+                                    <span className="text-muted-foreground">Your answer: </span>
                                     {localAnswer}
                                 </p>
                                 <button
                                     type="button"
                                     disabled={disabled}
                                     onClick={() => onClearLocalSelection(q)}
-                                    className="self-start rounded-[8px] border border-[#ededed] bg-white px-2.5 py-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#606d76] hover:bg-[#f9fafb] disabled:opacity-50"
+                                    className="self-start rounded-[8px] border border-border bg-card px-2.5 py-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
                                 >
                                     Change
                                 </button>
@@ -102,10 +102,10 @@ export function PlannerChoiceQuestions({
                                             type="button"
                                             disabled={disabled}
                                             className={cn(
-                                                'rounded-[8px] border border-solid border-[#ededed] bg-white px-3 py-2.5 text-left transition-colors',
-                                                'font-[\'Satoshi\',sans-serif] text-[13px] font-medium text-[#0b191f]',
-                                                'hover:border-[#d1d5db] hover:bg-[#f9fafb]',
-                                                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0b191f]/25',
+                                                'rounded-[8px] border border-solid border-border bg-card px-3 py-2.5 text-left transition-colors',
+                                                'font-[\'Satoshi\',sans-serif] text-[13px] font-medium text-foreground',
+                                                'hover:border-border hover:bg-muted',
+                                                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/25',
                                                 disabled && 'cursor-not-allowed opacity-50',
                                             )}
                                             onClick={() => onSelect(q, opt)}
@@ -117,12 +117,12 @@ export function PlannerChoiceQuestions({
                                         type="button"
                                         disabled={disabled}
                                         className={cn(
-                                            'rounded-[8px] border border-dashed border-[#d1d5db] bg-[#fafafa] px-3 py-2.5 text-left',
-                                            'font-[\'Satoshi\',sans-serif] text-[13px] font-medium text-[#606d76]',
-                                            'hover:border-[#bfc4c9] hover:bg-[#f3f4f6]',
-                                            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0b191f]/25',
+                                            'rounded-[8px] border border-dashed border-border bg-card px-3 py-2.5 text-left',
+                                            'font-[\'Satoshi\',sans-serif] text-[13px] font-medium text-muted-foreground',
+                                            'hover:border-border hover:bg-card',
+                                            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/25',
                                             disabled && 'cursor-not-allowed opacity-50',
-                                            otherActive && 'border-[#0b191f]/30 bg-[#f0f4f8]',
+                                            otherActive && 'border-foreground/30 bg-muted',
                                         )}
                                         onClick={() => (otherActive ? closeOther() : openOther(q))}
                                     >
@@ -130,8 +130,8 @@ export function PlannerChoiceQuestions({
                                     </button>
                                 </div>
                                 {otherActive && (
-                                    <div className="mt-3 flex flex-col gap-2 border-t border-[#ededed] pt-3">
-                                        <label className={cn(baseLabel, 'text-[#727d83]')}>
+                                    <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+                                        <label className={cn(baseLabel, 'text-muted-foreground')}>
                                             Your answer
                                         </label>
                                         <textarea
@@ -140,9 +140,9 @@ export function PlannerChoiceQuestions({
                                             disabled={disabled}
                                             rows={3}
                                             className={cn(
-                                                'min-h-[72px] w-full resize-y rounded-[8px] border border-solid border-[#ededed] bg-white px-3 py-2',
+                                                'min-h-[72px] w-full resize-y rounded-[8px] border border-solid border-border bg-background px-3 py-2',
                                                 baseLabel,
-                                                'placeholder:text-[#727d83] focus:border-[#bfc4c9] focus:outline-none',
+                                                'placeholder:text-muted-foreground focus:border-border focus:outline-none',
                                             )}
                                             placeholder="Type your answer…"
                                             onKeyDown={(e) => {
@@ -157,14 +157,14 @@ export function PlannerChoiceQuestions({
                                             disabled={disabled || !otherDraft.trim()}
                                             onClick={() => submitOther(q)}
                                             className={cn(
-                                                'self-start rounded-[8px] bg-[#0b191f] px-3 py-2',
-                                                "font-['Satoshi',sans-serif] text-[13px] font-medium text-white",
-                                                'hover:bg-[#1a2d38] disabled:cursor-not-allowed disabled:opacity-40',
+                                                'self-start rounded-[8px] bg-foreground px-3 py-2',
+                                                "font-['Satoshi',sans-serif] text-[13px] font-medium text-background",
+                                                'hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-40',
                                             )}
                                         >
                                             Submit
                                         </button>
-                                        <span className="font-['Inter',sans-serif] text-[11px] text-[#727d83]">
+                                        <span className="font-['Inter',sans-serif] text-[11px] text-muted-foreground">
                                             Ctrl+Enter to submit
                                         </span>
                                     </div>

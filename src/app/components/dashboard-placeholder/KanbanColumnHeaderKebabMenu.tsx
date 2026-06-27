@@ -90,7 +90,7 @@ export function KanbanColumnHeaderKebabMenu({
           type="button"
           className={cn(
             "content-stretch flex cursor-pointer flex-col items-start overflow-clip rounded-[4px] border-0 bg-transparent px-[4px] py-[11px] outline-none shrink-0 w-[24px]",
-            "focus-visible:ring-2 focus-visible:ring-[#0b191f]/10 focus-visible:ring-offset-0",
+            "focus-visible:ring-2 focus-visible:ring-foreground/10 focus-visible:ring-offset-0",
           )}
           aria-haspopup="menu"
           aria-label={`Column options, ${column.title}`}
@@ -137,7 +137,7 @@ export function KanbanColumnHeaderKebabMenu({
                 aria-label={`Move all tasks in ${column.title} to another list`}
                 className={cn(
                   dashboardPlaceholderMenuOptionChipClassName,
-                  "data-[state=open]:bg-[#f5f7f8] data-[state=open]:text-[#0b191f] data-[state=open]:shadow-md",
+                  "data-[state=open]:bg-card data-[state=open]:text-foreground data-[state=open]:shadow-md",
                   isMoveTasksPending && "pointer-events-none opacity-50",
                 )}
               >
@@ -179,7 +179,7 @@ export function KanbanColumnHeaderKebabMenu({
                 aria-label={`Move all tasks in ${column.title} to another milestone`}
                 className={cn(
                   dashboardPlaceholderMenuOptionChipClassName,
-                  "data-[state=open]:bg-[#f5f7f8] data-[state=open]:text-[#0b191f] data-[state=open]:shadow-md",
+                  "data-[state=open]:bg-card data-[state=open]:text-foreground data-[state=open]:shadow-md",
                   isMoveTasksPending && "pointer-events-none opacity-50",
                 )}
               >

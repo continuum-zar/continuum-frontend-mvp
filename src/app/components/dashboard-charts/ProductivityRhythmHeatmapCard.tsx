@@ -119,7 +119,7 @@ export function ProductivityRhythmHeatmapCard({
             <p className="text-sm text-muted-foreground">Active minutes by hour block</p>
             {liveRhythmOverlay?.infoBanner ? (
               <p
-                className="mt-2 max-w-xl rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
+                className="mt-2 max-w-xl rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning"
                 role="status"
               >
                 {liveRhythmOverlay.infoBanner}
@@ -269,7 +269,7 @@ export function ProductivityRhythmHeatmapCard({
                                     <button
                                       key={s.session_id}
                                       type="button"
-                                      className={`flex h-5 min-w-[1.25rem] max-w-[1.25rem] cursor-pointer items-center justify-center rounded-full text-[8px] font-semibold text-white shadow-sm ring-1 ring-black/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${paused ? "opacity-70 ring-amber-400/70" : "hover:opacity-90"}`}
+                                      className={`flex h-5 min-w-[1.25rem] max-w-[1.25rem] cursor-pointer items-center justify-center rounded-full text-[8px] font-semibold text-white shadow-sm ring-1 ring-black/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${paused ? "opacity-70 ring-warning/70" : "hover:opacity-90"}`}
                                       style={{ backgroundColor: memberAvatarBackground(s.user_id) }}
                                       aria-label={`Open session details for ${name} (${paused ? "paused" : "active"})`}
                                       onClick={() => openDetail(s)}

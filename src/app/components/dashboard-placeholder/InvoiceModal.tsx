@@ -310,11 +310,11 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
     >
       {/* Centered panel: min-h-full allows vertical centering when short; long content scrolls the backdrop */}
       <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
-        <div className="my-8 flex w-full max-w-[600px] max-h-[min(90vh,880px)] flex-col overflow-hidden rounded-2xl border border-[#f5f5f5] bg-[#f9f9f9] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]">
-          <div className="relative flex shrink-0 items-center justify-between border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+        <div className="my-8 flex w-full max-w-[600px] max-h-[min(90vh,880px)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]">
+          <div className="relative flex shrink-0 items-center justify-between border-b border-border bg-card px-9 py-4">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button type="button" onClick={() => onOpenChange(false)} className="text-[#606d76]" aria-label="Back">
+                <button type="button" onClick={() => onOpenChange(false)} className="text-muted-foreground" aria-label="Back">
                   <ArrowLeft size={20} />
                 </button>
               </TooltipTrigger>
@@ -322,7 +322,7 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
             </Tooltip>
             <p
               id="invoice-modal-title"
-              className="absolute left-1/2 -translate-x-1/2 text-[16px] font-medium tracking-[-0.16px] text-[#595959]"
+              className="absolute left-1/2 -translate-x-1/2 text-[16px] font-medium tracking-[-0.16px] text-foreground"
             >
               Invoice
             </p>
@@ -337,7 +337,7 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                     billClientLoading
                   }
                   onClick={() => void handleExportPdf()}
-                  className="h-10 rounded-lg bg-[#0b191f] px-4 text-sm font-semibold text-white outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-[rgba(96,109,118,0.2)] disabled:text-[#606d76]/70"
+                  className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground/70"
                 >
                   {exportPending ? "Exporting…" : "Export PDF"}
                 </button>
@@ -346,28 +346,28 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
             </Tooltip>
           </div>
 
-        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden bg-[#f9f9f9] px-9 py-6 [scrollbar-gutter:stable]">
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden bg-card px-9 py-6 [scrollbar-gutter:stable]">
           <div className="grid grid-cols-2 gap-x-8 gap-y-4">
             <div>
-              <p className="mb-1 text-sm text-[#606d76]">Invoice</p>
+              <p className="mb-1 text-sm text-muted-foreground">Invoice</p>
               <input
                 type="text"
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
-                className="h-10 w-full rounded-lg border border-[#e9e9e9] bg-white px-4 text-sm text-[#252014] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-10 w-full rounded-lg border border-border bg-card px-4 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Invoice number"
               />
             </div>
             <div>
-              <p className="mb-1 text-sm text-[#606d76]">From</p>
-              <p className="text-[16px] leading-[normal] text-[#252014]">{fromName}</p>
-              <p className="text-sm text-[#727d83]">{fromEmail}</p>
+              <p className="mb-1 text-sm text-muted-foreground">From</p>
+              <p className="text-[16px] leading-[normal] text-foreground">{fromName}</p>
+              <p className="text-sm text-muted-foreground">{fromEmail}</p>
             </div>
 
             <div>
-              <p className="mb-1 text-sm text-[#606d76]">Issued on</p>
+              <p className="mb-1 text-sm text-muted-foreground">Issued on</p>
               <div
-                className="relative flex h-10 cursor-pointer items-center rounded-lg border border-[#e9e9e9] bg-white px-4"
+                className="relative flex h-10 cursor-pointer items-center rounded-lg border border-border bg-card px-4"
                 role="button"
                 tabIndex={0}
                 onClick={openIssuedOnPicker}
@@ -388,7 +388,7 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                   tabIndex={-1}
                   aria-label="Issued on"
                 />
-                <span className="pointer-events-none flex-1 text-sm text-[#252014]">
+                <span className="pointer-events-none flex-1 text-sm text-foreground">
                   {issuedOn
                     ? new Date(issuedOn + "T12:00:00").toLocaleDateString("en-ZA", {
                         day: "2-digit",
@@ -397,36 +397,36 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                       })
                     : "—"}
                 </span>
-                <Calendar size={16} className="pointer-events-none shrink-0 text-[#252014]" aria-hidden />
+                <Calendar size={16} className="pointer-events-none shrink-0 text-foreground" aria-hidden />
               </div>
             </div>
             <div>
-              <p className="mb-1 text-sm text-[#606d76]">Bill to</p>
+              <p className="mb-1 text-sm text-muted-foreground">Bill to</p>
               {billToPrimary == null ? (
-                <p className="text-sm text-[#9fa5a8]">Select a project</p>
+                <p className="text-sm text-muted-foreground">Select a project</p>
               ) : (
                 <>
-                  <p className="truncate text-[16px] leading-[normal] text-[#252014]">{billToPrimary}</p>
+                  <p className="truncate text-[16px] leading-[normal] text-foreground">{billToPrimary}</p>
                   {billToSecondary ? (
-                    <p className="truncate text-sm text-[#727d83]">{billToSecondary}</p>
+                    <p className="truncate text-sm text-muted-foreground">{billToSecondary}</p>
                   ) : null}
                 </>
               )}
             </div>
 
             <div className="col-span-2 sm:col-span-1">
-              <p className="mb-1 text-sm text-[#606d76]">Due</p>
-              <div className="flex h-10 w-full items-center justify-between rounded-lg border border-[#e9e9e9] bg-white px-4 text-sm text-[#252014]">
+              <p className="mb-1 text-sm text-muted-foreground">Due</p>
+              <div className="flex h-10 w-full items-center justify-between rounded-lg border border-border bg-card px-4 text-sm text-foreground">
                 <span>Upon Receipt</span>
-                <ChevronDown size={16} className="text-[#252014]" aria-hidden />
+                <ChevronDown size={16} className="text-foreground" aria-hidden />
               </div>
             </div>
           </div>
 
-          <div className="h-px w-full bg-[#e5e7eb]" />
+          <div className="h-px w-full bg-muted" />
 
           <div>
-            <p className="mb-1 flex items-center gap-1 text-sm text-[#606d76]">
+            <p className="mb-1 flex items-center gap-1 text-sm text-muted-foreground">
               Project <Info size={14} aria-hidden />
             </p>
             <Popover open={projectPickerOpen} onOpenChange={setProjectPickerOpen} modal={false}>
@@ -435,13 +435,13 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="flex h-10 w-[212px] max-w-[212px] shrink-0 items-center justify-between rounded-lg border border-[#e9e9e9] bg-white px-4 text-left text-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex h-10 w-[212px] max-w-[212px] shrink-0 items-center justify-between rounded-lg border border-border bg-card px-4 text-left text-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       aria-label="Select project"
                     >
                       <span
                         className={cn(
                           "min-w-0 flex-1 truncate",
-                          selectedProject ? "text-[#252014]" : "text-[#9fa5a8]",
+                          selectedProject ? "text-foreground" : "text-muted-foreground",
                         )}
                       >
                         {projectsPending
@@ -450,7 +450,7 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                             ? selectedProject.title
                             : "Select project"}
                       </span>
-                      <ChevronDown className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} aria-hidden />
+                      <ChevronDown className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden />
                     </button>
                   </PopoverTrigger>
                 </TooltipTrigger>
@@ -460,32 +460,32 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                 align="start"
                 side="bottom"
                 sideOffset={6}
-                className="z-[100] w-[212px] min-w-[212px] max-w-[212px] border border-solid border-[#e9e9e9] p-0 shadow-lg"
+                className="z-[100] w-[212px] min-w-[212px] max-w-[212px] border border-solid border-border p-0 shadow-lg"
                 onOpenAutoFocus={(e) => {
                   e.preventDefault();
                   projectSearchInputRef.current?.focus();
                 }}
               >
-                <div className="flex max-h-[min(320px,70vh)] min-h-[168px] flex-col overflow-hidden rounded-[8px] bg-white">
-                  <div className="flex shrink-0 items-center gap-2 border-b border-[#f0f0f0] px-3 py-2">
-                    <Search className="size-4 shrink-0 text-[#9fa5a8]" strokeWidth={2} />
+                <div className="flex max-h-[min(320px,70vh)] min-h-[168px] flex-col overflow-hidden rounded-[8px] bg-card">
+                  <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+                    <Search className="size-4 shrink-0 text-muted-foreground" strokeWidth={2} />
                     <input
                       ref={projectSearchInputRef}
                       type="text"
                       value={projectSearch}
                       onChange={(e) => setProjectSearch(e.target.value)}
                       placeholder="Search projects…"
-                      className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                      className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
                       aria-label="Search projects"
                     />
                   </div>
                   <div className="scrollbar-hide min-h-[120px] max-h-[240px] overflow-y-auto py-1">
                     {projectsPending ? (
-                      <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-[#9fa5a8]">
+                      <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-muted-foreground">
                         Loading…
                       </p>
                     ) : filteredProjects.length === 0 ? (
-                      <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-[#9fa5a8]">
+                      <p className="px-3 py-2 text-center font-['Satoshi',sans-serif] text-[12px] text-muted-foreground">
                         {apiProjects.length === 0 ? "No projects" : "No matches"}
                       </p>
                     ) : (
@@ -495,14 +495,14 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                           type="button"
                           onClick={() => onPickProject(p)}
                           className={cn(
-                            "flex w-full flex-col gap-0.5 px-3 py-2 text-left font-['Satoshi',sans-serif] text-[13px] transition-colors hover:bg-[#f5f7f8]",
-                            selectedProjectId === p.id && "bg-[#f0f8ff]",
+                            "flex w-full flex-col gap-0.5 px-3 py-2 text-left font-['Satoshi',sans-serif] text-[13px] transition-colors hover:bg-card",
+                            selectedProjectId === p.id && "bg-primary/10",
                           )}
                         >
                           <span className="flex w-full items-center gap-2">
-                            <span className="min-w-0 flex-1 truncate text-[#0b191f]">{p.title}</span>
+                            <span className="min-w-0 flex-1 truncate text-foreground">{p.title}</span>
                             {selectedProjectId === p.id ? (
-                              <Check className="size-3.5 shrink-0 text-[#2798f5]" strokeWidth={2} />
+                              <Check className="size-3.5 shrink-0 text-primary" strokeWidth={2} />
                             ) : null}
                           </span>
                         </button>
@@ -522,19 +522,19 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                   key={item.id}
                   className="grid grid-cols-[20px_1fr_minmax(4.5rem,5.5rem)_minmax(5rem,6rem)_84px_16px] items-end gap-2"
                 >
-                  <GripVertical size={16} className="mb-2 text-[#9fa5a8]" aria-hidden />
+                  <GripVertical size={16} className="mb-2 text-muted-foreground" aria-hidden />
                   <div>
-                    <p className="mb-1 text-sm text-[#606d76]">Items</p>
+                    <p className="mb-1 text-sm text-muted-foreground">Items</p>
                     <input
                       type="text"
                       value={item.description}
                       onChange={(e) => updateRow(item.id, { description: e.target.value })}
                       placeholder="Sprint/Delivery name"
-                      className="h-10 w-full rounded-lg border border-[#e9e9e9] bg-white px-4 text-sm text-[#252014] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="h-10 w-full rounded-lg border border-border bg-card px-4 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     />
                   </div>
                   <div>
-                    <p className="mb-1 text-sm text-[#606d76]">Qty</p>
+                    <p className="mb-1 text-sm text-muted-foreground">Qty</p>
                     <input
                       type="number"
                       inputMode="decimal"
@@ -545,11 +545,11 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                         const v = parseFloat(e.target.value);
                         updateRow(item.id, { qty: Number.isFinite(v) ? v : 0 });
                       }}
-                      className={`h-10 w-full min-w-0 rounded-lg border border-[#e9e9e9] bg-white px-2 text-center text-sm text-[#252014] outline-none focus-visible:ring-2 focus-visible:ring-ring ${noNumberSpinner}`}
+                      className={`h-10 w-full min-w-0 rounded-lg border border-border bg-card px-2 text-center text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring ${noNumberSpinner}`}
                     />
                   </div>
                   <div>
-                    <p className="mb-1 text-sm text-[#606d76]">Rate</p>
+                    <p className="mb-1 text-sm text-muted-foreground">Rate</p>
                     <input
                       type="number"
                       inputMode="decimal"
@@ -560,12 +560,12 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                         const v = parseFloat(e.target.value);
                         updateRow(item.id, { rate: Number.isFinite(v) ? v : 0 });
                       }}
-                      className={`h-10 w-full min-w-0 rounded-lg border border-[#e9e9e9] bg-white px-2 text-center text-sm text-[#252014] outline-none focus-visible:ring-2 focus-visible:ring-ring ${noNumberSpinner}`}
+                      className={`h-10 w-full min-w-0 rounded-lg border border-border bg-card px-2 text-center text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring ${noNumberSpinner}`}
                     />
                   </div>
                   <div>
-                    <p className="mb-1 text-right text-sm text-[#606d76]">Total</p>
-                    <div className="h-10 leading-10 text-right text-sm text-[#252014]">
+                    <p className="mb-1 text-right text-sm text-muted-foreground">Total</p>
+                    <div className="h-10 leading-10 text-right text-sm text-foreground">
                       {money(itemTotal)}
                     </div>
                   </div>
@@ -574,7 +574,7 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                       <button
                         type="button"
                         onClick={() => removeRow(item.id)}
-                        className="mb-2 text-[#9fa5a8] hover:text-[#606d76]"
+                        className="mb-2 text-muted-foreground hover:text-muted-foreground"
                         aria-label="Remove line"
                       >
                         <Trash2 size={14} />
@@ -591,7 +591,7 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
                 <button
                   type="button"
                   onClick={addRow}
-                  className="inline-flex items-center gap-2 text-[#252014]"
+                  className="inline-flex items-center gap-2 text-foreground"
                 >
                   <Plus size={20} />
                   <span className="text-sm font-medium">Add an item</span>
@@ -602,9 +602,9 @@ export function InvoiceModal({ open, onOpenChange }: InvoiceModalProps) {
           </div>
         </div>
 
-          <div className="flex shrink-0 items-center justify-between border-t border-[#e5e7eb] bg-[#f9f9f9] px-9 py-4">
-            <p className="text-sm text-[#606d76]">Total</p>
-            <p className="text-2xl font-medium text-[#252014]">{money(total)}</p>
+          <div className="flex shrink-0 items-center justify-between border-t border-border bg-card px-9 py-4">
+            <p className="text-sm text-muted-foreground">Total</p>
+            <p className="text-2xl font-medium text-foreground">{money(total)}</p>
           </div>
         </div>
       </div>

@@ -14,6 +14,7 @@ import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { workspaceJoin } from "@/lib/workspacePaths";
 import { isClerkEnabled } from "@/lib/clerkConfig";
 import { ClerkAccountSettings } from "@/app/components/auth/ClerkAccountSettings";
+import { AppearanceSetting } from "@/app/components/theme/AppearanceSetting";
 
 import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 
@@ -60,13 +61,14 @@ const SUPPORT_EMAIL = "info@joincontinuum.co.za";
 const GMAIL_COMPOSE_HREF = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(SUPPORT_EMAIL)}`;
 
 const outlineActionClass =
-  "inline-flex h-10 shrink-0 items-center rounded-[8px] border border-[#ebedee] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none ring-offset-2 transition-colors hover:bg-[#f9f9f9] focus-visible:ring-2 focus-visible:ring-ring";
+  "inline-flex h-10 shrink-0 items-center rounded-[8px] border border-border bg-card px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none ring-offset-2 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring";
 
 const placeholderLinkClass =
-  "cursor-default border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] underline decoration-solid underline-offset-2 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring";
+  "cursor-default border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground underline decoration-solid underline-offset-2 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring";
 
 export type SettingsSection =
   | "general"
+  | "appearance"
   | "account"
   | "notification"
   | "invoice"
@@ -88,6 +90,7 @@ type SettingsModalProps = {
 
 const NAV: { id: SettingsSection; label: string }[] = [
   { id: "general", label: "General" },
+  { id: "appearance", label: "Appearance" },
   { id: "notification", label: "Notifications" },
   { id: "invoice", label: "Invoice" },
   { id: "usage", label: "Usage" },
@@ -102,6 +105,7 @@ const ACCOUNT_NAV_ITEM: { id: SettingsSection; label: string } = {
 
 const SECTION_TITLE: Record<SettingsSection, string> = {
   general: "General",
+  appearance: "Appearance",
   account: "Account",
   notification: "Notifications",
   invoice: "Invoice",
@@ -380,17 +384,17 @@ export function SettingsModal({
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex h-[575px] w-[900px] max-w-[calc(100%-2rem)] shrink-0 flex-row items-start overflow-hidden rounded-[16px] border border-[#ebedee] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            "fixed left-1/2 top-1/2 z-50 flex h-[575px] w-[900px] max-w-[calc(100%-2rem)] shrink-0 flex-row items-start overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
             "-translate-x-1/2 -translate-y-1/2",
           )}
         >
           <DialogPrimitive.Title className="sr-only">Settings</DialogPrimitive.Title>
 
-          <aside className="flex h-full min-h-0 w-[240px] shrink-0 flex-col gap-6 border-r border-[#ebedee] bg-[#edf0f3] px-4 py-6">
+          <aside className="flex h-full min-h-0 w-[240px] shrink-0 flex-col gap-6 border-r border-border bg-muted px-4 py-6">
             <DialogClose asChild>
               <button
                 type="button"
-                className="inline-flex size-6 shrink-0 items-center justify-center rounded text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex size-6 shrink-0 items-center justify-center rounded text-foreground outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Close settings"
               >
                 <X className="size-6" strokeWidth={1.5} />
@@ -410,8 +414,8 @@ export function SettingsModal({
                     "flex h-10 w-full items-center rounded-[8px] px-4 py-2 text-left font-['Satoshi',sans-serif] text-[16px] font-medium transition-colors",
                     section === item.id ||
                       (item.id === "support" && section === "status")
-                      ? "border border-[#ededed] bg-white text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
-                      : "text-[#606d76] hover:bg-[rgba(255,255,255,0.6)]",
+                      ? "border border-border bg-card text-foreground shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                      : "text-muted-foreground hover:bg-accent",
                   )}
                 >
                   {item.label}
@@ -423,7 +427,7 @@ export function SettingsModal({
                 type="button"
                 data-tour="settings-replay-tutorial"
                 onClick={handleReplayTutorial}
-                className="flex h-10 w-full items-center gap-2 rounded-[8px] px-4 text-left font-['Satoshi',sans-serif] text-[16px] font-medium text-[#606d76] outline-none transition-colors hover:bg-[rgba(255,255,255,0.6)] focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex h-10 w-full items-center gap-2 rounded-[8px] px-4 text-left font-['Satoshi',sans-serif] text-[16px] font-medium text-muted-foreground outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <BookOpen className="size-4 shrink-0" strokeWidth={1.5} aria-hidden />
                 Tutorial
@@ -432,7 +436,7 @@ export function SettingsModal({
                 type="button"
                 onClick={() => void handleLogout()}
                 disabled={authLoading}
-                className="flex h-10 w-full items-center gap-2 rounded-[8px] px-4 text-left font-['Satoshi',sans-serif] text-[16px] font-medium text-[#606d76] outline-none transition-colors hover:bg-[rgba(255,255,255,0.6)] focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                className="flex h-10 w-full items-center gap-2 rounded-[8px] px-4 text-left font-['Satoshi',sans-serif] text-[16px] font-medium text-muted-foreground outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
               >
                 <LogOut className="size-4 shrink-0" strokeWidth={1.5} aria-hidden />
                 {authLoading ? "Logging out…" : "Log out"}
@@ -440,10 +444,10 @@ export function SettingsModal({
             </div>
           </aside>
 
-          <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-white">
+          <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-card">
             <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-              <div className="border-b border-[#ebedee] pb-4">
-                <h2 className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">
+              <div className="border-b border-border pb-4">
+                <h2 className="font-['Satoshi',sans-serif] text-[24px] font-medium text-foreground">
                   {SECTION_TITLE[section]}
                 </h2>
               </div>
@@ -460,33 +464,33 @@ export function SettingsModal({
                   </div>
 
                   <label className="flex flex-col gap-3">
-                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                       First name
                     </span>
                     <input
                       type="text"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="h-10 w-full rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       autoComplete="given-name"
                     />
                   </label>
 
                   <label className="flex flex-col gap-3">
-                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                       Surname
                     </span>
                     <input
                       type="text"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="h-10 w-full rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       autoComplete="family-name"
                     />
                   </label>
 
                   <label className="flex flex-col gap-3">
-                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                       Git commit email
                     </span>
                     <input
@@ -495,16 +499,16 @@ export function SettingsModal({
                       onChange={(e) => setGitCommitEmail(e.target.value)}
                       placeholder="Same as Git author if different from login"
                       autoComplete="email"
-                      className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-ring"
+                      className="h-10 w-full rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     />
-                    <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-[#727d83]">
+                    <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-muted-foreground">
                       Used to attribute pushes when your Git config email differs from your Continuum account.
                     </p>
                   </label>
 
                   {showAdminReleaseNotesLink ? (
-                    <div className="flex flex-col gap-2 border-t border-[#ebedee] pt-6">
-                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <div className="flex flex-col gap-2 border-t border-border pt-6">
+                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                         Product updates
                       </p>
                       <button
@@ -519,6 +523,12 @@ export function SettingsModal({
                       </button>
                     </div>
                   ) : null}
+                </div>
+              )}
+
+              {section === "appearance" && (
+                <div className="flex flex-col gap-2 pt-6">
+                  <AppearanceSetting />
                 </div>
               )}
 
@@ -537,22 +547,22 @@ export function SettingsModal({
               {section === "notification" && (
                 <div className="flex flex-col gap-2 pt-2">
                   <div className="flex flex-col gap-2">
-                    <div className="flex w-full flex-col rounded-t-[8px] border-b border-[#ebedee] bg-[#f9f9f9] py-1.5 pl-4">
+                    <div className="flex w-full flex-col rounded-t-[8px] border-b border-border bg-card py-1.5 pl-4">
                       <div className="flex w-full items-center gap-6 pr-0">
                         <div className="min-w-0 flex-1">
-                          <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                          <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                             Trigger Event
                           </p>
                         </div>
-                        <p className="w-[120px] shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                        <p className="w-[120px] shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                           Email Digest
                         </p>
-                        <p className="w-[120px] shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                        <p className="w-[120px] shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                           Discord
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-col divide-y divide-[#ebedee]">
+                    <div className="flex flex-col divide-y divide-border">
                       <DiscordTriggersSection
                         projectId={discordProjectId}
                         renderAsNotificationRows
@@ -569,7 +579,7 @@ export function SettingsModal({
               {section === "invoice" && (
                 <div className="flex flex-col gap-6 pt-6">
                   <div className="flex flex-col gap-3">
-                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                       Currency
                     </span>
                     <Select
@@ -578,8 +588,8 @@ export function SettingsModal({
                     >
                       <SelectTrigger
                         className={cn(
-                          "h-10 w-full rounded-[8px] border border-[#ebedee] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] shadow-none focus:ring-2 focus:ring-ring",
-                          "[&_svg]:size-6 [&_svg]:opacity-100 [&_svg]:text-[#0b191f]",
+                          "h-10 w-full rounded-[8px] border border-border bg-card px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground shadow-none focus:ring-2 focus:ring-ring",
+                          "[&_svg]:size-6 [&_svg]:opacity-100 [&_svg]:text-foreground",
                         )}
                       >
                         <SelectValue />
@@ -595,11 +605,11 @@ export function SettingsModal({
                   </div>
 
                   <div className="flex flex-col gap-3">
-                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                       Default Hourly Rate
                     </span>
-                    <div className="flex h-10 items-center gap-1 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium focus-within:ring-2 focus-within:ring-ring">
-                      <span className="shrink-0 text-[#9fa5a8]" aria-hidden>
+                    <div className="flex h-10 items-center gap-1 rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium focus-within:ring-2 focus-within:ring-ring">
+                      <span className="shrink-0 text-muted-foreground" aria-hidden>
                         {CURRENCY_SYMBOL[invoiceCurrency]}
                       </span>
                       <input
@@ -610,25 +620,25 @@ export function SettingsModal({
                           const raw = e.target.value.replace(/[^\d.]/g, "");
                           setInvoiceHourlyRate(raw);
                         }}
-                        className="min-w-0 flex-1 border-0 bg-transparent font-medium text-[#0b191f] outline-none"
+                        className="min-w-0 flex-1 border-0 bg-transparent font-medium text-foreground outline-none"
                         aria-label="Default hourly rate"
                       />
                     </div>
-                    <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-[#727d83]">
+                    <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-muted-foreground">
                       Used as the default rate when generating invoices unless you override it per invoice.
                     </p>
                   </div>
 
-                  <div className="border-t border-[#ebedee] pt-2">
-                    <p className="mb-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <div className="border-t border-border pt-2">
+                    <p className="mb-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                       Bank details
                     </p>
-                    <p className="mb-4 font-['Satoshi',sans-serif] text-[13px] leading-normal text-[#727d83]">
+                    <p className="mb-4 font-['Satoshi',sans-serif] text-[13px] leading-normal text-muted-foreground">
                       Shown on PDF invoices so clients can pay you. All fields are optional.
                     </p>
                     <div className="flex flex-col gap-4">
                       <label className="flex flex-col gap-2">
-                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
                           Account name (as on bank account)
                         </span>
                         <input
@@ -636,22 +646,22 @@ export function SettingsModal({
                           value={bankAccountName}
                           onChange={(e) => setBankAccountName(e.target.value)}
                           autoComplete="name"
-                          className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="h-10 w-full rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         />
                       </label>
                       <label className="flex flex-col gap-2">
-                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
                           Bank name
                         </span>
                         <input
                           type="text"
                           value={bankName}
                           onChange={(e) => setBankName(e.target.value)}
-                          className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="h-10 w-full rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         />
                       </label>
                       <label className="flex flex-col gap-2">
-                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
                           Account number
                         </span>
                         <input
@@ -659,11 +669,11 @@ export function SettingsModal({
                           value={bankAccountNumber}
                           onChange={(e) => setBankAccountNumber(e.target.value)}
                           autoComplete="off"
-                          className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="h-10 w-full rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         />
                       </label>
                       <label className="flex flex-col gap-2">
-                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
                           IBAN
                         </span>
                         <input
@@ -671,11 +681,11 @@ export function SettingsModal({
                           value={bankIban}
                           onChange={(e) => setBankIban(e.target.value.replace(/\s+/g, " "))}
                           autoComplete="off"
-                          className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="h-10 w-full rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         />
                       </label>
                       <label className="flex flex-col gap-2">
-                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
                           SWIFT / BIC
                         </span>
                         <input
@@ -683,7 +693,7 @@ export function SettingsModal({
                           value={bankSwiftBic}
                           onChange={(e) => setBankSwiftBic(e.target.value.replace(/\s+/g, "").toUpperCase())}
                           autoComplete="off"
-                          className="h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="h-10 w-full rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         />
                       </label>
                     </div>
@@ -702,10 +712,10 @@ export function SettingsModal({
                         className="mt-0.5 size-6 shrink-0"
                       />
                       <div className="flex min-w-0 flex-col gap-1">
-                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                           GitHub
                         </p>
-                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-muted-foreground">
                           Connect the GitHub App to a project to authorize access and list repositories from your
                           installation.
                         </p>
@@ -719,14 +729,14 @@ export function SettingsModal({
                           className={cn(outlineActionClass, "gap-1")}
                         >
                           Manage
-                          <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                          <ChevronRight className="size-5 shrink-0 text-foreground" strokeWidth={1.5} aria-hidden />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>Manage GitHub integration</TooltipContent>
                     </Tooltip>
                   </div>
 
-                  <div className="flex items-start justify-between gap-4 border-t border-[#ebedee] pt-4">
+                  <div className="flex items-start justify-between gap-4 border-t border-border pt-4">
                     <div className="flex min-w-0 items-start gap-3">
                       <img
                         src={BRAND_LOGO.discord}
@@ -735,10 +745,10 @@ export function SettingsModal({
                         className="mt-0.5 size-6 shrink-0"
                       />
                       <div className="flex min-w-0 flex-col gap-1">
-                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                           Discord
                         </p>
-                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-muted-foreground">
                           Link a Discord webhook to a project to send task and milestone updates to a channel. Pick
                           which events fire under Notifications.
                         </p>
@@ -759,11 +769,11 @@ export function SettingsModal({
                       }
                     >
                       Manage
-                      <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                      <ChevronRight className="size-5 shrink-0 text-foreground" strokeWidth={1.5} aria-hidden />
                     </button>
                   </div>
 
-                  <div className="flex items-start justify-between gap-4 border-t border-[#ebedee] pt-4">
+                  <div className="flex items-start justify-between gap-4 border-t border-border pt-4">
                     <div className="flex min-w-0 items-start gap-3">
                       <img
                         src={BRAND_LOGO.cursor}
@@ -772,10 +782,10 @@ export function SettingsModal({
                         className="mt-0.5 size-6 shrink-0"
                       />
                       <div className="flex min-w-0 flex-col gap-1">
-                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                           Cursor MCP
                         </p>
-                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-muted-foreground">
                           Connect Cursor to Continuum so your AI agent can pull tasks, update checklists, and change
                           statuses.
                         </p>
@@ -792,14 +802,14 @@ export function SettingsModal({
                           className={cn(outlineActionClass, "gap-1")}
                         >
                           Setup
-                          <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                          <ChevronRight className="size-5 shrink-0 text-foreground" strokeWidth={1.5} aria-hidden />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>Open Cursor MCP setup</TooltipContent>
                     </Tooltip>
                   </div>
 
-                  <div className="flex items-start justify-between gap-4 border-t border-[#ebedee] pt-4">
+                  <div className="flex items-start justify-between gap-4 border-t border-border pt-4">
                     <div className="flex min-w-0 items-start gap-3">
                       <img
                         src={BRAND_LOGO.claude}
@@ -808,10 +818,10 @@ export function SettingsModal({
                         className="mt-0.5 size-6 shrink-0"
                       />
                       <div className="flex min-w-0 flex-col gap-1">
-                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                           Claude Code
                         </p>
-                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+                        <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-muted-foreground">
                           Connect Claude Code to Continuum so your AI agent can pull tasks, update checklists, and
                           change statuses.
                         </p>
@@ -828,7 +838,7 @@ export function SettingsModal({
                           className={cn(outlineActionClass, "gap-1")}
                         >
                           Setup
-                          <ChevronRight className="size-5 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                          <ChevronRight className="size-5 shrink-0 text-foreground" strokeWidth={1.5} aria-hidden />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>Open Claude Code MCP setup</TooltipContent>
@@ -839,12 +849,12 @@ export function SettingsModal({
 
               {section === "waitlist" && isGlobalAdmin && (
                 <div className="flex flex-col gap-6 pt-6">
-                  <p className="font-['Satoshi',sans-serif] text-[14px] font-normal leading-normal text-[#606d76]">
+                  <p className="font-['Satoshi',sans-serif] text-[14px] font-normal leading-normal text-muted-foreground">
                     Send the off-waitlist invite email. The recipient gets a message that their account is ready, with a
                     link to create an account at continuumapp.co.za.
                   </p>
                   <label className="flex flex-col gap-3">
-                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">Email</span>
+                    <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">Email</span>
                     <div className="flex min-w-0 items-center gap-3">
                       <input
                         type="email"
@@ -852,13 +862,13 @@ export function SettingsModal({
                         onChange={(e) => setWaitlistEmail(e.target.value)}
                         placeholder="name@company.com"
                         autoComplete="email"
-                        className="h-10 min-w-0 flex-1 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-ring"
+                        className="h-10 min-w-0 flex-1 rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                       />
                       <button
                         type="button"
                         onClick={() => void handleWaitlistSend()}
                         disabled={waitlistSendPending}
-                        className="h-10 shrink-0 rounded-[8px] bg-[#0b191f] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-10 shrink-0 rounded-[8px] bg-primary px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-primary-foreground outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {waitlistSendPending ? "Sending…" : "Send"}
                       </button>
@@ -873,10 +883,10 @@ export function SettingsModal({
                 <div className="flex flex-col gap-4 pt-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex min-w-0 flex-col gap-1">
-                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                         Contact support
                       </p>
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-[#0b191f]">
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-normal text-foreground">
                         {SUPPORT_EMAIL}
                       </p>
                     </div>
@@ -892,7 +902,7 @@ export function SettingsModal({
 
                   {isGlobalAdmin && (
                     <div className="flex items-center justify-between gap-4">
-                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                      <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                         Status page
                       </p>
                       <button
@@ -901,7 +911,7 @@ export function SettingsModal({
                         className={cn(outlineActionClass, "gap-1")}
                       >
                         System uptime
-                        <ChevronRight className="size-6 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                        <ChevronRight className="size-6 shrink-0 text-foreground" strokeWidth={1.5} aria-hidden />
                       </button>
                     </div>
                   )}
@@ -909,7 +919,7 @@ export function SettingsModal({
                   <div className="flex items-center justify-between gap-4">
                     <p
                       id="settings-support-report-heading"
-                      className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]"
+                      className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground"
                     >
                       Report issue
                     </p>
@@ -923,7 +933,7 @@ export function SettingsModal({
                           aria-labelledby="settings-support-report-heading"
                         >
                           Report
-                          <ChevronRight className="size-6 shrink-0 text-[#0b191f]" strokeWidth={1.5} aria-hidden />
+                          <ChevronRight className="size-6 shrink-0 text-foreground" strokeWidth={1.5} aria-hidden />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>Report an issue</TooltipContent>
@@ -931,7 +941,7 @@ export function SettingsModal({
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                       Legal
                     </p>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:justify-end">
@@ -959,7 +969,7 @@ export function SettingsModal({
                         type="button"
                         onClick={() => setFeedbackOpen(true)}
                         aria-label="Report an issue from the Legal section"
-                        className="cursor-pointer border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] underline decoration-solid underline-offset-2 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                        className="cursor-pointer border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground underline decoration-solid underline-offset-2 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         Report issue
                       </button>
@@ -970,13 +980,13 @@ export function SettingsModal({
             </div>
 
             {showSaveFooter && (
-              <div className="flex shrink-0 justify-end gap-2 border-t border-[#ebedee] px-6 py-6">
+              <div className="flex shrink-0 justify-end gap-2 border-t border-border px-6 py-6">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
                       onClick={() => handleOpenChange(false)}
-                      className="h-10 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                      className="h-10 rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       Cancel
                     </button>
@@ -989,7 +999,7 @@ export function SettingsModal({
                       type="button"
                       onClick={() => void handleSave()}
                       disabled={savePending}
-                      className="h-10 rounded-[8px] bg-[#0b191f] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-10 rounded-[8px] bg-primary px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-primary-foreground outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {savePending ? "Saving…" : "Save"}
                     </button>

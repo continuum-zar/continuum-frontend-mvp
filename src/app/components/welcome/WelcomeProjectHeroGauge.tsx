@@ -17,10 +17,10 @@ export function WelcomeProjectHeroGauge() {
           <img alt="" className="block size-full max-w-none" src={imgHeroArcFilled} />
         </div>
       </div>
-      <p className="absolute top-[49px] left-1/2 -translate-x-1/2 font-['Satoshi',sans-serif] text-[70.704px] font-normal leading-normal text-[#0b191f]">
+      <p className="absolute top-[49px] left-1/2 -translate-x-1/2 font-['Satoshi',sans-serif] text-[70.704px] font-normal leading-normal text-foreground">
         89
       </p>
-      <p className="absolute top-[159px] left-1/2 -translate-x-1/2 whitespace-nowrap font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal text-[#727d83]">
+      <p className="absolute top-[159px] left-1/2 -translate-x-1/2 whitespace-nowrap font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal text-muted-foreground">
         Project on track
       </p>
     </div>

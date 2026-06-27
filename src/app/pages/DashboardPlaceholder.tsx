@@ -68,7 +68,7 @@ import { STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
 
 function LiveKanbanSuspenseFallback() {
   return (
-    <div className="relative z-[1] flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden bg-white pt-4">
+    <div className="relative z-[1] flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden bg-card pt-4">
       <KanbanBoardSkeleton />
     </div>
   );
@@ -126,7 +126,7 @@ type ComponentProps = {
 
 function Component({ className }: Pick<ComponentProps, "className">) {
   return (
-    <div className={className || "bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] size-[24px]"} data-node-id="7:769">
+    <div className={className || "bg-destructive border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] size-[24px]"} data-node-id="7:769">
       <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[9px] text-white whitespace-nowrap" data-node-id="7:770">
         <p className="leading-[0.4]">AS</p>
       </div>
@@ -145,7 +145,7 @@ function Component3({ className }: Pick<Component3Props, "className">) {
       <div className="relative shrink-0 size-[16px]" data-name="lucide/list-todo" data-node-id="7:1028">
         <img alt="" className="absolute block max-w-none size-full" src={imgLucideListTodo} />
       </div>
-      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="7:1030">
+      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[14px] whitespace-nowrap" data-node-id="7:1030">
         To-do
       </p>
     </div>
@@ -158,16 +158,16 @@ type Component4Props = {
 
 function Component4({ className }: Pick<Component4Props, "className">) {
   return (
-    <div className={className || "bg-[#d7fede] content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px]"} data-node-id="7:846">
-      <Timer aria-hidden className="relative shrink-0 size-4 text-[#108e27]" strokeWidth={1.5} data-name="lucide/timer" data-node-id="7:847" />
-      <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#108e27] text-[14px] whitespace-nowrap" data-node-id="7:849">
+    <div className={className || "bg-success/10 content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px]"} data-node-id="7:846">
+      <Timer aria-hidden className="relative shrink-0 size-4 text-success" strokeWidth={1.5} data-name="lucide/timer" data-node-id="7:847" />
+      <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-success text-[14px] whitespace-nowrap" data-node-id="7:849">
         Sprint on track
       </p>
-      <div className="-translate-x-1/2 absolute bg-white border-[#ebedee] border-[0.824px] border-solid content-stretch flex items-start justify-between left-[calc(50%+0.5px)] opacity-0 px-[39.557px] py-[19.778px] rounded-[823.271px] shadow-[0px_41.205px_11.537px_0px_rgba(26,59,84,0),0px_26.371px_10.713px_0px_rgba(26,59,84,0.01),0px_14.834px_9.065px_0px_rgba(26,59,84,0.05),0px_6.593px_6.593px_0px_rgba(26,59,84,0.09),0px_1.648px_3.296px_0px_rgba(26,59,84,0.1)] top-[38.2px] w-[671.637px]" data-node-id="7:850">
-        <div className="bg-white content-stretch flex items-start relative shrink-0" data-node-id="7:851">
+      <div className="-translate-x-1/2 absolute bg-card border-border border-[0.824px] border-solid content-stretch flex items-start justify-between left-[calc(50%+0.5px)] opacity-0 px-[39.557px] py-[19.778px] rounded-[823.271px] shadow-[0px_41.205px_11.537px_0px_rgba(26,59,84,0),0px_26.371px_10.713px_0px_rgba(26,59,84,0.01),0px_14.834px_9.065px_0px_rgba(26,59,84,0.05),0px_6.593px_6.593px_0px_rgba(26,59,84,0.09),0px_1.648px_3.296px_0px_rgba(26,59,84,0.1)] top-[38.2px] w-[671.637px]" data-node-id="7:850">
+        <div className="bg-card content-stretch flex items-start relative shrink-0" data-node-id="7:851">
           <div className="content-stretch flex gap-[19.778px] items-center relative shrink-0" data-node-id="7:852">
             <div className="h-[67.239px] relative shrink-0 w-[68.288px]" data-node-id="7:853">
-              <p className="absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[calc(50%-19.42px)] not-italic overflow-hidden text-[#0b191f] text-[26.371px] text-ellipsis top-[14.83px] whitespace-nowrap" data-node-id="7:854">
+              <p className="absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[calc(50%-19.42px)] not-italic overflow-hidden text-foreground text-[26.371px] text-ellipsis top-[14.83px] whitespace-nowrap" data-node-id="7:854">
                 1.17
               </p>
               <div className="absolute h-[54.789px] left-0 top-0 w-[68.288px]" data-node-id="7:855">
@@ -185,21 +185,21 @@ function Component4({ className }: Pick<Component4Props, "className">) {
                   <img alt="" className="block max-w-none size-full" src={imgEllipse22} />
                 </div>
               </div>
-              <p className="absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[9.78px] not-italic opacity-50 overflow-hidden text-[#0b191f] text-[9.889px] text-ellipsis top-[54.39px] whitespace-nowrap" data-node-id="7:858">
+              <p className="absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[9.78px] not-italic opacity-50 overflow-hidden text-foreground text-[9.889px] text-ellipsis top-[54.39px] whitespace-nowrap" data-node-id="7:858">
                 0
               </p>
-              <p className="-translate-x-full absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[57.81px] not-italic opacity-50 overflow-hidden text-[#0b191f] text-[9.889px] text-ellipsis text-right top-[54.39px] whitespace-nowrap" data-node-id="7:859">
+              <p className="-translate-x-full absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[57.81px] not-italic opacity-50 overflow-hidden text-foreground text-[9.889px] text-ellipsis text-right top-[54.39px] whitespace-nowrap" data-node-id="7:859">
                 3
               </p>
             </div>
             <div className="content-stretch flex flex-col items-start relative shrink-0" data-node-id="7:860">
               <div className="content-stretch flex flex-col items-start relative shrink-0 w-[100.54px]" data-node-id="7:861">
                 <div className="content-stretch flex flex-col gap-[3.296px] items-start relative shrink-0 w-full" data-node-id="7:862">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-[#0b191f] text-[13.186px] text-ellipsis w-[100.54px] whitespace-nowrap" data-node-id="7:863">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-foreground text-[13.186px] text-ellipsis w-[100.54px] whitespace-nowrap" data-node-id="7:863">
                     Efficiency Rate
                   </p>
                   <div className="content-stretch flex items-center justify-center relative shrink-0 w-full" data-node-id="7:864">
-                    <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#727d83] text-[11.537px] tracking-[-0.1154px]" data-node-id="7:865">
+                    <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-muted-foreground text-[11.537px] tracking-[-0.1154px]" data-node-id="7:865">
                       Safe Zone
                     </p>
                   </div>
@@ -208,10 +208,10 @@ function Component4({ className }: Pick<Component4Props, "className">) {
             </div>
           </div>
         </div>
-        <div className="bg-white content-stretch flex items-start relative shrink-0" data-node-id="7:866">
+        <div className="bg-card content-stretch flex items-start relative shrink-0" data-node-id="7:866">
           <div className="content-stretch flex gap-[19.778px] items-center relative shrink-0" data-node-id="7:867">
             <div className="h-[67.239px] relative shrink-0 w-[68.288px]" data-node-id="7:868">
-              <p className="absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[calc(50%-16.84px)] not-italic overflow-hidden text-[#0b191f] text-[26.371px] text-ellipsis top-[14.83px] whitespace-nowrap" data-node-id="7:869">
+              <p className="absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[calc(50%-16.84px)] not-italic overflow-hidden text-foreground text-[26.371px] text-ellipsis top-[14.83px] whitespace-nowrap" data-node-id="7:869">
                 46
               </p>
               <div className="absolute h-[54.789px] left-0 top-0 w-[68.288px]" data-node-id="7:870">
@@ -233,11 +233,11 @@ function Component4({ className }: Pick<Component4Props, "className">) {
             <div className="content-stretch flex flex-col items-start relative shrink-0" data-node-id="7:873">
               <div className="content-stretch flex flex-col items-start relative shrink-0 w-[102px]" data-node-id="7:874">
                 <div className="content-stretch flex flex-col gap-[3.296px] items-start relative shrink-0 w-full" data-node-id="7:875">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-[#0b191f] text-[13.186px] text-ellipsis whitespace-nowrap" data-node-id="7:876">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-foreground text-[13.186px] text-ellipsis whitespace-nowrap" data-node-id="7:876">
                     Tasks Completed
                   </p>
                   <div className="content-stretch flex items-center relative shrink-0 w-full" data-node-id="7:877">
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#727d83] text-[11.537px] tracking-[-0.1154px] whitespace-nowrap" data-node-id="7:878">
+                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11.537px] tracking-[-0.1154px] whitespace-nowrap" data-node-id="7:878">
                       of 150 Total Points
                     </p>
                   </div>
@@ -248,7 +248,7 @@ function Component4({ className }: Pick<Component4Props, "className">) {
         </div>
         <div className="content-stretch flex gap-[13.186px] items-start relative shrink-0" data-node-id="7:879">
           <div className="h-[67.239px] relative shrink-0 w-[68.288px]" data-name="Component 145" data-node-id="7:880">
-            <p className="-translate-x-1/2 absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[calc(50%-0.22px)] not-italic overflow-hidden text-[#0b191f] text-[26.371px] text-center text-ellipsis top-[14.83px] whitespace-nowrap" data-node-id="7:881">
+            <p className="-translate-x-1/2 absolute font-['Satoshi:Medium',sans-serif] leading-[normal] left-[calc(50%-0.22px)] not-italic overflow-hidden text-foreground text-[26.371px] text-center text-ellipsis top-[14.83px] whitespace-nowrap" data-node-id="7:881">
               12
             </p>
             <div className="absolute left-[-3.3px] size-[74.169px] top-[-3.3px]" data-node-id="7:884">
@@ -267,7 +267,7 @@ function Component4({ className }: Pick<Component4Props, "className">) {
           </div>
           <div className="content-stretch flex flex-col items-start relative shrink-0" data-node-id="7:888">
             <div className="content-stretch flex flex-col gap-[3.296px] items-start relative shrink-0" data-node-id="7:889">
-              <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-[#0b191f] text-[13.186px] text-ellipsis whitespace-nowrap" data-node-id="7:890">
+              <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-foreground text-[13.186px] text-ellipsis whitespace-nowrap" data-node-id="7:890">
                 Commits
               </p>
               <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="7:891">
@@ -277,7 +277,7 @@ function Component4({ className }: Pick<Component4Props, "className">) {
                       <img alt="" className="block max-w-none size-full" src={imgEllipse28} />
                     </div>
                   </div>
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-[#727d83] text-[11.537px] text-ellipsis whitespace-nowrap" data-node-id="7:894">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-muted-foreground text-[11.537px] text-ellipsis whitespace-nowrap" data-node-id="7:894">
                     Shipped
                   </p>
                 </div>
@@ -287,7 +287,7 @@ function Component4({ className }: Pick<Component4Props, "className">) {
                       <img alt="" className="block max-w-none size-full" src={imgEllipse29} />
                     </div>
                   </div>
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-[#727d83] text-[11.537px] text-ellipsis whitespace-nowrap" data-node-id="7:897">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-muted-foreground text-[11.537px] text-ellipsis whitespace-nowrap" data-node-id="7:897">
                     In Progress
                   </p>
                 </div>
@@ -305,21 +305,21 @@ function sprintHealthFromCompletionPct(pct: number): { label: string; bgClass: s
   if (pct >= 70) {
     return {
       label: "Sprint on track",
-      bgClass: "bg-[#d7fede]",
-      textClass: "text-[#108e27]",
+      bgClass: "bg-success/10",
+      textClass: "text-success",
     };
   }
   if (pct >= 40) {
     return {
       label: "Sprint needs attention",
-      bgClass: "bg-[#fef9c3]",
-      textClass: "text-[#a16207]",
+      bgClass: "bg-warning/10",
+      textClass: "text-warning",
     };
   }
   return {
     label: "Sprint at risk",
-    bgClass: "bg-[#fee2e2]",
-    textClass: "text-[#b91c1c]",
+    bgClass: "bg-destructive/10",
+    textClass: "text-destructive",
   };
 }
 
@@ -384,7 +384,7 @@ function SprintBoardHeaderHealthPill({
   });
 
   const staticClassName =
-    "bg-[#d7fede] content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0";
+    "bg-success/10 content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0";
   if (!isLiveBoard || milestoneParam == null) {
     return <Component4 className={staticClassName} />;
   }
@@ -392,9 +392,9 @@ function SprintBoardHeaderHealthPill({
     "content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0";
   if (milestonesLoading) {
     return (
-      <div className={`${base} bg-[#f0f3f5]`} data-node-id="7:846">
-        <Timer aria-hidden className="relative shrink-0 size-4 text-[#606d76]" strokeWidth={1.5} data-name="lucide/timer" />
-        <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap">
+      <div className={`${base} bg-muted`} data-node-id="7:846">
+        <Timer aria-hidden className="relative shrink-0 size-4 text-muted-foreground" strokeWidth={1.5} data-name="lucide/timer" />
+        <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[14px] whitespace-nowrap">
           …
         </p>
       </div>
@@ -402,9 +402,9 @@ function SprintBoardHeaderHealthPill({
   }
   if (!milestone) {
     return (
-      <div className={`${base} bg-[#f0f3f5]`} data-node-id="7:846">
-        <Timer aria-hidden className="relative shrink-0 size-4 text-[#606d76]" strokeWidth={1.5} data-name="lucide/timer" />
-        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap">
+      <div className={`${base} bg-muted`} data-node-id="7:846">
+        <Timer aria-hidden className="relative shrink-0 size-4 text-muted-foreground" strokeWidth={1.5} data-name="lucide/timer" />
+        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[14px] whitespace-nowrap">
           Milestone unavailable
         </p>
       </div>
@@ -420,7 +420,7 @@ function SprintBoardHeaderHealthPill({
     <>
       <div
         ref={triggerRef}
-        className={`${base} ${bgClass} cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1466ff]/40`}
+        className={`${base} ${bgClass} cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
         data-node-id="7:846"
         tabIndex={0}
         aria-label={`${label}. Hover to view sprint gauges.`}
@@ -508,17 +508,17 @@ function SprintGaugesHoverPanel({
       role="tooltip"
     >
       <div
-        className="pointer-events-auto flex h-[129.59px] w-[815px] max-w-[calc(100vw-2rem)] shrink-0 items-center justify-between rounded-[999px] border border-[#ebedee] bg-white px-12 py-6 shadow-[0px_41.205px_11.537px_0px_rgba(26,59,84,0),0px_26.371px_10.713px_0px_rgba(26,59,84,0.01),0px_14.834px_9.065px_0px_rgba(26,59,84,0.05),0px_6.593px_6.593px_0px_rgba(26,59,84,0.09),0px_1.648px_3.296px_0px_rgba(26,59,84,0.1)]"
+        className="pointer-events-auto flex h-[129.59px] w-[815px] max-w-[calc(100vw-2rem)] shrink-0 items-center justify-between rounded-[999px] border border-border bg-card px-12 py-6 shadow-[0px_41.205px_11.537px_0px_rgba(26,59,84,0),0px_26.371px_10.713px_0px_rgba(26,59,84,0.01),0px_14.834px_9.065px_0px_rgba(26,59,84,0.05),0px_6.593px_6.593px_0px_rgba(26,59,84,0.09),0px_1.648px_3.296px_0px_rgba(26,59,84,0.1)]"
         onPointerEnter={onPointerEnter}
         onPointerLeave={onPointerLeave}
       >
         <div className="flex shrink-0 items-center gap-6">
           <EfficiencyGauge hps={hpsRatio} />
           <div className="flex w-[122px] shrink-0 flex-col items-start gap-1">
-            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-[#0b191f]">
+            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-foreground">
               Efficiency Rate
             </p>
-            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-[#727d83]">
+            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-muted-foreground">
               {effLabel}
             </p>
           </div>
@@ -527,10 +527,10 @@ function SprintGaugesHoverPanel({
         <div className="flex shrink-0 items-center gap-6">
           <TasksGauge completed={completedWeight} total={totalWeight} />
           <div className="flex w-[124px] shrink-0 flex-col items-start gap-1">
-            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-[#0b191f]">
+            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-foreground">
               Tasks Completed
             </p>
-            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] whitespace-nowrap text-[#727d83]">
+            <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] whitespace-nowrap text-muted-foreground">
               of {Math.round(totalWeight)} Total Points
             </p>
           </div>
@@ -543,25 +543,25 @@ function SprintGaugesHoverPanel({
             trivial={trivialCommits}
           />
           <div className="flex shrink-0 flex-col items-start gap-1">
-            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-[#0b191f]">
+            <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-foreground">
               Commits
             </p>
             <div className="flex flex-col items-start">
               <div className="flex items-center gap-1.5">
                 <div className="size-1 rounded-full" style={{ backgroundColor: COMMIT_GAUGE_SHIPPED }} />
-                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-[#727d83]">
+                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-muted-foreground">
                   Shipped {structuralCommits}
                 </p>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="size-1 rounded-full" style={{ backgroundColor: COMMIT_GAUGE_IN_PROGRESS }} />
-                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-[#727d83]">
+                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-muted-foreground">
                   In Progress {incrementalCommits}
                 </p>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="size-1 rounded-full" style={{ backgroundColor: COMMIT_GAUGE_TRIVIAL }} />
-                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-[#727d83]">
+                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-muted-foreground">
                   Trivial {trivialCommits}
                 </p>
               </div>
@@ -755,9 +755,9 @@ export function DashboardPlaceholder() {
     const el = e.currentTarget;
     const ghost = el.cloneNode(true) as HTMLElement;
     ghost.style.transform = "rotate(3deg)";
-    const ghostCard = ghost.querySelector(".bg-white") as HTMLElement | null;
+    const ghostCard = ghost.querySelector(".bg-card") as HTMLElement | null;
     if (ghostCard) {
-      ghostCard.style.border = "2px solid #24B5F8";
+      ghostCard.style.border = "2px solid var(--info)";
     }
     ghost.style.width = `${el.offsetWidth}px`;
     ghost.style.position = "fixed";
@@ -864,12 +864,12 @@ export function DashboardPlaceholder() {
         onClick={() => navigate(workspaceJoin("task", String(task.id)))}
         style={{ order: cardOrderFor(task.id) }}
       >
-        <div className={`bg-white ${isDragging ? "border-2 border-[#24B5F8]" : "border border-[#ebedee]"} border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full`}>
+        <div className={`bg-card ${isDragging ? "border-2 border-info" : "border border-border"} border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full`}>
           <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full">
             <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">
               <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full">
                 <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full">
-                  <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]">
+                  <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-foreground text-[20px] tracking-[-0.2px]">
                     {task.title}
                   </p>
                   <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]">
@@ -886,13 +886,13 @@ export function DashboardPlaceholder() {
                   </div>
                   <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
                     {task.multiLineDesc ? (
-                      <div className="font-['Satoshi:Medium',sans-serif] leading-[0] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full whitespace-pre-wrap">
+                      <div className="font-['Satoshi:Medium',sans-serif] leading-[0] not-italic relative shrink-0 text-muted-foreground text-[16px] w-full whitespace-pre-wrap">
                         {task.descriptionLines.map((line, i) => (
                           <p key={i} className={`leading-[normal]${i === 0 ? " mb-0" : ""}`}>{line}</p>
                         ))}
                       </div>
                     ) : (
-                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full">
+                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[16px] w-full">
                         {task.descriptionLines[0]}
                       </p>
                     )}
@@ -916,24 +916,24 @@ export function DashboardPlaceholder() {
             </div>
             <div className="content-stretch flex items-center justify-between relative shrink-0 w-full">
               <div className="content-stretch flex items-center relative shrink-0">
-                <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
+                <Component className="bg-destructive border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
               </div>
               <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0">
-                <div className={`bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0${task.badgesHidden ? " opacity-0" : ""}`}>
+                <div className={`bg-muted content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0${task.badgesHidden ? " opacity-0" : ""}`}>
                   <div className="relative shrink-0 size-[16px]">
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
                   </div>
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap">
                     {task.clipCount}
                   </p>
                 </div>
-                <div className={`bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0${task.badgesHidden ? " opacity-0" : ""}`}>
+                <div className={`bg-muted content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0${task.badgesHidden ? " opacity-0" : ""}`}>
                   <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]">
                     <div className="relative shrink-0 size-[13.33px]">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
                     </div>
                   </div>
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap">
                     {task.msgCount}
                   </p>
                 </div>
@@ -950,12 +950,12 @@ export function DashboardPlaceholder() {
       className="box-border flex h-screen min-h-0 w-full flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
       data-name="Dashboard placeholder"
       data-node-id="7:2816"
-      style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)" }}
+      style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, var(--background) 0%, var(--background) 100%)" }}
     >
       <div className="flex min-h-0 w-full flex-1 flex-col items-end gap-2" data-node-id="7:2817">
         <div className="isolate flex min-h-0 w-full flex-1 items-stretch gap-[16px]" data-node-id="7:2818">
           <DashboardLeftRail />
-          <div className="relative z-[1] isolate flex min-h-0 min-w-0 flex-1 flex-col items-end gap-[24px] overflow-x-clip overflow-y-hidden rounded-[8px] border border-[#ebedee] border-solid bg-white py-[16px] pl-[24px] pr-[16px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]" data-node-id="7:2850">
+          <div className="relative z-[1] isolate flex min-h-0 min-w-0 flex-1 flex-col items-end gap-[24px] overflow-x-clip overflow-y-hidden rounded-[8px] border border-border border-solid bg-card py-[16px] pl-[24px] pr-[16px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]" data-node-id="7:2850">
             <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full z-[3]" data-node-id="7:2851">
               <div className="content-stretch relative flex min-w-0 shrink-0 w-full items-center justify-between gap-3" data-node-id="7:2852">
                 <div
@@ -972,7 +972,7 @@ export function DashboardPlaceholder() {
                           <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderOpenDot} />
                         </div>
                         <p
-                          className="font-['Satoshi:Medium',sans-serif] relative min-w-0 flex-1 overflow-hidden text-ellipsis leading-[normal] not-italic whitespace-nowrap text-[#606d76] text-[16px]"
+                          className="font-['Satoshi:Medium',sans-serif] relative min-w-0 flex-1 overflow-hidden text-ellipsis leading-[normal] not-italic whitespace-nowrap text-muted-foreground text-[16px]"
                           data-node-id="7:2856"
                         >
                           {breadcrumbProjectLabel}
@@ -990,7 +990,7 @@ export function DashboardPlaceholder() {
                     <TooltipTrigger asChild>
                       <Link
                         to={sprintBoardHref}
-                        className="font-['Satoshi:Medium',sans-serif] relative min-w-0 max-w-[min(100%,12.5rem)] shrink overflow-hidden text-ellipsis leading-[normal] not-italic whitespace-nowrap text-[#606d76] text-[16px] no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                        className="font-['Satoshi:Medium',sans-serif] relative min-w-0 max-w-[min(100%,12.5rem)] shrink overflow-hidden text-ellipsis leading-[normal] not-italic whitespace-nowrap text-muted-foreground text-[16px] no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                         data-node-id="7:2862"
                       >
                         {milestonePageTitle}
@@ -1009,16 +1009,16 @@ export function DashboardPlaceholder() {
                     milestonesLoading={!secondarySprintMetaReady || liveMilestonesQuery.isLoading}
                     liveProjectId={liveProjectId}
                   />
-                  <div className="bg-[#f0f3f5] content-stretch flex gap-[2px] h-[32px] items-center p-[2px] relative rounded-[8px] shrink-0 w-[251px]" data-node-id="7:2868">
+                  <div className="bg-muted content-stretch flex gap-[2px] h-[32px] items-center p-[2px] relative rounded-[8px] shrink-0 w-[251px]" data-node-id="7:2868">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Link
                           to={sprintBoardHref}
-                          className="bg-white border border-[#ededed] border-solid content-stretch flex h-[36px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                          className="bg-card border border-border border-solid content-stretch flex h-[36px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 text-inherit no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                           data-name="Component 2"
                           data-node-id="7:2869"
                         >
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="7:2870">
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-foreground text-[14px] whitespace-nowrap" data-node-id="7:2870">
                             Sprint
                           </p>
                         </Link>
@@ -1041,7 +1041,7 @@ export function DashboardPlaceholder() {
                           data-name="Component 3"
                           data-node-id="7:2871"
                         >
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] text-right whitespace-nowrap" data-node-id="7:2872">
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[14px] text-right whitespace-nowrap" data-node-id="7:2872">
                             Time logs
                           </p>
                         </Link>
@@ -1064,7 +1064,7 @@ export function DashboardPlaceholder() {
                           data-name="Component 4"
                           data-node-id="7:2874"
                         >
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="7:2875">
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[14px] whitespace-nowrap" data-node-id="7:2875">
                             Activity
                           </p>
                         </Link>
@@ -1080,12 +1080,12 @@ export function DashboardPlaceholder() {
                         milestoneId: milestoneParam,
                       }}
                       iconSrc={imgLucideBell}
-                      className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] cursor-pointer"
+                      className="bg-card border border-border border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] cursor-pointer"
                     />
                   ) : (
                     <button
                       type="button"
-                      className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 cursor-default focus-visible:ring-2 focus-visible:ring-ring"
+                      className="bg-card border border-border border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 cursor-default focus-visible:ring-2 focus-visible:ring-ring"
                       data-name="Component 5"
                       data-node-id="7:2876"
                       aria-label="Notifications"
@@ -1113,7 +1113,7 @@ export function DashboardPlaceholder() {
                             ? "Milestone not found"
                             : "Edit milestone"
                     }
-                    className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+                    className="bg-card border border-border border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
                     data-name="Component 6"
                     data-node-id="7:2879"
                     aria-label="Edit milestone"
@@ -1121,15 +1121,15 @@ export function DashboardPlaceholder() {
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-cog" data-node-id="7:2880">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderCog} />
                     </div>
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="7:2882">
+                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-foreground text-[14px] whitespace-nowrap" data-node-id="7:2882">
                       Edit
                     </p>
                   </button>
-                  <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 8" data-node-id="7:2883">
+                  <div className="bg-card border border-border border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 8" data-node-id="7:2883">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/share" data-node-id="7:2884">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideShare} />
                     </div>
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="7:2886">
+                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-foreground text-[14px] whitespace-nowrap" data-node-id="7:2886">
                       Share
                     </p>
                   </div>
@@ -1145,7 +1145,7 @@ export function DashboardPlaceholder() {
               <div className="content-stretch flex items-center relative shrink-0 w-full" data-node-id="7:2889">
                 <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2890">
                   <p
-                    className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 max-w-[min(100%,480px)] shrink truncate text-[#0b191f] text-[24px]"
+                    className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 max-w-[min(100%,480px)] shrink truncate text-foreground text-[24px]"
                     data-node-id="7:2891"
                     title={milestonePageTitle}
                   >
@@ -1172,8 +1172,8 @@ export function DashboardPlaceholder() {
                         aria-pressed={!isLiveBoard || sprintView === "board"}
                         className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
                           !isLiveBoard || sprintView === "board"
-                            ? "bg-[#cfecff] px-[16px] py-[8px]"
-                            : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                            ? "bg-info/10 px-[16px] py-[8px]"
+                            : "w-[40px] bg-muted px-[16px] py-[8px]"
                         }`}
                         data-name="Component 2"
                         data-node-id="I7:2901;2444:24560"
@@ -1183,7 +1183,7 @@ export function DashboardPlaceholder() {
                         </div>
                         {!isLiveBoard || sprintView === "board" ? (
                           <p
-                            className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap"
+                            className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-info text-[14px] whitespace-nowrap"
                             data-node-id="I7:2901;2444:24563"
                           >
                             Board
@@ -1203,8 +1203,8 @@ export function DashboardPlaceholder() {
                         aria-pressed={isLiveBoard && sprintView === "list"}
                         className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
                           isLiveBoard && sprintView === "list"
-                            ? "bg-[#cfecff] px-[16px] py-[8px]"
-                            : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                            ? "bg-info/10 px-[16px] py-[8px]"
+                            : "w-[40px] bg-muted px-[16px] py-[8px]"
                         } ${!isLiveBoard ? "cursor-default" : ""}`}
                         data-name="Component 3"
                         data-node-id="I7:2901;2444:24564"
@@ -1213,7 +1213,7 @@ export function DashboardPlaceholder() {
                           <img alt="" className="absolute block max-w-none size-full" src={imgLucideList} />
                         </div>
                         {isLiveBoard && sprintView === "list" ? (
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-info text-[14px] whitespace-nowrap">
                             List
                           </p>
                         ) : null}
@@ -1231,8 +1231,8 @@ export function DashboardPlaceholder() {
                         aria-pressed={isLiveBoard && sprintView === "gantt"}
                         className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
                           isLiveBoard && sprintView === "gantt"
-                            ? "bg-[#cfecff] px-[16px] py-[8px]"
-                            : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                            ? "bg-info/10 px-[16px] py-[8px]"
+                            : "w-[40px] bg-muted px-[16px] py-[8px]"
                         } ${!isLiveBoard ? "cursor-default" : ""}`}
                         data-name="Component 5"
                         data-node-id="I7:2901;2444:24568"
@@ -1242,7 +1242,7 @@ export function DashboardPlaceholder() {
                           <img alt="" className="absolute block max-w-none size-full" src={imgLucideSquareChartGantt} />
                         </div>
                         {isLiveBoard && sprintView === "gantt" ? (
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-info text-[14px] whitespace-nowrap">
                             Gantt
                           </p>
                         ) : null}
@@ -1260,8 +1260,8 @@ export function DashboardPlaceholder() {
                         aria-pressed={isLiveBoard && sprintView === "calendar"}
                         className={`content-stretch flex h-full shrink-0 cursor-pointer items-center justify-center gap-[8px] overflow-clip rounded-[8px] border-0 ${
                           isLiveBoard && sprintView === "calendar"
-                            ? "bg-[#cfecff] px-[16px] py-[8px]"
-                            : "w-[40px] bg-[#edf0f3] px-[16px] py-[8px]"
+                            ? "bg-info/10 px-[16px] py-[8px]"
+                            : "w-[40px] bg-muted px-[16px] py-[8px]"
                         } ${!isLiveBoard ? "cursor-default" : ""}`}
                         data-name="Component 4"
                         data-node-id="I7:2901;2444:24572"
@@ -1271,7 +1271,7 @@ export function DashboardPlaceholder() {
                           <img alt="" className="absolute block max-w-none size-full" src={imgLucideCalendar} />
                         </div>
                         {isLiveBoard && sprintView === "calendar" ? (
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#043e59] text-[14px] whitespace-nowrap">
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-info text-[14px] whitespace-nowrap">
                             Calendar
                           </p>
                         ) : null}
@@ -1285,9 +1285,9 @@ export function DashboardPlaceholder() {
                     {isLiveBoard ? (
                       !secondarySprintMetaReady || liveMembersQuery.isLoading ? (
                         <>
-                          <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-[#e4e8eb]" aria-hidden />
-                          <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-[#e4e8eb]" aria-hidden />
-                          <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-[#e4e8eb]" aria-hidden />
+                          <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-muted" aria-hidden />
+                          <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-muted" aria-hidden />
+                          <div className="mr-[-10.667px] size-[32px] shrink-0 animate-pulse rounded-[999px] bg-muted" aria-hidden />
                         </>
                       ) : (
                         <>
@@ -1306,10 +1306,10 @@ export function DashboardPlaceholder() {
                           ))}
                           {liveHeaderMemberOverflow > 0 ? (
                             <div
-                              className="content-stretch flex items-center justify-center border-[1.333px] border-solid border-white mr-[-10.667px] relative z-10 rounded-[999px] shrink-0 size-[32px] bg-[#e8ecef]"
+                              className="content-stretch flex items-center justify-center border-[1.333px] border-solid border-white mr-[-10.667px] relative z-10 rounded-[999px] shrink-0 size-[32px] bg-muted"
                               title={`${liveHeaderMemberOverflow} more member${liveHeaderMemberOverflow === 1 ? "" : "s"}`}
                             >
-                              <span className="font-['Satoshi:Medium',sans-serif] text-[11px] leading-[0.4] text-[#606d76]">
+                              <span className="font-['Satoshi:Medium',sans-serif] text-[11px] leading-[0.4] text-muted-foreground">
                                 +{liveHeaderMemberOverflow}
                               </span>
                             </div>
@@ -1317,7 +1317,7 @@ export function DashboardPlaceholder() {
                         </>
                       )
                     ) : (
-                      <div className="bg-[#f17173] border-[1.333px] border-solid border-white content-stretch flex items-center justify-center mr-[-10.667px] relative rounded-[999px] shrink-0 size-[32px]" data-name="Component 29" data-node-id="I7:2903;2032:932">
+                      <div className="bg-destructive border-[1.333px] border-solid border-white content-stretch flex items-center justify-center mr-[-10.667px] relative rounded-[999px] shrink-0 size-[32px]" data-name="Component 29" data-node-id="I7:2903;2032:932">
                         <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-white whitespace-nowrap" data-node-id="I7:2903;2032:932;2032:902">
                           <p className="leading-[0.4]">AS</p>
                         </div>
@@ -1329,7 +1329,7 @@ export function DashboardPlaceholder() {
                           type="button"
                           onClick={() => setShareProjectOpen(true)}
                           aria-label="Invite members"
-                          className="border-0 bg-[#e19c02] content-stretch flex cursor-pointer gap-[5.714px] items-center mr-[-10.667px] p-[9.143px] relative rounded-[428.143px] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                          className="border-0 bg-warning content-stretch flex cursor-pointer gap-[5.714px] items-center mr-[-10.667px] p-[9.143px] relative rounded-[428.143px] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                           data-name="Component 31"
                           data-node-id="I7:2903;2032:931"
                         >
@@ -1398,8 +1398,8 @@ export function DashboardPlaceholder() {
               </Suspense>
             ) : (
               <div className="content-stretch relative z-[1] flex w-full flex-1 min-h-0 items-stretch gap-[16px]" data-node-id="7:2908">
-              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "todo" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("todo")} onDragLeave={handleColumnDragLeave("todo")} onDrop={handleDrop("todo")}>
-                <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
+              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "todo" ? "border-2 border-dashed border-border" : ""}`} data-node-id="7:2909" style={{ backgroundImage: "linear-gradient(90deg, var(--background) 0%, var(--background) 100%), linear-gradient(90deg, var(--muted) 0%, var(--muted) 100%)" }} onDragOver={handleColumnDragOver("todo")} onDragLeave={handleColumnDragLeave("todo")} onDrop={handleDrop("todo")}>
+                <div className="flex w-full shrink-0 flex-col gap-4 bg-muted">
                 <div className="content-stretch flex flex-col gap-[16px] isolate items-start relative shrink-0 w-full" data-name="Component 125" data-node-id="7:2910">
                   <div className="content-stretch flex items-center justify-between relative shrink-0 w-full z-[2]" data-node-id="I7:2910;2444:24776">
                     <Component3 className="content-stretch flex gap-[8px] items-center relative shrink-0" />
@@ -1450,7 +1450,7 @@ export function DashboardPlaceholder() {
                 </div>
                 <div className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pt-4">
                 {dragOverCol === "todo" && draggingId !== null && (
-                  <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
+                  <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-border bg-card/45" />
                 )}
                 <div
                   className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${draggingId === 1 ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
@@ -1464,12 +1464,12 @@ export function DashboardPlaceholder() {
                   data-node-id="7:2912"
                   onClick={() => navigate(workspaceJoin("task", "1"))}
                 >
-                  <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2912;2437:23801">
+                  <div className="bg-card border border-border border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2912;2437:23801">
                     <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2912;2437:23802">
                       <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="I7:2912;2437:23803">
                         <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2912;2437:23804">
                           <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2912;2437:23805">
-                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]" data-node-id="I7:2912;2437:23806">
+                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-foreground text-[20px] tracking-[-0.2px]" data-node-id="I7:2912;2437:23806">
                               View project overview
                             </p>
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2912;2437:23807">
@@ -1489,7 +1489,7 @@ export function DashboardPlaceholder() {
                           </div>
                         </div>
                         <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="I7:2912;2437:23813">
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full" data-node-id="I7:2912;2437:23814">
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[16px] w-full" data-node-id="I7:2912;2437:23814">
                             To view the project status, select “Welcome to Continuum!” in the top left under the “Projects” label.
                           </p>
                         </div>
@@ -1510,24 +1510,24 @@ export function DashboardPlaceholder() {
                       </div>
                       <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="I7:2912;2437:23824">
                         <div className="content-stretch flex items-center relative shrink-0" data-name="Component 33" data-node-id="I7:2912;2437:23825">
-                          <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
+                          <Component className="bg-destructive border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
                         </div>
                         <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0" data-node-id="I7:2912;2437:23826">
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2912;2437:23827">
+                          <div className="bg-muted content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2912;2437:23827">
                             <div className="relative shrink-0 size-[16px]" data-name="lucide/paperclip" data-node-id="I7:2912;2437:23828">
                               <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
                             </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2912;2437:23830">
+                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap" data-node-id="I7:2912;2437:23830">
                               1
                             </p>
                           </div>
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2912;2437:23831">
+                          <div className="bg-muted content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2912;2437:23831">
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]" data-node-id="I7:2912;2437:23832">
                               <div className="relative shrink-0 size-[13.33px]" data-name="lucide/message-circle" data-node-id="I7:2912;2437:23833">
                                 <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
                               </div>
                             </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2912;2437:23835">
+                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap" data-node-id="I7:2912;2437:23835">
                               1
                             </p>
                           </div>
@@ -1548,12 +1548,12 @@ export function DashboardPlaceholder() {
                   data-node-id="7:2913"
                   onClick={() => navigate(workspaceJoin("task", "2"))}
                 >
-                  <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2913;2437:23801">
+                  <div className="bg-card border border-border border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2913;2437:23801">
                     <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2913;2437:23802">
                       <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="I7:2913;2437:23803">
                         <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2913;2437:23804">
                           <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2913;2437:23805">
-                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]" data-node-id="I7:2913;2437:23806">
+                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-foreground text-[20px] tracking-[-0.2px]" data-node-id="I7:2913;2437:23806">
                               Add a new task
                             </p>
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2913;2437:23807">
@@ -1573,7 +1573,7 @@ export function DashboardPlaceholder() {
                           </div>
                         </div>
                         <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="I7:2913;2437:23813">
-                          <div className="font-['Satoshi:Medium',sans-serif] leading-[0] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full whitespace-pre-wrap" data-node-id="I7:2913;2437:23814">
+                          <div className="font-['Satoshi:Medium',sans-serif] leading-[0] not-italic relative shrink-0 text-muted-foreground text-[16px] w-full whitespace-pre-wrap" data-node-id="I7:2913;2437:23814">
                             <p className="leading-[normal] mb-0">{`To find, organise, and add a new task, use the “+” icon in the top right corner of `}</p>
                             <p className="leading-[normal]">To-Do.</p>
                           </div>
@@ -1595,24 +1595,24 @@ export function DashboardPlaceholder() {
                       </div>
                       <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="I7:2913;2437:23824">
                         <div className="content-stretch flex items-center relative shrink-0" data-name="Component 33" data-node-id="I7:2913;2437:23825">
-                          <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
+                          <Component className="bg-destructive border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
                         </div>
                         <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0" data-node-id="I7:2913;2437:23826">
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2913;2437:23827">
+                          <div className="bg-muted content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2913;2437:23827">
                             <div className="relative shrink-0 size-[16px]" data-name="lucide/paperclip" data-node-id="I7:2913;2437:23828">
                               <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
                             </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2913;2437:23830">
+                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap" data-node-id="I7:2913;2437:23830">
                               1
                             </p>
                           </div>
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2913;2437:23831">
+                          <div className="bg-muted content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2913;2437:23831">
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]" data-node-id="I7:2913;2437:23832">
                               <div className="relative shrink-0 size-[13.33px]" data-name="lucide/message-circle" data-node-id="I7:2913;2437:23833">
                                 <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
                               </div>
                             </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2913;2437:23835">
+                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap" data-node-id="I7:2913;2437:23835">
                               1
                             </p>
                           </div>
@@ -1633,12 +1633,12 @@ export function DashboardPlaceholder() {
                   data-node-id="7:2914"
                   onClick={() => navigate(workspaceJoin("task", "3"))}
                 >
-                  <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2914;2437:23801">
+                  <div className="bg-card border border-border border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2914;2437:23801">
                     <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2914;2437:23802">
                       <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="I7:2914;2437:23803">
                         <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2914;2437:23804">
                           <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2914;2437:23805">
-                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]" data-node-id="I7:2914;2437:23806">
+                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-foreground text-[20px] tracking-[-0.2px]" data-node-id="I7:2914;2437:23806">
                               Add a new project
                             </p>
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2914;2437:23807">
@@ -1658,7 +1658,7 @@ export function DashboardPlaceholder() {
                           </div>
                         </div>
                         <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="I7:2914;2437:23813">
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full" data-node-id="I7:2914;2437:23814">
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[16px] w-full" data-node-id="I7:2914;2437:23814">
                             Find, organise, and add a new project using the sidebar to the left.
                           </p>
                         </div>
@@ -1679,24 +1679,24 @@ export function DashboardPlaceholder() {
                       </div>
                       <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="I7:2914;2437:23824">
                         <div className="content-stretch flex items-center relative shrink-0" data-name="Component 33" data-node-id="I7:2914;2437:23825">
-                          <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
+                          <Component className="bg-destructive border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
                         </div>
                         <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0" data-node-id="I7:2914;2437:23826">
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2914;2437:23827">
+                          <div className="bg-muted content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2914;2437:23827">
                             <div className="relative shrink-0 size-[16px]" data-name="lucide/paperclip" data-node-id="I7:2914;2437:23828">
                               <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
                             </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2914;2437:23830">
+                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap" data-node-id="I7:2914;2437:23830">
                               1
                             </p>
                           </div>
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2914;2437:23831">
+                          <div className="bg-muted content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2914;2437:23831">
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]" data-node-id="I7:2914;2437:23832">
                               <div className="relative shrink-0 size-[13.33px]" data-name="lucide/message-circle" data-node-id="I7:2914;2437:23833">
                                 <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
                               </div>
                             </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2914;2437:23835">
+                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap" data-node-id="I7:2914;2437:23835">
                               1
                             </p>
                           </div>
@@ -1708,14 +1708,14 @@ export function DashboardPlaceholder() {
                 {tasksInColumn("todo").filter(t => INITIAL_COLUMNS[t.id] !== "todo").map(renderCard)}
                 </div>
               </div>
-              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "in-progress" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2915" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("in-progress")} onDragLeave={handleColumnDragLeave("in-progress")} onDrop={handleDrop("in-progress")}>
-                <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
+              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "in-progress" ? "border-2 border-dashed border-border" : ""}`} data-node-id="7:2915" style={{ backgroundImage: "linear-gradient(90deg, var(--background) 0%, var(--background) 100%), linear-gradient(90deg, var(--muted) 0%, var(--muted) 100%)" }} onDragOver={handleColumnDragOver("in-progress")} onDragLeave={handleColumnDragLeave("in-progress")} onDrop={handleDrop("in-progress")}>
+                <div className="flex w-full shrink-0 flex-col gap-4 bg-muted">
                 <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2916">
                   <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2917">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/squircle-dashed" data-node-id="7:2919">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideSquircleDashed} />
                     </div>
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="7:2921">
+                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[14px] whitespace-nowrap" data-node-id="7:2921">
                       In-Progress
                     </p>
                   </div>
@@ -1732,19 +1732,19 @@ export function DashboardPlaceholder() {
                 </div>
                 <div className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pt-4">
                 {dragOverCol === "in-progress" && draggingId !== null && (
-                  <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
+                  <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-border bg-card/45" />
                 )}
                 {tasksInColumn("in-progress").map(renderCard)}
                 </div>
               </div>
-              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "completed" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2925" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("completed")} onDragLeave={handleColumnDragLeave("completed")} onDrop={handleDrop("completed")}>
-                <div className="flex w-full shrink-0 flex-col gap-4 bg-[#f9fafb]">
+              <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "completed" ? "border-2 border-dashed border-border" : ""}`} data-node-id="7:2925" style={{ backgroundImage: "linear-gradient(90deg, var(--background) 0%, var(--background) 100%), linear-gradient(90deg, var(--muted) 0%, var(--muted) 100%)" }} onDragOver={handleColumnDragOver("completed")} onDragLeave={handleColumnDragLeave("completed")} onDrop={handleDrop("completed")}>
+                <div className="flex w-full shrink-0 flex-col gap-4 bg-muted">
                 <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="7:2926">
                   <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="7:2927">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/circle-check-big" data-node-id="7:2929">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideCircleCheckBig} />
                     </div>
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[14px] whitespace-nowrap" data-node-id="7:2931">
+                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[14px] whitespace-nowrap" data-node-id="7:2931">
                       Completed
                     </p>
                   </div>
@@ -1761,7 +1761,7 @@ export function DashboardPlaceholder() {
                 </div>
                 <div className="scrollbar-none flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pt-4">
                 {dragOverCol === "completed" && draggingId !== null && (
-                  <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
+                  <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-border bg-card/45" />
                 )}
                 <div
                   className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${draggingId === 4 ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
@@ -1775,12 +1775,12 @@ export function DashboardPlaceholder() {
                   data-node-id="7:2935"
                   onClick={() => navigate(workspaceJoin("task", "4"))}
                 >
-                  <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2935;2437:23801">
+                  <div className="bg-card border border-border border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2935;2437:23801">
                     <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2935;2437:23802">
                       <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="I7:2935;2437:23803">
                         <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2935;2437:23804">
                           <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2935;2437:23805">
-                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]" data-node-id="I7:2935;2437:23806">
+                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-foreground text-[20px] tracking-[-0.2px]" data-node-id="I7:2935;2437:23806">
                               Create an account with Continuum
                             </p>
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2935;2437:23807">
@@ -1811,24 +1811,24 @@ export function DashboardPlaceholder() {
                       </div>
                       <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="I7:2935;2437:23824">
                         <div className="content-stretch flex items-center relative shrink-0" data-name="Component 33" data-node-id="I7:2935;2437:23825">
-                          <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
+                          <Component className="bg-destructive border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
                         </div>
                         <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0" data-node-id="I7:2935;2437:23826">
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center opacity-0 px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2935;2437:23827">
+                          <div className="bg-muted content-stretch flex gap-[4px] items-center justify-center opacity-0 px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2935;2437:23827">
                             <div className="relative shrink-0 size-[16px]" data-name="lucide/paperclip" data-node-id="I7:2935;2437:23828">
                               <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
                             </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2935;2437:23830">
+                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap" data-node-id="I7:2935;2437:23830">
                               5
                             </p>
                           </div>
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center opacity-0 px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2935;2437:23831">
+                          <div className="bg-muted content-stretch flex gap-[4px] items-center justify-center opacity-0 px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2935;2437:23831">
                             <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]" data-node-id="I7:2935;2437:23832">
                               <div className="relative shrink-0 size-[13.33px]" data-name="lucide/message-circle" data-node-id="I7:2935;2437:23833">
                                 <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
                               </div>
                             </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2935;2437:23835">
+                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[11px] whitespace-nowrap" data-node-id="I7:2935;2437:23835">
                               3
                             </p>
                           </div>
@@ -1850,7 +1850,7 @@ export function DashboardPlaceholder() {
               <button
               type="button"
               onClick={() => setAiChatOpen(true)}
-              className="absolute bottom-[14px] right-[14px] z-[40] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+              className="absolute bottom-[14px] right-[14px] z-[40] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-border bg-card p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Open AI assistant"
               data-tour="sprint-ai-assistant"
               data-node-id="7:2936"
@@ -1864,10 +1864,10 @@ export function DashboardPlaceholder() {
               </div>
             </div>
           </div>
-          <div className="bg-white content-stretch flex items-center justify-between pl-[0.96px] pr-[1.92px] py-[0.96px] relative shrink-0 w-[48.4px] z-[2]" data-node-id="I7:2936;3646:40268">
+          <div className="bg-card content-stretch flex items-center justify-between pl-[0.96px] pr-[1.92px] py-[0.96px] relative shrink-0 w-[48.4px] z-[2]" data-node-id="I7:2936;3646:40268">
             <div className="content-stretch flex gap-[0.96px] items-center opacity-0 px-[0.96px] py-[0.48px] relative rounded-[40px] shrink-0" data-name="Component 155" data-node-id="I7:2936;3646:40268;3404:19479">
               <div className="content-stretch flex items-center relative shrink-0" data-node-id="I7:2936;3646:40268;3404:19479;3404:19418">
-                <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-[#151515] text-[1.68px] text-ellipsis whitespace-nowrap" data-node-id="I7:2936;3646:40268;3404:19479;3404:19419">
+                <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-foreground text-[1.68px] text-ellipsis whitespace-nowrap" data-node-id="I7:2936;3646:40268;3404:19479;3404:19419">
                   New AI chat
                 </p>
               </div>
@@ -1882,22 +1882,22 @@ export function DashboardPlaceholder() {
                   </div>
                 </div>
               </div>
-              <div className="absolute bg-white border-[#edecea] border-[0.09px] border-solid content-stretch flex flex-col items-start left-0 opacity-0 p-[0.72px] rounded-[6px] shadow-[0px_7.74px_2.16px_0px_rgba(11,25,31,0),0px_4.95px_1.98px_0px_rgba(11,25,31,0.01),0px_2.79px_1.71px_0px_rgba(11,25,31,0.03),0px_1.26px_1.26px_0px_rgba(11,25,31,0.04),0px_0.27px_0.72px_0px_rgba(11,25,31,0.05)] top-[3.84px] w-[21.24px]" data-node-id="I7:2936;3646:40268;3404:19479;3404:19723">
+              <div className="absolute bg-card border-border border-[0.09px] border-solid content-stretch flex flex-col items-start left-0 opacity-0 p-[0.72px] rounded-[6px] shadow-[0px_7.74px_2.16px_0px_rgba(11,25,31,0),0px_4.95px_1.98px_0px_rgba(11,25,31,0.01),0px_2.79px_1.71px_0px_rgba(11,25,31,0.03),0px_1.26px_1.26px_0px_rgba(11,25,31,0.04),0px_0.27px_0.72px_0px_rgba(11,25,31,0.05)] top-[3.84px] w-[21.24px]" data-node-id="I7:2936;3646:40268;3404:19479;3404:19723">
                 <div className="content-stretch flex items-start p-[0.72px] relative shrink-0 w-full" data-node-id="I7:2936;3646:40268;3404:19479;3404:19724">
-                  <p className="font-['Inter:Medium',sans-serif] font-medium leading-[normal] not-italic relative shrink-0 text-[#727d83] text-[0.99px] text-center whitespace-nowrap" data-node-id="I7:2936;3646:40268;3404:19479;3404:19725">
+                  <p className="font-['Inter:Medium',sans-serif] font-medium leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[0.99px] text-center whitespace-nowrap" data-node-id="I7:2936;3646:40268;3404:19479;3404:19725">
                     Previous 7 days
                   </p>
                 </div>
                 <div className="content-stretch flex items-center px-[0.72px] py-[0.54px] relative rounded-[8px] shrink-0 w-[19.8px]" data-name="List Label" data-node-id="I7:2936;3646:40268;3404:19479;3404:19726">
                   <div className="content-stretch flex items-center relative shrink-0" data-node-id="I7:2936;3646:40268;3404:19479;3404:19726;3404:19654">
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-[#606d76] text-[1.44px] text-ellipsis whitespace-nowrap" data-node-id="I7:2936;3646:40268;3404:19479;3404:19726;3404:19655">
+                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-muted-foreground text-[1.44px] text-ellipsis whitespace-nowrap" data-node-id="I7:2936;3646:40268;3404:19479;3404:19726;3404:19655">
                       How is the project going?
                     </p>
                   </div>
                 </div>
                 <div className="content-stretch flex items-center px-[0.72px] py-[0.54px] relative rounded-[8px] shrink-0 w-[19.8px]" data-name="List Label" data-node-id="I7:2936;3646:40268;3404:19479;3404:19727">
                   <div className="content-stretch flex items-center relative shrink-0" data-node-id="I7:2936;3646:40268;3404:19479;3404:19727;3404:19654">
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-[#606d76] text-[1.44px] text-ellipsis whitespace-nowrap" data-node-id="I7:2936;3646:40268;3404:19479;3404:19727;3404:19655">
+                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-muted-foreground text-[1.44px] text-ellipsis whitespace-nowrap" data-node-id="I7:2936;3646:40268;3404:19479;3404:19727;3404:19655">
                       Is the project data reliable?
                     </p>
                   </div>
@@ -1905,7 +1905,7 @@ export function DashboardPlaceholder() {
               </div>
             </div>
             <div className="content-stretch flex gap-[0.48px] items-center opacity-0 relative shrink-0" data-node-id="I7:2936;3646:40268;3404:19228">
-              <div className="bg-white content-stretch flex items-center justify-center relative rounded-[24px] shrink-0 size-[2.88px]" data-name="Component 153" data-node-id="I7:2936;3646:40268;3404:19214">
+              <div className="bg-card content-stretch flex items-center justify-center relative rounded-[24px] shrink-0 size-[2.88px]" data-name="Component 153" data-node-id="I7:2936;3646:40268;3404:19214">
                 <div className="overflow-clip relative shrink-0 size-[1.92px]" data-name="Frame 453/square-pen" data-node-id="I7:2936;3646:40268;3404:19214;3404:19176">
                   <div className="absolute inset-[8.35%_8.35%_12.5%_12.5%]" data-name="Vector" data-node-id="I7:2936;3646:40268;3404:19214;3404:19176;3387:36755">
                     <div className="absolute inset-[-3.95%]">
@@ -1914,7 +1914,7 @@ export function DashboardPlaceholder() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white content-stretch flex items-center justify-center relative rounded-[24px] shrink-0 size-[2.88px]" data-name="Component 154" data-node-id="I7:2936;3646:40268;3404:19223">
+              <div className="bg-card content-stretch flex items-center justify-center relative rounded-[24px] shrink-0 size-[2.88px]" data-name="Component 154" data-node-id="I7:2936;3646:40268;3404:19223">
                 <div className="overflow-clip relative shrink-0 size-[1.92px]" data-name="Frame 453/minus" data-node-id="I7:2936;3646:40268;3404:19223;3404:19176">
                   <div className="absolute bottom-1/2 left-[20.83%] right-[20.83%] top-1/2" data-name="Vector" data-node-id="I7:2936;3646:40268;3404:19223;3404:19176;3387:36761">
                     <div className="absolute inset-[-0.09px_-8.04%]">
@@ -1926,54 +1926,54 @@ export function DashboardPlaceholder() {
             </div>
           </div>
           <div className="content-stretch flex flex-col gap-[4.08px] h-[59.76px] items-start relative shrink-0 w-full z-[1]" data-node-id="I7:2936;3646:40269">
-            <div className="bg-white content-stretch flex flex-[1_0_0] flex-col gap-[1.92px] items-start min-h-px min-w-px overflow-x-clip overflow-y-auto pb-[137px] pt-[5.76px] px-[1.92px] relative w-[48px]" data-node-id="I7:2936;3646:40270">
+            <div className="bg-card content-stretch flex flex-[1_0_0] flex-col gap-[1.92px] items-start min-h-px min-w-px overflow-x-clip overflow-y-auto pb-[137px] pt-[5.76px] px-[1.92px] relative w-[48px]" data-node-id="I7:2936;3646:40270">
               <div className="content-stretch flex flex-col gap-[1.8px] items-start opacity-0 relative shrink-0 w-full" data-node-id="I7:2936;3646:40270;3404:18727">
                 <div className="content-stretch flex items-start relative shrink-0 w-full" data-node-id="I7:2936;3646:40270;3404:18730">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[1.89px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18731">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-foreground text-[1.89px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18731">
                     How can I help you today?
                   </p>
                 </div>
               </div>
               <div className="content-stretch flex flex-col gap-[0.96px] items-start opacity-0 relative shrink-0 w-full" data-node-id="I7:2936;3646:40270;3404:18732">
-                <div className="bg-white border-[#ededed] border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 6" data-node-id="I7:2936;3646:40270;3404:18733">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#727d83] text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18734">
+                <div className="bg-card border-border border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 6" data-node-id="I7:2936;3646:40270;3404:18733">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18734">
                     How is the project going?
                   </p>
                 </div>
-                <div className="bg-white border-[#ededed] border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 7" data-node-id="I7:2936;3646:40270;3404:18735">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#727d83] text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18736">
+                <div className="bg-card border-border border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 7" data-node-id="I7:2936;3646:40270;3404:18735">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18736">
                     Is the project data reliable?
                   </p>
                 </div>
-                <div className="bg-white border-[#ededed] border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 8" data-node-id="I7:2936;3646:40270;3404:18737">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#727d83] text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18738">
+                <div className="bg-card border-border border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 8" data-node-id="I7:2936;3646:40270;3404:18737">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18738">
                     What is blocking progress
                   </p>
                 </div>
-                <div className="bg-white border-[#ededed] border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 9" data-node-id="I7:2936;3646:40270;3404:18739">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#727d83] text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18740">
+                <div className="bg-card border-border border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 9" data-node-id="I7:2936;3646:40270;3404:18739">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18740">
                     Are there any health risks?
                   </p>
                 </div>
-                <div className="bg-white border-[#ededed] border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 10" data-node-id="I7:2936;3646:40270;3404:18741">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#727d83] text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18742">
+                <div className="bg-card border-border border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 10" data-node-id="I7:2936;3646:40270;3404:18741">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18742">
                     Show recent key updates
                   </p>
                 </div>
-                <div className="bg-white border-[#ededed] border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 11" data-node-id="I7:2936;3646:40270;3404:18743">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#727d83] text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18744">
+                <div className="bg-card border-border border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 11" data-node-id="I7:2936;3646:40270;3404:18743">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18744">
                     How is our current velocity?
                   </p>
                 </div>
-                <div className="bg-white border-[#ededed] border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 12" data-node-id="I7:2936;3646:40270;3404:18745">
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#727d83] text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18746">
+                <div className="bg-card border-border border-[0.12px] border-solid content-stretch flex h-[3.84px] items-center justify-center px-[1.92px] py-[0.96px] relative rounded-[32px] shrink-0" data-name="Component 12" data-node-id="I7:2936;3646:40270;3404:18745">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[1.56px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18746">
                     Is the timeline on track?
                   </p>
                 </div>
               </div>
             </div>
-            <div className="absolute bg-gradient-to-b bottom-[-120.64px] content-stretch flex flex-col from-[rgba(255,255,255,0)] items-center left-0 opacity-0 pb-[3.24px] px-[1.92px] to-[25.182%] to-white w-[47.4px]" data-node-id="I7:2936;3646:40271">
-              <div className="bg-[#e7f2fc] content-stretch flex items-center justify-center mb-[-1.32px] pb-[2.52px] pt-[1.2px] px-[1.2px] relative rounded-tl-[1.68px] rounded-tr-[1.68px] shrink-0 w-full" data-node-id="I7:2936;3646:40271;3404:18748">
+            <div className="absolute bg-gradient-to-b bottom-[-120.64px] content-stretch flex flex-col from-transparent items-center left-0 opacity-0 pb-[3.24px] px-[1.92px] to-[25.182%] to-card w-[47.4px]" data-node-id="I7:2936;3646:40271">
+              <div className="bg-primary/10 content-stretch flex items-center justify-center mb-[-1.32px] pb-[2.52px] pt-[1.2px] px-[1.2px] relative rounded-tl-[1.68px] rounded-tr-[1.68px] shrink-0 w-full" data-node-id="I7:2936;3646:40271;3404:18748">
                 <div className="content-stretch flex gap-[0.96px] items-center relative shrink-0 w-[41.52px]" data-node-id="I7:2936;3646:40271;3404:18749">
                   <div className="content-stretch flex items-center relative shrink-0" data-node-id="I7:2936;3646:40271;3404:18750">
                     <div className="overflow-clip relative shrink-0 size-[1.56px]" data-name="Frame 453/bot" data-node-id="I7:2936;3646:40271;3404:18751">
@@ -1984,15 +1984,15 @@ export function DashboardPlaceholder() {
                       </div>
                     </div>
                   </div>
-                  <p className="font-['Inter:Medium',sans-serif] font-medium leading-[0] not-italic relative shrink-0 text-[#727d83] text-[1.32px] text-center whitespace-nowrap" data-node-id="I7:2936;3646:40271;3404:18752">
+                  <p className="font-['Inter:Medium',sans-serif] font-medium leading-[0] not-italic relative shrink-0 text-muted-foreground text-[1.32px] text-center whitespace-nowrap" data-node-id="I7:2936;3646:40271;3404:18752">
                     <span className="leading-[normal]">{`The AI is restricted to reporting on system states. `}</span>
-                    <span className="leading-[normal] text-[#2e96f9]">Learn more</span>
+                    <span className="leading-[normal] text-primary">Learn more</span>
                   </p>
                 </div>
               </div>
-              <div className="bg-white border-[#edecea] border-[0.12px] border-solid content-stretch flex flex-col h-[10.56px] items-start justify-between mb-[-1.32px] pb-[0.84px] pt-[1.32px] relative rounded-[14px] shadow-[0px_0.6px_0.12px_0px_rgba(14,14,34,0),0px_0.36px_0.12px_0px_rgba(14,14,34,0.01),0px_0.24px_0.12px_0px_rgba(14,14,34,0.02),0px_0.12px_0.12px_0px_rgba(14,14,34,0.03)] shrink-0 w-full" data-node-id="I7:2936;3646:40271;3404:18753">
+              <div className="bg-card border-border border-[0.12px] border-solid content-stretch flex flex-col h-[10.56px] items-start justify-between mb-[-1.32px] pb-[0.84px] pt-[1.32px] relative rounded-[14px] shadow-[0px_0.6px_0.12px_0px_rgba(14,14,34,0),0px_0.36px_0.12px_0px_rgba(14,14,34,0.01),0px_0.24px_0.12px_0px_rgba(14,14,34,0.02),0px_0.12px_0.12px_0px_rgba(14,14,34,0.03)] shrink-0 w-full" data-node-id="I7:2936;3646:40271;3404:18753">
                 <div className="content-stretch flex items-center justify-center px-[1.56px] relative shrink-0 w-full" data-node-id="I7:2936;3646:40271;3404:18754">
-                  <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic opacity-50 relative text-[#727d83] text-[1.56px] tracking-[-0.0156px]" data-node-id="I7:2936;3646:40271;3404:18755">
+                  <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic opacity-50 relative text-muted-foreground text-[1.56px] tracking-[-0.0156px]" data-node-id="I7:2936;3646:40271;3404:18755">
                     Do anything with AI...
                   </p>
                 </div>
@@ -2014,10 +2014,10 @@ export function DashboardPlaceholder() {
                     </div>
                   </div>
                   <div className="content-stretch flex gap-[1.2px] items-center relative shrink-0" data-node-id="I7:2936;3646:40271;3404:18760">
-                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#727d83] text-[1.56px] tracking-[-0.0156px] whitespace-nowrap" data-node-id="I7:2936;3646:40271;3404:18761">
+                    <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[1.56px] tracking-[-0.0156px] whitespace-nowrap" data-node-id="I7:2936;3646:40271;3404:18761">
                       Auto
                     </p>
-                    <div className="bg-[#f9f9f8] content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[3.12px]" data-node-id="I7:2936;3646:40271;3404:18762">
+                    <div className="bg-card content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[3.12px]" data-node-id="I7:2936;3646:40271;3404:18762">
                       <div className="opacity-20 overflow-clip relative shrink-0 size-[2.16px]" data-name="Frame 453/arrow-up" data-node-id="I7:2936;3646:40271;3404:18763">
                         <div className="absolute inset-[20.83%]" data-name="Vector" data-node-id="I7:2936;3646:40271;3404:18763;3386:36723">
                           <div className="absolute inset-[-9.52%]">

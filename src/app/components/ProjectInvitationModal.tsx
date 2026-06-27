@@ -91,26 +91,26 @@ export function ProjectInvitationModal({ open, onOpenChange, invitation, forceCh
             if (forceChoice) e.preventDefault();
           }}
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white font-['Satoshi',sans-serif] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card font-['Satoshi',sans-serif] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           )}
         >
           <DialogPrimitive.Title className="sr-only">Project invitation</DialogPrimitive.Title>
 
-          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-border bg-card px-9 py-4">
             {forceChoice ? (
               <div className="size-5" aria-hidden />
             ) : (
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="inline-flex size-5 items-center justify-center text-[#606d76]"
+                  className="inline-flex size-5 items-center justify-center text-muted-foreground"
                   aria-label="Close"
                 >
                   <ArrowLeft className="size-5" />
                 </button>
               </DialogClose>
             )}
-            <p className="text-center text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+            <p className="text-center text-[16px] font-medium tracking-[-0.16px] text-foreground">
               Project invitation
             </p>
             <div className="size-5" aria-hidden />
@@ -120,38 +120,38 @@ export function ProjectInvitationModal({ open, onOpenChange, invitation, forceCh
             className="px-9 py-6"
             style={{
               backgroundImage:
-                'linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)',
+                'linear-gradient(90deg, var(--card) 0%, var(--card) 100%)',
             }}
           >
-            <div className="space-y-3 text-left text-[15px] leading-relaxed text-[#606d76]">
+            <div className="space-y-3 text-left text-[15px] leading-relaxed text-muted-foreground">
               {invitation ? (
                 <>
                   <p>
-                    <span className="font-semibold text-[#0b191f]">{invitation.inviter_name ?? 'Someone'}</span>{' '}
+                    <span className="font-semibold text-foreground">{invitation.inviter_name ?? 'Someone'}</span>{' '}
                     invited you to join{' '}
-                    <span className="font-semibold text-[#0b191f]">{invitation.project_name}</span> as{' '}
-                    <span className="font-semibold text-[#0b191f]">{formatRole(invitation.role)}</span>.
+                    <span className="font-semibold text-foreground">{invitation.project_name}</span> as{' '}
+                    <span className="font-semibold text-foreground">{formatRole(invitation.role)}</span>.
                   </p>
-                  <p className="text-[14px] text-[#727d83]">
-                    Email: <span className="text-[#0b191f]">{invitation.email}</span>
+                  <p className="text-[14px] text-muted-foreground">
+                    Email: <span className="text-foreground">{invitation.email}</span>
                   </p>
                 </>
               ) : (
-                <p className="text-[#606d76]">Loading invitation…</p>
+                <p className="text-muted-foreground">Loading invitation…</p>
               )}
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-[#e5e7eb] bg-[#f9f9f9] px-9 py-4 sm:flex-row sm:justify-end">
+          <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-border bg-card px-9 py-4 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={handleDecline}
               disabled={busy || !invitation}
               className={cn(
-                'inline-flex h-10 min-w-[100px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 text-[14px] font-semibold text-[#252014] transition-colors',
+                'inline-flex h-10 min-w-[100px] items-center justify-center rounded-[8px] border border-border bg-card px-5 text-[14px] font-semibold text-foreground transition-colors',
                 busy || !invitation
                   ? 'cursor-not-allowed opacity-50'
-                  : 'hover:bg-[#f5f7f8]',
+                  : 'hover:bg-accent',
               )}
             >
               {declineMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Decline'}
@@ -172,7 +172,7 @@ export function ProjectInvitationModal({ open, onOpenChange, invitation, forceCh
                 'inline-flex h-10 min-w-[100px] items-center justify-center rounded-[8px] px-5 text-[14px] font-semibold transition-[filter,opacity] duration-200',
                 invitation && !busy
                   ? 'text-white hover:brightness-105'
-                  : 'cursor-not-allowed bg-[rgba(96,109,118,0.1)] text-[#606d76]/50',
+                  : 'cursor-not-allowed bg-muted text-muted-foreground/50',
               )}
             >
               {acceptMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Accept'}

@@ -73,7 +73,7 @@ export function KanbanBoardColumnHeader({
             <img alt="" className="absolute block max-w-none size-full" src={columnIconSrc} />
           </div>
           <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 shrink truncate text-[#606d76] text-[14px]">
+            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative min-w-0 shrink truncate text-muted-foreground text-[14px]">
               {col.title}
             </p>
             {sortInfo != null ? <KanbanColumnAutoSortHint info={sortInfo} /> : null}
@@ -84,7 +84,7 @@ export function KanbanBoardColumnHeader({
             <button
               type="button"
               onClick={onSearchOpen}
-              className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/15"
+              className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
               aria-label="Search tasks in this column"
               aria-expanded={false}
             >
@@ -94,7 +94,7 @@ export function KanbanBoardColumnHeader({
             <button
               type="button"
               onClick={onSearchClose}
-              className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-0 text-[#606d76] transition-colors hover:text-[#0b191f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/15"
+              className="inline-flex size-[24px] shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
               aria-label="Close column search"
             >
               <X className="size-[18px]" strokeWidth={2} aria-hidden />
@@ -111,7 +111,7 @@ export function KanbanBoardColumnHeader({
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Search tasks…"
           autoComplete="off"
-          className="h-8 w-full min-w-0 rounded-[8px] border border-[#e9e9e9] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-[#0b191f]/10"
+          className="h-8 w-full min-w-0 rounded-[8px] border border-border bg-card px-3 font-['Satoshi',sans-serif] text-[14px] text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-foreground/10"
           aria-label="Filter tasks in this column"
         />
       ) : null}
@@ -122,7 +122,7 @@ export function KanbanBoardColumnHeader({
             e.stopPropagation();
             onCreateTask();
           }}
-          className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] border border-dashed border-[#cdd2d5] bg-white/60 px-3 font-['Satoshi:Medium',sans-serif] text-[13px] text-[#606d76] transition-colors hover:border-[#0b191f]/25 hover:bg-white hover:text-[#0b191f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/15"
+          className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] border border-dashed border-border bg-card/60 px-3 font-['Satoshi:Medium',sans-serif] text-[13px] text-muted-foreground transition-colors hover:border-foreground/25 hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
           aria-label={`Create task in ${col.title}`}
         >
           <Plus className="size-[14px]" strokeWidth={2} aria-hidden />

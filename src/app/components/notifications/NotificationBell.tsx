@@ -203,7 +203,7 @@ export function NotificationBell({
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="z-[60] w-auto overflow-hidden rounded-[12px] border border-[#ebedee] bg-white p-0 text-[#0b191f] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.04),0px_7px_7px_0px_rgba(15,15,31,0.06),0px_2px_4px_0px_rgba(15,15,31,0.08)]"
+        className="z-[60] w-auto overflow-hidden rounded-[12px] border border-border bg-card p-0 text-foreground shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.04),0px_7px_7px_0px_rgba(15,15,31,0.06),0px_2px_4px_0px_rgba(15,15,31,0.08)]"
       >
         <NotificationsPanel
           scope={

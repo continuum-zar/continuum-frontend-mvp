@@ -8,7 +8,7 @@ export const welcomeToContinuumModalProps: Omit<ReleaseNotesModalProps, "open" |
     "You are officially off the waitlist. Continuum is designed to cut through the operational noise.",
   title: (
     <>
-      <span className="font-['Satoshi',sans-serif] font-medium text-[#0b191f]">Welcome to </span>
+      <span className="font-['Satoshi',sans-serif] font-medium text-foreground">Welcome to </span>
       <span
         className="font-sarina bg-clip-text font-normal text-transparent"
         style={{

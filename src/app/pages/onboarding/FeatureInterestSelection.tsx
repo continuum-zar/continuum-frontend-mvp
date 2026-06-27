@@ -55,9 +55,8 @@ export default function FeatureInterestSelection() {
 
   return (
     <div
-      className={onboardingRootClassName}
+      className={`${onboardingRootClassName} [background:linear-gradient(180deg,#B2E6F7_-17.26%,#FFFFFF_17.31%)] dark:[background:linear-gradient(180deg,#0b1f2e_-17.26%,#0f172a_17.31%)]`}
       style={{
-        background: "linear-gradient(180deg, #B2E6F7 -17.26%, #FFFFFF 17.31%)",
         paddingTop: "40px",
         paddingBottom: "40px",
       }}
@@ -71,7 +70,7 @@ export default function FeatureInterestSelection() {
           className="flex items-center gap-3 hover:opacity-70 transition-opacity"
           style={{ marginLeft: "0" }}
         >
-          <ChevronLeft size={20} style={{ color: "#252014" }} />
+          <ChevronLeft size={20} style={{ color: "var(--foreground)" }} />
           <span
             className="font-sarina"
             style={{
@@ -79,7 +78,7 @@ export default function FeatureInterestSelection() {
               fontSize: "20.89px",
               lineHeight: "23.42px",
               letterSpacing: "-0.02em",
-              color: "#252014",
+              color: "var(--foreground)",
               textAlign: "center",
             }}
           >
@@ -97,14 +96,14 @@ export default function FeatureInterestSelection() {
               fontSize: "24px",
               lineHeight: "100%",
               letterSpacing: "-0.02em",
-              color: "#0B191F",
+              color: "var(--foreground)",
             }}
           >
             What features are you interested in trying?
           </h1>
           <p
             style={{
-              color: "#727D83",
+              color: "var(--muted-foreground)",
               fontFamily: "Satoshi",
               fontSize: "24px",
               fontStyle: "normal",
@@ -123,7 +122,7 @@ export default function FeatureInterestSelection() {
           style={{
             fontFamily: "Satoshi",
             fontWeight: 500,
-            color: "#727D83",
+            color: "var(--muted-foreground)",
             fontSize: "14px",
             lineHeight: "100%",
           }}
@@ -159,14 +158,14 @@ export default function FeatureInterestSelection() {
                   fontWeight: 500,
                   fontSize: "14px",
                   lineHeight: "100%",
-                  color: isSelected ? "#0B191F" : "#727D83",
-                  backgroundColor: isSelected ? "#FFFFFF" : "#F5F6F7",
+                  color: isSelected ? "var(--foreground)" : "var(--muted-foreground)",
+                  backgroundColor: isSelected ? "var(--card)" : "var(--muted)",
                   borderWidth: "1px",
-                  borderColor: isSelected ? "#0B191F" : "#D3D7DA",
+                  borderColor: isSelected ? "var(--foreground)" : "var(--border)",
                 }}
               >
                 {feature}
-                {isSelected && <Check size={16} color="#2563EB" strokeWidth={3} />}
+                {isSelected && <Check size={16} color="var(--primary)" strokeWidth={3} />}
               </button>
             );
           })}
@@ -202,7 +201,7 @@ export default function FeatureInterestSelection() {
           <button
             type="button"
             onClick={handleSkip}
-            className="text-[#727D83] transition-colors cursor-pointer"
+            className="text-muted-foreground transition-colors cursor-pointer"
             style={{
               display: "flex",
               width: "297px",
@@ -220,11 +219,11 @@ export default function FeatureInterestSelection() {
               boxSizing: "border-box",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#0B191F";
-              e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.04)";
+              e.currentTarget.style.color = "var(--foreground)";
+              e.currentTarget.style.backgroundColor = "var(--accent)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#727D83";
+              e.currentTarget.style.color = "var(--muted-foreground)";
               e.currentTarget.style.backgroundColor = "transparent";
             }}
           >

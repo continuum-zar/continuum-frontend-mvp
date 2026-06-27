@@ -147,7 +147,7 @@ export function BuildTaskModal({
           {/* Body */}
           <div className="z-[2] min-h-0 flex-1 overflow-x-clip overflow-y-auto bg-background px-6 py-6 sm:px-9">
             <div className="flex flex-col gap-6">
-              <p className="text-[14px] leading-relaxed text-[#606d76]">
+              <p className="text-[14px] leading-relaxed text-muted-foreground">
                 The Continuum agent will clone the repo, work on the linked branch, and stream
                 its activity here. Configure the run before kicking it off.
               </p>
@@ -156,12 +156,12 @@ export function BuildTaskModal({
               <section className="flex flex-col gap-2">
                 <label
                   htmlFor="build-branch"
-                  className="text-[13px] font-medium text-[#0b191f]"
+                  className="text-[13px] font-medium text-foreground"
                 >
                   Target repository &amp; branch
                 </label>
                 {branches.length === 0 ? (
-                  <p className="rounded-[8px] border border-dashed border-[#e9e9e9] bg-[#f9fafb] p-3 text-[13px] leading-snug text-[#727d83]">
+                  <p className="rounded-[8px] border border-dashed border-border bg-muted p-3 text-[13px] leading-snug text-muted-foreground">
                     Link at least one repository and branch under <em>Development</em> on the
                     task before starting a build.
                   </p>
@@ -169,7 +169,7 @@ export function BuildTaskModal({
                   <div className="relative">
                     <GitBranch
                       size={16}
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#727d83]"
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                       aria-hidden
                     />
                     <select
@@ -177,7 +177,7 @@ export function BuildTaskModal({
                       value={selectedKey}
                       onChange={(e) => setSelectedKey(e.target.value)}
                       disabled={isPending}
-                      className="h-[46px] w-full appearance-none rounded-[8px] border border-[#e9e9e9] bg-white pl-9 pr-4 text-[14px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-[#24B5F8]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-[46px] w-full appearance-none rounded-[8px] border border-border bg-card pl-9 pr-4 text-[14px] font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-info/40 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {branches.map((b) => {
                         const key = `${b.linked_repo}::${b.linked_branch}`;
@@ -191,7 +191,7 @@ export function BuildTaskModal({
                   </div>
                 )}
                 {branches.length > 1 ? (
-                  <p className="text-[12px] text-[#727d83]">
+                  <p className="text-[12px] text-muted-foreground">
                     This task has multiple linked branches. The agent only targets one per run.
                   </p>
                 ) : null}
@@ -199,7 +199,7 @@ export function BuildTaskModal({
 
               {/* --- Commit mode --- */}
               <section className="flex flex-col gap-2">
-                <span className="text-[13px] font-medium text-[#0b191f]">
+                <span className="text-[13px] font-medium text-foreground">
                   How should the agent land changes?
                 </span>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -210,15 +210,15 @@ export function BuildTaskModal({
                     className={cn(
                       "flex flex-col items-start gap-1 rounded-[10px] border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                       mode === "open_pr"
-                        ? "border-[#24B5F8] bg-[#24B5F8]/5"
-                        : "border-[#e9e9e9] bg-white hover:border-[#24B5F8]/50",
+                        ? "border-info bg-info/5"
+                        : "border-border bg-card hover:border-info/50",
                     )}
                   >
-                    <span className="flex items-center gap-2 text-[14px] font-medium text-[#0b191f]">
+                    <span className="flex items-center gap-2 text-[14px] font-medium text-foreground">
                       <GitPullRequest size={16} aria-hidden />
                       Open a pull request
                     </span>
-                    <span className="text-[12px] leading-snug text-[#727d83]">
+                    <span className="text-[12px] leading-snug text-muted-foreground">
                       Safer. Commits to a fresh branch and opens a PR back into the linked branch
                       so a human can review.
                     </span>
@@ -231,15 +231,15 @@ export function BuildTaskModal({
                     className={cn(
                       "flex flex-col items-start gap-1 rounded-[10px] border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                       mode === "direct_push"
-                        ? "border-[#24B5F8] bg-[#24B5F8]/5"
-                        : "border-[#e9e9e9] bg-white hover:border-[#24B5F8]/50",
+                        ? "border-info bg-info/5"
+                        : "border-border bg-card hover:border-info/50",
                     )}
                   >
-                    <span className="flex items-center gap-2 text-[14px] font-medium text-[#0b191f]">
+                    <span className="flex items-center gap-2 text-[14px] font-medium text-foreground">
                       <GitBranch size={16} aria-hidden />
                       Push directly to the branch
                     </span>
-                    <span className="text-[12px] leading-snug text-[#727d83]">
+                    <span className="text-[12px] leading-snug text-muted-foreground">
                       Commits land directly on{" "}
                       <code className="font-mono text-[12px]">{selected?.linked_branch ?? "the linked branch"}</code>.
                       No review gate.
@@ -252,10 +252,10 @@ export function BuildTaskModal({
               <section className="flex flex-col gap-2">
                 <label
                   htmlFor="build-instructions"
-                  className="text-[13px] font-medium text-[#0b191f]"
+                  className="text-[13px] font-medium text-foreground"
                 >
                   Anything specific the agent should focus on?{" "}
-                  <span className="text-[12px] font-normal text-[#727d83]">(optional)</span>
+                  <span className="text-[12px] font-normal text-muted-foreground">(optional)</span>
                 </label>
                 <textarea
                   id="build-instructions"
@@ -264,9 +264,9 @@ export function BuildTaskModal({
                   onChange={(e) => setInstructions(e.target.value.slice(0, 4000))}
                   placeholder="e.g. Stick to TypeScript files. Don't touch the migrations folder. Run `pnpm test` before committing."
                   disabled={isPending}
-                  className="w-full resize-none rounded-[8px] border border-[#e9e9e9] bg-white p-3 text-[14px] leading-relaxed text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-[#24B5F8]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full resize-none rounded-[8px] border border-border bg-card p-3 text-[14px] leading-relaxed text-foreground outline-none focus-visible:ring-2 focus-visible:ring-info/40 disabled:cursor-not-allowed disabled:opacity-60"
                 />
-                <p className="text-[12px] text-[#727d83]">
+                <p className="text-[12px] text-muted-foreground">
                   The task title, description, checklist, and recent comments are already passed
                   to the agent — only add extra context here.
                 </p>
@@ -280,7 +280,7 @@ export function BuildTaskModal({
               <button
                 type="button"
                 disabled={isPending}
-                className="h-11 rounded-[10px] border border-[#ebedee] bg-white px-5 text-[14px] font-medium text-[#0b191f] hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-60"
+                className="h-11 rounded-[10px] border border-border bg-card px-5 text-[14px] font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -292,8 +292,8 @@ export function BuildTaskModal({
               className={cn(
                 "inline-flex h-11 items-center justify-center gap-2 rounded-[10px] px-5 text-[14px] font-medium text-white transition-colors",
                 canSubmit
-                  ? "bg-[#24B5F8] hover:bg-[#1da8ea]"
-                  : "cursor-not-allowed bg-[#9ed6f1]",
+                  ? "bg-info hover:bg-info"
+                  : "cursor-not-allowed bg-info",
               )}
             >
               {isPending ? (

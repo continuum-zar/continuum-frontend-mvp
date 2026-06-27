@@ -274,6 +274,46 @@
   }
 }
 
+/*
+ * Dashboard icons are Figma-exported SVGs loaded via <img>, whose stroke/fill use
+ * `var(--stroke-0, #0B191F)` fallbacks. CSS variables don't reach img-loaded SVGs, so they
+ * render with their dark fallback colors and would be near-invisible on dark surfaces.
+ * `invert(1) hue-rotate(180deg)` is the standard dark-mode image treatment: it lightens
+ * monochrome line icons (→ readable) while preserving the hue of the few colored status icons.
+ * Scoped to SVG icons only (the lone PNG asset is excluded).
+ */
+.dark img[src^="/assets/dashboard-placeholder/"]:not([src$=".png"]) {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/*
+ * Monochrome brand logos (rendered as <img>, so they can't pick up theme colors) — invert to
+ * white in dark mode so they stay visible on dark surfaces. Multi-color marks (Google, Discord)
+ * are intentionally excluded.
+ */
+.dark img[src$="/apple.svg"],
+.dark img[src$="/github-logo.svg"],
+.dark img[src$="/cursor-logo.svg"],
+.dark img[src$="/Claude.svg"] {
+  filter: invert(1);
+}
+
+/*
+ * Rail selected-nav pill. Light mode keeps the original brand-tinted highlight; dark mode uses a
+ * solid sidebar-accent surface so the (now-lightened) selected icon stays legible against it.
+ */
+.rail-nav-selected {
+  background-image:
+    linear-gradient(90deg, rgb(215, 235, 254) 0%, rgb(215, 235, 254) 100%),
+    linear-gradient(146.07deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%),
+    linear-gradient(90deg, rgb(237, 240, 243) 0%, rgb(237, 240, 243) 100%);
+}
+
+.dark .rail-nav-selected {
+  background-image: none;
+  background-color: var(--sidebar-accent);
+}
+
 /* Kanban drag — native grabbing cursor while dragging */
 html[data-kanban-dragging] *,
 html[data-kanban-dragging] *::before,

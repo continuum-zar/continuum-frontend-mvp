@@ -30,8 +30,8 @@ function PermissionToggle({
       aria-label={label}
       className={cn(
         "inline-flex h-[22px] w-[40px] shrink-0 items-center rounded-full p-[2px] outline-none transition-colors",
-        "focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60",
-        "data-[state=checked]:bg-[#1466ff] data-[state=unchecked]:bg-[#e3e6e9]",
+        "focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60",
+        "data-[state=checked]:bg-primary data-[state=unchecked]:bg-muted",
       )}
     >
       <SwitchPrimitive.Thumb className="block size-[18px] rounded-full bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.15)] transition-transform data-[state=checked]:translate-x-[18px] data-[state=unchecked]:translate-x-0" />
@@ -65,11 +65,11 @@ export function PermissionSections({
       {sections.map((section) => (
         <section key={section.section} className="flex w-full flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <h3 className="font-['Satoshi',sans-serif] text-[22px] font-medium tracking-[-0.22px] text-[#0b191f]">
+            <h3 className="font-['Satoshi',sans-serif] text-[22px] font-medium tracking-[-0.22px] text-foreground">
               {section.section}
             </h3>
             {SECTION_SUBTITLES[section.section] && (
-              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#9aa4ab]">
+              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                 {SECTION_SUBTITLES[section.section]}
               </p>
             )}
@@ -82,7 +82,7 @@ export function PermissionSections({
                   key={perm.key}
                   className="flex items-center justify-between gap-6 py-[10px]"
                 >
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-snug text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-snug text-foreground">
                     {perm.description}
                   </p>
                   <PermissionToggle

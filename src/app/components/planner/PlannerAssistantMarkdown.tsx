@@ -2,7 +2,7 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 
 const baseText =
-    "font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f]";
+    "font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-foreground";
 
 /**
  * Renders AI planner assistant replies as Markdown (**bold**, lists, headings, code).
@@ -11,35 +11,35 @@ const baseText =
 const components: Components = {
     p: ({ children }) => <p className={`mb-2 last:mb-0 ${baseText}`}>{children}</p>,
     strong: ({ children }) => (
-        <strong className="font-semibold text-[#0b191f]">{children}</strong>
+        <strong className="font-semibold text-foreground">{children}</strong>
     ),
-    em: ({ children }) => <em className="italic text-[#0b191f]">{children}</em>,
+    em: ({ children }) => <em className="italic text-foreground">{children}</em>,
     h1: ({ children }) => (
         <h1
-            className={`mb-2 mt-4 first:mt-0 font-['Satoshi',sans-serif] text-[15px] font-semibold text-[#0b191f]`}
+            className={`mb-2 mt-4 first:mt-0 font-['Satoshi',sans-serif] text-[15px] font-semibold text-foreground`}
         >
             {children}
         </h1>
     ),
     h2: ({ children }) => (
         <h2
-            className={`mb-2 mt-3 first:mt-0 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f]`}
+            className={`mb-2 mt-3 first:mt-0 font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground`}
         >
             {children}
         </h2>
     ),
     h3: ({ children }) => (
         <h3
-            className={`mb-1.5 mt-2 first:mt-0 font-['Satoshi',sans-serif] text-[13px] font-semibold text-[#0b191f]`}
+            className={`mb-1.5 mt-2 first:mt-0 font-['Satoshi',sans-serif] text-[13px] font-semibold text-foreground`}
         >
             {children}
         </h3>
     ),
     ul: ({ children }) => (
-        <ul className="mb-2 ml-4 list-disc space-y-1 marker:text-[#606d76] last:mb-0">{children}</ul>
+        <ul className="mb-2 ml-4 list-disc space-y-1 marker:text-muted-foreground last:mb-0">{children}</ul>
     ),
     ol: ({ children }) => (
-        <ol className="mb-2 ml-4 list-decimal space-y-1 marker:font-medium marker:text-[#606d76] last:mb-0">
+        <ol className="mb-2 ml-4 list-decimal space-y-1 marker:font-medium marker:text-muted-foreground last:mb-0">
             {children}
         </ol>
     ),
@@ -49,17 +49,17 @@ const components: Components = {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-[#2E96F9] underline decoration-[#2E96F9]/40 underline-offset-2 hover:text-[#1a7ed6]"
+            className="font-medium text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary"
         >
             {children}
         </a>
     ),
     blockquote: ({ children }) => (
-        <blockquote className="mb-2 border-l-2 border-[#edecea] pl-3 text-[#606d76] last:mb-0">
+        <blockquote className="mb-2 border-l-2 border-border pl-3 text-muted-foreground last:mb-0">
             {children}
         </blockquote>
     ),
-    hr: () => <hr className="my-3 border-[#edecea]" />,
+    hr: () => <hr className="my-3 border-border" />,
     code: ({ className, children, ...props }) => {
         const isBlock = Boolean(className?.includes('language-'));
         if (isBlock) {
@@ -71,7 +71,7 @@ const components: Components = {
         }
         return (
             <code
-                className="rounded bg-[#edf0f3] px-1 py-0.5 font-mono text-[12px] text-[#0b191f]"
+                className="rounded bg-muted px-1 py-0.5 font-mono text-[12px] text-foreground"
                 {...props}
             >
                 {children}
@@ -79,7 +79,7 @@ const components: Components = {
         );
     },
     pre: ({ children }) => (
-        <pre className="mb-2 overflow-x-auto rounded-lg border border-[#edecea] bg-[#f9fafb] p-3 font-mono text-[12px] leading-[18px] text-[#0b191f] last:mb-0">
+        <pre className="mb-2 overflow-x-auto rounded-lg border border-border bg-muted p-3 font-mono text-[12px] leading-[18px] text-foreground last:mb-0">
             {children}
         </pre>
     ),

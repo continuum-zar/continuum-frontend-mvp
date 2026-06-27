@@ -80,13 +80,13 @@ export function ProjectSettingsMembersTab({
               if (e.key === "Enter") void handleInvite();
             }}
             placeholder="Email address"
-            className="h-11 flex-1 rounded-[8px] border border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] placeholder:text-[#606d76] focus:border-[#1466ff] focus:outline-none"
+            className="h-11 flex-1 rounded-[8px] border border-border bg-card px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
           />
           <div className="relative flex-1">
             <select
               value={inviteRoleKey}
               onChange={(e) => setInviteRoleKey(e.target.value)}
-              className="h-11 w-full appearance-none rounded-[8px] border border-[#e9e9e9] bg-white px-4 pr-10 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] focus:border-[#1466ff] focus:outline-none"
+              className="h-11 w-full appearance-none rounded-[8px] border border-border bg-card px-4 pr-10 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground focus:border-primary focus:outline-none"
             >
               {assignableRoles.map((r) => (
                 <option key={r.id} value={r.default_key ?? r.name}>
@@ -94,7 +94,7 @@ export function ProjectSettingsMembersTab({
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#606d76]" />
+            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           </div>
           <button
             type="button"
@@ -112,14 +112,14 @@ export function ProjectSettingsMembersTab({
       )}
 
       <div className="flex flex-col gap-4">
-        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+        <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
           Who has access
         </p>
 
         {membersQuery.isLoading ? (
-          <p className="py-6 text-center text-[14px] text-[#606d76]">Loading members…</p>
+          <p className="py-6 text-center text-[14px] text-muted-foreground">Loading members…</p>
         ) : members.length === 0 ? (
-          <p className="py-6 text-center text-[14px] text-[#606d76]">No members yet.</p>
+          <p className="py-6 text-center text-[14px] text-muted-foreground">No members yet.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {members.map((member) => {
@@ -138,10 +138,10 @@ export function ProjectSettingsMembersTab({
                     {member.initials}
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col px-2 py-1.5">
-                    <p className="truncate font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                    <p className="truncate font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                       {primary}
                     </p>
-                    <p className="truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-[#727d83]">
+                    <p className="truncate font-['Satoshi',sans-serif] text-[12px] font-medium text-muted-foreground">
                       {secondary}
                     </p>
                   </div>
@@ -151,7 +151,7 @@ export function ProjectSettingsMembersTab({
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          className="flex items-center gap-1.5 rounded-[16px] bg-[#f0f3f5] px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] transition-colors hover:bg-[#e6eaee]"
+                          className="flex items-center gap-1.5 rounded-[16px] bg-muted px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground transition-colors hover:bg-muted"
                         >
                           {roleLabel(member.role)}
                           <ChevronDown className="size-4" />
@@ -174,7 +174,7 @@ export function ProjectSettingsMembersTab({
                   ) : (
                     <span
                       className={cn(
-                        "rounded-[16px] bg-[#f0f3f5] px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]",
+                        "rounded-[16px] bg-muted px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground",
                       )}
                     >
                       {roleLabel(member.role)}

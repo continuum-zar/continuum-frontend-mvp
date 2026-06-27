@@ -97,7 +97,7 @@ export function ReleaseNotesSessionHost() {
       onOpenChange={handleOpenChange}
       ariaTitle={`What's new in Continuum v${pendingNote.version}`}
       ariaDescription={pendingNote.title}
-      title={<span className="font-['Satoshi',sans-serif] font-medium text-[#0b191f]">{pendingNote.title}</span>}
+      title={<span className="font-['Satoshi',sans-serif] font-medium text-foreground">{pendingNote.title}</span>}
       description={<span className="whitespace-pre-wrap">{pendingNote.content}</span>}
       checklistItems={pendingNote.checklist_items}
       primaryButtonLabel="Got it"

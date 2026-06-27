@@ -234,7 +234,7 @@ function commentAuthorInitials(author: CommentAuthorAPI): string {
 function TaskCommentAvatar({ author }: { author: CommentAuthorAPI }) {
   return (
     <div
-      className="flex size-[40px] shrink-0 items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
+      className="flex size-[40px] shrink-0 items-center justify-center rounded-full border-2 border-foreground text-[16px] font-medium leading-none text-white"
       style={{ backgroundColor: memberAvatarBackground(author.id) }}
     >
       {commentAuthorInitials(author)}
@@ -247,19 +247,19 @@ function TaskCommentAvatar({ author }: { author: CommentAuthorAPI }) {
 function TaskDetailSkeleton() {
   return (
     <div className="relative flex h-full w-full min-h-0 items-stretch font-['Satoshi',sans-serif]">
-      <main className="min-h-0 flex-1 overflow-y-auto rounded-[12px] bg-[#f9fafb] p-4">
+      <main className="min-h-0 flex-1 overflow-y-auto rounded-[12px] bg-muted p-4">
         <div className="mx-auto w-full max-w-[600px] space-y-6 py-4">
-          <div className="h-6 w-32 animate-pulse rounded bg-[#e4eaec]" />
-          <div className="h-8 w-3/4 animate-pulse rounded bg-[#e4eaec]" />
-          <div className="h-[106px] w-full animate-pulse rounded-[8px] bg-[#e4eaec]" />
-          <div className="h-40 w-full animate-pulse rounded-[8px] bg-[#e4eaec]" />
+          <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+          <div className="h-8 w-3/4 animate-pulse rounded bg-muted" />
+          <div className="h-[106px] w-full animate-pulse rounded-[8px] bg-muted" />
+          <div className="h-40 w-full animate-pulse rounded-[8px] bg-muted" />
         </div>
       </main>
-      <aside className="min-h-0 w-[362px] overflow-y-auto border-l border-[#ebedee] bg-white p-9">
+      <aside className="min-h-0 w-[362px] overflow-y-auto border-l border-border bg-card p-9">
         <div className="space-y-6">
-          <div className="h-10 w-full animate-pulse rounded bg-[#e4eaec]" />
-          <div className="h-10 w-full animate-pulse rounded bg-[#e4eaec]" />
-          <div className="h-20 w-full animate-pulse rounded bg-[#e4eaec]" />
+          <div className="h-10 w-full animate-pulse rounded bg-muted" />
+          <div className="h-10 w-full animate-pulse rounded bg-muted" />
+          <div className="h-20 w-full animate-pulse rounded bg-muted" />
         </div>
       </aside>
     </div>
@@ -291,23 +291,23 @@ function TaskResourceRow({
   if (attachment.kind === 'link') {
     return (
       <div className="flex w-full items-center gap-2">
-        <div className="flex min-h-[34px] min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
-          <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
-            <Link2 className="size-4 text-[#606d76]" strokeWidth={1.75} />
+        <div className="flex min-h-[34px] min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-border pr-2">
+          <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-muted">
+            <Link2 className="size-4 text-muted-foreground" strokeWidth={1.75} />
           </div>
-          <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
+          <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-solid border-border px-4 py-1.5">
             {linkHref ? (
               <a
                 href={linkHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 title={linkHref}
-                className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 hover:text-[#0d52cc]"
+                className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary"
               >
                 {linkLabel}
               </a>
             ) : (
-              <p className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+              <p className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-foreground">
                 {attachment.filename}
               </p>
             )}
@@ -315,7 +315,7 @@ function TaskResourceRow({
         </div>
         <button
           type="button"
-          className="inline-flex shrink-0 text-[#606d76] disabled:opacity-50"
+          className="inline-flex shrink-0 text-muted-foreground disabled:opacity-50"
           aria-label="Remove"
           disabled={deletePending}
           onClick={onDelete}
@@ -328,16 +328,16 @@ function TaskResourceRow({
 
   return (
     <div className="flex w-full items-center gap-2">
-      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
-        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
-          <FileText className="size-4 text-[#606d76]" strokeWidth={1.75} />
+      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-border pr-2">
+        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-muted">
+          <FileText className="size-4 text-muted-foreground" strokeWidth={1.75} />
         </div>
-        <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
-          <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+        <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-border px-4 py-1.5">
+          <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-foreground">
             {attachment.filename}
           </p>
           {attachment.size ? (
-            <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">
+            <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-muted-foreground">
               {attachment.size}
             </p>
           ) : null}
@@ -346,7 +346,7 @@ function TaskResourceRow({
       <button
         type="button"
         disabled={downloading || deletePending}
-        className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-[#606d76] transition-colors hover:bg-[#edf0f3] hover:text-[#0b191f] disabled:opacity-50"
+        className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
         aria-label="Download"
         onClick={async () => {
           setDownloading(true);
@@ -364,7 +364,7 @@ function TaskResourceRow({
       </button>
       <button
         type="button"
-        className="inline-flex shrink-0 self-center text-[#606d76] disabled:opacity-50"
+        className="inline-flex shrink-0 self-center text-muted-foreground disabled:opacity-50"
         aria-label="Remove"
         disabled={deletePending}
         onClick={onDelete}
@@ -385,19 +385,19 @@ function TaskPendingUploadRow({
   const uploading = row.status === 'uploading';
   return (
     <div className="flex w-full items-center gap-2">
-      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
-        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
+      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-border pr-2">
+        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-muted">
           {uploading ? (
-            <Loader2 className="size-4 animate-spin text-[#606d76] motion-reduce:animate-none" aria-hidden />
+            <Loader2 className="size-4 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden />
           ) : (
-            <FileText className="size-4 text-[#b42318]" strokeWidth={1.75} />
+            <FileText className="size-4 text-destructive" strokeWidth={1.75} />
           )}
         </div>
-        <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
-          <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+        <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-border px-4 py-1.5">
+          <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-foreground">
             {row.filename}
           </p>
-          <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">
+          <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-muted-foreground">
             {uploading ? 'Uploading…' : row.errorMessage ?? 'Upload failed'}
           </p>
         </div>
@@ -405,7 +405,7 @@ function TaskPendingUploadRow({
       {!uploading ? (
         <button
           type="button"
-          className="inline-flex shrink-0 self-center rounded-md p-1.5 text-[#606d76] hover:bg-[#edf0f3] hover:text-[#0b191f]"
+          className="inline-flex shrink-0 self-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label="Dismiss"
           onClick={onDismiss}
         >
@@ -421,14 +421,14 @@ function TaskNotFound() {
   return (
     <div className="flex h-full items-center justify-center font-['Satoshi',sans-serif]">
       <div className="text-center">
-        <h2 className="mb-2 text-[24px] font-medium text-[#0b191f]">Task not found</h2>
-        <p className="mb-6 text-[14px] text-[#727d83]">The task you're looking for doesn't exist or has been deleted.</p>
+        <h2 className="mb-2 text-[24px] font-medium text-foreground">Task not found</h2>
+        <p className="mb-6 text-[14px] text-muted-foreground">The task you're looking for doesn't exist or has been deleted.</p>
         <button
           type="button"
           onClick={() => {
             void resolveDefaultBoardPath().then((path) => navigate(path));
           }}
-          className="rounded-[8px] bg-[#24B5F8] px-6 py-2 text-[14px] font-bold text-white"
+          className="rounded-[8px] bg-info px-6 py-2 text-[14px] font-bold text-white"
         >
           Go to board
         </button>
@@ -545,7 +545,7 @@ function ChecklistItems({
   return (
     <div className="space-y-4">
       {items.length === 0 ? (
-        <p className="text-[13px] text-[#727d83]">No checklist items yet</p>
+        <p className="text-[13px] text-muted-foreground">No checklist items yet</p>
       ) : (
         <div className="space-y-2">
           {items.map((item, idx) => {
@@ -557,7 +557,7 @@ function ChecklistItems({
               <div
                 key={idx}
                 data-checklist-row
-                className={`group/row flex items-start gap-2 rounded-md -mx-1 px-1 py-0.5 ${isEditing ? '' : 'cursor-pointer select-none hover:bg-[#f3f5f7]'} ${isDragging ? 'opacity-40' : ''} ${isDragTarget ? 'ring-2 ring-[#24B5F8]/40' : ''}`}
+                className={`group/row flex items-start gap-2 rounded-md -mx-1 px-1 py-0.5 ${isEditing ? '' : 'cursor-pointer select-none hover:bg-muted'} ${isDragging ? 'opacity-40' : ''} ${isDragTarget ? 'ring-2 ring-info/40' : ''}`}
                 onClick={isEditing ? undefined : () => handleRowClick(idx)}
                 onDoubleClick={isEditing ? undefined : () => handleRowDoubleClick(idx)}
               >
@@ -567,7 +567,7 @@ function ChecklistItems({
                   onClick={(e) => e.stopPropagation()}
                   onDoubleClick={(e) => e.stopPropagation()}
                   aria-label="Reorder checklist item"
-                  className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
+                  className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
                 >
                   <GripVertical size={14} strokeWidth={2} aria-hidden />
                 </button>
@@ -582,7 +582,7 @@ function ChecklistItems({
                     handleRowDoubleClick(idx);
                   }}
                   aria-pressed={item.done}
-                  className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black ${item.done ? 'bg-[#24B5F8]' : 'bg-[#f9f9f9]'}`}
+                  className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-foreground ${item.done ? 'bg-info' : 'bg-card'}`}
                 >
                   {item.done ? <Check size={13} className="text-white" /> : null}
                 </button>
@@ -602,11 +602,11 @@ function ChecklistItems({
                       }
                       if (e.key === 'Escape') setEditingIdx(null);
                     }}
-                    className="min-w-0 flex-1 border-0 bg-transparent font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none"
+                    className="min-w-0 flex-1 border-0 bg-transparent font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-foreground outline-none"
                   />
                 ) : (
                   <p
-                    className={`min-w-0 flex-1 break-words font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-[#0b191f]/50 line-through' : 'text-[#0b191f]'}`}
+                    className={`min-w-0 flex-1 break-words font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${item.done ? 'text-foreground/50 line-through' : 'text-foreground'}`}
                   >
                     {item.text}
                   </p>
@@ -620,7 +620,7 @@ function ChecklistItems({
                   }}
                   onDoubleClick={(e) => e.stopPropagation()}
                   aria-label="Remove checklist item"
-                  className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                  className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-destructive focus-visible:opacity-100 group-hover/row:opacity-100"
                 >
                   <X size={12} strokeWidth={2} aria-hidden />
                 </button>
@@ -632,7 +632,7 @@ function ChecklistItems({
       <button
         type="button"
         onClick={addItem}
-        className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+        className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         <Plus size={12} /> Add item
       </button>
@@ -1378,14 +1378,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
   return (
     <div className="flex h-full w-full min-h-0 items-stretch font-['Satoshi',sans-serif]">
       {/* ═══ MAIN PANEL ═══ */}
-      <main className="min-h-0 flex-1 overflow-y-auto rounded-[12px] bg-[#f9fafb] p-4">
+      <main className="min-h-0 flex-1 overflow-y-auto rounded-[12px] bg-muted p-4">
         <div className="mx-auto w-full max-w-[600px]">
           {/* Header bar */}
           <div className="flex items-center justify-between py-4">
-            <button type="button" onClick={handleNavigateBack} className="text-[#606d76]">
+            <button type="button" onClick={handleNavigateBack} className="text-muted-foreground">
               <ArrowLeft size={20} />
             </button>
-            <p className="text-[16px] font-medium tracking-[-0.16px] text-[#595959]">Update Task</p>
+            <p className="text-[16px] font-medium tracking-[-0.16px] text-foreground">Update Task</p>
             <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
           </div>
 
@@ -1400,18 +1400,18 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   onChange={(e) => setTitleDraft(e.target.value)}
                   onBlur={saveTitle}
                   onKeyDown={(e) => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false); }}
-                  className="w-full border-0 bg-transparent text-[24px] font-medium leading-[1.2] tracking-[-0.24px] text-[#0b191f] outline-none"
+                  className="w-full border-0 bg-transparent text-[24px] font-medium leading-[1.2] tracking-[-0.24px] text-foreground outline-none"
                 />
               ) : (
                 <h2
-                  className="cursor-text text-[24px] font-medium leading-[1.2] tracking-[-0.24px] text-[#0b191f]"
+                  className="cursor-text text-[24px] font-medium leading-[1.2] tracking-[-0.24px] text-foreground"
                   onClick={startEditTitle}
                 >
                   {task.title}
                 </h2>
               )}
               <div>
-                <p className="mb-1 text-[14px] font-medium text-[#606d76]">Description</p>
+                <p className="mb-1 text-[14px] font-medium text-muted-foreground">Description</p>
                 {editingDesc ? (
                   <textarea
                     ref={descTextareaRef}
@@ -1419,17 +1419,17 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     onChange={(e) => setDescDraft(e.target.value)}
                     onBlur={saveDesc}
                     onKeyDown={(e) => { if (e.key === 'Escape') { setEditingDesc(false); } }}
-                    className="max-h-[560px] w-full resize-none overflow-y-auto rounded-[8px] border border-[#e9e9e9] bg-white p-4 text-[16px] font-medium leading-relaxed text-[#0b191f] outline-none focus:ring-2 focus:ring-[#24b5f8]/40"
+                    className="max-h-[560px] w-full resize-none overflow-y-auto rounded-[8px] border border-border bg-card p-4 text-[16px] font-medium leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-info/40"
                   />
                 ) : (
                   <div
-                    className="min-h-[106px] cursor-text rounded-[8px] border border-[#e9e9e9] bg-white p-4"
+                    className="min-h-[106px] cursor-text rounded-[8px] border border-border bg-card p-4"
                     onClick={startEditDesc}
                   >
                     {task.description ? (
                       <TaskDescriptionMarkdown>{task.description}</TaskDescriptionMarkdown>
                     ) : (
-                      <p className="text-[16px] font-medium leading-relaxed text-[#606d76]">
+                      <p className="text-[16px] font-medium leading-relaxed text-muted-foreground">
                         Click to add a description…
                       </p>
                     )}
@@ -1441,12 +1441,12 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             {/* ─── Checklist ─── */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Checklist</p>
+                <p className="text-[16px] font-medium text-foreground">Checklist</p>
                 <button
                   type="button"
                   onClick={() => addSection('checklist')}
                   aria-label="Add named checklist section"
-                  className="flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] hover:text-[#0b191f]"
+                  className="flex size-8 items-center justify-center rounded-[8px] border border-border bg-card text-muted-foreground shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <Plus size={16} />
                 </button>
@@ -1471,14 +1471,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           if (e.key === 'Escape') setEditingSectionNameIdx(null);
                         }}
                         placeholder="Checklist title"
-                        className="flex-1 border-0 bg-transparent text-[16px] font-medium leading-none text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                        className="flex-1 border-0 bg-transparent text-[16px] font-medium leading-none text-foreground outline-none placeholder:text-muted-foreground"
                         aria-label="Checklist title"
                       />
                     ) : (
                       <button
                         type="button"
                         onClick={() => setEditingSectionNameIdx(sIdx)}
-                        className="flex-1 cursor-text border-0 bg-transparent p-0 text-left text-[16px] font-medium leading-none text-[#0b191f]"
+                        className="flex-1 cursor-text border-0 bg-transparent p-0 text-left text-[16px] font-medium leading-none text-foreground"
                         aria-label={`Rename ${section.name}`}
                       >
                         {section.name || 'Untitled checklist'}
@@ -1487,7 +1487,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     <button
                       type="button"
                       onClick={() => removeSection(sIdx)}
-                      className="inline-flex size-7 items-center justify-center rounded-[6px] text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/section:opacity-100"
+                      className="inline-flex size-7 items-center justify-center rounded-[6px] text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-destructive focus-visible:opacity-100 group-hover/section:opacity-100"
                       aria-label={`Delete checklist ${section.name}`}
                     >
                       <X size={14} />
@@ -1504,7 +1504,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       onChange={(e) => updatePlainTextSection(sIdx, e.target.value)}
                       placeholder="Plain text…"
                       rows={3}
-                      className="min-h-[72px] w-full resize-y rounded-[6px] border border-[#ebedee] bg-[#fafbfc] p-2 text-[13px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus:border-[#0b191f]/20"
+                      className="min-h-[72px] w-full resize-y rounded-[6px] border border-border bg-background p-2 text-[13px] text-foreground outline-none placeholder:text-muted-foreground focus:border-foreground/20"
                     />
                   )}
                 </div>
@@ -1514,11 +1514,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             {/* ─── Tags ─── */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Tags</p>
+                <p className="text-[16px] font-medium text-foreground">Tags</p>
                 <button
                   type="button"
                   onClick={startAddTag}
-                  className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] hover:text-[#0b191f]"
+                  className="inline-flex size-8 items-center justify-center rounded-[8px] border border-border bg-card text-muted-foreground shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <Tag size={14} />
                 </button>
@@ -1527,13 +1527,13 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 {(task.labels ?? []).map((tag) => (
                   <span
                     key={tag}
-                    className="group relative inline-flex items-center gap-1.5 rounded-[16px] border border-[#cdd2d5] bg-white px-4 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76]"
+                    className="group relative inline-flex items-center gap-1.5 rounded-[16px] border border-border bg-card px-4 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-muted-foreground"
                   >
                     <span className="inline-flex min-h-[14px] items-center justify-center">{tag}</span>
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-[#606d76] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[#0b191f]"
+                      className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground"
                       aria-label={`Remove ${tag}`}
                     >
                       <X size={10} />
@@ -1541,7 +1541,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   </span>
                 ))}
                 {addingTag && (
-                  <span className="inline-flex items-center rounded-[16px] border border-[#cdd2d5] bg-white px-3 py-1.5">
+                  <span className="inline-flex items-center rounded-[16px] border border-border bg-card px-3 py-1.5">
                     <input
                       ref={tagInputRef}
                       type="text"
@@ -1549,7 +1549,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       onChange={(e) => setTagDraft(e.target.value)}
                       onBlur={saveTag}
                       onKeyDown={(e) => { if (e.key === 'Enter') saveTag(); if (e.key === 'Escape') setAddingTag(false); }}
-                      className="w-24 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76] outline-none placeholder:text-[#606d76]/60"
+                      className="w-24 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-muted-foreground outline-none placeholder:text-muted-foreground/60"
                     />
                   </span>
                 )}
@@ -1559,12 +1559,12 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             {/* ─── Estimated effort ─── */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Estimated effort</p>
+                <p className="text-[16px] font-medium text-foreground">Estimated effort</p>
                 {task.estimated_hours == null && !addingEffort ? (
                   <button
                     type="button"
                     onClick={startAddEffort}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 text-[14px] font-medium text-[#0b191f]"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-2 text-[14px] font-medium text-foreground"
                   >
                     Add <Plus size={16} />
                   </button>
@@ -1572,14 +1572,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               </div>
               <div className="flex flex-wrap gap-2">
                 {task.estimated_hours != null && !addingEffort ? (
-                  <span className="group relative inline-flex items-center gap-1.5 rounded-[16px] bg-[#0b191f] px-4 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-white">
+                  <span className="group relative inline-flex items-center gap-1.5 rounded-[16px] bg-foreground px-4 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-background">
                     <span className="inline-flex min-h-[14px] items-center justify-center">
                       {formatEstimatedEffortLabel(task.estimated_hours)}
                     </span>
                     <button
                       type="button"
                       onClick={clearEffort}
-                      className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-white/80 opacity-0 transition-opacity group-hover:opacity-100 hover:text-white"
+                      className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-background/80 opacity-0 transition-opacity group-hover:opacity-100 hover:text-background"
                       aria-label="Remove estimated effort"
                     >
                       <X size={10} />
@@ -1587,7 +1587,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   </span>
                 ) : null}
                 {addingEffort && (
-                  <span className="inline-flex items-center rounded-[16px] border border-[#cdd2d5] bg-white px-3 py-1.5">
+                  <span className="inline-flex items-center rounded-[16px] border border-border bg-card px-3 py-1.5">
                     <input
                       ref={effortInputRef}
                       type="text"
@@ -1603,12 +1603,12 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                           setEffortDraft('');
                         }
                       }}
-                      className="w-20 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76] outline-none placeholder:text-[#606d76]/60"
+                      className="w-20 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-muted-foreground outline-none placeholder:text-muted-foreground/60"
                     />
                   </span>
                 )}
                 {task.estimated_hours == null && !addingEffort ? (
-                  <p className="w-full text-[13px] text-[#727d83]">No effort set</p>
+                  <p className="w-full text-[13px] text-muted-foreground">No effort set</p>
                 ) : null}
               </div>
             </section>
@@ -1616,17 +1616,17 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             {/* ─── Resources (Attachments) ─── */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Resources</p>
+                <p className="text-[16px] font-medium text-foreground">Resources</p>
                 <button
                   type="button"
                   onClick={() => setResourceModalOpen(true)}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 text-[14px] font-medium text-[#0b191f]"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-2 text-[14px] font-medium text-foreground"
                 >
                   Add <Plus size={16} />
                 </button>
               </div>
               {mappedAttachments.length === 0 && pendingUploadRows.length === 0 ? (
-                <p className="text-[13px] text-[#727d83]">No attachments yet</p>
+                <p className="text-[13px] text-muted-foreground">No attachments yet</p>
               ) : (
                 <div className="space-y-3">
                   {pendingUploadRows.map((row) => (
@@ -1653,17 +1653,17 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             {/* ─── Dependencies ─── */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Dependencies</p>
+                <p className="text-[16px] font-medium text-foreground">Dependencies</p>
                 <button
                   type="button"
                   onClick={() => setDependencyModalOpen(true)}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 text-[14px] font-medium text-[#0b191f]"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-2 text-[14px] font-medium text-foreground"
                 >
                   Add <Plus size={16} />
                 </button>
               </div>
               {selectedDependencies.length === 0 ? (
-                <p className="text-[13px] text-[#727d83]">No dependencies yet</p>
+                <p className="text-[13px] text-muted-foreground">No dependencies yet</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {selectedDependencies.map((depId) => {
@@ -1673,20 +1673,20 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                     return (
                       <span
                         key={depId}
-                        className="inline-flex items-center gap-1.5 rounded-[16px] border border-[#cdd2d5] bg-white px-4 py-1.5 text-[13px] font-medium text-[#606d76]"
+                        className="inline-flex items-center gap-1.5 rounded-[16px] border border-border bg-card px-4 py-1.5 text-[13px] font-medium text-muted-foreground"
                       >
                         <a
                           href={depHref}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="rounded-sm hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/30"
+                          className="rounded-sm hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30"
                           title={`Open ${depLabel} in a new tab`}
                         >
                           {depLabel}
                         </a>
                         <button
                           type="button"
-                          className="inline-flex size-4 items-center justify-center rounded-full hover:text-[#0b191f]"
+                          className="inline-flex size-4 items-center justify-center rounded-full hover:text-foreground"
                           onClick={() => {
                             const next = selectedDependencies.filter((id) => id !== depId);
                             setSelectedDependencies(next);
@@ -1706,18 +1706,18 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             {/* ─── Assigned To ─── */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Assigned to</p>
+                <p className="text-[16px] font-medium text-foreground">Assigned to</p>
                 <button
                   type="button"
                   onClick={() => setAssignModalOpen(true)}
-                  className="inline-flex size-10 items-center justify-center rounded-[12px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] hover:text-[#0b191f]"
+                  className="inline-flex size-10 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <UserRoundPlus size={16} />
                 </button>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 {assigneeUserIds.length === 0 ? (
-                  <p className="text-[13px] text-[#727d83]">No one assigned</p>
+                  <p className="text-[13px] text-muted-foreground">No one assigned</p>
                 ) : (
                   assigneeUserIds.map((uid) => {
                     const m = members?.find((mem) => mem.userId === uid);
@@ -1726,15 +1726,15 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       <div key={uid} className="flex items-center gap-2">
                         <div className="group/avatar relative">
                           <div
-                            className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
+                            className="flex size-[40px] items-center justify-center rounded-full border-2 border-foreground text-[16px] font-medium leading-none text-white"
                             style={{ backgroundColor: memberAvatarBackground(m?.userId ?? uid) }}
                             title={displayName}
                           >
                             {m ? m.initials : `U${uid}`}
                           </div>
                           {m ? (
-                            <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-white bg-black transition-opacity group-hover/avatar:opacity-0 group-focus-within/avatar:opacity-0">
-                              <Check size={10} className="text-white" aria-hidden />
+                            <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-card bg-foreground transition-opacity group-hover/avatar:opacity-0 group-focus-within/avatar:opacity-0">
+                              <Check size={10} className="text-background" aria-hidden />
                             </div>
                           ) : null}
                           <button
@@ -1745,7 +1745,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                             }}
                             disabled={setAssigneesMutation.isPending}
                             aria-label={`Remove ${displayName} from this task`}
-                            className="absolute -top-1 -right-1 inline-flex size-[18px] items-center justify-center rounded-full border-2 border-white bg-[#0b191f] text-white opacity-0 shadow-[0px_1px_2px_0px_rgba(14,14,34,0.18)] transition-opacity hover:bg-[#1a2d36] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b191f]/40 group-hover/avatar:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="absolute -top-1 -right-1 inline-flex size-[18px] items-center justify-center rounded-full border-2 border-card bg-foreground text-background opacity-0 shadow-[0px_1px_2px_0px_rgba(14,14,34,0.18)] transition-opacity hover:bg-foreground/90 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 group-hover/avatar:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <X size={10} strokeWidth={2.5} aria-hidden />
                           </button>
@@ -1758,14 +1758,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             </section>
 
             {/* ─── Update Task button ─── */}
-            <div className="border-t border-[#ebedee] pt-5">
+            <div className="border-t border-border pt-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setDeleteConfirmOpen(true)}
                   disabled={deleteTaskMutation.isPending}
                   aria-label="Delete this task"
-                  className="inline-flex h-12 items-center justify-center rounded-[12px] bg-[#dc2626] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-12 items-center justify-center rounded-[12px] bg-destructive px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {deleteTaskMutation.isPending ? 'Deleting…' : 'Delete'}
                 </button>
@@ -1777,20 +1777,20 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       onClick={() => void handleCopyCursorMcpUrl()}
                       disabled={!cursorMcpShareUrl}
                       aria-label={mcpLinkCopied ? 'URL copied to clipboard' : 'Copy MCP task URL'}
-                      className={`inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-[#ebedee] bg-white px-5 text-[14px] font-medium text-[#0b191f] shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-50`}
+                      className={`inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border border-border bg-card px-5 text-[14px] font-medium text-foreground shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50`}
                     >
                       {mcpLinkCopied ? (
-                        <Check size={16} className="shrink-0 text-[#0b191f]" aria-hidden />
+                        <Check size={16} className="shrink-0 text-foreground" aria-hidden />
                       ) : (
-                        <Copy size={16} className="shrink-0 text-[#606d76]" aria-hidden />
+                        <Copy size={16} className="shrink-0 text-muted-foreground" aria-hidden />
                       )}
                       {mcpLinkCopied ? 'Copied' : 'Copy MCP URL'}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent
                     side="top"
-                    className="max-w-xs border-0 bg-black text-balance text-white shadow-md"
-                    arrowClassName="bg-black fill-black"
+                    className="max-w-xs border-0 bg-foreground text-balance text-background shadow-md"
+                    arrowClassName="bg-foreground fill-foreground"
                   >
                     {`Copies the MCP task page link for this task. For full agent integration (checklists, status changes), configure the Continuum MCP server in Cursor or Claude Code from Settings → Integrations.`}
                   </TooltipContent>
@@ -1814,8 +1814,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                       }
                       className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border px-5 text-[14px] font-medium shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                         reviewableBuild && !activeAgentRun
-                          ? 'border-[#24B5F8]/40 bg-[#24B5F8]/10 text-[#0369a1] hover:bg-[#24B5F8]/20'
-                          : 'border-[#ebedee] bg-white text-[#0b191f] hover:bg-[#f9fafb]'
+                          ? 'border-info/40 bg-info/10 text-info hover:bg-info/20'
+                          : 'border-border bg-card text-foreground hover:bg-muted'
                       }`}
                     >
                       {activeAgentRun
@@ -1828,16 +1828,16 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                               : 'Review'
                           : 'Build'}
                       {activeAgentRun ? (
-                        <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-[#24B5F8]">
-                          <span className="absolute inline-flex h-2 w-2 rounded-full bg-[#24B5F8] opacity-75 motion-safe:animate-ping" />
+                        <span className="ml-1 inline-flex h-2 w-2 rounded-full bg-info">
+                          <span className="absolute inline-flex h-2 w-2 rounded-full bg-info opacity-75 motion-safe:animate-ping" />
                         </span>
                       ) : null}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent
                     side="top"
-                    className="max-w-xs border-0 bg-black text-balance text-white shadow-md"
-                    arrowClassName="bg-black fill-black"
+                    className="max-w-xs border-0 bg-foreground text-balance text-background shadow-md"
+                    arrowClassName="bg-foreground fill-foreground"
                   >
                     {taskLinkedBranchCount === 0
                       ? 'Link at least one repo + branch under Development to enable Build.'
@@ -1859,8 +1859,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   onClick={handleUpdateTask}
                   className={`h-12 rounded-[12px] px-8 text-[14px] font-medium ${
                     updateTaskMutation.isPending
-                      ? 'bg-[#ebedee] text-[#9ea7ad] cursor-not-allowed'
-                      : 'bg-[#24B5F8] text-white hover:bg-[#1da8ea]'
+                      ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                      : 'bg-info text-white hover:bg-info'
                   }`}
                   disabled={updateTaskMutation.isPending}
                 >
@@ -1874,29 +1874,29 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       </main>
 
       {/* ═══ RIGHT SIDEBAR ═══ */}
-      <aside className="min-h-0 w-[362px] overflow-y-auto border-l border-[#ebedee] bg-white p-9">
+      <aside className="min-h-0 w-[362px] overflow-y-auto border-l border-border bg-card p-9">
         <div className="space-y-12 pb-10">
           {/* Status */}
           <div className="space-y-4">
-            <p className="text-[16px] font-medium text-[#0b191f]">Status</p>
+            <p className="text-[16px] font-medium text-foreground">Status</p>
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb]"
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-border bg-card px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-muted"
               >
-                <span className="text-[16px] font-medium text-[#0b191f]">{statusLabelFromBoard(status, boardColumns)}</span>
+                <span className="text-[16px] font-medium text-foreground">{statusLabelFromBoard(status, boardColumns)}</span>
                 <ChevronDown size={16} />
               </button>
               {statusDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md">
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[8px] border border-border bg-card shadow-md">
                   {statusOptions.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => handleStatusChange(opt.value)}
-                      className={`flex w-full items-center px-4 py-3 text-left text-[14px] font-medium hover:bg-[#f0f3f5] ${
-                        status === opt.value ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                      className={`flex w-full items-center px-4 py-3 text-left text-[14px] font-medium hover:bg-muted ${
+                        status === opt.value ? 'bg-muted text-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       {opt.label}
@@ -1909,28 +1909,28 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
 
           {/* Priority */}
           <div className="space-y-4">
-            <p className="text-[16px] font-medium text-[#0b191f]">Priority</p>
+            <p className="text-[16px] font-medium text-foreground">Priority</p>
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setPriorityDropdownOpen(!priorityDropdownOpen)}
-                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb]"
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-border bg-card px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-muted"
               >
-                <span className="flex items-center gap-2 text-[16px] font-medium text-[#0b191f]">
+                <span className="flex items-center gap-2 text-[16px] font-medium text-foreground">
                   <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
                   {taskPriorityLabel(priority)}
                 </span>
                 <ChevronDown size={16} />
               </button>
               {priorityDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md">
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[8px] border border-border bg-card shadow-md">
                   {TASK_PRIORITY_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => handlePriorityChange(opt.value)}
-                      className={`flex w-full items-center gap-2 px-4 py-3 text-left text-[14px] font-medium hover:bg-[#f0f3f5] ${
-                        priority === opt.value ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                      className={`flex w-full items-center gap-2 px-4 py-3 text-left text-[14px] font-medium hover:bg-muted ${
+                        priority === opt.value ? 'bg-muted text-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       <Flag size={16} className={opt.flagColorClass} aria-hidden />
@@ -1944,25 +1944,25 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
 
           {/* Scope */}
           <div className="space-y-4">
-            <p className="text-[16px] font-medium text-[#0b191f]">Scope</p>
+            <p className="text-[16px] font-medium text-foreground">Scope</p>
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setScopeDropdownOpen(!scopeDropdownOpen)}
-                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-[#f9fafb]"
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-border bg-card px-4 shadow-[0px_1px_1px_0px_rgba(14,14,34,0.03)] transition-colors hover:bg-muted"
               >
-                <span className="text-[16px] font-medium text-[#0b191f]">{scopeLabel(scope)}</span>
+                <span className="text-[16px] font-medium text-foreground">{scopeLabel(scope)}</span>
                 <ChevronDown size={16} />
               </button>
               {scopeDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md">
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[8px] border border-border bg-card shadow-md">
                   {SCOPE_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => handleScopeChange(opt.value)}
-                      className={`flex w-full items-center px-4 py-3 text-left text-[14px] font-medium hover:bg-[#f0f3f5] ${
-                        scope === opt.value ? 'bg-[#f0f3f5] text-[#0b191f]' : 'text-[#606d76]'
+                      className={`flex w-full items-center px-4 py-3 text-left text-[14px] font-medium hover:bg-muted ${
+                        scope === opt.value ? 'bg-muted text-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       {opt.label}
@@ -1976,8 +1976,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
           {/* Development — linked Git branches */}
           <div className="space-y-4">
             <div>
-              <p className="text-[16px] font-medium text-[#0b191f]">Development</p>
-              <p className="mt-1 text-[13px] leading-snug text-[#727d83]">
+              <p className="text-[16px] font-medium text-foreground">Development</p>
+              <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
                 Link one or more repository branches to this task for commits and automation.
               </p>
             </div>
@@ -1994,17 +1994,17 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
 
           {/* Dates */}
           <div className="space-y-2 text-[16px]">
-            <p className="mb-4 text-[16px] font-medium text-[#0b191f]">Dates</p>
+            <p className="mb-4 text-[16px] font-medium text-foreground">Dates</p>
             {task.created_at && (
               <div className="flex justify-between">
-                <span className="text-[#727d83]">Created</span>
-                <span className="text-[#0b191f]">{formatDueDate(task.created_at)}</span>
+                <span className="text-muted-foreground">Created</span>
+                <span className="text-foreground">{formatDueDate(task.created_at)}</span>
               </div>
             )}
             {task.updated_at && (
               <div className="flex justify-between">
-                <span className="text-[#727d83]">Last update</span>
-                <span className="text-[#0b191f]">{formatDueDate(task.updated_at)}</span>
+                <span className="text-muted-foreground">Last update</span>
+                <span className="text-foreground">{formatDueDate(task.updated_at)}</span>
               </div>
             )}
           </div>
@@ -2012,28 +2012,28 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
           {/* Time tracked */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-[16px] font-medium text-[#0b191f]">Time tracked</p>
+              <p className="text-[16px] font-medium text-foreground">Time tracked</p>
               <button
                 type="button"
                 onClick={() => setLogTimeOpen(true)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white"
+                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-info px-4 text-[14px] font-medium text-white"
               >
                 <Plus size={16} />
                 Log Time
               </button>
             </div>
             <div className="flex justify-between text-[16px]">
-              <span className="text-[#727d83]">Logged</span>
-              <span className="flex min-h-[24px] items-center justify-end gap-2 text-[#0b191f]">
+              <span className="text-muted-foreground">Logged</span>
+              <span className="flex min-h-[24px] items-center justify-end gap-2 text-foreground">
                 {task.project_id == null ? (
-                  <span className="text-[#727d83]">—</span>
+                  <span className="text-muted-foreground">—</span>
                 ) : hoursLoading ? (
                   <>
-                    <Loader2 className="size-4 shrink-0 animate-spin text-[#727d83]" aria-hidden />
+                    <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" aria-hidden />
                     <span className="sr-only">Loading logged hours</span>
                   </>
                 ) : hoursError ? (
-                  <span className="text-[14px] text-[#727d83]">Unable to load</span>
+                  <span className="text-[14px] text-muted-foreground">Unable to load</span>
                 ) : (
                   formatLoggedHoursSum(loggedHoursTotal ?? 0)
                 )}
@@ -2043,7 +2043,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
 
           {/* Comments */}
           <div className="space-y-4">
-            <p className="text-[16px] font-medium text-[#0b191f]">Comments</p>
+            <p className="text-[16px] font-medium text-foreground">Comments</p>
             <div className="space-y-3">
               <CommentMentionTextarea
                 textareaRef={commentTextareaRef}
@@ -2061,8 +2061,8 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                   disabled={!commentDraft.trim() || createCommentMutation.isPending}
                   className={`inline-flex h-8 items-center rounded-[8px] px-4 text-[14px] font-medium ${
                     !commentDraft.trim() || createCommentMutation.isPending
-                      ? 'cursor-not-allowed bg-[#ebedee] text-[#9ea7ad]'
-                      : 'bg-[#24B5F8] text-white hover:bg-[#1da8ea]'
+                      ? 'cursor-not-allowed bg-muted text-muted-foreground'
+                      : 'bg-info text-white hover:bg-info'
                   }`}
                 >
                   {createCommentMutation.isPending ? 'Posting…' : 'Post'}
@@ -2073,11 +2073,11 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <div className="space-y-4">
                 {[0, 1].map((i) => (
                   <div key={i} className="flex gap-4">
-                    <div className="mt-1 size-[40px] shrink-0 animate-pulse rounded-full bg-[#e4eaec]" />
+                    <div className="mt-1 size-[40px] shrink-0 animate-pulse rounded-full bg-muted" />
                     <div className="flex-1 space-y-2 py-1">
-                      <div className="h-3 w-20 animate-pulse rounded bg-[#e4eaec]" />
-                      <div className="h-4 w-32 animate-pulse rounded bg-[#e4eaec]" />
-                      <div className="h-10 w-full animate-pulse rounded bg-[#e4eaec]" />
+                      <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+                      <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+                      <div className="h-10 w-full animate-pulse rounded bg-muted" />
                     </div>
                   </div>
                 ))}
@@ -2091,14 +2091,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                         <TaskCommentAvatar author={c.author} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[12px] text-[#727d83]">
+                        <p className="text-[12px] text-muted-foreground">
                           {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
                         </p>
-                        <p className="text-[16px] leading-none text-[#0b191f]">{commentAuthorDisplayName(c.author)}</p>
+                        <p className="text-[16px] leading-none text-foreground">{commentAuthorDisplayName(c.author)}</p>
                         <CommentBody
                           content={c.content}
                           mentions={c.mentions}
-                          className="mt-1 text-[14px] font-medium leading-snug text-[#606d76]"
+                          className="mt-1 text-[14px] font-medium leading-snug text-muted-foreground"
                         />
                       </div>
                     </div>
@@ -2111,7 +2111,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                         type="button"
                         onClick={() => setVisibleCommentCount((n) => n + TASK_DETAIL_FEED_PAGE)}
                         disabled={commentsQuery.isFetchingNextPage}
-                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 outline-none hover:text-[#0d52cc] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-primary underline decoration-primary/40 underline-offset-2 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {commentsQuery.isFetchingNextPage ? 'Loading…' : 'Show more'}
                       </button>
@@ -2121,7 +2121,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                         type="button"
                         onClick={() => setVisibleCommentCount(TASK_DETAIL_FEED_PAGE)}
                         disabled={commentsQuery.isFetchingNextPage}
-                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] underline decoration-[#606d76]/40 underline-offset-2 outline-none hover:text-[#0b191f] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground underline decoration-muted-foreground/40 underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Show less
                       </button>
@@ -2130,25 +2130,25 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 ) : null}
               </>
             ) : (
-              <p className="text-[13px] text-[#727d83]">No comments yet.</p>
+              <p className="text-[13px] text-muted-foreground">No comments yet.</p>
             )}
           </div>
 
           {/* Activity */}
           <div className="space-y-4">
-            <p className="text-[16px] font-medium text-[#0b191f]">Activity</p>
+            <p className="text-[16px] font-medium text-foreground">Activity</p>
             {timelineLoading ? (
               <div className="relative flex flex-col gap-4">
                 <div
-                  className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
+                  className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-muted"
                   aria-hidden
                 />
                 {[0, 1].map((i) => (
                   <div key={i} className="relative z-[1] flex gap-4">
-                    <div className="mt-1 size-[50px] shrink-0 animate-pulse rounded-[99px] bg-[#e4eaec]" />
+                    <div className="mt-1 size-[50px] shrink-0 animate-pulse rounded-[99px] bg-muted" />
                     <div className="flex-1 space-y-2 py-1">
-                      <div className="h-3 w-20 animate-pulse rounded bg-[#e4eaec]" />
-                      <div className="h-4 w-40 animate-pulse rounded bg-[#e4eaec]" />
+                      <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+                      <div className="h-4 w-40 animate-pulse rounded bg-muted" />
                     </div>
                   </div>
                 ))}
@@ -2157,20 +2157,20 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               <>
                 <div id="task-activity-timeline-list" role="list" className="relative flex flex-col gap-4">
                   <div
-                    className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
+                    className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-muted"
                     aria-hidden
                   />
                   {displayedTimeline.map((entry) => (
                     <div key={entry.id} className="relative z-[1] flex gap-4" role="listitem">
-                      <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
-                        <Activity size={16} className="text-[#727d83]" />
+                      <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-muted">
+                        <Activity size={16} className="text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="text-[12px] text-[#727d83]">
+                        <p className="text-[12px] text-muted-foreground">
                           {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
                         </p>
-                        <p className="text-[16px] leading-none text-[#0b191f]">{timelineActorName(entry)}</p>
-                        <p className="text-[12px] text-[#727d83]">{getActivityLabel(entry, members)}</p>
+                        <p className="text-[16px] leading-none text-foreground">{timelineActorName(entry)}</p>
+                        <p className="text-[12px] text-muted-foreground">{getActivityLabel(entry, members)}</p>
                       </div>
                     </div>
                   ))}
@@ -2182,7 +2182,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                         type="button"
                         onClick={() => setVisibleActivityCount((n) => n + TASK_DETAIL_FEED_PAGE)}
                         disabled={timelineQuery.isFetchingNextPage}
-                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 outline-none hover:text-[#0d52cc] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-primary underline decoration-primary/40 underline-offset-2 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {timelineQuery.isFetchingNextPage ? 'Loading…' : 'Show more'}
                       </button>
@@ -2192,7 +2192,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                         type="button"
                         onClick={() => setVisibleActivityCount(TASK_DETAIL_FEED_PAGE)}
                         disabled={timelineQuery.isFetchingNextPage}
-                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] underline decoration-[#606d76]/40 underline-offset-2 outline-none hover:text-[#0b191f] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground underline decoration-muted-foreground/40 underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Show less
                       </button>
@@ -2201,7 +2201,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                 ) : null}
               </>
             ) : (
-              <p className="text-[13px] text-[#727d83]">No activity logged yet.</p>
+              <p className="text-[13px] text-muted-foreground">No activity logged yet.</p>
             )}
           </div>
         </div>
@@ -2269,9 +2269,9 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
       ) : null}
       {dependencyModalOpen ? (
         <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/25 p-4">
-          <div className="w-full max-w-[520px] rounded-[12px] bg-white p-4">
+          <div className="w-full max-w-[520px] rounded-[12px] bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[16px] font-medium text-[#0b191f]">Select dependencies</p>
+              <p className="text-[16px] font-medium text-foreground">Select dependencies</p>
               <button type="button" onClick={() => setDependencyModalOpen(false)} aria-label="Close dependencies modal">
                 <X size={16} />
               </button>
@@ -2281,14 +2281,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
               placeholder="Search tasks"
               value={dependencySearch}
               onChange={(e) => setDependencySearch(e.target.value)}
-              className="mb-3 w-full rounded-[8px] border border-[#e9e9e9] px-3 py-2 text-[14px] outline-none"
+              className="mb-3 w-full rounded-[8px] border border-border px-3 py-2 text-[14px] outline-none"
             />
             <div className="max-h-[320px] space-y-2 overflow-y-auto">
               {dependencyOptions.map((opt) => {
                 const optId = Number(opt.id);
                 const checked = Number.isFinite(optId) && selectedDependencies.includes(optId);
                 return (
-                  <label key={opt.id} className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-[#ebedee] p-2">
+                  <label key={opt.id} className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-border p-2">
                     <input
                       type="checkbox"
                       checked={checked}
@@ -2299,7 +2299,7 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
                         );
                       }}
                     />
-                    <span className="text-[14px] text-[#0b191f]">{opt.title}</span>
+                    <span className="text-[14px] text-foreground">{opt.title}</span>
                   </label>
                 );
               })}
@@ -2307,14 +2307,14 @@ export function TaskDetail({ taskIdOverride, onBack }: TaskDetailProps = {}) {
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                className="rounded-[8px] border border-[#e9e9e9] px-3 py-2 text-[14px]"
+                className="rounded-[8px] border border-border px-3 py-2 text-[14px]"
                 onClick={() => setDependencyModalOpen(false)}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                className="rounded-[8px] bg-[#24B5F8] px-3 py-2 text-[14px] text-white"
+                className="rounded-[8px] bg-info px-3 py-2 text-[14px] text-white"
                 onClick={() => {
                   if (taskId) updateTaskMutation.mutate({ taskId, dependencies: selectedDependencies });
                   setDependencyModalOpen(false);

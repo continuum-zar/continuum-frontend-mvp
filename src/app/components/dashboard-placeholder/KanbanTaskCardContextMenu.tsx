@@ -376,7 +376,7 @@ export function KanbanTaskCardContextMenu({
               <ContextMenuSubTrigger
                 className={cn(
                   optionChipClassName,
-                  "data-[state=open]:bg-[#f5f7f8] data-[state=open]:text-[#0b191f] data-[state=open]:shadow-md",
+                  "data-[state=open]:bg-card data-[state=open]:text-foreground data-[state=open]:shadow-md",
                 )}
               >
                 <UserRoundPlus className={optionIconClass} aria-hidden />
@@ -387,13 +387,13 @@ export function KanbanTaskCardContextMenu({
                   {assigneeIds.length === 0 ? (
                     <ContextMenuItem className={optionChipClassName} disabled aria-disabled>
                       <div
-                        className="flex size-5 shrink-0 items-center justify-center rounded-full border border-dashed border-[#cdd2d5] bg-[#fafbfc]"
+                        className="flex size-5 shrink-0 items-center justify-center rounded-full border border-dashed border-border bg-background"
                         aria-hidden
                       >
-                        <span className="text-[10px] leading-none text-[#727d83]">—</span>
+                        <span className="text-[10px] leading-none text-muted-foreground">—</span>
                       </div>
                       Unassigned
-                      <span className={cn(satoshi, "ml-auto text-xs font-normal text-[#727d83]")}>Current</span>
+                      <span className={cn(satoshi, "ml-auto text-xs font-normal text-muted-foreground")}>Current</span>
                     </ContextMenuItem>
                   ) : null}
                   {members?.map((m) => {
@@ -412,7 +412,7 @@ export function KanbanTaskCardContextMenu({
                         }
                       >
                         <div
-                          className="flex size-5 shrink-0 items-center justify-center rounded-full border border-solid border-white"
+                          className="flex size-5 shrink-0 items-center justify-center rounded-full border border-solid border-card"
                           style={{ backgroundColor: memberAvatarBackground(m.userId) }}
                           aria-hidden
                         >
@@ -422,7 +422,7 @@ export function KanbanTaskCardContextMenu({
                         </div>
                         <span className="truncate">{m.name}</span>
                         {isCurrent ? (
-                          <span className={cn(satoshi, "ml-auto text-xs font-normal text-[#727d83]")}>
+                          <span className={cn(satoshi, "ml-auto text-xs font-normal text-muted-foreground")}>
                             Unassign
                           </span>
                         ) : null}
@@ -437,7 +437,7 @@ export function KanbanTaskCardContextMenu({
             <ContextMenuSubTrigger
               className={cn(
                 optionChipClassName,
-                "data-[state=open]:bg-[#f5f7f8] data-[state=open]:text-[#0b191f] data-[state=open]:shadow-md",
+                "data-[state=open]:bg-card data-[state=open]:text-foreground data-[state=open]:shadow-md",
               )}
             >
               <ArrowRightLeft className={optionIconClass} aria-hidden />
@@ -455,7 +455,7 @@ export function KanbanTaskCardContextMenu({
                 >
                   {label}
                   {currentColumnId === id ? (
-                    <span className={cn(satoshi, "ml-auto text-xs font-normal text-[#727d83]")}>Current</span>
+                    <span className={cn(satoshi, "ml-auto text-xs font-normal text-muted-foreground")}>Current</span>
                   ) : null}
                 </ContextMenuItem>
               ))}
@@ -466,7 +466,7 @@ export function KanbanTaskCardContextMenu({
               <ContextMenuSubTrigger
                 className={cn(
                   optionChipClassName,
-                  "data-[state=open]:bg-[#f5f7f8] data-[state=open]:text-[#0b191f] data-[state=open]:shadow-md",
+                  "data-[state=open]:bg-card data-[state=open]:text-foreground data-[state=open]:shadow-md",
                 )}
                 aria-label="Move this task to another milestone"
               >
@@ -496,7 +496,7 @@ export function KanbanTaskCardContextMenu({
                       >
                         <span className="truncate">{opt.label}</span>
                         {isCurrent ? (
-                          <span className={cn(satoshi, "ml-auto text-xs font-normal text-[#727d83]")}>
+                          <span className={cn(satoshi, "ml-auto text-xs font-normal text-muted-foreground")}>
                             Current
                           </span>
                         ) : null}

@@ -72,7 +72,7 @@ function ChecklistRowInput({
       onKeyDown={onKeyDown}
       placeholder={placeholder}
       rows={1}
-      className="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
+      className="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-foreground outline-none placeholder:text-muted-foreground/70"
     />
   );
 }
@@ -96,7 +96,7 @@ const SCOPE_OPTIONS: { value: ScopeWeight; label: string }[] = [
 
 const DIVIDER = (
   <div className="relative h-0 w-full shrink-0">
-    <div className="absolute inset-x-0 -top-px h-px bg-[#f0f0f0]" />
+    <div className="absolute inset-x-0 -top-px h-px bg-muted" />
   </div>
 );
 
@@ -484,23 +484,23 @@ export function CreateTaskLiveModal({
           }}
           className={cn(
             "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-            "fixed top-1/2 left-1/2 z-50 flex max-h-[min(886px,90vh)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
+            "fixed top-1/2 left-1/2 z-50 flex max-h-[min(886px,90vh)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
           )}
         >
           <DialogPrimitive.Title className="sr-only">Create Task</DialogPrimitive.Title>
 
           {/* ─── Header ─── */}
-          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-border bg-card px-9 py-4">
             <DialogClose asChild>
               <button
                 type="button"
                 className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
                 aria-label="Close"
               >
-                <ArrowLeft size={20} className="text-[#606d76]" />
+                <ArrowLeft size={20} className="text-muted-foreground" />
               </button>
             </DialogClose>
-            <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+            <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
               Create Task
             </p>
             <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
@@ -511,12 +511,12 @@ export function CreateTaskLiveModal({
             className="scrollbar-hide z-[2] min-h-0 flex-1 overflow-x-clip overflow-y-auto px-9 py-6"
             style={{
               backgroundImage:
-                "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
+                "linear-gradient(90deg, var(--card) 0%, var(--card) 100%), linear-gradient(90deg, var(--muted) 0%, var(--muted) 100%)",
             }}
           >
             <div className="flex w-full flex-col gap-6 pb-6">
               {/* ── Title ── */}
-              <div className="flex w-full items-start bg-white py-2">
+              <div className="flex w-full items-start bg-card py-2">
                 <textarea
                   ref={titleRef}
                   value={title}
@@ -528,13 +528,13 @@ export function CreateTaskLiveModal({
                   }}
                   placeholder="Task title"
                   rows={1}
-                  className="max-h-[160px] min-w-0 flex-1 resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[24px] font-medium leading-tight break-words text-[#0b191f] outline-none placeholder:text-[#cdd2d5]"
+                  className="max-h-[160px] min-w-0 flex-1 resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[24px] font-medium leading-tight break-words text-foreground outline-none placeholder:text-muted-foreground"
                 />
               </div>
 
               {/* ── Description ── */}
               <div className="flex w-full flex-col gap-1">
-                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                   Description
                 </p>
                 <textarea
@@ -543,7 +543,7 @@ export function CreateTaskLiveModal({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add a description..."
                   rows={1}
-                  className="max-h-[400px] w-full resize-none overflow-y-auto rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium leading-relaxed text-[#606d76] outline-none placeholder:text-[#cdd2d5]"
+                  className="max-h-[400px] w-full resize-none overflow-y-auto rounded-[8px] border border-solid border-border bg-card px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium leading-relaxed text-muted-foreground outline-none placeholder:text-muted-foreground"
                 />
               </div>
 
@@ -551,21 +551,21 @@ export function CreateTaskLiveModal({
 
               {/* ── Priority ── */}
               <div className="flex w-full items-center justify-between">
-                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                   Priority
                 </p>
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setPriorityOpen(!priorityOpen)}
-                    className="flex items-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_2px_2px_0px_rgba(14,14,34,0.03)]"
+                    className="flex items-center gap-1.5 rounded-[8px] border border-solid border-border bg-card px-3 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground shadow-[0px_2px_2px_0px_rgba(14,14,34,0.03)]"
                   >
                     <Flag size={14} className={taskPriorityFlagClass(priority)} aria-hidden />
                     {TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.label ?? priority}
-                    <ChevronDown size={14} className="text-[#606d76]" />
+                    <ChevronDown size={14} className="text-muted-foreground" />
                   </button>
                   {priorityOpen && (
-                    <div className="absolute right-0 top-full z-10 mt-1 w-52 rounded-[8px] border border-solid border-[#ebedee] bg-white py-1 shadow-lg">
+                    <div className="absolute right-0 top-full z-10 mt-1 w-52 rounded-[8px] border border-solid border-border bg-card py-1 shadow-lg">
                       {TASK_PRIORITY_OPTIONS.map((opt) => (
                         <button
                           key={opt.value}
@@ -575,8 +575,8 @@ export function CreateTaskLiveModal({
                             setPriorityOpen(false);
                           }}
                           className={cn(
-                            "flex w-full items-center gap-2 px-3 py-2 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-[#f5f7f8]",
-                            priority === opt.value ? "font-bold text-[#0b191f]" : "text-[#606d76]",
+                            "flex w-full items-center gap-2 px-3 py-2 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-card",
+                            priority === opt.value ? "font-bold text-foreground" : "text-muted-foreground",
                           )}
                         >
                           <Flag size={14} className={opt.flagColorClass} aria-hidden />
@@ -592,28 +592,28 @@ export function CreateTaskLiveModal({
 
               {/* ── Scope ── */}
               <div className="flex w-full items-center justify-between">
-                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                   Scope
                 </p>
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setScopeOpen(!scopeOpen)}
-                    className="flex items-center gap-1 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_2px_2px_0px_rgba(14,14,34,0.03)]"
+                    className="flex items-center gap-1 rounded-[8px] border border-solid border-border bg-card px-3 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground shadow-[0px_2px_2px_0px_rgba(14,14,34,0.03)]"
                   >
                     {SCOPE_OPTIONS.find((o) => o.value === scope)?.label ?? scope}
-                    <ChevronDown size={14} className="text-[#606d76]" />
+                    <ChevronDown size={14} className="text-muted-foreground" />
                   </button>
                   {scopeOpen && (
-                    <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-[8px] border border-solid border-[#ebedee] bg-white py-1 shadow-lg">
+                    <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-[8px] border border-solid border-border bg-card py-1 shadow-lg">
                       {SCOPE_OPTIONS.map((opt) => (
                         <button
                           key={opt.value}
                           type="button"
                           onClick={() => { setScope(opt.value); setScopeOpen(false); }}
                           className={cn(
-                            "w-full px-3 py-2 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-[#f5f7f8]",
-                            scope === opt.value ? "font-bold text-[#0b191f]" : "text-[#606d76]",
+                            "w-full px-3 py-2 text-left font-['Satoshi',sans-serif] text-[13px] hover:bg-card",
+                            scope === opt.value ? "font-bold text-foreground" : "text-muted-foreground",
                           )}
                         >
                           {opt.label}
@@ -629,7 +629,7 @@ export function CreateTaskLiveModal({
               {/* ── Tags ── */}
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                     Tags
                   </p>
                   <button
@@ -639,25 +639,25 @@ export function CreateTaskLiveModal({
                       setTagDraft("New tag");
                       setTimeout(() => tagInputRef.current?.select(), 0);
                     }}
-                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-border bg-card p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                     aria-label="Add tag"
                   >
-                    <Tag size={16} className="text-[#0b191f]" />
+                    <Tag size={16} className="text-foreground" />
                   </button>
                 </div>
                 <div className="flex w-full flex-wrap content-start items-start gap-2">
                   {tags.map((tag) => (
                     <div
                       key={tag}
-                      className="group inline-flex items-center justify-center gap-1.5 rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5"
+                      className="group inline-flex items-center justify-center gap-1.5 rounded-[16px] border border-solid border-border bg-card px-4 py-1.5"
                     >
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal whitespace-nowrap text-[#606d76]">
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal whitespace-nowrap text-muted-foreground">
                         {tag}
                       </p>
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="ml-0.5 inline-flex items-center justify-center border-0 bg-transparent p-0 text-[#606d76] hover:text-red-500"
+                        className="ml-0.5 inline-flex items-center justify-center border-0 bg-transparent p-0 text-muted-foreground hover:text-destructive"
                         aria-label={`Remove tag ${tag}`}
                       >
                         <X size={12} />
@@ -665,7 +665,7 @@ export function CreateTaskLiveModal({
                     </div>
                   ))}
                   {addingTag && (
-                    <div className="inline-flex items-center justify-center rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5">
+                    <div className="inline-flex items-center justify-center rounded-[16px] border border-solid border-border bg-card px-4 py-1.5">
                       <input
                         ref={tagInputRef}
                         type="text"
@@ -676,7 +676,7 @@ export function CreateTaskLiveModal({
                           if (e.key === "Enter") commitTag();
                           if (e.key === "Escape") { setAddingTag(false); setTagDraft("New tag"); }
                         }}
-                        className="w-24 border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76] outline-none placeholder:text-[#606d76]/60"
+                        className="w-24 border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-muted-foreground outline-none placeholder:text-muted-foreground/60"
                       />
                     </div>
                   )}
@@ -688,7 +688,7 @@ export function CreateTaskLiveModal({
               {/* ── Estimated effort ── */}
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                     Estimated effort
                   </p>
                   {estimatedHours == null && !addingEffort ? (
@@ -701,7 +701,7 @@ export function CreateTaskLiveModal({
                           effortInputRef.current?.focus();
                         }, 0);
                       }}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-2 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground"
                     >
                       Add <Plus size={16} />
                     </button>
@@ -709,8 +709,8 @@ export function CreateTaskLiveModal({
                 </div>
                 <div className="flex w-full flex-wrap gap-2">
                   {estimatedHours != null && !addingEffort ? (
-                    <div className="group inline-flex items-center gap-1.5 rounded-[16px] bg-[#0b191f] px-4 py-1.5">
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-white">
+                    <div className="group inline-flex items-center gap-1.5 rounded-[16px] bg-primary px-4 py-1.5">
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-primary-foreground">
                         {formatEstimatedEffortLabel(estimatedHours)}
                       </p>
                       <button
@@ -720,7 +720,7 @@ export function CreateTaskLiveModal({
                           setAddingEffort(false);
                           setEffortDraft("");
                         }}
-                        className="inline-flex size-4 items-center justify-center text-white/80 opacity-0 transition-opacity group-hover:opacity-100 hover:text-white"
+                        className="inline-flex size-4 items-center justify-center text-primary-foreground/80 opacity-0 transition-opacity group-hover:opacity-100 hover:text-primary-foreground"
                         aria-label="Remove estimated effort"
                       >
                         <X size={12} />
@@ -728,7 +728,7 @@ export function CreateTaskLiveModal({
                     </div>
                   ) : null}
                   {addingEffort && (
-                    <div className="inline-flex items-center rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5">
+                    <div className="inline-flex items-center rounded-[16px] border border-solid border-border bg-card px-4 py-1.5">
                       <input
                         ref={effortInputRef}
                         type="text"
@@ -744,12 +744,12 @@ export function CreateTaskLiveModal({
                             setEffortDraft("");
                           }
                         }}
-                        className="w-20 border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76] outline-none placeholder:text-[#606d76]/60"
+                        className="w-20 border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-muted-foreground outline-none placeholder:text-muted-foreground/60"
                       />
                     </div>
                   )}
                   {estimatedHours == null && !addingEffort ? (
-                    <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">No effort set</p>
+                    <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">No effort set</p>
                   ) : null}
                 </div>
               </div>
@@ -759,28 +759,28 @@ export function CreateTaskLiveModal({
               {/* ── Assigned to ── */}
               <div ref={assignDropdownRef} className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                     Assigned to
                   </p>
                   <button
                     type="button"
                     onClick={() => setAssignOpen(!assignOpen)}
-                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-border bg-card p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                     aria-label="Assign member"
                   >
-                    <UserRoundPlus size={16} className="text-[#0b191f]" />
+                    <UserRoundPlus size={16} className="text-foreground" />
                   </button>
                 </div>
 
                 {assignOpen && (
-                  <div className="rounded-[8px] border border-solid border-[#ebedee] bg-white shadow-lg">
-                    <div className="flex items-center gap-2 border-b border-solid border-[#f0f0f0] px-3 py-2">
+                  <div className="rounded-[8px] border border-solid border-border bg-card shadow-lg">
+                    <div className="flex items-center gap-2 border-b border-solid border-border px-3 py-2">
                       <input
                         type="text"
                         value={memberSearch}
                         onChange={(e) => setMemberSearch(e.target.value)}
                         placeholder="Search members..."
-                        className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] text-[#0b191f] outline-none placeholder:text-[#a3aab0]"
+                        className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
                       />
                     </div>
                     <div className="scrollbar-hide max-h-[180px] overflow-y-auto">
@@ -792,8 +792,8 @@ export function CreateTaskLiveModal({
                             type="button"
                             onClick={() => toggleAssignee(m.userId)}
                             className={cn(
-                              "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[#f5f7f8]",
-                              checked && "bg-[#f0f8ff]",
+                              "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-card",
+                              checked && "bg-primary/10",
                             )}
                           >
                             <div
@@ -804,13 +804,13 @@ export function CreateTaskLiveModal({
                                 {m.initials}
                               </span>
                             </div>
-                            <span className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] text-[#0b191f]">
+                            <span className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] text-foreground">
                               {m.name}
                             </span>
                             <div
                               className={cn(
-                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black transition-colors",
-                                checked ? "bg-[#24B5F8]" : "bg-white",
+                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-foreground transition-colors",
+                                checked ? "bg-info" : "bg-card",
                               )}
                               aria-hidden
                             >
@@ -820,7 +820,7 @@ export function CreateTaskLiveModal({
                         );
                       })}
                       {filteredMembers.length === 0 && (
-                        <p className="px-3 py-4 text-center font-['Satoshi',sans-serif] text-[13px] text-[#a3aab0]">
+                        <p className="px-3 py-4 text-center font-['Satoshi',sans-serif] text-[13px] text-muted-foreground">
                           No members found
                         </p>
                       )}
@@ -848,12 +848,12 @@ export function CreateTaskLiveModal({
                             type="button"
                             onClick={() => toggleAssignee(m.userId)}
                             aria-label={`Remove ${m.name} from this task`}
-                            className="absolute -top-1 -right-1 inline-flex size-[18px] items-center justify-center rounded-full border-2 border-white bg-[#0b191f] text-white opacity-0 shadow-[0px_1px_2px_0px_rgba(14,14,34,0.18)] transition-opacity hover:bg-[#1a2d36] focus-visible:opacity-100 group-hover:opacity-100"
+                            className="absolute -top-1 -right-1 inline-flex size-[18px] items-center justify-center rounded-full border-2 border-white bg-primary text-primary-foreground opacity-0 shadow-[0px_1px_2px_0px_rgba(14,14,34,0.18)] transition-opacity hover:bg-primary/90 focus-visible:opacity-100 group-hover:opacity-100"
                           >
                             <X size={10} strokeWidth={2.5} aria-hidden />
                           </button>
                         </div>
-                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+                        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
                           {m.name}
                         </span>
                       </div>
@@ -861,7 +861,7 @@ export function CreateTaskLiveModal({
                   </div>
                 )}
                 {assignedMembers.length === 0 && !assignOpen && (
-                  <p className="font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
+                  <p className="font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
                     No one assigned
                   </p>
                 )}
@@ -872,7 +872,7 @@ export function CreateTaskLiveModal({
               {/* ── Dependencies ── */}
               <div ref={dependencyPickerRef} className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                     Dependencies
                   </p>
                   <button
@@ -881,23 +881,23 @@ export function CreateTaskLiveModal({
                       setDependencyPickerOpen((v) => !v);
                       setDependencySearch("");
                     }}
-                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-border bg-card p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                     aria-label="Add dependency"
                     aria-expanded={dependencyPickerOpen}
                   >
-                    <GitBranch size={16} className="text-[#0b191f]" />
+                    <GitBranch size={16} className="text-foreground" />
                   </button>
                 </div>
 
                 {dependencyPickerOpen && (
-                  <div className="rounded-[8px] border border-solid border-[#ebedee] bg-white shadow-lg">
-                    <div className="flex items-center gap-2 border-b border-solid border-[#f0f0f0] px-3 py-2">
+                  <div className="rounded-[8px] border border-solid border-border bg-card shadow-lg">
+                    <div className="flex items-center gap-2 border-b border-solid border-border px-3 py-2">
                       <input
                         type="text"
                         value={dependencySearch}
                         onChange={(e) => setDependencySearch(e.target.value)}
                         placeholder="Search tasks..."
-                        className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] text-[#0b191f] outline-none placeholder:text-[#a3aab0]"
+                        className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
                       />
                     </div>
                     <div className="scrollbar-hide max-h-[200px] overflow-y-auto">
@@ -915,27 +915,27 @@ export function CreateTaskLiveModal({
                               );
                             }}
                             className={cn(
-                              "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[#f5f7f8]",
-                              checked && "bg-[#f0f8ff]",
+                              "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-card",
+                              checked && "bg-primary/10",
                             )}
                           >
                             <div
                               className={cn(
-                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-black transition-colors",
-                                checked ? "bg-[#24B5F8]" : "bg-white",
+                                "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-foreground transition-colors",
+                                checked ? "bg-info" : "bg-card",
                               )}
                               aria-hidden
                             >
                               {checked && <Check className="size-[13px] text-white" strokeWidth={2.5} />}
                             </div>
-                            <span className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] text-[#0b191f]">
+                            <span className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] text-foreground">
                               {t.title}
                             </span>
                           </button>
                         );
                       })}
                       {dependencyOptions.length === 0 && (
-                        <p className="px-3 py-4 text-center font-['Satoshi',sans-serif] text-[13px] text-[#a3aab0]">
+                        <p className="px-3 py-4 text-center font-['Satoshi',sans-serif] text-[13px] text-muted-foreground">
                           {projectTasks == null ? "Loading tasks..." : "No tasks found"}
                         </p>
                       )}
@@ -948,9 +948,9 @@ export function CreateTaskLiveModal({
                     {selectedDependencyTasks.map((dep) => (
                       <span
                         key={dep.id}
-                        className="group inline-flex max-w-full items-center gap-1.5 rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5"
+                        className="group inline-flex max-w-full items-center gap-1.5 rounded-[16px] border border-solid border-border bg-card px-4 py-1.5"
                       >
-                        <p className="min-w-0 truncate font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76]">
+                        <p className="min-w-0 truncate font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-muted-foreground">
                           {dep.title}
                         </p>
                         <button
@@ -958,7 +958,7 @@ export function CreateTaskLiveModal({
                           onClick={() =>
                             setSelectedDependencyIds((prev) => prev.filter((id) => id !== dep.id))
                           }
-                          className="ml-0.5 inline-flex items-center justify-center border-0 bg-transparent p-0 text-[#606d76] hover:text-red-500"
+                          className="ml-0.5 inline-flex items-center justify-center border-0 bg-transparent p-0 text-muted-foreground hover:text-destructive"
                           aria-label={`Remove dependency ${dep.title}`}
                         >
                           <X size={12} />
@@ -968,7 +968,7 @@ export function CreateTaskLiveModal({
                   </div>
                 ) : (
                   !dependencyPickerOpen && (
-                    <p className="font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
+                    <p className="font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
                       No dependencies
                     </p>
                   )
@@ -980,16 +980,16 @@ export function CreateTaskLiveModal({
               {/* ── Checklist ── */}
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                     Checklist
                   </p>
                   <button
                     type="button"
                     onClick={addSection}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-solid border-border bg-card p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                     aria-label="Add named checklist section"
                   >
-                    <Plus className="size-4 text-[#0b191f]" strokeWidth={2} />
+                    <Plus className="size-4 text-foreground" strokeWidth={2} />
                   </button>
                 </div>
                 <div className="flex w-full flex-col gap-2">
@@ -1006,14 +1006,14 @@ export function CreateTaskLiveModal({
                       className={cn(
                         "group/row flex w-full min-w-0 items-start gap-1.5 rounded-md transition-all",
                         isDragging && "opacity-40",
-                        isTarget && "ring-2 ring-[#24B5F8]/40",
+                        isTarget && "ring-2 ring-info/40",
                       )}
                     >
                       <button
                         type="button"
                         onPointerDown={checklistDrag.onHandlePointerDown(idx)}
                         aria-label="Reorder checklist item"
-                        className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-[#9fa5a8] opacity-0 transition-opacity hover:text-[#0b191f] focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
+                        className="mt-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-[4px] border-0 bg-transparent text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing"
                       >
                         <GripVertical className="size-[14px]" strokeWidth={2} aria-hidden />
                       </button>
@@ -1021,10 +1021,10 @@ export function CreateTaskLiveModal({
                         type="button"
                         onClick={() => toggleChecklist(item.id)}
                         className={cn(
-                          "mt-0.5 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-black transition-colors",
+                          "mt-0.5 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-foreground transition-colors",
                           item.done
-                            ? "bg-[#24B5F8]"
-                            : "bg-[#f9f9f9]",
+                            ? "bg-info"
+                            : "bg-card",
                         )}
                         aria-label={item.done ? "Mark incomplete" : "Mark complete"}
                       >
@@ -1035,7 +1035,7 @@ export function CreateTaskLiveModal({
                           <button
                             type="button"
                             onClick={() => toggleChecklist(item.id)}
-                            className="block w-full cursor-pointer break-words whitespace-pre-wrap text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
+                            className="block w-full cursor-pointer break-words whitespace-pre-wrap text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-foreground opacity-50 line-through"
                           >
                             {item.text}
                           </button>
@@ -1064,7 +1064,7 @@ export function CreateTaskLiveModal({
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => removeChecklistRow(item.id)}
                         aria-label="Remove checklist item"
-                        className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                        className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-destructive focus-visible:opacity-100 group-hover/row:opacity-100"
                       >
                         <X className="size-3" strokeWidth={2} aria-hidden />
                       </button>
@@ -1072,7 +1072,7 @@ export function CreateTaskLiveModal({
                     );
                   })}
                   {checklists.length === 0 && (
-                    <p className="font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
+                    <p className="font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
                       No checklist items
                     </p>
                   )}
@@ -1080,7 +1080,7 @@ export function CreateTaskLiveModal({
                 <button
                   type="button"
                   onClick={addChecklistRow}
-                  className="inline-flex items-center gap-1.5 self-start rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+                  className="inline-flex items-center gap-1.5 self-start rounded-[6px] px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <Plus size={12} /> Add item
                 </button>
@@ -1109,14 +1109,14 @@ export function CreateTaskLiveModal({
                           if (e.key === "Escape") setEditingSectionNameId(null);
                         }}
                         placeholder="Checklist title"
-                        className="flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium leading-none text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                        className="flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium leading-none text-foreground outline-none placeholder:text-muted-foreground"
                         aria-label="Checklist title"
                       />
                     ) : (
                       <button
                         type="button"
                         onClick={() => section.id && setEditingSectionNameId(section.id)}
-                        className="flex-1 cursor-text border-0 bg-transparent p-0 text-left font-['Satoshi',sans-serif] text-[16px] font-medium leading-none text-[#0b191f]"
+                        className="flex-1 cursor-text border-0 bg-transparent p-0 text-left font-['Satoshi',sans-serif] text-[16px] font-medium leading-none text-foreground"
                         aria-label={`Rename ${section.name}`}
                       >
                         {section.name || "Untitled checklist"}
@@ -1125,7 +1125,7 @@ export function CreateTaskLiveModal({
                     <button
                       type="button"
                       onClick={() => section.id && removeSection(section.id)}
-                      className="inline-flex size-7 items-center justify-center rounded-[6px] text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/section:opacity-100"
+                      className="inline-flex size-7 items-center justify-center rounded-[6px] text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-destructive focus-visible:opacity-100 group-hover/section:opacity-100"
                       aria-label={`Delete checklist ${section.name}`}
                     >
                       <X size={14} />
@@ -1142,8 +1142,8 @@ export function CreateTaskLiveModal({
                             type="button"
                             onClick={() => section.id && it.id && toggleSectionItem(section.id, it.id)}
                             className={cn(
-                              "mt-0.5 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-black transition-colors",
-                              it.done ? "bg-[#24B5F8]" : "bg-[#f9f9f9]",
+                              "mt-0.5 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-foreground transition-colors",
+                              it.done ? "bg-info" : "bg-card",
                             )}
                             aria-label={it.done ? "Mark incomplete" : "Mark complete"}
                           >
@@ -1154,7 +1154,7 @@ export function CreateTaskLiveModal({
                               <button
                                 type="button"
                                 onClick={() => section.id && it.id && toggleSectionItem(section.id, it.id)}
-                                className="block w-full cursor-pointer break-words whitespace-pre-wrap text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
+                                className="block w-full cursor-pointer break-words whitespace-pre-wrap text-left font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-foreground opacity-50 line-through"
                               >
                                 {it.text}
                               </button>
@@ -1183,7 +1183,7 @@ export function CreateTaskLiveModal({
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => section.id && it.id && removeSectionItem(section.id, it.id)}
                             aria-label="Remove checklist item"
-                            className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                            className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-destructive focus-visible:opacity-100 group-hover/row:opacity-100"
                           >
                             <X className="size-3" strokeWidth={2} aria-hidden />
                           </button>
@@ -1194,7 +1194,7 @@ export function CreateTaskLiveModal({
                   <button
                     type="button"
                     onClick={() => section.id && addSectionItem(section.id)}
-                    className="inline-flex items-center gap-1.5 self-start rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+                    className="inline-flex items-center gap-1.5 self-start rounded-[6px] px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
                     <Plus size={12} /> Add item
                   </button>
@@ -1204,7 +1204,7 @@ export function CreateTaskLiveModal({
           </div>
 
           {/* ─── Footer ─── */}
-          <div className="z-[1] flex w-full shrink-0 items-center justify-end border-t border-solid border-[#ebedee] bg-white px-9 py-4">
+          <div className="z-[1] flex w-full shrink-0 items-center justify-end border-t border-solid border-border bg-card px-9 py-4">
             <button
               type="button"
               onClick={handleCreate}

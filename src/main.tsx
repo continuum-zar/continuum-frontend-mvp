@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { ThemeProvider } from "next-themes";
 import * as Sentry from "@sentry/react";
 import { QueryDevtoolsGate } from "./dev/QueryDevtoolsGate.tsx";
 import App from "./app/App.tsx";
@@ -59,10 +60,22 @@ const queryClient = new QueryClient({
 });
 
 const appTree = (
-  <QueryClientProvider client={queryClient}>
-    <App />
-    <QueryDevtoolsGate />
-  </QueryClientProvider>
+  // `attribute="class"` toggles the `.dark` class on <html> that theme.css keys off.
+  // `defaultTheme="system"` + `enableSystem` make the app follow the OS preference out of
+  // the box; users can still override via the in-app toggle (persisted under localStorage "theme").
+  // The inline script in index.html mirrors this so there's no flash before React mounts.
+  <ThemeProvider
+    attribute="class"
+    defaultTheme="system"
+    enableSystem
+    disableTransitionOnChange
+    storageKey="theme"
+  >
+    <QueryClientProvider client={queryClient}>
+      <App />
+      <QueryDevtoolsGate />
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 createRoot(document.getElementById("root")!).render(

@@ -119,7 +119,7 @@ export function ProjectSettingsProjectTab({
     ref: React.RefObject<HTMLInputElement | null>,
   ) => (
     <div className="flex w-full flex-col gap-1">
-      <p className="text-[14px] font-medium text-[#606d76]">{label}</p>
+      <p className="text-[14px] font-medium text-muted-foreground">{label}</p>
       <div className="relative w-full">
         <input
           ref={ref}
@@ -134,19 +134,19 @@ export function ProjectSettingsProjectTab({
         <button
           type="button"
           disabled={!canEdit}
-          className="relative z-10 flex h-10 w-full items-center justify-between gap-2 rounded-[8px] border border-[#e9e9e9] bg-white px-4 text-left focus:outline-none focus-visible:border-[#1466ff] disabled:cursor-not-allowed disabled:opacity-70"
+          className="relative z-10 flex h-10 w-full items-center justify-between gap-2 rounded-[8px] border border-border bg-card px-4 text-left focus:outline-none focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-70"
           aria-label={value ? `${label} ${formatDateDisplay(value)}` : `Choose ${label}`}
           onClick={() => openDatePicker(ref)}
         >
           <span
             className={cn(
               "min-w-0 flex-1 text-[16px] font-medium",
-              value ? "text-[#0b191f]" : "text-[#606d76]/40",
+              value ? "text-foreground" : "text-muted-foreground/40",
             )}
           >
             {value ? formatDateDisplay(value) : "mm / dd / yyyy"}
           </span>
-          <CalendarPlus className="size-4 shrink-0 text-[#0b191f]" aria-hidden="true" />
+          <CalendarPlus className="size-4 shrink-0 text-foreground" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -154,33 +154,33 @@ export function ProjectSettingsProjectTab({
 
   return (
     <div className="mx-auto flex w-full max-w-[737px] flex-col gap-6 px-6 py-6">
-      <div className="flex h-10 w-full items-center gap-2 bg-white py-2">
-        <div className="h-[30px] w-[2px] rounded-[999px] bg-[#1466ff]" />
+      <div className="flex h-10 w-full items-center gap-2 bg-card py-2">
+        <div className="h-[30px] w-[2px] rounded-[999px] bg-primary" />
         <input
           type="text"
           placeholder="Project name"
           disabled={!canEdit}
-          className="w-full border-none px-0 font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f] placeholder:text-[#606d76]/30 focus:outline-none focus:ring-0 disabled:cursor-not-allowed"
-          style={{ caretColor: projectName ? "#1466ff" : "transparent" }}
+          className="w-full border-none px-0 font-['Satoshi',sans-serif] text-[24px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-0 disabled:cursor-not-allowed"
+          style={{ caretColor: projectName ? "var(--primary)" : "transparent" }}
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
         />
       </div>
 
       <div className="flex w-full flex-col gap-1">
-        <p className="text-[14px] font-medium text-[#606d76]">Description</p>
-        <div className="flex min-h-[106px] w-full flex-col gap-2 rounded-[8px] border border-[#e9e9e9] bg-white px-4 pb-2 pt-4 focus-within:border-[#1466ff]">
+        <p className="text-[14px] font-medium text-muted-foreground">Description</p>
+        <div className="flex min-h-[106px] w-full flex-col gap-2 rounded-[8px] border border-border bg-card px-4 pb-2 pt-4 focus-within:border-primary">
           <textarea
             ref={descriptionTextareaRef}
             placeholder="Add description here..."
             maxLength={80}
             rows={1}
             disabled={!canEdit}
-            className="max-h-[200px] w-full resize-none overflow-y-auto border-none p-0 text-[16px] font-medium leading-relaxed text-[#0b191f] placeholder:text-[#606d76]/40 focus:outline-none focus:ring-0 disabled:cursor-not-allowed"
+            className="max-h-[200px] w-full resize-none overflow-y-auto border-none p-0 text-[16px] font-medium leading-relaxed text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-0 disabled:cursor-not-allowed"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-          <p className="self-end text-[14px] font-medium text-[#606d76]/30">
+          <p className="self-end text-[14px] font-medium text-muted-foreground/30">
             {description.length} / 80 Characters
           </p>
         </div>
@@ -196,7 +196,7 @@ export function ProjectSettingsProjectTab({
             disabled={deleteProject.isPending}
             onClick={() => setDeleteConfirmOpen(true)}
             className={cn(
-              "inline-flex h-10 min-w-[140px] items-center justify-center rounded-[8px] bg-[#d74139] px-4 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30",
+              "inline-flex h-10 min-w-[140px] items-center justify-center rounded-[8px] bg-destructive px-4 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30",
               deleteProject.isPending && "pointer-events-none opacity-50",
             )}
           >
@@ -214,8 +214,8 @@ export function ProjectSettingsProjectTab({
               className={cn(
                 "inline-flex h-10 w-full items-center justify-center rounded-[8px] px-4 text-[14px] font-semibold transition-colors duration-200",
                 projectName.trim() && isDirty && !updateProject.isPending
-                  ? "bg-[#1466ff] text-white hover:bg-[#0051e6]"
-                  : "bg-[rgba(96,109,118,0.1)] text-[#606d76]/50",
+                  ? "bg-primary text-white hover:bg-primary"
+                  : "bg-muted text-muted-foreground/50",
               )}
             >
               {updateProject.isPending ? "Saving…" : "Save changes"}
@@ -235,24 +235,24 @@ export function ProjectSettingsProjectTab({
           <DialogOverlay className="z-[120] bg-black/25" />
           <DialogPrimitive.Content
             aria-describedby={undefined}
-            className="fixed left-1/2 top-1/2 z-[120] flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]"
+            className="fixed left-1/2 top-1/2 z-[120] flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]"
           >
-            <DialogPrimitive.Title className="border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+            <DialogPrimitive.Title className="border-b border-border bg-card px-9 py-4 text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
               Delete project
             </DialogPrimitive.Title>
             <div className="flex w-full flex-col gap-6 px-9 py-6">
               <div className="flex items-start gap-3">
-                <div className="flex shrink-0 items-start pt-0.5 text-[#dc2626]" aria-hidden>
+                <div className="flex shrink-0 items-start pt-0.5 text-destructive" aria-hidden>
                   <Trash2 className="size-5" strokeWidth={1.75} />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <p className="font-['Satoshi',sans-serif] text-[18px] font-medium leading-tight tracking-[-0.18px] text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[18px] font-medium leading-tight tracking-[-0.18px] text-foreground">
                     Delete this project?
                   </p>
-                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-[#606d76]">
+                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-relaxed text-muted-foreground">
                     {initialName.trim() ? (
                       <>
-                        <span className="text-[#0b191f]">“{initialName.trim()}”</span> will be
+                        <span className="text-foreground">“{initialName.trim()}”</span> will be
                         permanently removed. This action cannot be undone.
                       </>
                     ) : (
@@ -264,7 +264,7 @@ export function ProjectSettingsProjectTab({
               <div className="flex w-full flex-col gap-2">
                 <label
                   htmlFor="settings-delete-confirm-name"
-                  className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]"
+                  className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground"
                 >
                   Type the project name to confirm
                 </label>
@@ -275,7 +275,7 @@ export function ProjectSettingsProjectTab({
                   value={deleteConfirmName}
                   onChange={(e) => setDeleteConfirmName(e.target.value)}
                   placeholder={initialName.trim() || "Project name"}
-                  className="h-10 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] placeholder:text-[#606d76]/40 focus:border-[#1466ff] focus:outline-none focus:ring-0"
+                  className="h-10 w-full rounded-[8px] border border-border bg-card px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-0"
                   aria-invalid={deleteConfirmName.length > 0 && !nameMatchesForDelete}
                 />
               </div>
@@ -284,7 +284,7 @@ export function ProjectSettingsProjectTab({
                   <button
                     type="button"
                     disabled={deleteProject.isPending}
-                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-[#0b191f] transition-colors duration-150 hover:bg-[#f5f7f8] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] border border-border bg-card px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-foreground transition-colors duration-150 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Cancel
                   </button>
@@ -293,7 +293,7 @@ export function ProjectSettingsProjectTab({
                   type="button"
                   onClick={() => void handleDelete()}
                   disabled={deleteProject.isPending || !nameMatchesForDelete}
-                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-[#dc2626] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 min-w-[96px] items-center justify-center rounded-[8px] bg-destructive px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-destructive disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {deleteProject.isPending ? "Deleting…" : "Delete"}
                 </button>

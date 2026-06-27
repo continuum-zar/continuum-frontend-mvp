@@ -133,17 +133,17 @@ function WaitlistLayout(props: {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-gradient-to-b from-[#B2E6F7] to-[#FDFBF7]">
+    <div className="relative min-h-screen w-full bg-gradient-to-b from-[#B2E6F7] to-[#FDFBF7] dark:from-[#0b1f2e] dark:to-[#0f172a]">
       <div className="mx-auto flex w-[345px] flex-col items-center gap-4 pt-[191px]">
-        <div className="w-full overflow-hidden rounded-2xl border border-[#F5F5F5] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]">
-          <div className="flex flex-col items-center border-b border-[#F5F5F5] bg-white px-6 pb-6 pt-9">
-            <div className="flex flex-col items-center gap-3 text-center text-[#252014]">
+        <div className="w-full overflow-hidden rounded-2xl border border-border shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]">
+          <div className="flex flex-col items-center border-b border-border bg-card px-6 pb-6 pt-9">
+            <div className="flex flex-col items-center gap-3 text-center text-foreground">
               <p className="font-sarina-sans text-[33px] leading-[37px] tracking-[-0.66px]">Continuum</p>
               <p className="font-['Sathu:Regular',sans-serif] text-xs tracking-[-0.12px] opacity-80">Time track with one click.</p>
             </div>
           </div>
 
-          <div className="flex flex-col gap-6 bg-[#F9FBFB] px-6 pb-9 pt-6">
+          <div className="flex flex-col gap-6 bg-muted px-6 pb-9 pt-6">
             <div className="flex flex-col gap-8">
               <div className="flex flex-col gap-2">
                 <button
@@ -152,16 +152,16 @@ function WaitlistLayout(props: {
                   disabled={googleDisabled}
                   title={googleTitle}
                   onClick={onGoogleClick}
-                  className={`relative flex h-10 w-full items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4 ${
+                  className={`relative flex h-10 w-full items-center justify-center rounded-lg border border-border bg-card px-4 ${
                     googleDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
                   }`}
                 >
                   {googlePending ? (
-                    <Loader2 className="absolute left-[9px] h-5 w-5 animate-spin text-[#252014]" />
+                    <Loader2 className="absolute left-[9px] h-5 w-5 animate-spin text-foreground" />
                   ) : (
                     <img src="/auth/google.svg" alt="Google" className="absolute left-[9px] h-5 w-5" />
                   )}
-                  <span className="text-sm font-medium text-[#252014]">Continue with Google</span>
+                  <span className="text-sm font-medium text-foreground">Continue with Google</span>
                 </button>
 
                 <button
@@ -170,22 +170,22 @@ function WaitlistLayout(props: {
                   disabled={appleDisabled}
                   title={appleTitle}
                   onClick={onAppleClick}
-                  className={`relative flex h-10 w-full items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4 ${
+                  className={`relative flex h-10 w-full items-center justify-center rounded-lg border border-border bg-card px-4 ${
                     appleDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
                   }`}
                 >
                   {applePending ? (
-                    <Loader2 className="absolute left-2 h-5 w-5 animate-spin text-[#252014]" />
+                    <Loader2 className="absolute left-2 h-5 w-5 animate-spin text-foreground" />
                   ) : (
                     <img src="/auth/apple.svg" alt="Apple" className="absolute left-2 h-5 w-5" />
                   )}
-                  <span className="text-sm font-medium text-[#252014]">Continue with Apple</span>
+                  <span className="text-sm font-medium text-foreground">Continue with Apple</span>
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="email" className="text-sm font-medium text-[#151515]">Email</label>
+                  <label htmlFor="email" className="text-sm font-medium text-foreground">Email</label>
                   <input
                     id="email"
                     type="email"
@@ -194,37 +194,37 @@ function WaitlistLayout(props: {
                     onBlur={handleBlur}
                     placeholder="What's your email address?"
                     required
-                    className="h-10 w-full rounded-lg border border-[#E9E9E9] bg-white px-4 text-sm font-medium text-[#151515] outline-none placeholder:text-[#9FA5A8]"
+                    className="h-10 w-full rounded-lg border border-border bg-input px-4 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground"
                   />
-                  {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+                  {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="h-10 w-full rounded-lg bg-[#24B5F8] text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className="h-10 w-full rounded-lg bg-info text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSubmitting ? 'Processing...' : 'Continue with email'}
                 </button>
                 {submitError && (
-                  <p className="text-xs text-red-600">{submitError}</p>
+                  <p className="text-xs text-destructive">{submitError}</p>
                 )}
                 {headerError && !submitError && (
-                  <p className="text-xs text-red-600">{headerError}</p>
+                  <p className="text-xs text-destructive">{headerError}</p>
                 )}
               </form>
             </div>
 
-            <p className="w-full text-center text-sm font-medium text-[#9FA5A8]">
+            <p className="w-full text-center text-sm font-medium text-muted-foreground">
               Have an account?{' '}
-              <Link to="/login" className="text-[#151515] no-underline">
+              <Link to="/login" className="text-foreground no-underline">
                 Sign in
               </Link>
             </p>
           </div>
         </div>
 
-        <p className="px-4 text-center text-xs font-medium text-[#6B7276]">
+        <p className="px-4 text-center text-xs font-medium text-muted-foreground">
           By clicking "Sign in" or "Continue" above, you acknowledge that you have read and understood, and agree to
           Continuum&apos;s <span className="underline">Terms of Service</span>.
         </p>

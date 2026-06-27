@@ -40,7 +40,7 @@ export function MemberContributionsChart({
         <Legend iconType="circle" />
         <Bar dataKey="hours" name="Hours" fill="var(--color-primary)" maxBarSize={14} />
         <Bar dataKey="tasks" name="Tasks done" fill="var(--color-success)" maxBarSize={14} />
-        <Bar dataKey="commits" name="Commits" fill="#64748b" maxBarSize={14} />
+        <Bar dataKey="commits" name="Commits" fill="var(--color-muted-foreground)" maxBarSize={14} />
       </BarChart>
     </ResponsiveContainer>
   );

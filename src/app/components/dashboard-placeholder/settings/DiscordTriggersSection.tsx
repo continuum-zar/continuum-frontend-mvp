@@ -128,8 +128,8 @@ export function DiscordTriggersSection({
 
   if (projectId == null) {
     return (
-      <div className="rounded-[8px] border border-dashed border-[#ebedee] bg-[#f9f9f9] px-4 py-6 text-center">
-        <p className="font-['Satoshi',sans-serif] text-[14px] text-[#606d76]">
+      <div className="rounded-[8px] border border-dashed border-border bg-card px-4 py-6 text-center">
+        <p className="font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
           Select a project above to choose which events post to its Discord
           channel.
         </p>
@@ -139,7 +139,7 @@ export function DiscordTriggersSection({
 
   if (integrationsQuery.isLoading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-8 text-[14px] text-[#606d76]">
+      <div className="flex items-center justify-center gap-2 py-8 text-[14px] text-muted-foreground">
         <Loader2 className="size-4 animate-spin" aria-hidden />
         Loading Discord settings…
       </div>
@@ -148,8 +148,8 @@ export function DiscordTriggersSection({
 
   if (integrationsQuery.isError) {
     return (
-      <div className="rounded-[8px] border border-[#ebedee] bg-[#f9f9f9] px-4 py-4">
-        <p className="font-['Satoshi',sans-serif] text-[14px] text-[#0b191f]">
+      <div className="rounded-[8px] border border-border bg-card px-4 py-4">
+        <p className="font-['Satoshi',sans-serif] text-[14px] text-foreground">
           Couldn’t load Discord settings. Try again later.
         </p>
       </div>
@@ -162,11 +162,11 @@ export function DiscordTriggersSection({
   const renderChecklist = () => {
     if (renderAsNotificationRows) {
       return (
-        <div className="flex flex-col divide-y divide-[#ebedee]">
+        <div className="flex flex-col divide-y divide-border">
           {SECTIONS.map((section) => (
             <div key={section.title} className="flex flex-col">
               <div className="py-2 pl-4">
-                <p className="font-['Satoshi',sans-serif] text-[12px] font-semibold uppercase tracking-[0.04em] text-[#606d76]">
+                <p className="font-['Satoshi',sans-serif] text-[12px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">
                   {section.title}
                 </p>
               </div>
@@ -175,12 +175,12 @@ export function DiscordTriggersSection({
                   key={key}
                   className="flex w-full items-center gap-6 py-2 pl-4"
                 >
-                  <p className="min-w-0 flex-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#131617]">
+                  <p className="min-w-0 flex-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
                     {label}
                   </p>
                   <div className="flex w-[120px] shrink-0 items-center">
                     <span
-                      className="font-['Satoshi',sans-serif] text-[12px] text-[#9fa5a8]"
+                      className="font-['Satoshi',sans-serif] text-[12px] text-muted-foreground"
                       aria-hidden
                     >
                       —
@@ -199,7 +199,7 @@ export function DiscordTriggersSection({
                           "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-solid transition-colors",
                           triggers[key]
                             ? "border-0 text-white"
-                            : "border-[#ebedee] bg-[#f9f9f9]",
+                            : "border-border bg-card",
                         )}
                         style={
                           triggers[key]
@@ -235,7 +235,7 @@ export function DiscordTriggersSection({
       >
         {SECTIONS.map((section) => (
           <div key={section.title} className="flex flex-col gap-2">
-            <p className="font-['Satoshi',sans-serif] text-[13px] font-semibold text-[#252014]">
+            <p className="font-['Satoshi',sans-serif] text-[13px] font-semibold text-foreground">
               {section.title}
             </p>
             <ul className="flex flex-col gap-2 pl-0.5">
@@ -253,7 +253,7 @@ export function DiscordTriggersSection({
                         "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-solid transition-colors",
                         triggers[key]
                           ? "border-0 text-white"
-                          : "border-[#ebedee] bg-[#f9f9f9]",
+                          : "border-border bg-card",
                       )}
                       style={
                         triggers[key]
@@ -269,7 +269,7 @@ export function DiscordTriggersSection({
                         <Check className="size-[13px]" strokeWidth={2.5} />
                       ) : null}
                     </span>
-                    <span className="font-['Satoshi',sans-serif] text-[14px] font-normal leading-[19px] text-[#0b191f]">
+                    <span className="font-['Satoshi',sans-serif] text-[14px] font-normal leading-[19px] text-foreground">
                       {label}
                     </span>
                   </button>
@@ -285,11 +285,11 @@ export function DiscordTriggersSection({
   return (
     <div className={cn("flex flex-col", renderAsNotificationRows ? null : "gap-4")}>
       {!renderAsNotificationRows && noWebhook ? (
-        <div className="flex flex-col gap-2 rounded-[8px] border border-dashed border-[#ebedee] bg-[#f9f9f9] px-4 py-4">
-          <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+        <div className="flex flex-col gap-2 rounded-[8px] border border-dashed border-border bg-card px-4 py-4">
+          <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
             No Discord webhook linked for this project
           </p>
-          <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-[#606d76]">
+          <p className="font-['Satoshi',sans-serif] text-[13px] leading-normal text-muted-foreground">
             Connect a webhook in the Integrations tab to start sending
             notifications to a Discord channel.
           </p>
@@ -298,7 +298,7 @@ export function DiscordTriggersSection({
               <button
                 type="button"
                 onClick={onSetupWebhook}
-                className="mt-1 inline-flex h-9 items-center rounded-[8px] border border-[#ebedee] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] outline-none ring-offset-2 transition-colors hover:bg-[#f5f7f8] focus-visible:ring-2 focus-visible:ring-ring"
+                className="mt-1 inline-flex h-9 items-center rounded-[8px] border border-border bg-card px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground outline-none ring-offset-2 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Set up in Integrations
               </button>
@@ -315,7 +315,7 @@ export function DiscordTriggersSection({
             type="button"
             onClick={handleReset}
             disabled={busy}
-            className="inline-flex h-9 items-center rounded-[8px] border border-[#ebedee] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] outline-none ring-offset-2 transition-colors hover:bg-[#f5f7f8] focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 items-center rounded-[8px] border border-border bg-card px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground outline-none ring-offset-2 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
           >
             Reset
           </button>
@@ -323,7 +323,7 @@ export function DiscordTriggersSection({
             type="button"
             onClick={handleSave}
             disabled={busy}
-            className="inline-flex h-9 items-center justify-center rounded-[8px] bg-[#0b191f] px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#fcfbf8] outline-none ring-offset-2 transition-colors hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center justify-center rounded-[8px] bg-primary px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-primary-foreground outline-none ring-offset-2 transition-colors hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
           >
             {busy ? (
               <Loader2 className="size-4 animate-spin" aria-hidden />

@@ -236,9 +236,9 @@ function SignUpLayout(props: {
     };
 
     return (
-        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[#B2E6F7] to-[#FFFFFF] p-4">
-            <div className="w-[345px] overflow-hidden rounded-2xl border border-[#F5F5F5] shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]">
-                <div className="relative flex h-[54px] w-[345px] items-center justify-center border-b border-[#F5F5F5] bg-[#F9F9F9] px-6 pb-4 pt-4">
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[#B2E6F7] to-[#FFFFFF] dark:from-[#0b1f2e] dark:to-[#0f172a] p-4">
+            <div className="w-[345px] overflow-hidden rounded-2xl border border-border shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]">
+                <div className="relative flex h-[54px] w-[345px] items-center justify-center border-b border-border bg-card px-6 pb-4 pt-4">
                     <Link
                         to="/"
                         className="absolute left-6 flex h-5 w-5 items-center justify-center"
@@ -246,30 +246,30 @@ function SignUpLayout(props: {
                     >
                         <img src="/auth/arrow.svg" alt="" className="h-5 w-5" />
                     </Link>
-                    <h2 className="m-0 h-[22px] w-[54px] text-sm font-medium leading-[100%] text-[#595959]">Sign up</h2>
+                    <h2 className="m-0 h-[22px] w-[54px] text-sm font-medium leading-[100%] text-foreground">Sign up</h2>
                 </div>
 
                 {renderVerification ? (
-                    <div className="flex w-[345px] flex-col items-center gap-6 bg-white px-6 pb-9 pt-6">
+                    <div className="flex w-[345px] flex-col items-center gap-6 bg-card px-6 pb-9 pt-6">
                         {renderVerification()}
-                        {error && <p className="text-center text-xs text-red-600">{error}</p>}
+                        {error && <p className="text-center text-xs text-destructive">{error}</p>}
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="flex w-[345px] flex-col gap-6 bg-white px-6 pb-9 pt-6">
+                    <form onSubmit={handleSubmit} className="flex w-[345px] flex-col gap-6 bg-card px-6 pb-9 pt-6">
                         {googleProps && appleProps ? (
                             <div className="flex w-[297px] flex-col gap-2">
                                 <SocialButton {...googleProps} iconSrc="/auth/google.svg" label="Continue with Google" />
                                 <SocialButton {...appleProps} iconSrc="/auth/apple.svg" label="Continue with Apple" />
-                                <div className="my-1 flex items-center gap-2 text-[11px] uppercase tracking-wide text-[#9FA5A8]">
-                                    <span className="h-px flex-1 bg-[#E9E9E9]" aria-hidden />
+                                <div className="my-1 flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                                    <span className="h-px flex-1 bg-muted" aria-hidden />
                                     or
-                                    <span className="h-px flex-1 bg-[#E9E9E9]" aria-hidden />
+                                    <span className="h-px flex-1 bg-muted" aria-hidden />
                                 </div>
                             </div>
                         ) : null}
 
                         <div className="flex w-[297px] flex-col gap-1">
-                            <label htmlFor="email" className="text-sm font-medium leading-[100%] text-[#151515]">Email</label>
+                            <label htmlFor="email" className="text-sm font-medium leading-[100%] text-foreground">Email</label>
                             <input
                                 id="email"
                                 type="email"
@@ -278,13 +278,13 @@ function SignUpLayout(props: {
                                 onChange={(e) => handleInputChange('email', e.target.value)}
                                 required
                                 disabled={pending}
-                                className={`h-10 w-[297px] rounded-lg border bg-white px-4 py-2 text-sm text-[#151515] outline-none ${errors.email ? 'border-destructive' : 'border-[#E9E9E9]'}`}
+                                className={`h-10 w-[297px] rounded-lg border bg-input px-4 py-2 text-sm text-foreground outline-none ${errors.email ? 'border-destructive' : 'border-border'}`}
                             />
-                            {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
+                            {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
                         </div>
 
                         <div className="flex w-[297px] flex-col gap-1">
-                            <label htmlFor="firstName" className="text-sm font-medium leading-[100%] text-[#151515]">First name</label>
+                            <label htmlFor="firstName" className="text-sm font-medium leading-[100%] text-foreground">First name</label>
                             <input
                                 id="firstName"
                                 type="text"
@@ -293,12 +293,12 @@ function SignUpLayout(props: {
                                 onChange={(e) => setFirstName(e.target.value)}
                                 required
                                 disabled={pending}
-                                className="h-10 w-[297px] rounded-lg border border-[#E9E9E9] bg-white px-4 py-2 text-sm text-[#151515] outline-none"
+                                className="h-10 w-[297px] rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground outline-none"
                             />
                         </div>
 
                         <div className="flex w-[297px] flex-col gap-1">
-                            <label htmlFor="lastName" className="text-sm font-medium leading-[100%] text-[#151515]">Surname</label>
+                            <label htmlFor="lastName" className="text-sm font-medium leading-[100%] text-foreground">Surname</label>
                             <input
                                 id="lastName"
                                 type="text"
@@ -307,12 +307,12 @@ function SignUpLayout(props: {
                                 onChange={(e) => setLastName(e.target.value)}
                                 required
                                 disabled={pending}
-                                className="h-10 w-[297px] rounded-lg border border-[#E9E9E9] bg-white px-4 py-2 text-sm text-[#151515] outline-none"
+                                className="h-10 w-[297px] rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground outline-none"
                             />
                         </div>
 
                         <div className="flex w-[297px] flex-col gap-1">
-                            <label htmlFor="password" className={`${errors.password ? 'text-destructive' : 'text-[#151515]'} text-sm font-medium leading-[100%]`}>Password</label>
+                            <label htmlFor="password" className={`${errors.password ? 'text-destructive' : 'text-foreground'} text-sm font-medium leading-[100%]`}>Password</label>
                             <input
                                 id="password"
                                 type="password"
@@ -321,13 +321,13 @@ function SignUpLayout(props: {
                                 onChange={(e) => handleInputChange('password', e.target.value)}
                                 required
                                 disabled={pending}
-                                className={`h-10 w-[297px] rounded-lg border bg-white px-4 py-2 text-sm text-[#151515] outline-none ${errors.password ? 'border-destructive' : 'border-[#E9E9E9]'}`}
+                                className={`h-10 w-[297px] rounded-lg border bg-input px-4 py-2 text-sm text-foreground outline-none ${errors.password ? 'border-destructive' : 'border-border'}`}
                             />
-                            {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
+                            {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password}</p>}
                         </div>
 
                         <div className="flex w-[297px] flex-col gap-1">
-                            <label htmlFor="confirmPassword" className={`${errors.confirmPassword ? 'text-destructive' : 'text-[#151515]'} text-sm font-medium leading-[100%]`}>Confirm password</label>
+                            <label htmlFor="confirmPassword" className={`${errors.confirmPassword ? 'text-destructive' : 'text-foreground'} text-sm font-medium leading-[100%]`}>Confirm password</label>
                             <input
                                 id="confirmPassword"
                                 type="password"
@@ -336,15 +336,15 @@ function SignUpLayout(props: {
                                 onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                                 required
                                 disabled={pending}
-                                className={`h-10 w-[297px] rounded-lg border bg-white px-4 py-2 text-sm text-[#151515] outline-none ${errors.confirmPassword ? 'border-destructive' : 'border-[#E9E9E9]'}`}
+                                className={`h-10 w-[297px] rounded-lg border bg-input px-4 py-2 text-sm text-foreground outline-none ${errors.confirmPassword ? 'border-destructive' : 'border-border'}`}
                             />
-                            {errors.confirmPassword && <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>}
+                            {errors.confirmPassword && <p className="mt-1 text-xs text-destructive">{errors.confirmPassword}</p>}
                         </div>
 
                         <button
                             type="submit"
                             disabled={pending}
-                            className="flex h-10 w-[297px] cursor-pointer items-center justify-center rounded-lg border-none bg-[#24B5F8] px-4 py-2 shadow-[0px_3px_9.3px_0px_rgba(44,158,249,0.1)] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="flex h-10 w-[297px] cursor-pointer items-center justify-center rounded-lg border-none bg-info px-4 py-2 shadow-[0px_3px_9.3px_0px_rgba(44,158,249,0.1)] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {pending ? (
                                 <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -353,7 +353,7 @@ function SignUpLayout(props: {
                             )}
                         </button>
                         {(error || Object.keys(errors).length > 0) && (
-                            <p className="text-center text-xs text-red-600">
+                            <p className="text-center text-xs text-destructive">
                                 {error || 'Please correct the highlighted fields.'}
                             </p>
                         )}
@@ -373,16 +373,16 @@ function SocialButton(props: SocialButtonProps & { iconSrc: string; label: strin
             disabled={disabled}
             title={title}
             onClick={onClick}
-            className={`relative flex h-10 w-[297px] items-center justify-center rounded-lg border border-[#E9E9E9] bg-white px-4 py-2 ${
+            className={`relative flex h-10 w-[297px] items-center justify-center rounded-lg border border-border bg-card px-4 py-2 ${
                 disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
             }`}
         >
             {pending ? (
-                <Loader2 className="absolute left-4 h-5 w-5 animate-spin text-[#252014]" />
+                <Loader2 className="absolute left-4 h-5 w-5 animate-spin text-foreground" />
             ) : (
                 <img src={iconSrc} alt="" className="absolute left-4 h-5 w-5" />
             )}
-            <span className="text-sm font-medium leading-[100%] text-[#151515]">{label}</span>
+            <span className="text-sm font-medium leading-[100%] text-foreground">{label}</span>
         </button>
     );
 }

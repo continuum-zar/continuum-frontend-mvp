@@ -8,7 +8,7 @@ const imgGaugeIndicator = mcpAsset("526dd3fc-a323-411f-a999-20f981098020");
    Shared arc helpers — pure CSS conic-gradient arcs, no SVG
    ================================================================ */
 
-const BG_GREY = "#e5e7eb";
+const BG_GREY = "var(--border)";
 
 function Cap({
   cx,
@@ -63,9 +63,9 @@ function scoreLabel(score: number): string {
 }
 
 function scoreColor(score: number): string {
-  if (score >= 70) return "#22c55e";
-  if (score >= 40) return "#eab308";
-  return "#ef4444";
+  if (score >= 70) return "var(--success)";
+  if (score >= 40) return "var(--warning)";
+  return "var(--destructive)";
 }
 
 const HERO_R = 148;
@@ -136,10 +136,10 @@ export function LiveHeroGauge({ score }: { score: number }) {
           )}
         </div>
       </div>
-      <p className="pointer-events-none absolute top-[49px] left-1/2 z-[1] -translate-x-1/2 font-['Satoshi',sans-serif] text-[70.704px] font-normal leading-normal text-[#0b191f]">
+      <p className="pointer-events-none absolute top-[49px] left-1/2 z-[1] -translate-x-1/2 font-['Satoshi',sans-serif] text-[70.704px] font-normal leading-normal text-foreground">
         {displayScore}
       </p>
-      <p className="pointer-events-none absolute top-[159px] left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal text-[#727d83]">
+      <p className="pointer-events-none absolute top-[159px] left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap font-['Satoshi',sans-serif] text-[24px] font-medium leading-normal text-muted-foreground">
         {label}
       </p>
     </div>
@@ -209,7 +209,7 @@ function efficiencyZoneLabel(hps: number): string {
 }
 
 export function EfficiencyGauge({ hps }: { hps: number }) {
-  const effGrad = `conic-gradient(from ${SM_CSS_START}deg at 50% 50%, #1ED760 0deg, #FBBC05 ${SM_SWEEP / 2}deg, #EB4335 ${SM_SWEEP}deg, transparent ${SM_SWEEP}deg 360deg)`;
+  const effGrad = `conic-gradient(from ${SM_CSS_START}deg at 50% 50%, var(--success) 0deg, var(--warning) ${SM_SWEEP / 2}deg, var(--destructive) ${SM_SWEEP}deg, transparent ${SM_SWEEP}deg 360deg)`;
   const frac = Math.max(0, Math.min(1, hps / 3));
   const dot = smArcPoint(frac);
   const startPt = smArcPoint(0);
@@ -219,10 +219,10 @@ export function EfficiencyGauge({ hps }: { hps: number }) {
     <div className="relative h-[90px] w-[82.864px] shrink-0">
       <div className="absolute top-0 left-0 h-[66.484px] w-[82.864px]">
         <div style={{ ...smCircleBase, background: effGrad }} />
-        <Cap cx={startPt.x} cy={startPt.y} size={SM_STROKE} color="#1ED760" />
-        <Cap cx={endPt.x} cy={endPt.y} size={SM_STROKE} color="#EB4335" />
+        <Cap cx={startPt.x} cy={startPt.y} size={SM_STROKE} color="var(--success)" />
+        <Cap cx={endPt.x} cy={endPt.y} size={SM_STROKE} color="var(--destructive)" />
       </div>
-      <p className="absolute top-[28px] left-1/2 z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
+      <p className="absolute top-[28px] left-1/2 z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis">
         {Number(hps.toFixed(2))}
       </p>
       <div
@@ -233,7 +233,7 @@ export function EfficiencyGauge({ hps }: { hps: number }) {
           <img alt="" className="block size-full max-w-none" src={imgGaugeIndicator} />
         </div>
       </div>
-      <div className="pointer-events-none absolute top-[74px] left-[11.86px] right-[13px] z-[1] flex justify-between font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] text-[#0b191f] opacity-50">
+      <div className="pointer-events-none absolute top-[74px] left-[11.86px] right-[13px] z-[1] flex justify-between font-['Satoshi',sans-serif] text-[12px] font-medium leading-[normal] text-foreground opacity-50">
         <span>0</span>
         <span>3</span>
       </div>
@@ -248,7 +248,7 @@ export function EfficiencyGauge({ hps }: { hps: number }) {
 export function TasksGauge({ completed, total }: { completed: number; total: number }) {
   const pct = total > 0 ? Math.max(0, Math.min(100, (completed / total) * 100)) : 0;
   const fillDeg = (pct / 100) * SM_SWEEP;
-  const fillColor = "#1ED760";
+  const fillColor = "var(--success)";
 
   const bgGrad = `conic-gradient(from ${SM_CSS_START}deg at 50% 50%, ${BG_GREY} 0deg ${SM_SWEEP}deg, transparent ${SM_SWEEP}deg 360deg)`;
   const fGrad = `conic-gradient(from ${SM_CSS_START}deg at 50% 50%, ${fillColor} 0deg ${fillDeg}deg, transparent ${fillDeg}deg 360deg)`;
@@ -266,7 +266,7 @@ export function TasksGauge({ completed, total }: { completed: number; total: num
         <Cap cx={endPt.x} cy={endPt.y} size={SM_STROKE} color={BG_GREY} />
         {pct > 0 && pct < 100 && <Cap cx={tipPt.x} cy={tipPt.y} size={SM_STROKE} color={fillColor} />}
       </div>
-      <p className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
+      <p className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis">
         {Math.round(completed)}
       </p>
       <div
@@ -286,7 +286,7 @@ export function PlannerConfidenceGauge({ value }: { value: number }) {
   const pct = Math.max(0, Math.min(100, value));
   const fillDeg = (pct / 100) * SM_SWEEP;
   const fillColor =
-    pct >= 70 ? "#22c55e" : pct >= 40 ? "#eab308" : pct > 0 ? "#2798f5" : BG_GREY;
+    pct >= 70 ? "var(--success)" : pct >= 40 ? "var(--warning)" : pct > 0 ? "var(--info)" : BG_GREY;
 
   const bgGrad = `conic-gradient(from ${SM_CSS_START}deg at 50% 50%, ${BG_GREY} 0deg ${SM_SWEEP}deg, transparent ${SM_SWEEP}deg 360deg)`;
   const fGrad = `conic-gradient(from ${SM_CSS_START}deg at 50% 50%, ${fillColor} 0deg ${fillDeg}deg, transparent ${fillDeg}deg 360deg)`;
@@ -311,7 +311,7 @@ export function PlannerConfidenceGauge({ value }: { value: number }) {
           <Cap cx={tipPt.x} cy={tipPt.y} size={SM_STROKE} color={fillColor} />
         )}
       </div>
-      <p className="absolute top-[18px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[26px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
+      <p className="absolute top-[18px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[26px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis">
         {Math.round(pct)}%
       </p>
       {pct > 0 && pct < 100 && (
@@ -333,9 +333,9 @@ export function PlannerConfidenceGauge({ value }: { value: number }) {
    ================================================================ */
 
 /** Segments in {@link CommitsGauge} — reuse for commit-type pills (e.g. recent activity). */
-export const COMMIT_GAUGE_SHIPPED = "#1ED760";
-export const COMMIT_GAUGE_IN_PROGRESS = "#FAB707";
-export const COMMIT_GAUGE_TRIVIAL = "#D1D5DB";
+export const COMMIT_GAUGE_SHIPPED = "var(--success)";
+export const COMMIT_GAUGE_IN_PROGRESS = "var(--warning)";
+export const COMMIT_GAUGE_TRIVIAL = "var(--muted-foreground)";
 
 const COMMIT_GREEN = COMMIT_GAUGE_SHIPPED;
 const COMMIT_YELLOW = COMMIT_GAUGE_IN_PROGRESS;
@@ -402,7 +402,7 @@ export function CommitsGauge({
           </>
         )}
       </div>
-      <p className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-[#0b191f] text-ellipsis">
+      <p className="absolute top-[28px] left-[calc(50%+0.07px)] z-[1] -translate-x-1/2 overflow-hidden text-center font-['Satoshi',sans-serif] text-[24px] font-medium leading-[normal] whitespace-nowrap text-foreground text-ellipsis">
         {total}
       </p>
     </div>
@@ -434,17 +434,17 @@ export function LiveMetricsRow({
 
   return (
     <div
-      className="relative mx-auto flex w-full max-w-[815px] shrink-0 flex-wrap items-center justify-center gap-x-8 gap-y-6 rounded-[12px] bg-white sm:gap-x-10"
+      className="relative mx-auto flex w-full max-w-[815px] shrink-0 flex-wrap items-center justify-center gap-x-8 gap-y-6 rounded-[12px] bg-card sm:gap-x-10"
       data-name="Live metrics"
     >
       {/* Efficiency Rate */}
       <div className="relative flex shrink-0 items-center gap-6">
         <EfficiencyGauge hps={hpsRatio} />
         <div className="flex w-[122px] shrink-0 flex-col items-start gap-1">
-          <p className="w-[122px] font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-[#0b191f]">
+          <p className="w-[122px] font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-foreground">
             Efficiency Rate
           </p>
-          <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-[#727d83]">
+          <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-muted-foreground">
             {effLabel}
           </p>
         </div>
@@ -454,10 +454,10 @@ export function LiveMetricsRow({
       <div className="relative flex shrink-0 items-center gap-6">
         <TasksGauge completed={completedWeight} total={totalWeight} />
         <div className="flex w-[124px] shrink-0 flex-col items-start gap-1">
-          <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-[#0b191f]">
+          <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-foreground">
             Tasks Completed
           </p>
-          <p className="whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-[#727d83]">
+          <p className="whitespace-nowrap font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] tracking-[-0.14px] text-muted-foreground">
             of {Math.round(totalWeight)} Total Points
           </p>
         </div>
@@ -467,25 +467,25 @@ export function LiveMetricsRow({
       <div className="relative flex shrink-0 items-center gap-6">
         <CommitsGauge structural={structuralCommits} incremental={incrementalCommits} trivial={trivialCommits} />
         <div className="flex shrink-0 flex-col items-start gap-1">
-          <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-[#0b191f]">
+          <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-[normal] text-foreground">
             Commits
           </p>
           <div className="flex flex-col items-start">
             <div className="flex items-center gap-1.5">
               <div className="size-1 rounded-full" style={{ backgroundColor: COMMIT_GREEN }} />
-              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-[#727d83]">
+              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-muted-foreground">
                 Shipped {structuralCommits}
               </p>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="size-1 rounded-full" style={{ backgroundColor: COMMIT_YELLOW }} />
-              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-[#727d83]">
+              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-muted-foreground">
                 In Progress {incrementalCommits}
               </p>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="size-1 rounded-full" style={{ backgroundColor: COMMIT_GREY }} />
-              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-[#727d83]">
+              <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-muted-foreground">
                 Trivial {trivialCommits}
               </p>
             </div>

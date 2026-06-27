@@ -18,7 +18,7 @@ interface MigrationsPageShellProps {
 
 const PAGE_BACKGROUND_STYLE: React.CSSProperties = {
     backgroundImage:
-        "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)",
+        "linear-gradient(0deg, color-mix(in srgb, var(--info) 12%, transparent) 0%, transparent 100%), linear-gradient(90deg, var(--background) 0%, var(--background) 100%)",
 };
 
 const SECTION_SHADOW =
@@ -34,7 +34,7 @@ export function MigrationsPageShell({ children }: MigrationsPageShellProps) {
                 <div className="isolate flex min-h-0 w-full flex-1 items-stretch gap-[16px]">
                     <DashboardLeftRail />
                     <section
-                        className={`relative z-[1] isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-[#ebedee] border-solid bg-white ${SECTION_SHADOW}`}
+                        className={`relative z-[1] isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-border border-solid bg-card ${SECTION_SHADOW}`}
                     >
                         {children}
                     </section>

@@ -26,11 +26,7 @@ type WorkspaceShellSkeletonProps = {
 export function WorkspaceShellSkeleton({ variant = "list" }: WorkspaceShellSkeletonProps) {
   return (
     <div
-      className="box-border flex h-screen min-h-0 w-full min-w-0 flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
-      style={{
-        backgroundImage:
-          "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)",
-      }}
+      className="box-border flex h-screen min-h-0 w-full min-w-0 flex-col overflow-hidden gap-[10px] bg-background pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
       role="status"
       aria-busy="true"
       aria-label="Loading workspace"
@@ -38,7 +34,7 @@ export function WorkspaceShellSkeleton({ variant = "list" }: WorkspaceShellSkele
       <div className="isolate flex min-h-0 w-full min-w-0 flex-1 flex-row items-stretch gap-[10px]">
         <WorkspaceLeftRailSkeleton />
 
-        <section className="z-[1] flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-[#ebedee] bg-white shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
+        <section className="z-[1] flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-border bg-card shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
           <WorkspaceContentHeaderSkeleton />
           {variant === "board" ? (
             <div className="min-h-0 flex-1 overflow-hidden pt-4">
@@ -72,7 +68,7 @@ function WorkspaceLeftRailSkeleton() {
       </div>
 
       {/* Search pill */}
-      <div className="flex items-center gap-2 rounded-[999px] bg-[#edf0f3] px-4 py-2">
+      <div className="flex items-center gap-2 rounded-[999px] bg-muted px-4 py-2">
         <Skeleton className="h-4 w-4 rounded" />
         <Skeleton className="h-3 w-24" />
       </div>
@@ -113,7 +109,7 @@ function WorkspaceLeftRailSkeleton() {
       </div>
 
       {/* Divider + profile row */}
-      <div className="h-px w-full bg-[#ebedee]" />
+      <div className="h-px w-full bg-muted" />
       <div className="flex h-[40px] items-center justify-between">
         <div className="flex min-w-0 items-center gap-2">
           <Skeleton className="h-6 w-6 shrink-0 rounded-full" />
@@ -131,7 +127,7 @@ function WorkspaceLeftRailSkeleton() {
 /** Content card header: eyebrow, divider, title row + tab pill bar. */
 function WorkspaceContentHeaderSkeleton() {
   return (
-    <div className="relative z-20 flex shrink-0 flex-col gap-4 bg-white px-6 pt-4">
+    <div className="relative z-20 flex shrink-0 flex-col gap-4 bg-card px-6 pt-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-4 rounded" />
@@ -142,13 +138,13 @@ function WorkspaceContentHeaderSkeleton() {
           <Skeleton className="h-8 w-[92px] rounded-[8px]" />
         </div>
       </div>
-      <div className="h-px w-full bg-[#ebedee]" />
+      <div className="h-px w-full bg-muted" />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Skeleton className="h-8 w-56 rounded" />
           <Skeleton className="h-4 w-4 rounded" />
         </div>
-        <div className="flex items-center gap-1 rounded-[10px] bg-[#f0f3f5] p-[2px]">
+        <div className="flex items-center gap-1 rounded-[10px] bg-muted p-[2px]">
           <Skeleton className="h-8 w-20 rounded-[8px]" />
           <Skeleton className="h-8 w-20 rounded-[8px]" />
           <Skeleton className="h-8 w-20 rounded-[8px]" />

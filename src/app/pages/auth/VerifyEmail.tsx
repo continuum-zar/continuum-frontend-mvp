@@ -68,23 +68,23 @@ export function VerifyEmail() {
     }, [checkAuth, navigate]);
 
     return (
-        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[#B2E6F7] to-[#FFFFFF] p-4">
-            <div className="w-[345px] overflow-hidden rounded-2xl border border-[#F5F5F5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]">
-                <div className="flex h-[54px] items-center justify-center border-b border-[#F5F5F5] bg-[#F9F9F9] px-6 pb-4 pt-4">
-                    <h2 className="m-0 text-sm font-medium leading-[100%] text-[#595959]">Verify your email</h2>
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[#B2E6F7] to-[#FFFFFF] dark:from-[#0b1f2e] dark:to-[#0f172a] p-4">
+            <div className="w-[345px] overflow-hidden rounded-2xl border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)]">
+                <div className="flex h-[54px] items-center justify-center border-b border-border bg-card px-6 pb-4 pt-4">
+                    <h2 className="m-0 text-sm font-medium leading-[100%] text-foreground">Verify your email</h2>
                 </div>
 
                 <div className="flex flex-col items-center gap-5 px-6 pb-9 pt-8 text-center">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full">
-                        <Mail className="h-6 w-6 text-[#24B5F8]" />
+                        <Mail className="h-6 w-6 text-info" />
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <h1 className="m-0 text-lg font-semibold text-[#151515]">Check your inbox</h1>
-                        <p className="m-0 text-sm leading-[1.4] text-[#595959]">
+                        <h1 className="m-0 text-lg font-semibold text-foreground">Check your inbox</h1>
+                        <p className="m-0 text-sm leading-[1.4] text-foreground">
                             We&apos;ve sent a verification link to{' '}
                             {email ? (
-                                <strong className="break-all text-[#151515]">{email}</strong>
+                                <strong className="break-all text-foreground">{email}</strong>
                             ) : (
                                 'your email address'
                             )}
@@ -92,7 +92,7 @@ export function VerifyEmail() {
                         </p>
                     </div>
 
-                    <p className="m-0 text-xs leading-[1.4] text-[#9FA5A8]">
+                    <p className="m-0 text-xs leading-[1.4] text-muted-foreground">
                         Keep this page open.
                     </p>
                 </div>

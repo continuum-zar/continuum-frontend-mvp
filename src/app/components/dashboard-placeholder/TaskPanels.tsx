@@ -206,30 +206,30 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
 
   return (
     <div className="flex h-full w-full min-h-0 items-stretch">
-      <main className="min-h-0 flex-1 overflow-y-auto rounded-[12px] bg-[#f9fafb] p-4">
+      <main className="min-h-0 flex-1 overflow-y-auto rounded-[12px] bg-muted p-4">
         <div className="mx-auto w-full max-w-[600px]">
           <div className="flex items-center justify-between py-4">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button type="button" onClick={onBack} className="text-[#606d76]" aria-label="Back to sprint">
+                <button type="button" onClick={onBack} className="text-muted-foreground" aria-label="Back to sprint">
                   <ArrowLeft size={20} />
                 </button>
               </TooltipTrigger>
               <TooltipContent>Back to sprint</TooltipContent>
             </Tooltip>
-            <p className="text-[16px] font-medium tracking-[-0.16px] text-[#595959]">Update Task</p>
+            <p className="text-[16px] font-medium tracking-[-0.16px] text-foreground">Update Task</p>
             <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
           </div>
 
           <div className="space-y-12 py-4">
             <section className="space-y-4">
-              <h2 className="text-[24px] font-medium leading-[1.2] tracking-[-0.24px] text-[#0b191f]">
+              <h2 className="text-[24px] font-medium leading-[1.2] tracking-[-0.24px] text-foreground">
                 Set up high-fidelity prototypes with conditional logic
               </h2>
               <div>
-                <p className="mb-1 text-[14px] font-medium text-[#606d76]">Description</p>
-                <div className="h-[106px] rounded-[8px] border border-[#e9e9e9] bg-white p-4">
-                  <p className="text-[16px] font-medium text-[#0b191f]">
+                <p className="mb-1 text-[14px] font-medium text-muted-foreground">Description</p>
+                <div className="h-[106px] rounded-[8px] border border-border bg-card p-4">
+                  <p className="text-[16px] font-medium text-foreground">
                     A long description goes here, this space will only show two lines before truncation.
                   </p>
                 </div>
@@ -238,8 +238,8 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
 
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Checklist</p>
-                <button className="flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white shadow-sm">
+                <p className="text-[16px] font-medium text-foreground">Checklist</p>
+                <button className="flex size-8 items-center justify-center rounded-[8px] border border-border bg-card shadow-sm">
                   <Plus size={16} />
                 </button>
               </div>
@@ -253,11 +253,11 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
                   ["Check for console errors or warnings", true],
                 ].map(([label, done]) => (
                   <div key={String(label)} className="flex items-center gap-4">
-                    <div className={`flex size-5 items-center justify-center rounded-[4px] ${done ? "bg-[#24B5F8]" : "border border-[#ebedee] bg-[#f9f9f9]"}`}>
+                    <div className={`flex size-5 items-center justify-center rounded-[4px] ${done ? "bg-info" : "border border-border bg-card"}`}>
                       {done ? <Check size={13} className="text-white" /> : null}
                     </div>
                     <p
-                      className={`font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${done ? "text-[#0b191f]/50 line-through" : "text-[#0b191f]"}`}
+                      className={`font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal ${done ? "text-foreground/50 line-through" : "text-foreground"}`}
                     >
                       {label}
                     </p>
@@ -268,10 +268,10 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
 
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Tags</p>
+                <p className="text-[16px] font-medium text-foreground">Tags</p>
                 <button
                   type="button"
-                  className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                  className="inline-flex size-8 items-center justify-center rounded-[8px] border border-border bg-card text-muted-foreground shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                 >
                   <Tag size={14} />
                 </button>
@@ -280,7 +280,7 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
                 {["Wireframes", "Prototypes", "User Flows", "Design Systems", "Usability Testing", "Final Mockups", "User Testing Feedback"].map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center justify-center rounded-[16px] border border-[#cdd2d5] bg-white px-4 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-[#606d76]"
+                    className="inline-flex items-center justify-center rounded-[16px] border border-border bg-card px-4 py-1.5 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none tracking-normal text-muted-foreground"
                   >
                     {tag}
                   </span>
@@ -290,17 +290,17 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
 
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Due Date</p>
+                <p className="text-[16px] font-medium text-foreground">Due Date</p>
                 <button
                   type="button"
-                  className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#ebedee] bg-white text-[#606d76] shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                  className="inline-flex size-8 items-center justify-center rounded-[8px] border border-border bg-card text-muted-foreground shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                 >
                   <CalendarPlus size={14} />
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
                 {["1 Hour", "4 Hours", "8 Hours", "12 Hours", "48 Hours"].map((v, idx) => (
-                  <span key={v} className={`rounded-[16px] px-4 py-1 text-[14px] font-medium ${idx === 0 ? "bg-[#0b191f] text-white" : "border border-[#cdd2d5] text-[#606d76]"}`}>
+                  <span key={v} className={`rounded-[16px] px-4 py-1 text-[14px] font-medium ${idx === 0 ? "bg-foreground text-background" : "border border-border text-muted-foreground"}`}>
                     {v}
                   </span>
                 ))}
@@ -309,24 +309,24 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
 
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Resources</p>
-                <button className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 text-[14px] font-medium text-[#0b191f]">
+                <p className="text-[16px] font-medium text-foreground">Resources</p>
+                <button className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-2 text-[14px] font-medium text-foreground">
                   Add <Plus size={16} />
                 </button>
               </div>
               <div className="space-y-3">
                 {welcomeResourcesMock.map((item) => (
                   <div key={item.id} className="flex items-center gap-2">
-                    <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-[#ededed] pr-2">
-                      <div className="flex w-[50px] items-center justify-center bg-[#edf0f3]">
-                        {item.kind === "link" ? <Link2 className="size-4 text-[#606d76]" /> : <FileText className="size-4 text-[#606d76]" />}
+                    <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-border pr-2">
+                      <div className="flex w-[50px] items-center justify-center bg-muted">
+                        {item.kind === "link" ? <Link2 className="size-4 text-muted-foreground" /> : <FileText className="size-4 text-muted-foreground" />}
                       </div>
-                      <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-[#ededed] px-4 py-1.5">
-                        <p className="truncate text-[16px] font-medium text-[#0b191f]">{item.kind === "link" ? item.url : item.name}</p>
-                        {item.kind === "file" ? <p className="text-[12px] text-[#727d83]">{item.sizeLabel}</p> : null}
+                      <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-border px-4 py-1.5">
+                        <p className="truncate text-[16px] font-medium text-foreground">{item.kind === "link" ? item.url : item.name}</p>
+                        {item.kind === "file" ? <p className="text-[12px] text-muted-foreground">{item.sizeLabel}</p> : null}
                       </div>
                     </div>
-                    <button type="button" className="text-[#606d76]">
+                    <button type="button" className="text-muted-foreground">
                       <X size={16} />
                     </button>
                   </div>
@@ -336,10 +336,10 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
 
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[16px] font-medium text-[#0b191f]">Assigned to</p>
+                <p className="text-[16px] font-medium text-foreground">Assigned to</p>
                 <button
                   type="button"
-                  className="inline-flex size-10 items-center justify-center rounded-[12px] border border-[#ebedee] bg-white text-[#0b191f] shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                  className="inline-flex size-10 items-center justify-center rounded-[12px] border border-border bg-card text-foreground shadow-[0px_8px_2px_0px_rgba(14,14,34,0),0px_5px_2px_0px_rgba(14,14,34,0.01),0px_3px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                 >
                   <UserRoundPlus size={16} />
                 </button>
@@ -354,7 +354,7 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
                   <div key={user.id} className="relative">
                     <div
                       className={`flex size-[40px] items-center justify-center rounded-full text-[16px] font-medium leading-none text-white ${
-                        user.ring ? "border-2 border-[#0b191f]" : ""
+                        user.ring ? "border-2 border-foreground" : ""
                       }`}
                       style={{ backgroundColor: user.color }}
                     >
@@ -370,12 +370,12 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
               </div>
             </section>
 
-            <div className="border-t border-[#ebedee] pt-5">
+            <div className="border-t border-border pt-5">
               <div className="flex justify-end">
                 <button
                   type="button"
                   disabled
-                  className="h-12 rounded-[12px] bg-[#ebedee] px-8 text-[14px] font-medium text-[#9ea7ad] disabled:cursor-not-allowed"
+                  className="h-12 rounded-[12px] bg-muted px-8 text-[14px] font-medium text-muted-foreground disabled:cursor-not-allowed"
                 >
                   Update Task
                 </button>
@@ -385,38 +385,38 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
         </div>
       </main>
 
-      <aside className="min-h-0 w-[362px] overflow-y-auto border-l border-[#ebedee] bg-white p-9">
+      <aside className="min-h-0 w-[362px] overflow-y-auto border-l border-border bg-card p-9">
         <div className="space-y-12 pb-10">
           <div className="space-y-4">
-            <p className="text-[16px] font-medium text-[#0b191f]">Status</p>
-            <button className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4">
-              <span className="text-[16px] font-medium text-[#0b191f]">To-Do</span>
+            <p className="text-[16px] font-medium text-foreground">Status</p>
+            <button className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-border bg-card px-4">
+              <span className="text-[16px] font-medium text-foreground">To-Do</span>
               <ChevronDown size={16} />
             </button>
           </div>
           <div className="space-y-4">
-            <p className="text-[16px] font-medium text-[#0b191f]">Priority</p>
+            <p className="text-[16px] font-medium text-foreground">Priority</p>
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setPriorityOpen(!priorityOpen)}
-                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4"
+                className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-border bg-card px-4"
               >
-                <span className="flex items-center gap-2 text-[16px] font-medium text-[#0b191f]">
+                <span className="flex items-center gap-2 text-[16px] font-medium text-foreground">
                   <Flag size={16} className={taskPriorityFlagClass(priority)} aria-hidden />
                   {taskPriorityLabel(priority)}
                 </span>
                 <ChevronDown size={16} />
               </button>
               {priorityOpen && (
-                <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-[8px] border border-[#e9e9e9] bg-white shadow-md">
+                <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-[8px] border border-border bg-card shadow-md">
                   {TASK_PRIORITY_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => handlePrioritySelect(opt.value)}
-                      className={`flex w-full items-center gap-2 px-4 py-3 text-left text-[14px] font-medium hover:bg-[#f0f3f5] ${
-                        priority === opt.value ? "bg-[#f0f3f5] text-[#0b191f]" : "text-[#606d76]"
+                      className={`flex w-full items-center gap-2 px-4 py-3 text-left text-[14px] font-medium hover:bg-muted ${
+                        priority === opt.value ? "bg-muted text-foreground" : "text-muted-foreground"
                       }`}
                     >
                       <Flag size={16} className={opt.flagColorClass} aria-hidden />
@@ -428,26 +428,26 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
             </div>
           </div>
           <div className="space-y-4">
-            <p className="text-[16px] font-medium text-[#0b191f]">Scope</p>
-            <button className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4">
-              <span className="text-[16px] font-medium text-[#0b191f]">Medium (M)</span>
+            <p className="text-[16px] font-medium text-foreground">Scope</p>
+            <button className="flex h-[46px] w-full items-center justify-between rounded-[8px] border border-border bg-card px-4">
+              <span className="text-[16px] font-medium text-foreground">Medium (M)</span>
               <ChevronDown size={16} />
             </button>
           </div>
           <div className="space-y-2 text-[16px]">
-            <p className="mb-4 text-[16px] font-medium text-[#0b191f]">Dates</p>
-            <div className="flex justify-between"><span className="text-[#727d83]">Created</span><span className="text-[#0b191f]">20 February 2026</span></div>
-            <div className="flex justify-between"><span className="text-[#727d83]">Last update</span><span className="text-[#0b191f]">10 March 2026</span></div>
+            <p className="mb-4 text-[16px] font-medium text-foreground">Dates</p>
+            <div className="flex justify-between"><span className="text-muted-foreground">Created</span><span className="text-foreground">20 February 2026</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Last update</span><span className="text-foreground">10 March 2026</span></div>
           </div>
           <div className="space-y-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <p className="text-[16px] font-medium text-[#0b191f]">Time tracked</p>
+              <p className="text-[16px] font-medium text-foreground">Time tracked</p>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {timerForThisTask ? (
                   <>
                     <span
                       className={`font-['Satoshi',sans-serif] text-[13px] font-medium tabular-nums ${
-                        timerPhase === "paused" ? "text-[#9a7b18]" : "text-[#0b191f]"
+                        timerPhase === "paused" ? "text-warning" : "text-foreground"
                       }`}
                     >
                       {formatHmsShort(panelElapsedSec)}
@@ -458,10 +458,10 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
                         <button
                           type="button"
                           onClick={handlePanelTimerPrimary}
-                          className={`inline-flex size-8 items-center justify-center rounded-[8px] border outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40 ${
+                          className={`inline-flex size-8 items-center justify-center rounded-[8px] border outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-primary/40 ${
                             timerPhase === "running"
-                              ? "border-[#eb4335] bg-[#eb4335] text-white"
-                              : "border-[#24B5F8] bg-[#24B5F8] text-white"
+                              ? "border-destructive bg-destructive text-white"
+                              : "border-info bg-info text-white"
                           }`}
                           aria-label={timerPhase === "running" ? "Pause timer" : "Resume timer"}
                         >
@@ -479,7 +479,7 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
                         <button
                           type="button"
                           onClick={() => stopRecordingOpenLogModal()}
-                          className="inline-flex size-8 items-center justify-center rounded-[8px] border border-[#e9e9e9] bg-white text-[#606d76] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40"
+                          className="inline-flex size-8 items-center justify-center rounded-[8px] border border-border bg-card text-muted-foreground outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-primary/40"
                           aria-label="Finish and log time"
                         >
                           <Square className="size-3.5 fill-current" strokeWidth={0} aria-hidden />
@@ -500,9 +500,9 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
                             ? "Another task is being timed in the sidebar"
                             : undefined
                         }
-                        className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#e9e9e9] bg-white px-3 text-[14px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#2798f5]/40 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 text-[14px] font-medium text-foreground outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <Play className="size-3.5 fill-[#0b191f] text-[#0b191f]" aria-hidden />
+                        <Play className="size-3.5 fill-foreground text-foreground" aria-hidden />
                         Start timer
                       </button>
                     </TooltipTrigger>
@@ -514,7 +514,7 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
                     <button
                       type="button"
                       onClick={() => setLogTimeOpen(true)}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-medium text-white"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-info px-4 text-[14px] font-medium text-white"
                     >
                       <Plus size={16} />
                       Log Time
@@ -525,17 +525,17 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
               </div>
             </div>
             <div className="flex justify-between text-[16px]">
-              <span className="text-[#727d83]">Logged</span>
-              <span className="flex min-h-[24px] items-center justify-end gap-2 text-[#0b191f]">
+              <span className="text-muted-foreground">Logged</span>
+              <span className="flex min-h-[24px] items-center justify-end gap-2 text-foreground">
                 {loggedDisplay === "loading" ? (
                   <>
-                    <Loader2 className="size-4 shrink-0 animate-spin text-[#727d83]" aria-hidden />
+                    <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" aria-hidden />
                     <span className="sr-only">Loading logged hours</span>
                   </>
                 ) : loggedDisplay === "error" ? (
-                  <span className="text-[14px] text-[#727d83]">Unable to load</span>
+                  <span className="text-[14px] text-muted-foreground">Unable to load</span>
                 ) : loggedDisplay === null ? (
-                  <span className="text-[#727d83]">—</span>
+                  <span className="text-muted-foreground">—</span>
                 ) : (
                   loggedDisplay
                 )}
@@ -543,16 +543,16 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
             </div>
           </div>
           <div className="space-y-4">
-            <p className="text-[16px] font-medium text-[#0b191f]">Activity</p>
+            <p className="text-[16px] font-medium text-foreground">Activity</p>
             {activityMock.map((a, idx) => (
               <div key={`${a.time}-${idx}`} className="flex gap-4">
-                <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
-                  <Activity size={16} className="text-[#727d83]" />
+                <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-muted">
+                  <Activity size={16} className="text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-[12px] text-[#727d83]">{a.time}</p>
-                  <p className="text-[16px] leading-none text-[#0b191f]">{a.title}</p>
-                  <p className="text-[12px] text-[#727d83]">{a.detail}</p>
+                  <p className="text-[12px] text-muted-foreground">{a.time}</p>
+                  <p className="text-[16px] leading-none text-foreground">{a.title}</p>
+                  <p className="text-[12px] text-muted-foreground">{a.detail}</p>
                 </div>
               </div>
             ))}

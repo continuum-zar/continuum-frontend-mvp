@@ -60,17 +60,17 @@ export function CumulativeFlowDiagram({
           labelFormatter={formatTick}
         />
         <Legend iconType="circle" />
-        <Area type="monotone" dataKey="todo" name="To do" stackId="cfd" stroke="#64748b" fill="#64748b" fillOpacity={0.85} />
+        <Area type="monotone" dataKey="todo" name="To do" stackId="cfd" stroke="var(--color-muted-foreground)" fill="var(--color-muted-foreground)" fillOpacity={0.85} />
         <Area
           type="monotone"
           dataKey="in_progress"
           name="In progress"
           stackId="cfd"
-          stroke="#3b82f6"
-          fill="#3b82f6"
+          stroke="var(--color-chart-1)"
+          fill="var(--color-chart-1)"
           fillOpacity={0.85}
         />
-        <Area type="monotone" dataKey="done" name="Done" stackId="cfd" stroke="#10b981" fill="#10b981" fillOpacity={0.85} />
+        <Area type="monotone" dataKey="done" name="Done" stackId="cfd" stroke="var(--color-chart-2)" fill="var(--color-chart-2)" fillOpacity={0.85} />
       </AreaChart>
     </ResponsiveContainer>
   );

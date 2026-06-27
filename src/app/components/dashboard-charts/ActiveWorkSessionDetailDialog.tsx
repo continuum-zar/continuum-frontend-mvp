@@ -65,16 +65,16 @@ export function ActiveWorkSessionDetailDialog({ open, onOpenChange, session }: A
         <DialogOverlay className="bg-black/25" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
-          className="fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+          className="fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
         >
           <DialogPrimitive.Title className="sr-only">Active time session</DialogPrimitive.Title>
-          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-border bg-card px-9 py-4">
             <DialogClose asChild>
-              <button type="button" className="inline-flex size-5 items-center justify-center text-[#606d76]" aria-label="Back">
+              <button type="button" className="inline-flex size-5 items-center justify-center text-muted-foreground" aria-label="Back">
                 <ArrowLeft className="size-5" />
               </button>
             </DialogClose>
-            <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+            <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
               Active time session
             </p>
             <div className="size-5" />
@@ -84,10 +84,10 @@ export function ActiveWorkSessionDetailDialog({ open, onOpenChange, session }: A
             className="flex flex-col gap-6 px-9 py-6"
             style={{
               backgroundImage:
-                "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
+                "linear-gradient(90deg, var(--card) 0%, var(--card) 100%), linear-gradient(90deg, var(--muted) 0%, var(--muted) 100%)",
             }}
           >
-            <p className="font-['Satoshi',sans-serif] text-[14px] text-[#606d76]">
+            <p className="font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
               Task and duration for the selected team member.
             </p>
             <div className="flex items-center gap-3">
@@ -99,28 +99,28 @@ export function ActiveWorkSessionDetailDialog({ open, onOpenChange, session }: A
                 {initials}
               </div>
               <div>
-                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-tight text-[#0b191f]">{displayName}</p>
-                <p className="inline-flex items-center gap-2 font-['Satoshi',sans-serif] text-[14px] text-[#5f6f7b]">
-                  <span className={cn("inline-block h-2 w-2 rounded-full", paused ? "bg-amber-500" : "bg-emerald-500")} aria-hidden />
+                <p className="font-['Satoshi',sans-serif] text-[16px] font-medium leading-tight text-foreground">{displayName}</p>
+                <p className="inline-flex items-center gap-2 font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
+                  <span className={cn("inline-block h-2 w-2 rounded-full", paused ? "bg-warning" : "bg-success")} aria-hidden />
                   Session status: {session.status}
                 </p>
               </div>
             </div>
             <div>
-              <p className="font-['Satoshi',sans-serif] text-[14px] uppercase tracking-wide text-[#6f7e87]">Task</p>
-              <p className={cn("font-['Satoshi',sans-serif] text-[18px] leading-tight text-[#0b191f]", taskTitle === "No task" && "text-amber-700")}>
+              <p className="font-['Satoshi',sans-serif] text-[14px] uppercase tracking-wide text-muted-foreground">Task</p>
+              <p className={cn("font-['Satoshi',sans-serif] text-[18px] leading-tight text-foreground", taskTitle === "No task" && "text-warning")}>
                 {taskTitle === "No task" ? "Task missing on session payload" : taskTitle}
               </p>
             </div>
             <div>
-              <p className="font-['Satoshi',sans-serif] text-[14px] uppercase tracking-wide text-[#6f7e87]">Working for</p>
-              <p className="font-['Satoshi',sans-serif] text-[32px] leading-none tabular-nums text-[#0b191f]" aria-live="polite">
+              <p className="font-['Satoshi',sans-serif] text-[14px] uppercase tracking-wide text-muted-foreground">Working for</p>
+              <p className="font-['Satoshi',sans-serif] text-[32px] leading-none tabular-nums text-foreground" aria-live="polite">
                 {elapsed}
               </p>
               {paused ? (
-                <p className="mt-1 font-['Satoshi',sans-serif] text-[13px] text-[#6b7b86]">Timer is paused. Duration reflects time accumulated so far.</p>
+                <p className="mt-1 font-['Satoshi',sans-serif] text-[13px] text-muted-foreground">Timer is paused. Duration reflects time accumulated so far.</p>
               ) : null}
-              <p className="mt-1 font-['Satoshi',sans-serif] text-[13px] text-[#6b7b86]">
+              <p className="mt-1 font-['Satoshi',sans-serif] text-[13px] text-muted-foreground">
                 Started {new Date(session.started_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
               </p>
             </div>

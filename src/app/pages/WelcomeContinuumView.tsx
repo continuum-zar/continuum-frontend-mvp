@@ -150,29 +150,29 @@ export function WelcomeContinuumView() {
       className="box-border flex h-screen min-h-0 w-full flex-col overflow-hidden pb-[8px] pl-[12px] pr-[8px] pt-[12px]"
       data-name="Welcome to Continuum"
       data-node-id="8:3495"
-      style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)" }}
+      style={{ backgroundImage: "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, var(--background) 0%, var(--background) 100%)" }}
     >
       <div className="flex min-h-0 w-full flex-1 flex-col items-end gap-2" data-node-id="8:3496">
         <div className="isolate flex min-h-0 w-full flex-1 items-stretch gap-[16px]" data-node-id="8:3497">
           <DashboardLeftRail />
-          <div className="relative z-[1] flex min-h-0 min-w-0 flex-1 flex-col items-end gap-[16px] overflow-hidden rounded-[8px] border border-[#ebedee] border-solid bg-white py-[16px] pl-[24px] pr-[16px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]" data-node-id="8:3521">
+          <div className="relative z-[1] flex min-h-0 min-w-0 flex-1 flex-col items-end gap-[16px] overflow-hidden rounded-[8px] border border-border border-solid bg-card py-[16px] pl-[24px] pr-[16px] shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]" data-node-id="8:3521">
             <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3522">
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3523">
                 <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-open-dot" data-node-id="8:3524">
                   <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderOpenDot} />
                 </div>
-                <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] whitespace-nowrap" data-node-id="8:3526">
+                <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-muted-foreground text-[16px] whitespace-nowrap" data-node-id="8:3526">
                   {headerTitle}
                 </p>
               </div>
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3530">
-                <div className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0" data-name="Component 7" data-node-id="8:3531">
+                <div className="bg-muted content-stretch flex gap-[12px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0" data-name="Component 7" data-node-id="8:3531">
                   <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3532">
                     <div className="relative shrink-0 size-[16px]" data-name="lucide/building-2" data-node-id="8:3533">
                       <img alt="" className="absolute block max-w-none size-full" src={imgLucideBuilding2} />
                     </div>
                     <p
-                      className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative max-w-[min(280px,40vw)] shrink truncate text-[#606d76] text-[14px]"
+                      className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative max-w-[min(280px,40vw)] shrink truncate text-muted-foreground text-[14px]"
                       title={clientPillLabel}
                       data-node-id="8:3535"
                     >
@@ -188,12 +188,12 @@ export function WelcomeContinuumView() {
                   <NotificationBell
                     scope={{ kind: "project", projectId: Number(routeProjectId) }}
                     iconSrc={imgLucideBell}
-                    className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] cursor-pointer"
+                    className="bg-card border border-border border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] cursor-pointer"
                   />
                 ) : (
                   <button
                     type="button"
-                    className="bg-white border border-[#ededed] border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 cursor-default focus-visible:ring-2 focus-visible:ring-ring"
+                    className="bg-card border border-border border-solid content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 w-[32px] outline-none ring-offset-2 cursor-default focus-visible:ring-2 focus-visible:ring-ring"
                     data-name="Component 5"
                     data-node-id="8:3538"
                     aria-label="Notifications"
@@ -216,14 +216,14 @@ export function WelcomeContinuumView() {
                         onClick={() => {
                           if (canEditProject) setEditProjectOpen(true);
                         }}
-                        className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+                        className="bg-card border border-border border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
                         data-name="Component 9"
                         aria-label="Edit project"
                       >
                   <div className="relative shrink-0 size-[16px]" data-name="lucide/folder-cog" data-node-id="8:3542">
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideFolderCog} />
                   </div>
-                        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3544">
+                        <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-foreground text-[14px] whitespace-nowrap" data-node-id="8:3544">
                           Edit
                         </p>
                       </button>
@@ -237,11 +237,11 @@ export function WelcomeContinuumView() {
                       <span>
                         <Link
                           to={workspaceJoin("ai-planner", "refine", routeProjectId)}
-                          className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+                          className="bg-card border border-border border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
                           data-tour="welcome-refine-ai-planner"
                           aria-label="Refine project plan with AI planner"
                         >
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap">
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-foreground text-[14px] whitespace-nowrap">
                             Edit plan
                           </p>
                         </Link>
@@ -250,11 +250,11 @@ export function WelcomeContinuumView() {
                     <TooltipContent>Open AI Project Planner to refine milestones and tasks</TooltipContent>
                   </Tooltip>
                 ) : null}
-                <div className="bg-white border border-[#ededed] border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 6" data-node-id="8:3545">
+                <div className="bg-card border border-border border-solid content-stretch flex gap-[8px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0" data-name="Component 6" data-node-id="8:3545">
                   <div className="relative shrink-0 size-[16px]" data-name="lucide/share" data-node-id="8:3546">
                     <img alt="" className="absolute block max-w-none size-full" src={imgLucideShare} />
                   </div>
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3548">
+                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-foreground text-[14px] whitespace-nowrap" data-node-id="8:3548">
                     Share
                   </p>
                 </div>
@@ -270,7 +270,7 @@ export function WelcomeContinuumView() {
                             data-name="Component 8"
                             data-node-id="8:3549"
                             className="content-stretch flex gap-[6px] h-[32px] items-center justify-center pl-[16px] pr-[12px] py-[8px] relative rounded-[8px] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            style={{ backgroundImage: "linear-gradient(164.94079331184741deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)" }}
+                            style={{ backgroundImage: "linear-gradient(164.94079331184741deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, var(--card) 0%, var(--card) 100%)" }}
                           >
                             <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap" data-node-id="8:3550">
                               {exportActionPending ? "Exporting…" : "Export"}
@@ -341,7 +341,7 @@ export function WelcomeContinuumView() {
                         <div className="content-stretch flex items-center relative shrink-0" data-node-id="8:3720">
                           <div className="content-stretch flex flex-col items-start relative shrink-0" data-node-id="8:3721">
                             <div className="content-stretch flex gap-[8px] items-center justify-center relative shrink-0" data-node-id="8:3722">
-                              <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[24px] whitespace-nowrap" data-node-id="8:3723">
+                              <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-foreground text-[24px] whitespace-nowrap" data-node-id="8:3723">
                                 Members
                               </p>
                               <div className="relative shrink-0 size-[16px]" data-name="lucide/info" data-node-id="8:3724">
@@ -355,19 +355,19 @@ export function WelcomeContinuumView() {
                             <button
                               type="button"
                               data-tour="welcome-invite-members"
-                              className="border border-[#ebedee] border-solid content-stretch flex cursor-pointer gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                              className="border border-border border-solid content-stretch flex cursor-pointer gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                               data-name="Component 2"
                               data-node-id="8:3726"
                               style={{
                                 backgroundImage:
-                                  "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(168.89065931200642deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
+                                  "linear-gradient(90deg, var(--card) 0%, var(--card) 100%), linear-gradient(168.89065931200642deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
                               }}
                               onClick={() => setShareProjectOpen(true)}
                             >
                           <div className="relative shrink-0 size-[24px]" data-name="lucide/plus" data-node-id="8:3727">
                             <img alt="" className="absolute block max-w-none size-full" src={imgLucidePlus1} />
                           </div>
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3729">
+                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-foreground text-[14px] whitespace-nowrap" data-node-id="8:3729">
                             Invite Members
                           </p>
                             </button>
@@ -377,20 +377,20 @@ export function WelcomeContinuumView() {
                       </div>
                     </div>
                     <div className="content-stretch flex items-start relative shrink-0 w-full" data-node-id="8:3761">
-                      <div className="bg-white border border-[#ebedee] border-solid content-stretch flex items-start p-[24px] relative rounded-[12px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-[260px]" data-node-id="8:3762">
+                      <div className="bg-card border border-border border-solid content-stretch flex items-start p-[24px] relative rounded-[12px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-[260px]" data-node-id="8:3762">
                         <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-start min-h-px min-w-px relative" data-node-id="8:3763">
                           <div className="content-stretch flex h-[40px] items-center relative rounded-[8px] shrink-0 w-full" data-name="Component 13" data-node-id="8:3764">
                             <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3765">
-                              <div className="bg-[#f17173] content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[35px]" data-name="Component 31" data-node-id="8:3766">
+                              <div className="bg-destructive content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[35px]" data-name="Component 31" data-node-id="8:3766">
                                 <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[13.13px] text-white whitespace-nowrap" data-node-id="I8:3766;2032:902">
                                   <p className="leading-[0.4]">AS</p>
                                 </div>
                               </div>
                               <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] items-start justify-center leading-[normal] not-italic relative shrink-0 whitespace-nowrap" data-node-id="8:3767">
-                                <p className="relative shrink-0 text-[#0b191f] text-[14px]" data-node-id="8:3768">
+                                <p className="relative shrink-0 text-foreground text-[14px]" data-node-id="8:3768">
                                   Amukelani Shiringani
                                 </p>
-                                <p className="relative shrink-0 text-[#727d83] text-[12px]" data-node-id="8:3769">
+                                <p className="relative shrink-0 text-muted-foreground text-[12px]" data-node-id="8:3769">
                                   Product Designer
                                 </p>
                               </div>
@@ -399,18 +399,18 @@ export function WelcomeContinuumView() {
                           <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3770">
                             <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[8px] items-start leading-[normal] not-italic relative shrink-0 text-[14px] w-full whitespace-nowrap" data-node-id="8:3771">
                               <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3772">
-                                <p className="relative shrink-0 text-[#727d83]" data-node-id="8:3773">
+                                <p className="relative shrink-0 text-muted-foreground" data-node-id="8:3773">
                                   Total hours
                                 </p>
-                                <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-ellipsis w-[34px]" data-node-id="8:3774">
+                                <p className="overflow-hidden relative shrink-0 text-foreground text-ellipsis w-[34px]" data-node-id="8:3774">
                                   0
                                 </p>
                               </div>
                               <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3775">
-                                <p className="relative shrink-0 text-[#727d83]" data-node-id="8:3776">
+                                <p className="relative shrink-0 text-muted-foreground" data-node-id="8:3776">
                                   Task completed
                                 </p>
-                                <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-ellipsis w-[34px]" data-node-id="8:3777">
+                                <p className="overflow-hidden relative shrink-0 text-foreground text-ellipsis w-[34px]" data-node-id="8:3777">
                                   0
                                 </p>
                               </div>
@@ -433,8 +433,8 @@ export function WelcomeContinuumView() {
               )}
               {isApiRoute && projectQuery.isError && (
                 <div className="flex min-h-[280px] w-full flex-col items-center justify-center gap-4 px-4 text-center">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] text-[#0b191f]">We couldn’t load this project.</p>
-                  <Link to={WORKSPACE_BASE} className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] text-foreground">We couldn’t load this project.</p>
+                  <Link to={WORKSPACE_BASE} className="font-['Satoshi',sans-serif] text-[14px] font-medium text-primary underline">
                     Back to dashboard
                   </Link>
                 </div>
@@ -452,7 +452,7 @@ export function WelcomeContinuumView() {
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="absolute bottom-[14px] right-[14px] z-20 flex size-[48px] flex-col items-start isolate overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                  className="absolute bottom-[14px] right-[14px] z-20 flex size-[48px] flex-col items-start isolate overflow-clip rounded-[48px] border border-solid border-border bg-card shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Open AI assistant"
                   data-tour="welcome-project-assistant"
                   data-node-id="8:3521-fab"

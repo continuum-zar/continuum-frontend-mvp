@@ -20,7 +20,7 @@ export function AICreditsUsagePanel() {
 
   if (isLoading) {
     return (
-      <p className="font-['Satoshi',sans-serif] text-[14px] text-[#606d76]">
+      <p className="font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
         Loading your AI usage…
       </p>
     );
@@ -29,7 +29,7 @@ export function AICreditsUsagePanel() {
   if (isError || !data) {
     return (
       <div className="flex flex-col items-start gap-2">
-        <p className="font-['Satoshi',sans-serif] text-[14px] text-[#606d76]">
+        <p className="font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
           We couldn&apos;t load your AI usage right now.
         </p>
         <button
@@ -52,34 +52,34 @@ export function AICreditsUsagePanel() {
   const lowThreshold = Math.max(1, Math.floor(monthly_quota * 0.1));
   const low = !exhausted && balance <= lowThreshold;
   const barColor = exhausted
-    ? "bg-red-500"
+    ? "bg-destructive"
     : low
-      ? "bg-amber-500"
+      ? "bg-warning"
       : "bg-gradient-to-r from-[#24b5f8] to-[#5521fe]";
 
   return (
     <div className="flex flex-col gap-6">
       {/* Balance card */}
-      <div className="flex flex-col gap-4 rounded-[8px] border border-[#ebedee] p-5">
-        <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+      <div className="flex flex-col gap-4 rounded-[8px] border border-border p-5">
+        <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
           AI Credits
         </span>
 
         <div className="flex items-end gap-2">
           <span
             className={`font-['Satoshi',sans-serif] text-[32px] font-bold leading-none ${
-              exhausted ? "text-red-600" : "text-[#0b191f]"
+              exhausted ? "text-destructive" : "text-foreground"
             }`}
           >
             {balance.toLocaleString()}
           </span>
-          <span className="font-['Satoshi',sans-serif] text-[14px] text-[#606d76]">
+          <span className="font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
             of {monthly_quota.toLocaleString()} remaining
           </span>
         </div>
 
         <div
-          className="h-2 w-full overflow-hidden rounded-full bg-[#f0f0f3]"
+          className="h-2 w-full overflow-hidden rounded-full bg-muted"
           role="progressbar"
           aria-valuenow={balance}
           aria-valuemin={0}
@@ -98,12 +98,12 @@ export function AICreditsUsagePanel() {
         </div>
 
         {exhausted ? (
-          <p className="font-['Satoshi',sans-serif] text-[13px] text-red-600">
+          <p className="font-['Satoshi',sans-serif] text-[13px] text-destructive">
             You&apos;ve used all of your AI credits. AI features are paused until your
             balance resets on {formatResetDate(reset_at)}, or an admin tops you up.
           </p>
         ) : low ? (
-          <p className="font-['Satoshi',sans-serif] text-[13px] text-amber-600">
+          <p className="font-['Satoshi',sans-serif] text-[13px] text-warning">
             You&apos;re running low on AI credits. They reset on {formatResetDate(reset_at)}.
           </p>
         ) : null}
@@ -111,10 +111,10 @@ export function AICreditsUsagePanel() {
 
       {/* How it works */}
       <div className="flex flex-col gap-2">
-        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+        <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
           How AI credits work
         </span>
-        <ul className="ml-4 list-disc font-['Satoshi',sans-serif] text-[13px] leading-relaxed text-[#606d76]">
+        <ul className="ml-4 list-disc font-['Satoshi',sans-serif] text-[13px] leading-relaxed text-muted-foreground">
           <li>
             Every AI feature, including the project planner, task &amp; wiki generation,
             summaries, and commit classification, spends credits based on its actual cost.
@@ -134,8 +134,8 @@ export function AICreditsUsagePanel() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col">
-      <span className="font-['Satoshi',sans-serif] text-[12px] text-[#9aa4ab]">{label}</span>
-      <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]">
+      <span className="font-['Satoshi',sans-serif] text-[12px] text-muted-foreground">{label}</span>
+      <span className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground">
         {value}
       </span>
     </div>

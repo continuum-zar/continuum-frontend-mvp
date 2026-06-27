@@ -94,18 +94,18 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
           onOpenAutoFocus={(e) => e.preventDefault()}
           aria-describedby={undefined}
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+            "fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           )}
         >
           <DialogPrimitive.Title className="sr-only">Create Project</DialogPrimitive.Title>
 
-          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="grid w-full grid-cols-[20px_1fr_20px] items-center border-b border-border bg-card px-9 py-4">
             <DialogClose asChild>
-              <button type="button" className="inline-flex size-5 items-center justify-center text-[#606d76]" aria-label="Back">
+              <button type="button" className="inline-flex size-5 items-center justify-center text-muted-foreground" aria-label="Back">
                 <ArrowLeft className="size-5" />
               </button>
             </DialogClose>
-            <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+            <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
               Create Project
             </p>
             <div className="size-5" />
@@ -129,10 +129,10 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
                 }
               `}
             </style>
-            <div className="flex h-10 w-full items-center gap-2 bg-white py-2">
+            <div className="flex h-10 w-full items-center gap-2 bg-card py-2">
               <div
                 className={cn(
-                  "h-[30px] w-[2px] rounded-[999px] bg-[#1466ff] transition-opacity",
+                  "h-[30px] w-[2px] rounded-[999px] bg-primary transition-opacity",
                   isNameFocused && !projectName && "cursor-blink"
                 )}
               />
@@ -140,8 +140,8 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
                 ref={projectNameInputRef}
                 type="text"
                 placeholder="Project name"
-                className="w-full border-none px-0 font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f] placeholder:text-[#606d76]/30 focus:outline-none focus:ring-0"
-                style={{ caretColor: projectName ? "#1466ff" : "transparent" }}
+                className="w-full border-none px-0 font-['Satoshi',sans-serif] text-[24px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-0"
+                style={{ caretColor: projectName ? "var(--primary)" : "transparent" }}
                 value={projectName}
                 onFocus={() => setIsNameFocused(true)}
                 onBlur={() => setIsNameFocused(false)}
@@ -150,25 +150,25 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
             </div>
 
             <div className="flex w-full flex-col gap-1">
-              <p className="text-[14px] font-medium text-[#606d76]">Description</p>
-              <div className="flex min-h-[106px] w-full flex-col gap-2 rounded-[8px] border border-[#e9e9e9] bg-white px-4 pb-2 pt-4 focus-within:border-[#1466ff]">
+              <p className="text-[14px] font-medium text-muted-foreground">Description</p>
+              <div className="flex min-h-[106px] w-full flex-col gap-2 rounded-[8px] border border-border bg-card px-4 pb-2 pt-4 focus-within:border-primary">
                 <textarea
                   ref={descriptionTextareaRef}
                   placeholder="Add description here..."
                   maxLength={80}
                   rows={1}
-                  className="w-full max-h-[200px] resize-none overflow-y-auto border-none p-0 text-[16px] font-medium leading-relaxed text-[#0b191f] placeholder:text-[#606d76]/40 focus:outline-none focus:ring-0"
+                  className="w-full max-h-[200px] resize-none overflow-y-auto border-none p-0 text-[16px] font-medium leading-relaxed text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-0"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
-                <p className="self-end text-[14px] font-medium text-[#606d76]/30">
+                <p className="self-end text-[14px] font-medium text-muted-foreground/30">
                   {description.length} / 80 Characters
                 </p>
               </div>
             </div>
 
             <div className="flex w-full flex-col gap-1">
-              <p className="text-[14px] font-medium text-[#606d76]">Start date</p>
+              <p className="text-[14px] font-medium text-muted-foreground">Start date</p>
               <div className="relative w-full">
                 <input
                   ref={startDateInputRef}
@@ -181,7 +181,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
                 />
                 <button
                   type="button"
-                  className="relative z-10 flex h-10 w-full items-center justify-between gap-2 rounded-[8px] border border-[#e9e9e9] bg-white px-4 text-left focus:outline-none focus-visible:border-[#1466ff]"
+                  className="relative z-10 flex h-10 w-full items-center justify-between gap-2 rounded-[8px] border border-border bg-card px-4 text-left focus:outline-none focus-visible:border-primary"
                   aria-label={
                     startDate
                       ? `Start date ${formatDueDateDisplay(startDate)}`
@@ -201,18 +201,18 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
                   <span
                     className={cn(
                       "min-w-0 flex-1 text-[16px] font-medium",
-                      startDate ? "text-[#0b191f]" : "text-[#606d76]/40"
+                      startDate ? "text-foreground" : "text-muted-foreground/40"
                     )}
                   >
                     {startDate ? formatDueDateDisplay(startDate) : "mm / dd / yyyy"}
                   </span>
-                  <CalendarPlus className="size-4 shrink-0 text-[#0b191f]" aria-hidden="true" />
+                  <CalendarPlus className="size-4 shrink-0 text-foreground" aria-hidden="true" />
                 </button>
               </div>
             </div>
 
             <div className="flex w-full flex-col gap-1">
-              <p className="text-[14px] font-medium text-[#606d76]">Target delivery date</p>
+              <p className="text-[14px] font-medium text-muted-foreground">Target delivery date</p>
               {/* Hidden input is anchored top-right of the row so the native picker opens aligned to the field (sr-only anchors top-left). */}
               <div className="relative w-full">
                 <input
@@ -226,7 +226,7 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
                 />
                 <button
                   type="button"
-                  className="relative z-10 flex h-10 w-full items-center justify-between gap-2 rounded-[8px] border border-[#e9e9e9] bg-white px-4 text-left focus:outline-none focus-visible:border-[#1466ff]"
+                  className="relative z-10 flex h-10 w-full items-center justify-between gap-2 rounded-[8px] border border-border bg-card px-4 text-left focus:outline-none focus-visible:border-primary"
                   aria-label={
                     dueDate
                       ? `Target delivery date ${formatDueDateDisplay(dueDate)}`
@@ -246,12 +246,12 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
                   <span
                     className={cn(
                       "min-w-0 flex-1 text-[16px] font-medium",
-                      dueDate ? "text-[#0b191f]" : "text-[#606d76]/40"
+                      dueDate ? "text-foreground" : "text-muted-foreground/40"
                     )}
                   >
                     {dueDate ? formatDueDateDisplay(dueDate) : "mm / dd / yyyy"}
                   </span>
-                  <CalendarPlus className="size-4 shrink-0 text-[#0b191f]" aria-hidden="true" />
+                  <CalendarPlus className="size-4 shrink-0 text-foreground" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -265,8 +265,8 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
                   className={cn(
                     "inline-flex h-10 w-full items-center justify-center rounded-[8px] px-4 text-[14px] font-semibold transition-colors duration-200",
                     projectName.trim() && !createProject.isPending
-                      ? "bg-[#1466ff] text-white hover:bg-[#0051e6]"
-                      : "bg-[rgba(96,109,118,0.1)] text-[#606d76]/50"
+                      ? "bg-primary text-white hover:bg-primary"
+                      : "bg-muted text-muted-foreground/50"
                   )}
                 >
                   {createProject.isPending ? "Creating…" : "Create Project"}

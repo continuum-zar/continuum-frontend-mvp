@@ -216,13 +216,13 @@ export function LogTimeModal({
           ref={setDialogContentNode}
           aria-describedby={undefined}
           className={cn(
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
           )}
         >
           <DialogPrimitive.Title className="sr-only">Log Time</DialogPrimitive.Title>
 
           {/* Header — Figma I25:10140;2488:110918 */}
-          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-border bg-card px-9 py-4">
             <DialogClose asChild>
               <button
                 type="button"
@@ -235,7 +235,7 @@ export function LogTimeModal({
               </button>
             </DialogClose>
             <div className="pointer-events-none absolute left-1/2 top-[25px] flex -translate-x-1/2 flex-col items-center gap-3">
-              <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+              <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
                 Log Time
               </p>
             </div>
@@ -248,12 +248,12 @@ export function LogTimeModal({
             className="z-[2] flex w-full flex-col gap-6 px-9 py-6"
             style={{
               backgroundImage:
-                "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
+                "linear-gradient(90deg, var(--card) 0%, var(--card) 100%)",
             }}
           >
             <div className="flex w-full flex-col gap-6">
               {open && pausedTimerTitle != null ? (
-                <p className="rounded-[8px] border border-[#f2e5bf] bg-[#fdf9ed] px-3 py-2 font-['Satoshi',sans-serif] text-[13px] font-medium leading-snug text-[#7a6224]">
+                <p className="rounded-[8px] border border-warning bg-warning/10 px-3 py-2 font-['Satoshi',sans-serif] text-[13px] font-medium leading-snug text-warning">
                   A paused timer on “{pausedTimerTitle}” is still active in the sidebar. Close this form when you are
                   done; resume or finish the session from the rail timer.
                 </p>
@@ -261,14 +261,14 @@ export function LogTimeModal({
               {/* Task + time spent — Figma I25:10140;2488:110958 */}
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full flex-col gap-1">
-                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">Task</p>
+                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">Task</p>
                   <Popover open={taskPickerOpen} onOpenChange={setTaskPickerOpen} modal={false}>
                       <PopoverTrigger asChild>
                         <button
                           type="button"
                           className={cn(
-                            "flex h-10 w-full items-center justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2 text-left font-['Satoshi',sans-serif] text-[16px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40",
-                            selectedTask ? "text-[#0b191f]" : "text-[#9fa5a8]",
+                            "flex h-10 w-full items-center justify-between rounded-[8px] border border-solid border-border bg-card px-4 py-2 text-left font-['Satoshi',sans-serif] text-[16px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                            selectedTask ? "text-foreground" : "text-muted-foreground",
                           )}
                           aria-expanded={taskPickerOpen}
                           aria-haspopup="listbox"
@@ -286,7 +286,7 @@ export function LogTimeModal({
                         collisionBoundary={dialogBoundary ?? undefined}
                         collisionPadding={12}
                         className={cn(
-                          "z-[100] flex w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden border border-solid border-[#e9e9e9] p-0 shadow-lg",
+                          "z-[100] flex w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden border border-solid border-border p-0 shadow-lg",
                           "max-h-[min(320px,var(--radix-popper-available-height,280px))]",
                         )}
                         onOpenAutoFocus={(e) => {
@@ -295,18 +295,18 @@ export function LogTimeModal({
                         }}
                       >
                         <div
-                          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[8px] bg-white"
+                          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[8px] bg-card"
                           role="listbox"
                         >
-                          <div className="flex shrink-0 items-center gap-2 border-b border-[#f0f0f0] px-3 py-2">
-                            <Search className="size-4 shrink-0 text-[#9fa5a8]" strokeWidth={2} />
+                          <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+                            <Search className="size-4 shrink-0 text-muted-foreground" strokeWidth={2} />
                             <input
                               ref={taskSearchInputRef}
                               type="text"
                               value={taskSearch}
                               onChange={(e) => setTaskSearch(e.target.value)}
                               placeholder="Search tasks…"
-                              className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                              className="min-w-0 flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
                               aria-label="Search tasks"
                             />
                           </div>
@@ -315,11 +315,11 @@ export function LogTimeModal({
                             onWheel={(e) => e.stopPropagation()}
                           >
                             {tasksLoading ? (
-                              <p className="px-3 py-3 text-center font-['Satoshi',sans-serif] text-[13px] text-[#9fa5a8]">
+                              <p className="px-3 py-3 text-center font-['Satoshi',sans-serif] text-[13px] text-muted-foreground">
                                 Loading tasks…
                               </p>
                             ) : filteredTasks.length === 0 ? (
-                              <p className="px-3 py-3 text-center font-['Satoshi',sans-serif] text-[13px] text-[#9fa5a8]">
+                              <p className="px-3 py-3 text-center font-['Satoshi',sans-serif] text-[13px] text-muted-foreground">
                                 {(projectId != null ? projectTasks.length === 0 : allTasks.length === 0)
                                   ? "No tasks available"
                                   : "No matching tasks"}
@@ -336,18 +336,18 @@ export function LogTimeModal({
                                     setTaskPickerOpen(false);
                                   }}
                                   className={cn(
-                                    "flex w-full flex-col gap-0.5 px-3 py-2.5 text-left font-['Satoshi',sans-serif] text-[14px] transition-colors hover:bg-[#f5f7f8]",
-                                    taskId === t.id && "bg-[#f0f8ff]",
+                                    "flex w-full flex-col gap-0.5 px-3 py-2.5 text-left font-['Satoshi',sans-serif] text-[14px] transition-colors hover:bg-card",
+                                    taskId === t.id && "bg-primary/10",
                                   )}
                                 >
                                   <span className="flex w-full min-w-0 items-center gap-2">
-                                    <span className="min-w-0 flex-1 truncate text-[#0b191f]">{t.title}</span>
+                                    <span className="min-w-0 flex-1 truncate text-foreground">{t.title}</span>
                                     {taskId === t.id ? (
-                                      <Check className="size-4 shrink-0 text-[#2798f5]" strokeWidth={2} />
+                                      <Check className="size-4 shrink-0 text-primary" strokeWidth={2} />
                                     ) : null}
                                   </span>
                                   {t.subtitle ? (
-                                    <span className="truncate text-[12px] font-medium text-[#727d83]">{t.subtitle}</span>
+                                    <span className="truncate text-[12px] font-medium text-muted-foreground">{t.subtitle}</span>
                                   ) : null}
                                 </button>
                               ))
@@ -359,7 +359,7 @@ export function LogTimeModal({
                 </div>
 
                 <div className="flex w-1/2 min-w-0 flex-col gap-1">
-                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">Time spent</p>
+                  <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">Time spent</p>
                   <input
                     type="text"
                     inputMode="decimal"
@@ -367,7 +367,7 @@ export function LogTimeModal({
                     value={hoursSpent}
                     onChange={(e) => setHoursSpent(e.target.value)}
                     placeholder="Hours (e.g. 2.5)"
-                    className="h-10 w-full rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 py-2 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] placeholder:text-[#9fa5a8] outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40"
+                    className="h-10 w-full rounded-[8px] border border-solid border-border bg-card px-4 py-2 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     aria-label="Time spent in hours"
                   />
                 </div>
@@ -375,8 +375,8 @@ export function LogTimeModal({
 
               {/* Description + Write with AI — Figma I25:10140;2488:110979 */}
               <div className="flex w-full flex-col justify-center gap-1">
-                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">Description</p>
-                <div className="flex w-full min-h-[120px] flex-col justify-between rounded-[8px] border border-solid border-[#e9e9e9] bg-white px-4 pb-2 pt-4">
+                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">Description</p>
+                <div className="flex w-full min-h-[120px] flex-col justify-between rounded-[8px] border border-solid border-border bg-card px-4 pb-2 pt-4">
                   <div className="relative w-full min-h-0">
                     <textarea
                       ref={descriptionTextareaRef}
@@ -387,26 +387,26 @@ export function LogTimeModal({
                       rows={1}
                       readOnly={aiSuggesting}
                       aria-busy={aiSuggesting}
-                      className="max-h-[280px] w-full resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium leading-relaxed text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus:ring-0"
+                      className="max-h-[280px] w-full resize-none overflow-y-auto border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:ring-0"
                       aria-label="Description"
                     />
                     {aiSuggesting ? (
                       <div
-                        className="pointer-events-none absolute inset-0 z-[1] flex items-start gap-2 bg-white"
+                        className="pointer-events-none absolute inset-0 z-[1] flex items-start gap-2 bg-card"
                         aria-hidden
                       >
                         <Loader2
-                          className="mt-0.5 size-4 shrink-0 animate-spin text-[#9fa5a8]"
+                          className="mt-0.5 size-4 shrink-0 animate-spin text-muted-foreground"
                           strokeWidth={2}
                         />
-                        <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#9fa5a8]">
+                        <span className="font-['Satoshi',sans-serif] text-[16px] font-medium text-muted-foreground">
                           Thinking...
                         </span>
                       </div>
                     ) : null}
                   </div>
                   <div className="flex w-full items-center justify-end gap-2.5 pt-1">
-                    <p className="shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] opacity-[0.32]">
+                    <p className="shrink-0 font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground opacity-[0.32]">
                       {descLen}/{DESC_MAX} Characters
                     </p>
                     <button
@@ -414,8 +414,8 @@ export function LogTimeModal({
                       disabled={aiSuggesting}
                       onClick={() => void handleWriteWithAI()}
                       className={cn(
-                        "inline-flex h-[19px] shrink-0 cursor-pointer items-center justify-center gap-1 rounded-[4px] border border-solid border-[#2798f5] bg-white px-2 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-[#2798f5]/40",
-                        "disabled:cursor-wait disabled:border-[#2798f5] disabled:bg-white disabled:opacity-100",
+                        "inline-flex h-[19px] shrink-0 cursor-pointer items-center justify-center gap-1 rounded-[4px] border border-solid border-primary bg-card px-2 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                        "disabled:cursor-wait disabled:border-primary disabled:bg-card disabled:opacity-100",
                       )}
                       aria-label="Write with AI using recent commits, or task description and completed checklist"
                     >
@@ -426,7 +426,7 @@ export function LogTimeModal({
                           src={imgLucideBotWriteWithAI}
                         />
                       </div>
-                      <span className="font-['Satoshi',sans-serif] text-[11px] font-medium whitespace-nowrap text-[#2798f5]">
+                      <span className="font-['Satoshi',sans-serif] text-[11px] font-medium whitespace-nowrap text-primary">
                         Write with AI
                       </span>
                     </button>
@@ -445,8 +445,8 @@ export function LogTimeModal({
                   className={cn(
                     "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border-0 px-4 py-2 outline-none",
                     canSubmit && !createLoggedHour.isPending
-                      ? "cursor-pointer bg-[#2798f5] text-white hover:bg-[#1e87e0]"
-                      : "cursor-not-allowed bg-[rgba(96,109,118,0.1)]",
+                      ? "cursor-pointer bg-primary text-white hover:bg-primary"
+                      : "cursor-not-allowed bg-muted",
                   )}
                   aria-disabled={!canSubmit || createLoggedHour.isPending}
                 >
@@ -454,14 +454,14 @@ export function LogTimeModal({
                     size={16}
                     className={cn(
                       "shrink-0",
-                      canSubmit && !createLoggedHour.isPending ? "text-white" : "text-[#606d76] opacity-50",
+                      canSubmit && !createLoggedHour.isPending ? "text-white" : "text-muted-foreground opacity-50",
                     )}
                     strokeWidth={2}
                   />
                   <span
                     className={cn(
                       "font-['Inter',sans-serif] text-[14px] font-semibold",
-                      canSubmit && !createLoggedHour.isPending ? "text-white" : "text-[#606d76] opacity-50",
+                      canSubmit && !createLoggedHour.isPending ? "text-white" : "text-muted-foreground opacity-50",
                     )}
                   >
                     {createLoggedHour.isPending ? "Saving…" : (submitLabel ?? "Log Time")}

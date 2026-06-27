@@ -10,12 +10,6 @@ import { welcomeModalAssets as a } from "./welcomeModalAssets";
 const modalShadow =
   "shadow-[0px_135px_38px_0px_rgba(21,21,21,0),0px_86px_35px_0px_rgba(21,21,21,0.01),0px_49px_29px_0px_rgba(21,21,21,0.04),0px_22px_22px_0px_rgba(21,21,21,0.07),0px_5px_12px_0px_rgba(21,21,21,0.08)]";
 
-/** Figma: `linear-gradient(0deg, #0B191F, #0B191F), linear-gradient(180deg, #B2E6F7 0%, #FDFBF7 100%)` */
-const rightPanelBackground: CSSProperties = {
-  backgroundColor: "#0B191F",
-  backgroundImage: "linear-gradient(180deg, #B2E6F7 0%, #FDFBF7 100%)",
-};
-
 /** Figma: `linear-gradient(0deg, #FFFFFF, #FFFFFF), linear-gradient(141.68deg, #24B5F8 -123.02%, #5521FE 802.55%)` */
 const getStartedButtonBackground: CSSProperties = {
   backgroundImage:
@@ -87,17 +81,17 @@ export function ReleaseNotesModal({
           <DialogPrimitive.Title className="sr-only">{ariaTitle}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">{ariaDescription}</DialogPrimitive.Description>
 
-          <div className="relative flex max-h-[min(90vh,calc(100dvh-2rem))] w-full flex-col items-stretch overflow-hidden overflow-y-auto rounded-[16px] bg-white md:max-h-[min(90vh,calc(100dvh-2rem))] md:flex-row md:overflow-hidden">
+          <div className="relative flex max-h-[min(90vh,calc(100dvh-2rem))] w-full flex-col items-stretch overflow-hidden overflow-y-auto rounded-[16px] bg-card md:max-h-[min(90vh,calc(100dvh-2rem))] md:flex-row md:overflow-hidden">
             <button
               type="button"
               onClick={dismiss}
-              className="absolute top-4 right-4 z-[200] flex size-10 cursor-pointer items-center justify-center rounded-full border-0 bg-white p-0 shadow-[0px_2px_8px_rgba(11,25,31,0.12)] outline-none ring-0 hover:opacity-90 focus-visible:ring-0"
+              className="absolute top-4 right-4 z-[200] flex size-10 cursor-pointer items-center justify-center rounded-full border-0 bg-card p-0 shadow-[0px_2px_8px_rgba(11,25,31,0.12)] outline-none ring-0 hover:opacity-90 focus-visible:ring-0"
               aria-label="Close"
             >
-              <X className="size-[18px] shrink-0 text-[#0B191F]" strokeWidth={2} aria-hidden />
+              <X className="size-[18px] shrink-0 text-foreground" strokeWidth={2} aria-hidden />
             </button>
 
-            <div className="flex w-full shrink-0 flex-col gap-8 border-[#ededed] px-8 py-12 sm:px-10 sm:py-14 md:w-[452px] md:shrink-0 md:border-r md:border-solid">
+            <div className="flex w-full shrink-0 flex-col gap-8 border-border px-8 py-12 sm:px-10 sm:py-14 md:w-[452px] md:shrink-0 md:border-r md:border-solid">
               <div className="flex min-w-0 flex-col gap-5">
                 <div className="flex min-w-0 flex-col gap-5">
                   <div
@@ -112,8 +106,8 @@ export function ReleaseNotesModal({
                   </div>
                   <div
                     className={cn(
-                      "font-['Inter',sans-serif] text-[16px] font-normal leading-[1.618] tracking-[-0.48px] text-[rgba(21,21,21,0.79)]",
-                      isReleaseNotes && "text-[15px] leading-[1.65] text-[rgba(21,21,21,0.82)]",
+                      "font-['Inter',sans-serif] text-[16px] font-normal leading-[1.618] tracking-[-0.48px] text-foreground/80",
+                      isReleaseNotes && "text-[15px] leading-[1.65] text-foreground/80",
                     )}
                   >
                     {description}
@@ -124,21 +118,21 @@ export function ReleaseNotesModal({
                     <div key={`${index}-${item}`} className="flex w-full items-start gap-2 rounded-[8px] py-2">
                       <span
                         className={cn(
-                          "mt-0.5 flex size-4 shrink-0 items-center justify-center text-[#24B5F8]",
+                          "mt-0.5 flex size-4 shrink-0 items-center justify-center text-info",
                           isReleaseNotes && "text-[#5521FE]",
                         )}
                         aria-hidden
                       >
                         <Check className="size-4" strokeWidth={2.5} />
                       </span>
-                      <p className="min-w-0 flex-1 font-['Inter',sans-serif] text-[16px] font-medium leading-normal text-[#151515]">
+                      <p className="min-w-0 flex-1 font-['Inter',sans-serif] text-[16px] font-medium leading-normal text-foreground">
                         {item}
                       </p>
                     </div>
                   ))}
                 </div>
                 {footnote ? (
-                  <p className="w-full font-['Inter',sans-serif] text-[12px] font-normal leading-normal tracking-[-0.36px] text-[rgba(21,21,21,0.5)]">
+                  <p className="w-full font-['Inter',sans-serif] text-[12px] font-normal leading-normal tracking-[-0.36px] text-muted-foreground">
                     {footnote}
                   </p>
                 ) : null}
@@ -153,23 +147,20 @@ export function ReleaseNotesModal({
               </button>
             </div>
 
-            <div
-              className="relative min-h-[280px] min-w-0 flex-1 overflow-hidden sm:min-h-[360px]"
-              style={rightPanelBackground}
-            >
+            <div className="relative min-h-[280px] min-w-0 flex-1 overflow-hidden bg-gradient-to-b from-[#B2E6F7] to-[#FDFBF7] dark:from-[#0b1f2e] dark:to-[#0f172a] sm:min-h-[360px]">
               <CollageStack offsetClass="left-[calc(50%+185.91px)] top-[calc(50%-124.1px)]" />
               <CollageStack offsetClass="left-[calc(50%-169.09px)] top-[calc(50%+152.9px)]" />
 
               {rightPanelBadge ? (
                 <div
                   className={cn(
-                    "absolute top-[22px] left-4 z-10 flex items-center justify-center gap-[9px] rounded-[14px] border border-[#ededed] bg-[rgba(255,255,255,0.98)] shadow-sm",
+                    "absolute top-[22px] left-4 z-10 flex items-center justify-center gap-[9px] rounded-[14px] border border-border bg-card/95 shadow-sm",
                     isReleaseNotes ? "px-5 py-2.5" : "border-[0.535px] px-[15px] py-[4px]",
                   )}
                 >
                   <p
                     className={cn(
-                      "whitespace-nowrap font-['Satoshi',sans-serif] text-[#0b191f]",
+                      "whitespace-nowrap font-['Satoshi',sans-serif] text-foreground",
                       isReleaseNotes
                         ? "text-[13px] font-bold leading-none tracking-[-0.02em]"
                         : "text-[9px] font-medium",
@@ -202,7 +193,7 @@ function CollageStack({ offsetClass }: { offsetClass: string }) {
       </div>
       <div className="absolute top-[52.68px] left-[66.93px] flex h-[228.259px] w-[236.936px] items-center justify-center">
         <div className="flex-none -rotate-[5.98deg]">
-          <div className="relative h-[206.825px] w-[216.57px] rounded-[5px] border-[0.553px] border-solid border-[#ededed] shadow-[0px_63.6px_17.7px_0px_rgba(26,59,84,0),0px_40.9px_16px_0px_rgba(26,59,84,0.01),0px_22.7px_13.8px_0px_rgba(26,59,84,0.05),0px_9.95px_9.95px_0px_rgba(26,59,84,0.09),0px_2.77px_5.53px_0px_rgba(26,59,84,0.1)]">
+          <div className="relative h-[206.825px] w-[216.57px] rounded-[5px] border-[0.553px] border-solid border-border shadow-[0px_63.6px_17.7px_0px_rgba(26,59,84,0),0px_40.9px_16px_0px_rgba(26,59,84,0.01),0px_22.7px_13.8px_0px_rgba(26,59,84,0.05),0px_9.95px_9.95px_0px_rgba(26,59,84,0.09),0px_2.77px_5.53px_0px_rgba(26,59,84,0.1)]">
             <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[5px]">
               <div
                 className="absolute inset-0 rounded-[5px]"
@@ -218,7 +209,7 @@ function CollageStack({ offsetClass }: { offsetClass: string }) {
       </div>
       <div className="absolute top-[57.97px] left-[559.55px] flex h-[228.264px] w-[236.94px] items-center justify-center">
         <div className="flex-none rotate-[5.98deg]">
-          <div className="relative h-[206.827px] w-[216.571px] rounded-[2.833px] border-[0.553px] border-solid border-[#ededed] shadow-[0px_63.6px_17.7px_0px_rgba(26,59,84,0),0px_40.9px_16px_0px_rgba(26,59,84,0.01),0px_22.7px_13.8px_0px_rgba(26,59,84,0.05),0px_9.95px_9.95px_0px_rgba(26,59,84,0.09),0px_2.77px_5.53px_0px_rgba(26,59,84,0.1)]">
+          <div className="relative h-[206.827px] w-[216.571px] rounded-[2.833px] border-[0.553px] border-solid border-border shadow-[0px_63.6px_17.7px_0px_rgba(26,59,84,0),0px_40.9px_16px_0px_rgba(26,59,84,0.01),0px_22.7px_13.8px_0px_rgba(26,59,84,0.05),0px_9.95px_9.95px_0px_rgba(26,59,84,0.09),0px_2.77px_5.53px_0px_rgba(26,59,84,0.1)]">
             <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[2.833px]">
               <div
                 className="absolute inset-0 rounded-[2.833px]"
@@ -232,7 +223,7 @@ function CollageStack({ offsetClass }: { offsetClass: string }) {
           </div>
         </div>
       </div>
-      <div className="-translate-x-1/2 absolute top-[12.79px] left-[calc(50%+0.2px)] h-[263.829px] w-[406.222px] rounded-[3.856px] border-[0.705px] border-solid border-[#ededed] shadow-[0px_153px_43px_0px_rgba(26,59,84,0),0px_98.2px_39.4px_0px_rgba(26,59,84,0.01),0px_55.2px_33.2px_0px_rgba(26,59,84,0.04),0px_24.55px_24.55px_0px_rgba(26,59,84,0.07),0px_6.14px_13.3px_0px_rgba(26,59,84,0.08)]">
+      <div className="-translate-x-1/2 absolute top-[12.79px] left-[calc(50%+0.2px)] h-[263.829px] w-[406.222px] rounded-[3.856px] border-[0.705px] border-solid border-border shadow-[0px_153px_43px_0px_rgba(26,59,84,0),0px_98.2px_39.4px_0px_rgba(26,59,84,0.01),0px_55.2px_33.2px_0px_rgba(26,59,84,0.04),0px_24.55px_24.55px_0px_rgba(26,59,84,0.07),0px_6.14px_13.3px_0px_rgba(26,59,84,0.08)]">
         <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[3.856px]">
           <div
             className="absolute inset-0 rounded-[3.856px]"

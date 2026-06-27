@@ -11,7 +11,7 @@ import { AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
  */
 export function SsoCallback() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#A8E5FE] to-[#FAF8F4]">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#A8E5FE] to-[#FAF8F4] dark:from-[#0b1f2e] dark:to-[#0f172a]">
       <AuthenticateWithRedirectCallback
         signInFallbackRedirectUrl="/loading"
         signUpFallbackRedirectUrl="/onboarding/usage"

@@ -92,14 +92,14 @@ function LiveTeamMemberCard({
   const fmt = (n: number | null) =>
     n === null ? "…" : String(Math.round(Number(n)));
   return (
-    <div className="group relative flex w-full max-w-[260px] shrink-0 flex-col gap-6 rounded-[12px] border border-solid border-[#ebedee] bg-white p-6 shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)]">
+    <div className="group relative flex w-full max-w-[260px] shrink-0 flex-col gap-6 rounded-[12px] border border-solid border-border bg-card p-6 shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)]">
       {canRemove && (
         <button
           type="button"
           onClick={() => onRemove?.(member)}
           aria-label={`Remove ${member.name} from project`}
           title="Remove from project"
-          className="absolute right-3 top-3 inline-flex size-7 items-center justify-center bg-transparent text-[#dc2626] opacity-0 transition-opacity hover:text-[#b91c1c] focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100"
+          className="absolute right-3 top-3 inline-flex size-7 items-center justify-center bg-transparent text-destructive opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100"
         >
           <Trash2 className="size-4" />
         </button>
@@ -113,10 +113,10 @@ function LiveTeamMemberCard({
             {member.initials}
           </div>
           <div className="flex min-w-0 flex-col font-['Satoshi',sans-serif] font-medium leading-normal">
-            <p className="truncate text-[14px] text-[#0b191f]" title={member.name}>
+            <p className="truncate text-[14px] text-foreground" title={member.name}>
               {member.name}
             </p>
-            <p className="truncate text-[12px] text-[#727d83]" title={roleLine}>
+            <p className="truncate text-[12px] text-muted-foreground" title={roleLine}>
               {roleLine}
             </p>
           </div>
@@ -124,12 +124,12 @@ function LiveTeamMemberCard({
       </div>
       <div className="flex w-full flex-col gap-2 font-['Satoshi',sans-serif] text-[14px] font-medium leading-normal">
         <div className="flex w-full items-center justify-between gap-2">
-          <p className="text-[#727d83]">Total hours</p>
-          <p className="min-w-[34px] overflow-hidden text-ellipsis text-right tabular-nums text-[#0b191f]">{fmt(totalHours)}</p>
+          <p className="text-muted-foreground">Total hours</p>
+          <p className="min-w-[34px] overflow-hidden text-ellipsis text-right tabular-nums text-foreground">{fmt(totalHours)}</p>
         </div>
         <div className="flex w-full items-center justify-between gap-2">
-          <p className="text-[#727d83]">Task completed</p>
-          <p className="min-w-[34px] overflow-hidden text-ellipsis text-right tabular-nums text-[#0b191f]">{fmt(tasksCompleted)}</p>
+          <p className="text-muted-foreground">Task completed</p>
+          <p className="min-w-[34px] overflow-hidden text-ellipsis text-right tabular-nums text-foreground">{fmt(tasksCompleted)}</p>
         </div>
       </div>
     </div>
@@ -141,7 +141,7 @@ function AddButton({ label = "Add", onClick }: { label?: string; onClick?: () =>
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+      className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-border bg-card py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
     >
       {label}
       <img alt="" className="size-4" src={imgLucidePlus} />
@@ -151,12 +151,12 @@ function AddButton({ label = "Add", onClick }: { label?: string; onClick?: () =>
 
 function EmptyPlaceholderCard({ icon, title }: { icon: string; title: string }) {
   return (
-    <div className="flex min-h-[185px] flex-1 items-center justify-center rounded-[12px] bg-white p-6">
+    <div className="flex min-h-[185px] flex-1 items-center justify-center rounded-[12px] bg-card p-6">
       <div className="flex flex-col items-center justify-center gap-4">
         <div className="relative size-12 shrink-0">
           <img alt="" className="absolute block size-full max-w-none" src={icon} />
         </div>
-        <p className="font-['Satoshi',sans-serif] text-[16px] font-bold leading-normal text-[#727d83]">{title}</p>
+        <p className="font-['Satoshi',sans-serif] text-[16px] font-bold leading-normal text-muted-foreground">{title}</p>
       </div>
     </div>
   );
@@ -192,7 +192,7 @@ function taskMovePillProps(): { className: string } {
   const base =
     "inline-flex shrink-0 rounded-full border border-solid px-2.5 py-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium leading-none";
   return {
-    className: `${base} border-[#cfe8fc] bg-[#e8f4fe] text-[#0b4f7a]`,
+    className: `${base} border-primary/30 bg-primary/10 text-info`,
   };
 }
 
@@ -203,37 +203,34 @@ function classificationPillProps(
     "inline-flex shrink-0 rounded-full border border-solid px-2.5 py-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium leading-none";
   if (classification == null) {
     return {
-      className: `${base} border-[#ebedee] bg-[#f7f8f9] text-[#727d83]`,
+      className: `${base} border-border bg-card text-muted-foreground`,
     };
   }
   switch (classification) {
     case "STRUCTURAL":
       return {
-        className: `${base} text-[#14532d]`,
+        className: `${base} bg-success/15 text-foreground`,
         style: {
           borderColor: COMMIT_GAUGE_SHIPPED,
-          backgroundColor: "rgba(30, 215, 96, 0.14)",
         },
       };
     case "INCREMENTAL":
       return {
-        className: `${base} text-[#92400e]`,
+        className: `${base} bg-warning/15 text-warning`,
         style: {
           borderColor: COMMIT_GAUGE_IN_PROGRESS,
-          backgroundColor: "rgba(250, 183, 7, 0.18)",
         },
       };
     case "TRIVIAL":
       return {
-        className: `${base} text-[#4b5563]`,
+        className: `${base} bg-muted-foreground/20 text-foreground`,
         style: {
           borderColor: COMMIT_GAUGE_TRIVIAL,
-          backgroundColor: "rgba(209, 213, 219, 0.45)",
         },
       };
     default:
       return {
-        className: `${base} border-[#ebedee] bg-[#f7f8f9] text-[#727d83]`,
+        className: `${base} border-border bg-card text-muted-foreground`,
       };
   }
 }
@@ -266,12 +263,12 @@ function RecentActivitySkeletonRows() {
           className="relative z-[1] flex max-w-[474px] items-start overflow-hidden rounded-[8px] pr-2"
         >
           <div className="flex w-[50px] shrink-0 justify-center">
-            <div className="size-[50px] shrink-0 rounded-[99px] bg-[#edf0f3] motion-reduce:animate-none animate-pulse" />
+            <div className="size-[50px] shrink-0 rounded-[99px] bg-muted motion-reduce:animate-none animate-pulse" />
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-2 py-1.5 pl-4 pr-2">
-            <div className="h-3 w-20 rounded bg-[#edf0f3] motion-reduce:animate-none animate-pulse" />
-            <div className="h-4 w-[min(100%,280px)] rounded bg-[#edf0f3] motion-reduce:animate-none animate-pulse" />
-            <div className="h-3 w-32 rounded bg-[#edf0f3] motion-reduce:animate-none animate-pulse" />
+            <div className="h-3 w-20 rounded bg-muted motion-reduce:animate-none animate-pulse" />
+            <div className="h-4 w-[min(100%,280px)] rounded bg-muted motion-reduce:animate-none animate-pulse" />
+            <div className="h-3 w-32 rounded bg-muted motion-reduce:animate-none animate-pulse" />
           </div>
         </div>
       ))}
@@ -311,18 +308,18 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
   return (
     <>
       <div className="flex w-full items-center justify-between gap-3">
-        <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Recent activity</p>
+        <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-foreground">Recent activity</p>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               type="button"
               onClick={() => void refetch()}
               disabled={isFetching}
-              className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[8px] border border-solid border-border bg-card px-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] disabled:cursor-not-allowed disabled:opacity-60"
               aria-label={isFetching ? "Refreshing recent activity" : "Refresh recent activity"}
             >
               <RefreshCw
-                className={`size-4 shrink-0 text-[#606d76] ${isFetching ? "animate-spin" : ""}`}
+                className={`size-4 shrink-0 text-muted-foreground ${isFetching ? "animate-spin" : ""}`}
                 strokeWidth={2}
                 aria-hidden
               />
@@ -336,14 +333,14 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
       {isLoading ? (
         <RecentActivitySkeletonRows />
       ) : isError ? (
-        <div className="flex min-h-[120px] w-full flex-col items-center justify-center gap-3 rounded-[12px] border border-solid border-[#ebedee] bg-white px-4 py-6 text-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+        <div className="flex min-h-[120px] w-full flex-col items-center justify-center gap-3 rounded-[12px] border border-solid border-border bg-card px-4 py-6 text-center font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
           <p>Couldn&apos;t load recent activity.</p>
           <button
             type="button"
             onClick={() => void refetch()}
-            className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+            className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-solid border-border bg-card px-3 text-[14px] font-medium text-foreground shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
           >
-            <RefreshCw className="size-4 shrink-0 text-[#606d76]" strokeWidth={2} aria-hidden />
+            <RefreshCw className="size-4 shrink-0 text-muted-foreground" strokeWidth={2} aria-hidden />
             Try again
           </button>
         </div>
@@ -355,7 +352,7 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
     >
       <div className="relative flex flex-col gap-4">
         <div
-          className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
+          className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-muted"
           aria-hidden
         />
         {rows.map((entry, rowIdx) => {
@@ -373,17 +370,17 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
               >
                 <div className="flex w-[50px] shrink-0 justify-center">
                   <div
-                    className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]"
+                    className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-muted"
                     aria-hidden
                   >
-                    <GitCommit className="size-4 text-[#606d76]" strokeWidth={2} />
+                    <GitCommit className="size-4 text-muted-foreground" strokeWidth={2} />
                   </div>
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-center py-1.5 pl-4 pr-2 font-['Satoshi',sans-serif] font-medium leading-normal">
-                  <p className="w-[183px] max-w-full truncate text-[12px] text-[#727d83]" title={c.created_at ?? undefined}>
+                  <p className="w-[183px] max-w-full truncate text-[12px] text-muted-foreground" title={c.created_at ?? undefined}>
                     {dateLabel}
                   </p>
-                  <p className="text-[16px] text-[#0b191f]">{titleLine}</p>
+                  <p className="text-[16px] text-foreground">{titleLine}</p>
                   <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                     <span {...classificationPillProps(c.classification)}>
                       {classificationLabel(c.classification)}
@@ -393,14 +390,14 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
                         href={c.commit_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex min-w-0 max-w-full items-center gap-1 truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 hover:text-[#0d52cc]"
+                        className="inline-flex min-w-0 max-w-full items-center gap-1 truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary"
                         title={summary}
                       >
                         <span className="min-w-0 truncate">{summary}</span>
                         <ExternalLink className="size-3 shrink-0" strokeWidth={2} aria-hidden />
                       </a>
                     ) : (
-                      <p className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-[#727d83]" title={summary}>
+                      <p className="min-w-0 truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-muted-foreground" title={summary}>
                         {summary}
                       </p>
                     )}
@@ -420,20 +417,20 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
             >
               <div className="flex w-[50px] shrink-0 justify-center">
                 <div
-                  className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]"
+                  className="flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-muted"
                   aria-hidden
                 >
-                  <ArrowRightLeft className="size-4 text-[#606d76]" strokeWidth={2} />
+                  <ArrowRightLeft className="size-4 text-muted-foreground" strokeWidth={2} />
                 </div>
               </div>
               <div className="flex min-w-0 flex-1 flex-col justify-center py-1.5 pl-4 pr-2 font-['Satoshi',sans-serif] font-medium leading-normal">
-                <p className="w-[183px] max-w-full truncate text-[12px] text-[#727d83]" title={entry.created_at}>
+                <p className="w-[183px] max-w-full truncate text-[12px] text-muted-foreground" title={entry.created_at}>
                   {dateLabel}
                 </p>
-                <p className="text-[16px] text-[#0b191f]">{titleLine}</p>
+                <p className="text-[16px] text-foreground">{titleLine}</p>
                 <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   <span {...taskMovePillProps()}>Column move</span>
-                  <p className="min-w-0 max-w-full truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-[#727d83]" title={columnLine}>
+                  <p className="min-w-0 max-w-full truncate font-['Satoshi',sans-serif] text-[12px] font-normal text-muted-foreground" title={columnLine}>
                     {columnLine}
                   </p>
                 </div>
@@ -449,7 +446,7 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
               type="button"
               onClick={() => setFeedLimit((n) => Math.min(n + RECENT_ACTIVITY_PAGE_SIZE, RECENT_ACTIVITY_MAX_LIMIT))}
               disabled={isFetching}
-              className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 outline-none hover:text-[#0d52cc] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+              className="font-['Satoshi',sans-serif] text-[14px] font-medium text-primary underline decoration-primary/40 underline-offset-2 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isFetching ? "Loading…" : "Show more"}
             </button>
@@ -459,7 +456,7 @@ function LiveRecentActivityList({ projectId, members }: { projectId: number; mem
               type="button"
               onClick={() => setFeedLimit(RECENT_ACTIVITY_PAGE_SIZE)}
               disabled={isFetching}
-              className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] underline decoration-[#606d76]/40 underline-offset-2 outline-none hover:text-[#0b191f] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40 disabled:cursor-not-allowed disabled:opacity-60"
+              className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground underline decoration-muted-foreground/40 underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Show less
             </button>
@@ -500,17 +497,17 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
           <button
             type="button"
             onClick={() => setViewerOpen(true)}
-            className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2 text-left outline-none transition-colors hover:bg-[#fafafa] focus-visible:ring-2 focus-visible:ring-[#1466ff]/40"
+            className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-border pr-2 text-left outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
-              <FileText className="size-4 text-[#606d76]" strokeWidth={1.75} />
+            <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-muted">
+              <FileText className="size-4 text-muted-foreground" strokeWidth={1.75} />
             </div>
-            <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
-              <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+            <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-border px-4 py-1.5">
+              <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-foreground">
                 {att.filename}
               </p>
               {att.size ? (
-                <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">
+                <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-muted-foreground">
                   {att.size}
                 </p>
               ) : null}
@@ -521,7 +518,7 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
               <button
                 type="button"
                 disabled={downloading || deleteMutation.isPending}
-                className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-[#606d76] transition-colors hover:bg-[#edf0f3] hover:text-[#0b191f] disabled:opacity-50"
+                className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
                 aria-label="Download"
                 onClick={async () => {
                   setDownloading(true);
@@ -544,7 +541,7 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
             <TooltipTrigger asChild>
               <button
                 type="button"
-                className="inline-flex shrink-0 self-center text-[#606d76] disabled:opacity-50"
+                className="inline-flex shrink-0 self-center text-muted-foreground disabled:opacity-50"
                 aria-label="Remove"
                 disabled={deleteMutation.isPending}
                 onClick={handleRemove}
@@ -571,23 +568,23 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
     const linkLabel = getAttachmentLinkLabel(att);
     return (
       <div className="flex w-full items-center gap-2">
-        <div className="flex min-h-[34px] min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
-          <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
-            <Link2 className="size-4 text-[#606d76]" strokeWidth={1.75} />
+        <div className="flex min-h-[34px] min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-border pr-2">
+          <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-muted">
+            <Link2 className="size-4 text-muted-foreground" strokeWidth={1.75} />
           </div>
-          <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
+          <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-solid border-border px-4 py-1.5">
             {linkHref ? (
               <a
                 href={linkHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 title={linkHref}
-                className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#1466ff] underline decoration-[#1466ff]/40 underline-offset-2 hover:text-[#0d52cc]"
+                className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary"
               >
                 {linkLabel}
               </a>
             ) : (
-              <p className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+              <p className="break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-foreground">
                 {att.filename}
               </p>
             )}
@@ -597,7 +594,7 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="inline-flex shrink-0 text-[#606d76] disabled:opacity-50"
+              className="inline-flex shrink-0 text-muted-foreground disabled:opacity-50"
               aria-label="Remove"
               disabled={deleteMutation.isPending}
               onClick={handleRemove}
@@ -613,16 +610,16 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
 
   return (
     <div className="flex w-full items-center gap-2">
-      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
-        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
-          <FileText className="size-4 text-[#606d76]" strokeWidth={1.75} />
+      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-border pr-2">
+        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-muted">
+          <FileText className="size-4 text-muted-foreground" strokeWidth={1.75} />
         </div>
-        <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-[#ededed] px-4 py-1.5">
-          <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-[#0b191f]">
+        <div className="flex min-h-[50px] min-w-0 flex-1 flex-col justify-center border-l border-solid border-border px-4 py-1.5">
+          <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-normal text-foreground">
             {att.filename}
           </p>
           {att.size ? (
-            <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-[#727d83]">{att.size}</p>
+            <p className="font-['Satoshi',sans-serif] text-[12px] font-medium leading-normal text-muted-foreground">{att.size}</p>
           ) : null}
         </div>
       </div>
@@ -631,7 +628,7 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
           <button
             type="button"
             disabled={downloading || deleteMutation.isPending}
-            className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-[#606d76] transition-colors hover:bg-[#edf0f3] hover:text-[#0b191f] disabled:opacity-50"
+            className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
             aria-label="Download"
             onClick={async () => {
               setDownloading(true);
@@ -654,7 +651,7 @@ function LiveResourceRow({ att, projectId }: { att: Attachment; projectId: numbe
         <TooltipTrigger asChild>
           <button
             type="button"
-            className="inline-flex shrink-0 self-center text-[#606d76] disabled:opacity-50"
+            className="inline-flex shrink-0 self-center text-muted-foreground disabled:opacity-50"
             aria-label="Remove"
             disabled={deleteMutation.isPending}
             onClick={handleRemove}
@@ -722,16 +719,16 @@ function LiveRepositoryRow({
 
   return (
     <div className="flex w-full max-w-full items-center gap-2">
-      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-[#ededed] pr-2">
-        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-[#edf0f3]">
-          <Link2 className="size-4 text-[#606d76]" strokeWidth={1.75} />
+      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-[8px] border border-solid border-border pr-2">
+        <div className="flex w-[50px] shrink-0 items-center justify-center self-stretch bg-muted">
+          <Link2 className="size-4 text-muted-foreground" strokeWidth={1.75} />
         </div>
-        <div className="flex min-h-[50px] min-w-0 flex-1 items-center gap-4 border-l border-solid border-[#ededed] py-1.5 pl-4 pr-2">
+        <div className="flex min-h-[50px] min-w-0 flex-1 items-center gap-4 border-l border-solid border-border py-1.5 pl-4 pr-2">
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 font-['Satoshi',sans-serif] font-medium leading-normal">
-            <p className="truncate text-[16px] text-[#0b191f]" title={repo.repositoryUrl}>
+            <p className="truncate text-[16px] text-foreground" title={repo.repositoryUrl}>
               {repo.repositoryUrl}
             </p>
-            <p className="max-w-full truncate text-[12px] text-[#727d83]" title={subtitle}>
+            <p className="max-w-full truncate text-[12px] text-muted-foreground" title={subtitle}>
               {subtitle}
             </p>
             {isScanning &&
@@ -739,14 +736,14 @@ function LiveRepositoryRow({
             (scanStatus.scan_files_total ?? 0) > 0 &&
             scanStatus.scan_files_processed != null ? (
               <div
-                className="h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-[#ededed]"
+                className="h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-muted"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={scanStatus.scan_files_total ?? 0}
                 aria-valuenow={scanStatus.scan_files_processed ?? 0}
               >
                 <div
-                  className="h-1 rounded-full bg-[#0b4f7a] transition-[width] duration-300 ease-out"
+                  className="h-1 rounded-full bg-info transition-[width] duration-300 ease-out"
                   style={{
                     width: `${Math.min(
                       100,
@@ -767,7 +764,7 @@ function LiveRepositoryRow({
                   type="button"
                   disabled={indexDisabled}
                   onClick={onIndex}
-                  className="flex shrink-0 items-center justify-center gap-1 rounded border border-solid border-[#ededed] bg-white px-2 py-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium whitespace-nowrap text-[#727d83] outline-none hover:bg-[#f7f8f9] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex shrink-0 items-center justify-center gap-1 rounded border border-solid border-border bg-card px-2 py-0.5 font-['Satoshi',sans-serif] text-[11px] font-medium whitespace-nowrap text-muted-foreground outline-none hover:bg-muted disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isScanning ? (
                     <Loader2 className="size-3 shrink-0 animate-spin" strokeWidth={2} aria-hidden />
@@ -786,7 +783,7 @@ function LiveRepositoryRow({
         <TooltipTrigger asChild>
           <button
             type="button"
-            className="inline-flex shrink-0 text-[#606d76] disabled:opacity-50"
+            className="inline-flex shrink-0 text-muted-foreground disabled:opacity-50"
             aria-label="Remove"
             disabled={unlinkMutation.isPending}
             onClick={handleRemove}
@@ -940,11 +937,11 @@ export function WelcomeEmptyProjectBody({
 
       <div className="flex w-full max-w-[815px] flex-col gap-4">
         <div className="flex w-full items-center justify-between">
-          <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Resources</p>
+          <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-foreground">Resources</p>
           <AddButton onClick={() => setAddResourceOpen(true)} />
         </div>
         {attachmentsQuery.isLoading ? (
-          <div className="flex min-h-[185px] w-full items-center justify-center rounded-[12px] bg-white font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+          <div className="flex min-h-[185px] w-full items-center justify-center rounded-[12px] bg-card font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
             Loading resources…
           </div>
         ) : attachments.length === 0 ? (
@@ -960,7 +957,7 @@ export function WelcomeEmptyProjectBody({
 
       <div className="flex w-full max-w-[815px] flex-col gap-4">
         <div className="flex w-full items-center justify-between gap-3">
-          <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Repository</p>
+          <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-foreground">Repository</p>
           <div className="flex shrink-0 items-center gap-2">
             {wikiScanStatusQuery.data?.some((s) => s.is_scanning) ? (
               <Tooltip>
@@ -969,13 +966,13 @@ export function WelcomeEmptyProjectBody({
                     type="button"
                     onClick={() => void wikiScanStatusQuery.refetch()}
                     disabled={wikiScanStatusQuery.isFetching}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white px-3 font-['Satoshi',sans-serif] text-[13px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-solid border-border bg-card px-3 font-['Satoshi',sans-serif] text-[13px] font-medium text-foreground shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] disabled:cursor-not-allowed disabled:opacity-60"
                     aria-label={
                       wikiScanStatusQuery.isFetching ? "Refreshing repository status" : "Refresh repository status"
                     }
                   >
                     <RefreshCw
-                      className={`size-3.5 shrink-0 text-[#606d76] ${wikiScanStatusQuery.isFetching ? "animate-spin" : ""}`}
+                      className={`size-3.5 shrink-0 text-muted-foreground ${wikiScanStatusQuery.isFetching ? "animate-spin" : ""}`}
                       strokeWidth={2}
                       aria-hidden
                     />
@@ -998,7 +995,7 @@ export function WelcomeEmptyProjectBody({
           </div>
         </div>
         {repositoriesQuery.isLoading ? (
-          <div className="flex min-h-[185px] w-full items-center justify-center rounded-[12px] bg-white font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+          <div className="flex min-h-[185px] w-full items-center justify-center rounded-[12px] bg-card font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
             Loading repositories…
           </div>
         ) : repositories.length === 0 ? (
@@ -1029,7 +1026,7 @@ export function WelcomeEmptyProjectBody({
       <div className="flex w-full max-w-[815px] flex-col gap-4">
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2">
-            <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">Team</p>
+            <p className="font-['Satoshi',sans-serif] text-[24px] font-medium text-foreground">Team</p>
             <div className="relative size-4 shrink-0">
               <img alt="" className="absolute block size-full max-w-none" src={imgLucideInfo} />
             </div>
@@ -1037,11 +1034,11 @@ export function WelcomeEmptyProjectBody({
           <AddButton label="Invite Members" onClick={onOpenInviteMembers} />
         </div>
         {membersQuery.isLoading ? (
-          <div className="flex min-h-[185px] w-full items-center justify-center rounded-[12px] bg-white font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+          <div className="flex min-h-[185px] w-full items-center justify-center rounded-[12px] bg-card font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
             Loading team…
           </div>
         ) : membersQuery.isError ? (
-          <div className="flex min-h-[185px] w-full flex-col items-center justify-center rounded-[12px] border border-solid border-[#ebedee] bg-white px-4 text-center font-['Satoshi',sans-serif] text-[14px] text-[#727d83]">
+          <div className="flex min-h-[185px] w-full flex-col items-center justify-center rounded-[12px] border border-solid border-border bg-card px-4 text-center font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
             Could not load team members.
           </div>
         ) : members.length === 0 ? (
@@ -1074,7 +1071,7 @@ export function WelcomeEmptyProjectBody({
         title="Remove this member?"
         description={
           <>
-            <span className="text-[#0b191f]">&ldquo;{memberToRemove?.name}&rdquo;</span> will be
+            <span className="text-foreground">&ldquo;{memberToRemove?.name}&rdquo;</span> will be
             removed from the project and lose access to its tasks and resources. This action cannot be
             undone.
           </>

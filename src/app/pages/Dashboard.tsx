@@ -435,9 +435,9 @@ export function Dashboard({
     if (!classificationBreakdown) return [];
     const { structural, incremental, trivial } = classificationBreakdown;
     return [
-      { name: 'Structural', value: structural ?? 0, color: '#3b82f6' },
-      { name: 'Incremental', value: incremental ?? 0, color: '#10b981' },
-      { name: 'Trivial', value: trivial ?? 0, color: '#64748b' },
+      { name: 'Structural', value: structural ?? 0, color: 'var(--chart-1)' },
+      { name: 'Incremental', value: incremental ?? 0, color: 'var(--chart-2)' },
+      { name: 'Trivial', value: trivial ?? 0, color: 'var(--chart-3)' },
     ].filter((d) => d.value > 0);
   }, [classificationBreakdown]);
   const classificationTotal = (classificationBreakdown?.structural ?? 0) + (classificationBreakdown?.incremental ?? 0) + (classificationBreakdown?.trivial ?? 0);
@@ -471,9 +471,9 @@ export function Dashboard({
     const hp = clientProgress?.health_pie;
     if (!hp) return [];
     return [
-      { name: 'On Track', value: hp.on_track_pct ?? 0, color: '#10b981' },
-      { name: 'At Risk', value: hp.at_risk_pct ?? 0, color: '#f59e0b' },
-      { name: 'Blocked', value: hp.blocked_pct ?? 0, color: '#ef4444' },
+      { name: 'On Track', value: hp.on_track_pct ?? 0, color: 'var(--success)' },
+      { name: 'At Risk', value: hp.at_risk_pct ?? 0, color: 'var(--warning)' },
+      { name: 'Blocked', value: hp.blocked_pct ?? 0, color: 'var(--destructive)' },
     ].filter((d) => d.value > 0);
   }, [clientProgress?.health_pie]);
 
@@ -1171,9 +1171,9 @@ export function Dashboard({
                 <div className="space-y-1">
                   {clientProgress?.health_pie && (
                     <>
-                      <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500" /> <span className="text-sm">{clientProgress.health_pie.on_track_pct ?? 0}% On Track</span></div>
-                      <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500" /> <span className="text-sm">{clientProgress.health_pie.at_risk_pct ?? 0}% At Risk</span></div>
-                      <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500" /> <span className="text-sm">{clientProgress.health_pie.blocked_pct ?? 0}% Blocked</span></div>
+                      <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-success" /> <span className="text-sm">{clientProgress.health_pie.on_track_pct ?? 0}% On Track</span></div>
+                      <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-warning" /> <span className="text-sm">{clientProgress.health_pie.at_risk_pct ?? 0}% At Risk</span></div>
+                      <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-destructive" /> <span className="text-sm">{clientProgress.health_pie.blocked_pct ?? 0}% Blocked</span></div>
                     </>
                   )}
                 </div>

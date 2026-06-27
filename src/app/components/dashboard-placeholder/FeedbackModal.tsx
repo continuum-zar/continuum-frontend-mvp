@@ -11,10 +11,10 @@ import { Dialog, DialogClose, DialogOverlay, DialogPortal } from "../ui/dialog";
 import { cn } from "../ui/utils";
 
 const inputClass =
-  "h-10 w-full rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-ring";
+  "h-10 w-full rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring";
 
 const textareaClass =
-  "min-h-[120px] w-full resize-y rounded-[8px] border border-[#ebedee] px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none placeholder:text-[#9fa5a8] focus-visible:ring-2 focus-visible:ring-ring";
+  "min-h-[120px] w-full resize-y rounded-[8px] border border-border px-4 py-3 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring";
 
 export type FeedbackModalProps = {
   open: boolean;
@@ -104,7 +104,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-[201] flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#ebedee] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-[201] flex w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
           )}
           onOpenAutoFocus={(e) => {
             e.preventDefault();
@@ -113,19 +113,19 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
         >
           <DialogPrimitive.Title className="sr-only">Report an issue</DialogPrimitive.Title>
 
-          <div className="flex items-start justify-between gap-4 border-b border-[#ebedee] px-6 py-5">
+          <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-5">
             <div className="min-w-0 flex-1">
-              <p className="font-['Satoshi',sans-serif] text-[20px] font-medium text-[#0b191f]">
+              <p className="font-['Satoshi',sans-serif] text-[20px] font-medium text-foreground">
                 Report an issue
               </p>
-              <p className="mt-1 font-['Satoshi',sans-serif] text-[14px] font-normal text-[#606d76]">
+              <p className="mt-1 font-['Satoshi',sans-serif] text-[14px] font-normal text-muted-foreground">
                 Tell us what went wrong. Add a contact email if you want a reply.
               </p>
             </div>
             <DialogClose asChild>
               <button
                 type="button"
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-[8px] text-[#0b191f] outline-none ring-offset-2 hover:bg-[#f9f9f9] focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-[8px] text-foreground outline-none ring-offset-2 hover:bg-card focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Close report issue dialog"
               >
                 <X className="size-5" strokeWidth={1.5} aria-hidden />
@@ -137,7 +137,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                 {submitError ? (
                   <p
                     role="alert"
-                    className="rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2 font-['Satoshi',sans-serif] text-[14px] text-[#b42318]"
+                    className="rounded-[8px] border border-destructive/30 bg-destructive/10 px-3 py-2 font-['Satoshi',sans-serif] text-[14px] text-destructive"
                   >
                     {submitError}
                   </p>
@@ -146,9 +146,9 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                 <div className="flex flex-col gap-2">
                   <label
                     htmlFor={messageId}
-                    className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]"
+                    className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground"
                   >
-                    What happened? <span className="text-[#b42318]">*</span>
+                    What happened? <span className="text-destructive">*</span>
                   </label>
                   <textarea
                     ref={messageRef}
@@ -163,10 +163,10 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                     disabled={pending}
                     aria-invalid={messageError != null}
                     aria-describedby={messageError ? `${messageId}-err` : undefined}
-                    className={cn(textareaClass, messageError && "border-[#fecdca]")}
+                    className={cn(textareaClass, messageError && "border-destructive/30")}
                   />
                   {messageError ? (
-                    <p id={`${messageId}-err`} className="font-['Satoshi',sans-serif] text-[13px] text-[#b42318]">
+                    <p id={`${messageId}-err`} className="font-['Satoshi',sans-serif] text-[13px] text-destructive">
                       {messageError}
                     </p>
                   ) : null}
@@ -175,9 +175,9 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                 <div className="flex flex-col gap-2">
                   <label
                     htmlFor={emailId}
-                    className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]"
+                    className="font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground"
                   >
-                    Contact email <span className="font-normal text-[#606d76]">(optional)</span>
+                    Contact email <span className="font-normal text-muted-foreground">(optional)</span>
                   </label>
                   <input
                     id={emailId}
@@ -192,22 +192,22 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                     disabled={pending}
                     aria-invalid={emailError != null}
                     aria-describedby={emailError ? `${emailId}-err` : undefined}
-                    className={cn(inputClass, emailError && "border-[#fecdca]")}
+                    className={cn(inputClass, emailError && "border-destructive/30")}
                   />
                   {emailError ? (
-                    <p id={`${emailId}-err`} className="font-['Satoshi',sans-serif] text-[13px] text-[#b42318]">
+                    <p id={`${emailId}-err`} className="font-['Satoshi',sans-serif] text-[13px] text-destructive">
                       {emailError}
                     </p>
                   ) : null}
                 </div>
               </div>
 
-              <div className="flex shrink-0 justify-end gap-2 border-t border-[#ebedee] px-6 py-5">
+              <div className="flex shrink-0 justify-end gap-2 border-t border-border px-6 py-5">
                 <DialogClose asChild>
                   <button
                     type="button"
                     disabled={pending}
-                    className="h-10 rounded-[8px] border border-[#ebedee] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                    className="h-10 rounded-[8px] border border-border px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Cancel
                   </button>
@@ -216,7 +216,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                   type="button"
                   onClick={() => void handleSubmit()}
                   disabled={pending}
-                  className="inline-flex h-10 min-w-[120px] items-center justify-center gap-2 rounded-[8px] bg-[#0b191f] px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#fcfbf8] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 min-w-[120px] items-center justify-center gap-2 rounded-[8px] bg-primary px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-primary-foreground outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {pending ? (
                     <>

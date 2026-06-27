@@ -45,7 +45,7 @@ function ChecklistItemTextarea({
       onKeyDown={onKeyDown}
       placeholder={placeholder}
       rows={1}
-      className="max-h-[160px] w-full resize-none overflow-y-auto border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] outline-none placeholder:text-[#606d76]/70"
+      className="max-h-[160px] w-full resize-none overflow-y-auto border-0 bg-transparent p-0 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-foreground outline-none placeholder:text-muted-foreground/70"
     />
   );
 }
@@ -299,9 +299,9 @@ export function CreateTaskModal({
             aria-label="Previous task"
             onClick={() => carousel!.onPrev()}
             style={{ pointerEvents: "auto" }}
-            className="fixed top-1/2 left-4 z-[60] flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[999px] border-0 bg-white shadow-md md:left-8"
+            className="fixed top-1/2 left-4 z-[60] flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[999px] border-0 bg-card shadow-md md:left-8"
           >
-            <ChevronLeft className="size-8 text-[#0b191f]" strokeWidth={1.5} />
+            <ChevronLeft className="size-8 text-foreground" strokeWidth={1.5} />
           </button>
         )}
         {showCarousel && canNext && (
@@ -310,15 +310,15 @@ export function CreateTaskModal({
             aria-label="Next task"
             onClick={() => carousel!.onNext()}
             style={{ pointerEvents: "auto" }}
-            className="fixed top-1/2 right-4 z-[60] flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[999px] border-0 bg-white shadow-md md:right-8"
+            className="fixed top-1/2 right-4 z-[60] flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[999px] border-0 bg-card shadow-md md:right-8"
           >
-            <ChevronRight className="size-8 text-[#0b191f]" strokeWidth={1.5} />
+            <ChevronRight className="size-8 text-foreground" strokeWidth={1.5} />
           </button>
         )}
         {showCarousel && (
           <div className="fixed bottom-8 left-1/2 z-[60] -translate-x-1/2" style={{ pointerEvents: "auto" }}>
             <div
-              className="flex gap-2 rounded-[99px] bg-white/90 p-2 shadow-sm backdrop-blur-[10px]"
+              className="flex gap-2 rounded-[99px] bg-card/90 p-2 shadow-sm backdrop-blur-[10px]"
               role="tablist"
               aria-label="Task carousel"
             >
@@ -327,7 +327,7 @@ export function CreateTaskModal({
                   key={i}
                   className={cn(
                     "rounded-[99px] transition-[width,background-color]",
-                    i === carousel!.index ? "h-2 w-6 bg-black" : "size-2 bg-[#d9d9d9]",
+                    i === carousel!.index ? "h-2 w-6 bg-foreground" : "size-2 bg-muted",
                   )}
                   aria-hidden
                 />
@@ -342,12 +342,12 @@ export function CreateTaskModal({
           onFocusOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={() => onOpenChange(false)}
           className={cn(
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(886px,90vh)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-[#f5f5f5] bg-white shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 flex max-h-[min(886px,90vh)] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border border-border bg-card shadow-[0px_39px_11px_0px_rgba(181,181,181,0),0px_25px_10px_0px_rgba(181,181,181,0.04),0px_14px_8px_0px_rgba(181,181,181,0.12),0px_6px_6px_0px_rgba(181,181,181,0.2),0px_2px_3px_0px_rgba(181,181,181,0.24)] duration-200",
           )}
         >
           <DialogPrimitive.Title className="sr-only">{headerTitle}</DialogPrimitive.Title>
 
-          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-[#f5f5f5] bg-[#f9f9f9] px-9 py-4">
+          <div className="relative z-[3] flex w-full shrink-0 items-center justify-between border-b border-solid border-border bg-card px-9 py-4">
             <button
               type="button"
               className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
@@ -359,7 +359,7 @@ export function CreateTaskModal({
               </span>
             </button>
             <div className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3">
-              <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-[#595959]">
+              <p className="text-center font-['Satoshi',sans-serif] text-[16px] font-medium tracking-[-0.16px] text-foreground">
                 {headerTitle}
               </p>
             </div>
@@ -376,28 +376,28 @@ export function CreateTaskModal({
             className="z-[2] min-h-0 flex-1 overflow-x-clip overflow-y-auto px-9 py-6"
             style={{
               backgroundImage:
-                "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(90deg, rgb(249, 249, 249) 0%, rgb(249, 249, 249) 100%)",
+                "linear-gradient(90deg, var(--card) 0%, var(--card) 100%), linear-gradient(90deg, var(--muted) 0%, var(--muted) 100%)",
             }}
           >
             <div className="flex w-full flex-col gap-6 pb-6">
-              <div className="flex w-full items-center bg-white py-2">
-                <p className="min-w-0 flex-1 break-words font-['Satoshi',sans-serif] text-[24px] font-medium text-[#0b191f]">
+              <div className="flex w-full items-center bg-card py-2">
+                <p className="min-w-0 flex-1 break-words font-['Satoshi',sans-serif] text-[24px] font-medium text-foreground">
                   {taskTitle}
                 </p>
               </div>
 
               <div className="flex w-full flex-col gap-1">
-                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76]">
+                <p className="font-['Satoshi',sans-serif] text-[14px] font-medium text-muted-foreground">
                   Description
                 </p>
-                <div className="flex max-h-[min(240px,40vh)] w-full min-h-[120px] flex-col overflow-hidden rounded-[8px] border border-solid border-[#e9e9e9] bg-white">
+                <div className="flex max-h-[min(240px,40vh)] w-full min-h-[120px] flex-col overflow-hidden rounded-[8px] border border-solid border-border bg-card">
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-2">
-                    <p className="whitespace-pre-wrap break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-relaxed text-[#0b191f]">
+                    <p className="whitespace-pre-wrap break-words font-['Satoshi',sans-serif] text-[16px] font-medium leading-relaxed text-foreground">
                       {taskDescription}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center justify-end border-t border-[#e9e9e9]/80 px-4 py-2 opacity-[0.5]">
-                    <p className="font-['Satoshi',sans-serif] text-[12px] font-medium whitespace-nowrap text-[#606d76]">
+                  <div className="flex shrink-0 items-center justify-end border-t border-border/80 px-4 py-2 opacity-[0.5]">
+                    <p className="font-['Satoshi',sans-serif] text-[12px] font-medium whitespace-nowrap text-muted-foreground">
                       {taskDescriptionMeta}
                     </p>
                   </div>
@@ -412,14 +412,14 @@ export function CreateTaskModal({
 
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                     Tags
                   </p>
                   <div
-                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-border bg-card p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                     style={{
                       backgroundImage:
-                        "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(141.68deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
+                        "linear-gradient(90deg, var(--card) 0%, var(--card) 100%), linear-gradient(141.68deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
                     }}
                   >
                     <img alt="" className="size-4" src={imgLucideTag} />
@@ -430,15 +430,15 @@ export function CreateTaskModal({
                     prefill!.labels!.map((label, i) => (
                       <div
                         key={`${label}-${i}`}
-                        className="inline-flex max-w-full items-center rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5"
+                        className="inline-flex max-w-full items-center rounded-[16px] border border-solid border-border bg-card px-4 py-1.5"
                       >
-                        <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[14px] font-medium leading-snug text-[#606d76]">
+                        <p className="min-w-0 break-words font-['Satoshi',sans-serif] text-[14px] font-medium leading-snug text-muted-foreground">
                           {label}
                         </p>
                       </div>
                     ))
                   ) : (
-                    <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
+                    <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
                       No tags
                     </p>
                   )}
@@ -453,7 +453,7 @@ export function CreateTaskModal({
 
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                     Estimated effort
                   </p>
                   {mockEffortHours == null && !addingMockEffort ? (
@@ -463,7 +463,7 @@ export function CreateTaskModal({
                         setAddingMockEffort(true);
                         setMockEffortDraft("");
                       }}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#ebedee] bg-white px-3 py-2 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f]"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-2 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground"
                     >
                       Add <Plus size={16} />
                     </button>
@@ -471,8 +471,8 @@ export function CreateTaskModal({
                 </div>
                 <div className="flex w-full flex-wrap content-start items-start gap-2">
                   {mockEffortHours != null && !addingMockEffort ? (
-                    <div className="group inline-flex items-center gap-1.5 rounded-[16px] bg-[#0b191f] px-4 py-1.5">
-                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none text-white">
+                    <div className="group inline-flex items-center gap-1.5 rounded-[16px] bg-primary px-4 py-1.5">
+                      <p className="font-['Satoshi',sans-serif] text-[14px] font-medium leading-none text-primary-foreground">
                         {formatEstimatedEffortLabel(mockEffortHours)}
                       </p>
                       <button
@@ -482,7 +482,7 @@ export function CreateTaskModal({
                           setAddingMockEffort(false);
                           setMockEffortDraft("");
                         }}
-                        className="inline-flex size-4 items-center justify-center text-white/80 opacity-0 transition-opacity group-hover:opacity-100 hover:text-white"
+                        className="inline-flex size-4 items-center justify-center text-primary-foreground/80 opacity-0 transition-opacity group-hover:opacity-100 hover:text-primary-foreground"
                         aria-label="Remove estimated effort"
                       >
                         <X size={12} />
@@ -490,7 +490,7 @@ export function CreateTaskModal({
                     </div>
                   ) : null}
                   {addingMockEffort && (
-                    <div className="inline-flex items-center rounded-[16px] border border-solid border-[#cdd2d5] bg-white px-4 py-1.5">
+                    <div className="inline-flex items-center rounded-[16px] border border-solid border-border bg-card px-4 py-1.5">
                       <input
                         type="text"
                         inputMode="decimal"
@@ -512,13 +512,13 @@ export function CreateTaskModal({
                             setMockEffortDraft("");
                           }
                         }}
-                        className="w-20 border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none text-[#606d76] outline-none placeholder:text-[#606d76]/60"
+                        className="w-20 border-0 bg-transparent p-0 font-['Satoshi',sans-serif] text-[14px] font-medium leading-none text-muted-foreground outline-none placeholder:text-muted-foreground/60"
                         autoFocus
                       />
                     </div>
                   )}
                   {mockEffortHours == null && !addingMockEffort ? (
-                    <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">No effort set</p>
+                    <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">No effort set</p>
                   ) : null}
                 </div>
               </div>
@@ -531,20 +531,20 @@ export function CreateTaskModal({
 
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                     Assigned to
                   </p>
                   <div
-                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    className="flex size-9 items-center justify-center rounded-[8px] border border-solid border-border bg-card p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                     style={{
                       backgroundImage:
-                        "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(141.68deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
+                        "linear-gradient(90deg, var(--card) 0%, var(--card) 100%), linear-gradient(141.68deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
                     }}
                   >
                     <img alt="" className="size-4" src={imgLucideUserRoundPlus1} />
                   </div>
                 </div>
-                <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
+                <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
                   Not assigned
                 </p>
               </div>
@@ -557,16 +557,16 @@ export function CreateTaskModal({
 
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                     Checklist
                   </p>
                   <button
                     type="button"
                     onClick={addSection}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-solid border-[#ebedee] bg-white p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-solid border-border bg-card p-2 shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                     aria-label="Add named checklist section"
                   >
-                    <Plus className="size-4 text-[#0b191f]" strokeWidth={2} />
+                    <Plus className="size-4 text-foreground" strokeWidth={2} />
                   </button>
                 </div>
                 <div className="flex w-full max-w-[363px] flex-col gap-3">
@@ -578,8 +578,8 @@ export function CreateTaskModal({
                         className={cn(
                           "mt-1 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-black transition-colors",
                           item.done
-                            ? "bg-[#24B5F8]"
-                            : "bg-[#f9f9f9]",
+                            ? "bg-info"
+                            : "bg-card",
                         )}
                         aria-label={item.done ? "Mark checklist item incomplete" : "Mark checklist item complete"}
                       >
@@ -590,7 +590,7 @@ export function CreateTaskModal({
                           <button
                             type="button"
                             onClick={() => toggleChecklist(item.id)}
-                            className="w-full cursor-pointer text-left break-words whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
+                            className="w-full cursor-pointer text-left break-words whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-foreground opacity-50 line-through"
                           >
                             {item.text}
                           </button>
@@ -619,7 +619,7 @@ export function CreateTaskModal({
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => removeChecklistRow(item.id)}
                         aria-label="Remove checklist item"
-                        className="mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                        className="mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-destructive focus-visible:opacity-100 group-hover/row:opacity-100"
                       >
                         <X size={12} strokeWidth={2} aria-hidden />
                       </button>
@@ -629,7 +629,7 @@ export function CreateTaskModal({
                 <button
                   type="button"
                   onClick={addChecklistRow}
-                  className="inline-flex items-center gap-1.5 self-start rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+                  className="inline-flex items-center gap-1.5 self-start rounded-[6px] px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <Plus size={12} /> Add item
                 </button>
@@ -658,14 +658,14 @@ export function CreateTaskModal({
                           if (e.key === "Escape") setEditingSectionNameId(null);
                         }}
                         placeholder="Checklist title"
-                        className="flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium leading-none text-[#0b191f] outline-none placeholder:text-[#9fa5a8]"
+                        className="flex-1 border-0 bg-transparent font-['Satoshi',sans-serif] text-[16px] font-medium leading-none text-foreground outline-none placeholder:text-muted-foreground"
                         aria-label="Checklist title"
                       />
                     ) : (
                       <button
                         type="button"
                         onClick={() => section.id && setEditingSectionNameId(section.id)}
-                        className="flex-1 cursor-text border-0 bg-transparent p-0 text-left font-['Satoshi',sans-serif] text-[16px] font-medium leading-none text-[#0b191f]"
+                        className="flex-1 cursor-text border-0 bg-transparent p-0 text-left font-['Satoshi',sans-serif] text-[16px] font-medium leading-none text-foreground"
                         aria-label={`Rename ${section.name}`}
                       >
                         {section.name || "Untitled checklist"}
@@ -674,7 +674,7 @@ export function CreateTaskModal({
                     <button
                       type="button"
                       onClick={() => section.id && removeSection(section.id)}
-                      className="inline-flex size-7 items-center justify-center rounded-[6px] text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/section:opacity-100"
+                      className="inline-flex size-7 items-center justify-center rounded-[6px] text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-destructive focus-visible:opacity-100 group-hover/section:opacity-100"
                       aria-label={`Delete checklist ${section.name}`}
                     >
                       <X size={14} />
@@ -689,7 +689,7 @@ export function CreateTaskModal({
                             onClick={() => section.id && it.id && toggleSectionItem(section.id, it.id)}
                             className={cn(
                               "mt-1 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-black transition-colors",
-                              it.done ? "bg-[#24B5F8]" : "bg-[#f9f9f9]",
+                              it.done ? "bg-info" : "bg-card",
                             )}
                             aria-label={it.done ? "Mark checklist item incomplete" : "Mark checklist item complete"}
                           >
@@ -700,7 +700,7 @@ export function CreateTaskModal({
                               <button
                                 type="button"
                                 onClick={() => section.id && it.id && toggleSectionItem(section.id, it.id)}
-                                className="w-full cursor-pointer text-left break-words whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-[#0b191f] opacity-50 line-through"
+                                className="w-full cursor-pointer text-left break-words whitespace-pre-wrap font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] tracking-normal text-foreground opacity-50 line-through"
                               >
                                 {it.text}
                               </button>
@@ -729,7 +729,7 @@ export function CreateTaskModal({
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => section.id && it.id && removeSectionItem(section.id, it.id)}
                             aria-label="Remove checklist item"
-                            className="mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-[#727d83] opacity-0 transition-opacity hover:bg-[#f3f5f7] hover:text-[#b91c1c] focus-visible:opacity-100 group-hover/row:opacity-100"
+                            className="mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] border-0 bg-transparent text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-destructive focus-visible:opacity-100 group-hover/row:opacity-100"
                           >
                             <X size={12} strokeWidth={2} aria-hidden />
                           </button>
@@ -740,7 +740,7 @@ export function CreateTaskModal({
                   <button
                     type="button"
                     onClick={() => section.id && addSectionItem(section.id)}
-                    className="inline-flex items-center gap-1.5 self-start rounded-[6px] px-2 py-1 text-[13px] font-medium text-[#606d76] transition-colors hover:bg-[#f3f5f7] hover:text-[#0b191f]"
+                    className="inline-flex items-center gap-1.5 self-start rounded-[6px] px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
                     <Plus size={12} /> Add item
                   </button>
@@ -755,26 +755,26 @@ export function CreateTaskModal({
 
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full items-center justify-between">
-                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f]">
+                  <p className="font-['Satoshi',sans-serif] text-[16px] font-medium text-foreground">
                     Resources
                   </p>
                   <button
                     type="button"
                     onClick={() => setAddResourceOpen(true)}
-                    className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-[#ebedee] bg-white py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                    className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] border border-solid border-border bg-card py-2 pl-4 pr-3 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                   >
                     Add
                     <Plus className="size-4" strokeWidth={2} />
                   </button>
                 </div>
-                <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-[#a3aab0]">
+                <p className="w-full font-['Satoshi',sans-serif] text-[14px] text-muted-foreground">
                   No resources
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="z-[1] flex w-full shrink-0 items-center justify-end border-t border-solid border-[#ebedee] bg-white px-9 py-4">
+          <div className="z-[1] flex w-full shrink-0 items-center justify-end border-t border-solid border-border bg-card px-9 py-4">
             <button
               type="button"
               onClick={() => onOpenChange(false)}

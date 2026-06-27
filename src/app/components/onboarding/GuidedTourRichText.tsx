@@ -16,9 +16,9 @@ export function GuidedTourRichText({ segments, className }: GuidedTourRichTextPr
           key={i}
           className={
             s.h === "cyan"
-              ? "text-[#7dd3fc]"
+              ? "text-info"
               : s.h === "peach"
-                ? "text-[#fdba74]"
+                ? "text-warning"
                 : undefined
           }
         >

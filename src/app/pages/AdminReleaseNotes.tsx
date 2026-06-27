@@ -149,7 +149,7 @@ export function AdminReleaseNotes() {
 
   if (!user) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center font-['Satoshi',sans-serif] text-[#606d76]">
+      <div className="flex min-h-[40vh] items-center justify-center font-['Satoshi',sans-serif] text-muted-foreground">
         Sign in required.
       </div>
     );
@@ -158,12 +158,12 @@ export function AdminReleaseNotes() {
   if (!isGlobalAdmin) {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 px-4">
-        <p className="text-center font-['Satoshi',sans-serif] text-[16px] text-[#606d76]">
-          Only Continuum global administrators can manage release notes. Use a <code className="rounded bg-[#f0f0f0] px-1">@continuum.co.za</code> staff account or ask an admin to update your role.
+        <p className="text-center font-['Satoshi',sans-serif] text-[16px] text-muted-foreground">
+          Only Continuum global administrators can manage release notes. Use a <code className="rounded bg-muted px-1">@continuum.co.za</code> staff account or ask an admin to update your role.
         </p>
         <button
           type="button"
-          className="rounded-[8px] border border-[#ebedee] bg-white px-4 py-2 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#0b191f] hover:bg-[#f9f9f9]"
+          className="rounded-[8px] border border-border bg-card px-4 py-2 font-['Satoshi',sans-serif] text-[14px] font-medium text-foreground hover:bg-muted"
           onClick={() => navigate(WORKSPACE_BASE, { replace: true })}
         >
           Back to workspace
@@ -176,24 +176,24 @@ export function AdminReleaseNotes() {
     <div className="mx-auto min-h-screen max-w-[900px] px-4 py-10 font-['Satoshi',sans-serif]">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[28px] font-medium text-[#0b191f]">Release notes</h1>
-          <p className="mt-1 text-[15px] text-[#727d83]">
+          <h1 className="text-[28px] font-medium text-foreground">Release notes</h1>
+          <p className="mt-1 text-[15px] text-muted-foreground">
             Create and edit product release notes (version, title, description, checklist). The newest entry is shown
             to users via What&apos;s new.
           </p>
         </div>
         <button
           type="button"
-          className="rounded-[8px] border border-[#ebedee] bg-white px-4 py-2 text-[14px] font-medium text-[#0b191f] hover:bg-[#f9f9f9]"
+          className="rounded-[8px] border border-border bg-card px-4 py-2 text-[14px] font-medium text-foreground hover:bg-muted"
           onClick={() => navigate(WORKSPACE_BASE)}
         >
           Close
         </button>
       </div>
 
-      <section className="mb-10 rounded-[12px] border border-[#ebedee] bg-white p-6 shadow-sm">
-        <h2 className="text-[18px] font-medium text-[#0b191f]">Product updates</h2>
-        <p className="mt-1 text-[14px] text-[#727d83]">
+      <section className="mb-10 rounded-[12px] border border-border bg-card p-6 shadow-sm">
+        <h2 className="text-[18px] font-medium text-foreground">Product updates</h2>
+        <p className="mt-1 text-[14px] text-muted-foreground">
           Send a real-time alert to everyone who is signed in so they can save work before production goes offline for
           this release.
         </p>
@@ -201,7 +201,7 @@ export function AdminReleaseNotes() {
           <button
             type="button"
             disabled={scheduleDeploymentMutation.isPending || invalidateSessionsMutation.isPending}
-            className="rounded-[8px] border border-[#ebedee] bg-white px-4 py-2 text-[14px] font-medium text-[#0b191f] hover:bg-[#f9f9f9] disabled:opacity-50"
+            className="rounded-[8px] border border-border bg-card px-4 py-2 text-[14px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
             onClick={() => scheduleDeploymentMutation.mutate()}
           >
             {scheduleDeploymentMutation.isPending ? "Scheduling…" : "Schedule deployment"}
@@ -209,30 +209,30 @@ export function AdminReleaseNotes() {
           <button
             type="button"
             disabled={scheduleDeploymentMutation.isPending || invalidateSessionsMutation.isPending}
-            className="rounded-[8px] border border-[#c45c5c] bg-white px-4 py-2 text-[14px] font-medium text-[#8b2e2e] hover:bg-[#fff8f8] disabled:opacity-50"
+            className="rounded-[8px] border border-destructive bg-card px-4 py-2 text-[14px] font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
             onClick={handleInvalidateSessions}
           >
             {invalidateSessionsMutation.isPending ? "Signing everyone out…" : "Sign everyone out (after deploy)"}
           </button>
         </div>
-        <p className="mt-3 text-[13px] leading-relaxed text-[#727d83]">
-          After you deploy to production, use <strong className="font-medium text-[#0b191f]">Sign everyone out</strong>{" "}
+        <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
+          After you deploy to production, use <strong className="font-medium text-foreground">Sign everyone out</strong>{" "}
           so all sessions pick up the new build, then add your release note below. You will be signed out too.
         </p>
       </section>
 
-      <form onSubmit={handleSubmit} className="mb-12 flex flex-col gap-4 rounded-[12px] border border-[#ebedee] bg-white p-6 shadow-sm">
-        <h2 className="text-[18px] font-medium text-[#0b191f]">{editingId == null ? "New release note" : "Edit release note"}</h2>
+      <form onSubmit={handleSubmit} className="mb-12 flex flex-col gap-4 rounded-[12px] border border-border bg-card p-6 shadow-sm">
+        <h2 className="text-[18px] font-medium text-foreground">{editingId == null ? "New release note" : "Edit release note"}</h2>
         <label className="flex flex-col gap-2">
-          <span className="text-[14px] font-medium text-[#0b191f]">Version</span>
+          <span className="text-[14px] font-medium text-foreground">Version</span>
           <Input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="e.g. 1.4.0" required />
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-[14px] font-medium text-[#0b191f]">Title</span>
+          <span className="text-[14px] font-medium text-foreground">Title</span>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short headline" required />
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-[14px] font-medium text-[#0b191f]">Description</span>
+          <span className="text-[14px] font-medium text-foreground">Description</span>
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -242,7 +242,7 @@ export function AdminReleaseNotes() {
           />
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-[14px] font-medium text-[#0b191f]">Checklist items</span>
+          <span className="text-[14px] font-medium text-foreground">Checklist items</span>
           <Textarea
             value={checklistText}
             onChange={(e) => setChecklistText(e.target.value)}
@@ -254,14 +254,14 @@ export function AdminReleaseNotes() {
           <button
             type="submit"
             disabled={!canSubmit || createMutation.isPending || updateMutation.isPending}
-            className="rounded-[8px] bg-[#0b191f] px-4 py-2 text-[14px] font-medium text-white disabled:opacity-50"
+            className="rounded-[8px] bg-primary px-4 py-2 text-[14px] font-medium text-primary-foreground disabled:opacity-50"
           >
             {editingId == null ? "Create" : "Save changes"}
           </button>
           {editingId != null ? (
             <button
               type="button"
-              className="rounded-[8px] border border-[#ebedee] bg-white px-4 py-2 text-[14px] font-medium text-[#0b191f] hover:bg-[#f9f9f9]"
+              className="rounded-[8px] border border-border bg-card px-4 py-2 text-[14px] font-medium text-foreground hover:bg-muted"
               onClick={resetForm}
             >
               Cancel edit
@@ -271,31 +271,31 @@ export function AdminReleaseNotes() {
       </form>
 
       <section>
-        <h2 className="mb-4 text-[18px] font-medium text-[#0b191f]">Existing notes</h2>
+        <h2 className="mb-4 text-[18px] font-medium text-foreground">Existing notes</h2>
         {listQuery.isLoading ? (
-          <p className="text-[14px] text-[#727d83]">Loading…</p>
+          <p className="text-[14px] text-muted-foreground">Loading…</p>
         ) : listQuery.isError ? (
-          <p className="text-[14px] text-red-600">Could not load list.</p>
+          <p className="text-[14px] text-destructive">Could not load list.</p>
         ) : rows.length === 0 ? (
-          <p className="text-[14px] text-[#727d83]">No release notes yet.</p>
+          <p className="text-[14px] text-muted-foreground">No release notes yet.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {rows.map((row) => (
               <li
                 key={row.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#ebedee] bg-[#fafafa] px-4 py-3"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-border bg-card px-4 py-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-[#0b191f]">
-                    <span className="text-[#727d83]">v{row.version}</span> — {row.title}
+                  <p className="truncate font-medium text-foreground">
+                    <span className="text-muted-foreground">v{row.version}</span> — {row.title}
                   </p>
-                  <p className="text-[12px] text-[#9fa5a8]">
+                  <p className="text-[12px] text-muted-foreground">
                     {new Date(row.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                   </p>
                 </div>
                 <button
                   type="button"
-                  className="shrink-0 rounded-[8px] border border-[#ebedee] bg-white px-3 py-1.5 text-[13px] font-medium text-[#0b191f] hover:bg-white"
+                  className="shrink-0 rounded-[8px] border border-border bg-card px-3 py-1.5 text-[13px] font-medium text-foreground hover:bg-muted"
                   onClick={() => loadRow(row)}
                 >
                   Edit

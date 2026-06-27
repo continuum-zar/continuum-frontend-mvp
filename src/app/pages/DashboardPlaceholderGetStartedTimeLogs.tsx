@@ -65,8 +65,8 @@ import { toast } from "sonner";
 const tabBtn = (active: boolean) =>
   `rounded-[8px] px-4 py-2 text-[14px] font-medium ${
     active
-      ? "border border-[#ebedee] bg-white text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
-      : "text-[#606d76]"
+      ? "border border-border bg-card text-foreground shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+      : "text-muted-foreground"
   }`;
 
 type TimeLogRow = {
@@ -206,9 +206,9 @@ const ACTIVITY_TRENDS_WEEKS = [
   { label: "Week 6", totalHours: 38, tasksCompleted: 91, commits: 97 },
 ] as const;
 
-const TREND_BAR_HOURS = "#7086fd";
-const TREND_BAR_TASKS = "#6fd195";
-const TREND_BAR_COMMITS = "#ffae4c";
+const TREND_BAR_HOURS = "var(--chart-1)";
+const TREND_BAR_TASKS = "var(--chart-2)";
+const TREND_BAR_COMMITS = "var(--chart-3)";
 
 /** Figma 4:1636 — BarArea height 672px; plot MainChart 685px; yAxis 29px; label tops 0,134,268,402,536,670 */
 const TREND_CHART_MAIN_H = 685;
@@ -224,7 +224,7 @@ const Y_LABEL_TOPS = [0, 134, 268, 402, 536, 670] as const;
 const TREND_PLOT_W = 1179;
 
 /** Figma 4:1978 — Task Completion Rate area chart (smooth line + fill) */
-const PERF_LINE = "#24B5F8";
+const PERF_LINE = "var(--chart-1)";
 const ACTIVITY_PERF_WEEKS = [
   { label: "Week 1", value: 56 },
   { label: "Week 2", value: 64 },
@@ -317,7 +317,7 @@ function performanceWeeksFromVelocity(raw: WeeklyVelocityData[]): { label: strin
 
 /** Horizontal scroll with visible scrollbar (thumb) on Trends / Performance charts. */
 const CHART_H_SCROLL_CLASS =
-  "w-full min-w-0 overflow-x-auto overscroll-x-contain pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] [scrollbar-color:rgb(203_213_225)_rgb(241_245_249)] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-[#f1f5f9] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#cbd5e1] [&::-webkit-scrollbar-thumb]:hover:bg-[#94a3b8]";
+  "w-full min-w-0 overflow-x-auto overscroll-x-contain pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] [scrollbar-color:var(--border)_var(--muted)] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-primary/10 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted [&::-webkit-scrollbar-thumb]:hover:bg-muted-foreground";
 
 const EMPTY_CHART_WEEK_SLOTS = 8;
 
@@ -393,7 +393,7 @@ function ActivityPerformanceLegendItem() {
           style={{ backgroundColor: PERF_LINE }}
         />
       </div>
-      <span className="whitespace-nowrap text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]">
+      <span className="whitespace-nowrap text-[12px] font-normal leading-[15px] text-muted-foreground">
         Task Completion Rate
       </span>
     </div>
@@ -422,7 +422,7 @@ function ActivityPerformanceAreaChart({
         <div className="min-w-0" style={{ minWidth: chartMinW }}>
         <div className="flex w-full min-w-0" style={{ height: TREND_CHART_MAIN_H }}>
         <div
-          className="relative shrink-0 text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]"
+          className="relative shrink-0 text-[12px] font-normal leading-[15px] text-muted-foreground"
           style={{ width: Y_AXIS_W, height: TREND_CHART_MAIN_H, fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
         >
           {[100, 80, 60, 40, 20, 0].map((t, i) => (
@@ -437,7 +437,7 @@ function ActivityPerformanceAreaChart({
               <div
                 key={top}
                 className={`absolute left-0 right-0 h-0 ${
-                  i === TREND_GRID_LINE_TOPS.length - 1 ? "border-t border-solid border-[#d4d4d8]" : "border-t border-dashed border-[#e4e4e7]"
+                  i === TREND_GRID_LINE_TOPS.length - 1 ? "border-t border-solid border-border" : "border-t border-dashed border-border"
                 }`}
                 style={{ top }}
               />
@@ -447,7 +447,7 @@ function ActivityPerformanceAreaChart({
             {Array.from({ length: nCols + 1 }, (_, i) => (
               <div
                 key={i}
-                className="absolute top-0 bottom-0 w-0 border-l border-dashed border-[#e4e4e7]"
+                className="absolute top-0 bottom-0 w-0 border-l border-dashed border-border"
                 style={{ left: `${(i / nCols) * 100}%` }}
               />
             ))}
@@ -465,8 +465,8 @@ function ActivityPerformanceAreaChart({
             >
               <defs>
                 <linearGradient id={areaGradientId} x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
-                  <stop offset="0%" stopColor="rgb(45, 154, 249)" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="rgb(45, 154, 249)" stopOpacity={0.05} />
+                  <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               {showDataLayer && (
@@ -482,7 +482,7 @@ function ActivityPerformanceAreaChart({
                           x={p.x}
                           y={p.y - 10}
                           textAnchor="middle"
-                          fill="rgba(0,0,0,0.7)"
+                          fill="var(--muted-foreground)"
                           style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif", fontSize: 12 }}
                         >
                           {p.value}
@@ -502,7 +502,7 @@ function ActivityPerformanceAreaChart({
         >
           {weeks.map((w) => (
             <div key={w.label} className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch">
-              <p className="w-full text-center text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]">{w.label}</p>
+              <p className="w-full text-center text-[12px] font-normal leading-[15px] text-muted-foreground">{w.label}</p>
             </div>
           ))}
         </div>
@@ -529,7 +529,7 @@ function ActivityTrendsLegendItem({ color, label }: { color: string; label: stri
           style={{ backgroundColor: color }}
         />
       </div>
-      <span className="whitespace-nowrap text-[12px] font-normal leading-normal text-[rgba(0,0,0,0.7)]">{label}</span>
+      <span className="whitespace-nowrap text-[12px] font-normal leading-normal text-muted-foreground">{label}</span>
     </div>
   );
 }
@@ -552,7 +552,7 @@ function ActivityTrendBar({
     <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col items-center justify-end">
       {value > 0 && (
         <span
-          className="absolute left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap text-[10px] font-normal leading-[12px] text-[rgba(0,0,0,0.7)]"
+          className="absolute left-1/2 z-[1] -translate-x-1/2 whitespace-nowrap text-[10px] font-normal leading-[12px] text-muted-foreground"
           style={{ bottom: `calc(${barH}px + 2px)`, fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
         >
           {formatTrendBarLabel(value)}
@@ -594,7 +594,7 @@ function ActivityTrendsBarChart({
           {/* MainChart row: yAxisLeft 29×685 + Graphi&Grid 1179×685 (Figma 4:1638) */}
           <div className="flex w-full min-w-0" style={{ height: TREND_CHART_MAIN_H }}>
           <div
-            className="relative shrink-0 text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]"
+            className="relative shrink-0 text-[12px] font-normal leading-[15px] text-muted-foreground"
             style={{ width: Y_AXIS_W, height: TREND_CHART_MAIN_H, fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
           >
             {yTickValues.map((t, i) => (
@@ -610,7 +610,7 @@ function ActivityTrendsBarChart({
                 <div
                   key={top}
                   className={`absolute left-0 right-0 h-0 ${
-                    i === TREND_GRID_LINE_TOPS.length - 1 ? "border-t border-solid border-[#d4d4d8]" : "border-t border-dashed border-[#e4e4e7]"
+                    i === TREND_GRID_LINE_TOPS.length - 1 ? "border-t border-solid border-border" : "border-t border-dashed border-border"
                   }`}
                   style={{ top }}
                 />
@@ -620,7 +620,7 @@ function ActivityTrendsBarChart({
               {Array.from({ length: nWeeks + 1 }, (_, i) => (
                 <div
                   key={i}
-                  className="absolute top-0 bottom-0 w-0 border-l border-dashed border-[#e4e4e7]"
+                  className="absolute top-0 bottom-0 w-0 border-l border-dashed border-border"
                   style={{ left: `${(i / nWeeks) * 100}%` }}
                 />
               ))}
@@ -668,7 +668,7 @@ function ActivityTrendsBarChart({
         >
           {weeks.map((w) => (
             <div key={w.label} className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch">
-              <p className="w-full text-center text-[12px] font-normal leading-[15px] text-[rgba(0,0,0,0.7)]">{w.label}</p>
+              <p className="w-full text-center text-[12px] font-normal leading-[15px] text-muted-foreground">{w.label}</p>
             </div>
           ))}
         </div>
@@ -881,17 +881,17 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
         className="box-border flex h-screen min-h-0 w-full min-w-0 flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
         style={{
           backgroundImage:
-            "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)",
+            "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, var(--background) 0%, var(--background) 100%)",
         }}
       >
         <div className="isolate flex min-h-0 w-full min-w-0 flex-1 flex-row items-stretch gap-4">
           <DashboardLeftRail />
 
-          <section className="scrollbar-hide z-[1] flex min-h-0 min-w-0 max-w-none flex-1 flex-col overflow-x-auto overflow-y-auto rounded-[8px] border border-[#ebedee] bg-white px-6 py-4 pb-8 shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
+          <section className="scrollbar-hide z-[1] flex min-h-0 min-w-0 max-w-none flex-1 flex-col overflow-x-auto overflow-y-auto rounded-[8px] border border-border bg-card px-6 py-4 pb-8 shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
           {/* Top bar — matches Figma 40:7745 / 40:8001 */}
           <div className="flex w-full flex-col gap-4">
             <div className="flex min-w-0 items-center justify-between gap-3">
-              <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-[#606d76]">
+              <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-muted-foreground">
                 <FolderOpenDot className="size-4 shrink-0" strokeWidth={1.5} aria-hidden />
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -924,11 +924,11 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 </Tooltip>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex h-8 items-center gap-2 rounded-[999px] bg-[#d7fede] px-4 py-2">
-                  <Timer className="size-4 shrink-0 text-[#108e27]" />
-                  <span className="text-[14px] font-bold text-[#108e27]">Project on track</span>
+                <div className="flex h-8 items-center gap-2 rounded-[999px] bg-success/10 px-4 py-2">
+                  <Timer className="size-4 shrink-0 text-success" />
+                  <span className="text-[14px] font-bold text-success">Project on track</span>
                 </div>
-                <div className="flex h-8 items-center gap-0.5 rounded-[8px] bg-[#f0f3f5] p-0.5">
+                <div className="flex h-8 items-center gap-0.5 rounded-[8px] bg-muted p-0.5">
                   <Link
                     to={sprintBoardLink}
                     className={`inline-flex h-9 items-center justify-center rounded-[8px] px-4 no-underline outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring ${tabBtn(false)}`}
@@ -954,7 +954,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#ededed] bg-white shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                      className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-border bg-card shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                       aria-label="Notifications"
                     >
                       <Bell className="size-4" />
@@ -964,7 +964,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 </Tooltip>
                 <button
                   type="button"
-                  className="flex h-8 items-center gap-2 rounded-[8px] border border-[#ededed] bg-white px-4 text-[14px] text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+                  className="flex h-8 items-center gap-2 rounded-[8px] border border-border bg-card px-4 text-[14px] text-foreground shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
                 >
                   <Share className="size-4" />
                   Share
@@ -976,7 +976,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         <button
                           type="button"
                           disabled={exportActionPending}
-                          className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white disabled:opacity-60"
+                          className="flex h-8 items-center gap-1.5 rounded-[8px] bg-info px-4 py-2 text-[14px] font-bold text-white disabled:opacity-60"
                         >
                           {exportActionPending ? "Exporting…" : "Export"}
                           <ChevronDown className="size-4" />
@@ -1006,18 +1006,18 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 </DropdownMenu>
               </div>
             </div>
-            <div className="h-px w-full bg-[#ebedee]" />
+            <div className="h-px w-full bg-muted" />
           </div>
 
           {/* Title row — Activity + populated: title lives in toolbar column (Figma 4:1256) */}
           {(mainTab === "time-logs" || (mainTab === "activity" && !activityPopulated)) && (
             <div className="mt-4 flex items-center gap-2">
-              <h1 className="text-[24px] font-medium text-[#0b191f]">
+              <h1 className="text-[24px] font-medium text-foreground">
                 {mainTab === "activity" ? "Activity" : "Time Logs"}
               </h1>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" className="inline-flex size-6 items-center justify-center text-[#0b191f]" aria-label="More options">
+                  <button type="button" className="inline-flex size-6 items-center justify-center text-foreground" aria-label="More options">
                     <Ellipsis className="size-4" />
                   </button>
                 </TooltipTrigger>
@@ -1033,10 +1033,10 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 <div className="mt-4 flex w-full flex-wrap items-end justify-center gap-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-4">
                     <div className="flex w-full items-center gap-2">
-                      <h2 className="text-[24px] font-medium text-[#0b191f]">Activity</h2>
+                      <h2 className="text-[24px] font-medium text-foreground">Activity</h2>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button type="button" className="inline-flex size-6 items-center justify-center text-[#0b191f]" aria-label="More options">
+                          <button type="button" className="inline-flex size-6 items-center justify-center text-foreground" aria-label="More options">
                             <Ellipsis className="size-4" />
                           </button>
                         </TooltipTrigger>
@@ -1050,19 +1050,19 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                           <button
                             type="button"
                             onClick={() => setActivityView("members")}
-                            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[#edf0f3] px-4 py-2 text-[#606d76]"
+                            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-muted px-4 py-2 text-muted-foreground"
                             aria-label="Members"
                           >
                             <UsersRound className="size-4 shrink-0" strokeWidth={1.5} />
                           </button>
-                          <div className="flex h-10 items-center gap-2 overflow-hidden rounded-[8px] bg-[#cfecff] px-4 py-2 text-[#043e59]">
+                          <div className="flex h-10 items-center gap-2 overflow-hidden rounded-[8px] bg-info/10 px-4 py-2 text-info">
                             <Activity className="size-4 shrink-0" strokeWidth={1.5} />
                             <span className="text-[14px] font-medium">Trends</span>
                           </div>
                           <button
                             type="button"
                             onClick={() => setActivityView("performance")}
-                            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[#edf0f3] px-4 py-2 text-[#606d76]"
+                            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-muted px-4 py-2 text-muted-foreground"
                             aria-label="Performance"
                           >
                             <TrendingUpDown className="size-4 shrink-0" strokeWidth={1.5} />
@@ -1074,7 +1074,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                           <button
                             type="button"
                             onClick={() => setActivityView("members")}
-                            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[#edf0f3] px-4 py-2 text-[#606d76]"
+                            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-muted px-4 py-2 text-muted-foreground"
                             aria-label="Members"
                           >
                             <UsersRound className="size-4 shrink-0" strokeWidth={1.5} />
@@ -1082,12 +1082,12 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                           <button
                             type="button"
                             onClick={() => setActivityView("trends")}
-                            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[#edf0f3] px-4 py-2 text-[#606d76]"
+                            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-muted px-4 py-2 text-muted-foreground"
                             aria-label="Trends"
                           >
                             <Activity className="size-4 shrink-0" strokeWidth={1.5} />
                           </button>
-                          <div className="flex h-10 items-center gap-2 overflow-hidden rounded-[8px] bg-[#cfecff] px-4 py-2 text-[#043e59]">
+                          <div className="flex h-10 items-center gap-2 overflow-hidden rounded-[8px] bg-info/10 px-4 py-2 text-info">
                             <TrendingUpDown className="size-4 shrink-0" strokeWidth={1.5} />
                             <span className="text-[14px] font-medium">Performance</span>
                           </div>
@@ -1099,7 +1099,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                             type="button"
                             onClick={() => setActivityView("members")}
                             className={`flex h-10 items-center gap-2 rounded-[8px] px-4 py-2 ${
-                              activityView === "members" ? "bg-[#cfecff] text-[#043e59]" : "bg-[#edf0f3] text-[#606d76]"
+                              activityView === "members" ? "bg-info/10 text-info" : "bg-muted text-muted-foreground"
                             }`}
                           >
                             <UsersRound className="size-4 shrink-0" strokeWidth={1.5} />
@@ -1108,7 +1108,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                           <button
                             type="button"
                             onClick={() => setActivityView("trends")}
-                            className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-[#edf0f3] text-[#606d76]"
+                            className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-muted text-muted-foreground"
                             aria-label="Trends chart"
                           >
                             <Activity className="size-4" strokeWidth={1.5} />
@@ -1116,7 +1116,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                           <button
                             type="button"
                             onClick={() => setActivityView("performance")}
-                            className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-[#edf0f3] text-[#606d76]"
+                            className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-muted text-muted-foreground"
                             aria-label="Performance"
                           >
                             <TrendingUpDown className="size-4" strokeWidth={1.5} />
@@ -1126,10 +1126,10 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                     </div>
                   </div>
                   <div className="flex w-[220px] shrink-0 flex-col gap-1">
-                    <label className="text-[14px] font-medium text-[#606d76]">Date Range</label>
-                    <div className="flex h-10 items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4">
+                    <label className="text-[14px] font-medium text-muted-foreground">Date Range</label>
+                    <div className="flex h-10 items-center justify-between rounded-[8px] border border-border bg-card px-4">
                       <span
-                        className={`text-[14px] font-medium ${activityView === "trends" || activityView === "performance" ? "text-[#0b191f]" : "text-[#606d76]"}`}
+                        className={`text-[14px] font-medium ${activityView === "trends" || activityView === "performance" ? "text-foreground" : "text-muted-foreground"}`}
                       >
                         {activityView === "trends" || activityView === "performance"
                           ? liveProjectNumericId != null && activityDateRangeLabel
@@ -1137,19 +1137,19 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                             : "01/01/2026 - 01/03/2026"
                           : "Start Date-End Date"}
                       </span>
-                      <Calendar className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} />
+                      <Calendar className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />
                     </div>
                   </div>
-                  <div className="flex h-10 w-[212px] shrink-0 items-center gap-2 rounded-[999px] bg-[#edf0f3] px-4">
-                    <Search className="size-4 shrink-0 text-[#606d76]" strokeWidth={1.5} />
-                    <span className="text-[14px] font-medium text-[#606d76]">Search members</span>
+                  <div className="flex h-10 w-[212px] shrink-0 items-center gap-2 rounded-[999px] bg-muted px-4">
+                    <Search className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+                    <span className="text-[14px] font-medium text-muted-foreground">Search members</span>
                   </div>
                 </div>
               )}
 
               {!activityPopulated && (
                 <div className="flex min-h-[320px] flex-1 flex-col items-center justify-center py-12">
-                  <div className="flex h-[114px] w-[286px] flex-col items-center justify-between text-[#727d83]">
+                  <div className="flex h-[114px] w-[286px] flex-col items-center justify-between text-muted-foreground">
                     <Timer className="size-12 stroke-[1.25]" strokeWidth={1.25} />
                     <div className="flex w-full flex-col items-center gap-1 text-center leading-normal">
                       <p className="text-[20px] font-bold">No Activity</p>
@@ -1163,11 +1163,11 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 <div className="mt-4 flex w-full flex-wrap content-start gap-4">
                   {liveProjectNumericId != null ? (
                     contributionsLoading ? (
-                      <p className="w-full text-[14px] font-medium text-[#727d83]">Loading members…</p>
+                      <p className="w-full text-[14px] font-medium text-muted-foreground">Loading members…</p>
                     ) : contributionsError ? (
-                      <p className="w-full text-[14px] font-medium text-red-600">Could not load member activity.</p>
+                      <p className="w-full text-[14px] font-medium text-destructive">Could not load member activity.</p>
                     ) : memberContributions.length === 0 ? (
-                      <p className="w-full text-[14px] font-medium text-[#727d83]">No members in this project yet.</p>
+                      <p className="w-full text-[14px] font-medium text-muted-foreground">No members in this project yet.</p>
                     ) : (
                       memberContributions.map((m) => {
                         const displayName = m.name?.trim() || "Member";
@@ -1179,7 +1179,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         return (
                           <div
                             key={m.user_id}
-                            className={`flex w-[260px] shrink-0 flex-col items-start rounded-[12px] border border-[#ebedee] bg-white p-6 ${cardShadow}`}
+                            className={`flex w-[260px] shrink-0 flex-col items-start rounded-[12px] border border-border bg-card p-6 ${cardShadow}`}
                           >
                             <div className="flex w-full flex-col gap-6">
                               <div className="flex h-10 w-full items-center rounded-[8px]">
@@ -1191,8 +1191,8 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                                     {initials}
                                   </div>
                                   <div className="flex min-w-0 flex-col items-start justify-center">
-                                    <p className="max-w-full truncate text-[14px] font-medium text-[#0b191f]">{displayName}</p>
-                                    <p className="max-w-full truncate text-[12px] font-medium text-[#727d83]">
+                                    <p className="max-w-full truncate text-[14px] font-medium text-foreground">{displayName}</p>
+                                    <p className="max-w-full truncate text-[12px] font-medium text-muted-foreground">
                                       {formatMemberRole(m.role)}
                                     </p>
                                   </div>
@@ -1200,20 +1200,20 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                               </div>
                               <div className="flex w-full flex-col gap-2 text-[14px] font-medium whitespace-nowrap">
                                 <div className="flex w-full items-center justify-between">
-                                  <span className="text-[#727d83]">Commits</span>
-                                  <span className="min-w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f] tabular-nums">
+                                  <span className="text-muted-foreground">Commits</span>
+                                  <span className="min-w-[34px] overflow-hidden text-ellipsis text-right text-foreground tabular-nums">
                                     {commits}
                                   </span>
                                 </div>
                                 <div className="flex w-full items-center justify-between">
-                                  <span className="text-[#727d83]">Total hours</span>
-                                  <span className="min-w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f] tabular-nums">
+                                  <span className="text-muted-foreground">Total hours</span>
+                                  <span className="min-w-[34px] overflow-hidden text-ellipsis text-right text-foreground tabular-nums">
                                     {hours}
                                   </span>
                                 </div>
                                 <div className="flex w-full items-center justify-between">
-                                  <span className="text-[#727d83]">Task completed</span>
-                                  <span className="min-w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f] tabular-nums">
+                                  <span className="text-muted-foreground">Task completed</span>
+                                  <span className="min-w-[34px] overflow-hidden text-ellipsis text-right text-foreground tabular-nums">
                                     {done}
                                   </span>
                                 </div>
@@ -1227,7 +1227,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                     SAMPLE_ACTIVITY_MEMBERS.map((m) => (
                       <div
                         key={m.id}
-                        className={`flex w-[260px] shrink-0 flex-col items-start rounded-[12px] border border-[#ebedee] bg-white p-6 ${cardShadow}`}
+                        className={`flex w-[260px] shrink-0 flex-col items-start rounded-[12px] border border-border bg-card p-6 ${cardShadow}`}
                       >
                         <div className="flex w-full flex-col gap-6">
                           <div className="flex h-10 w-full items-center rounded-[8px]">
@@ -1249,23 +1249,23 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                                 </div>
                               )}
                               <div className="flex flex-col items-start justify-center whitespace-nowrap">
-                                <p className="text-[14px] font-medium text-[#0b191f]">{m.name}</p>
-                                <p className="text-[12px] font-medium text-[#727d83]">{m.role}</p>
+                                <p className="text-[14px] font-medium text-foreground">{m.name}</p>
+                                <p className="text-[12px] font-medium text-muted-foreground">{m.role}</p>
                               </div>
                             </div>
                           </div>
                           <div className="flex w-full flex-col gap-2 text-[14px] font-medium whitespace-nowrap">
                             <div className="flex w-full items-center justify-between">
-                              <span className="text-[#727d83]">Commits</span>
-                              <span className="w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">{m.commits}</span>
+                              <span className="text-muted-foreground">Commits</span>
+                              <span className="w-[34px] overflow-hidden text-ellipsis text-right text-foreground">{m.commits}</span>
                             </div>
                             <div className="flex w-full items-center justify-between">
-                              <span className="text-[#727d83]">Total hours</span>
-                              <span className="w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">{m.totalHours}</span>
+                              <span className="text-muted-foreground">Total hours</span>
+                              <span className="w-[34px] overflow-hidden text-ellipsis text-right text-foreground">{m.totalHours}</span>
                             </div>
                             <div className="flex w-full items-center justify-between">
-                              <span className="text-[#727d83]">Task completed</span>
-                              <span className="w-[34px] overflow-hidden text-ellipsis text-right text-[#0b191f]">{m.tasksCompleted}</span>
+                              <span className="text-muted-foreground">Task completed</span>
+                              <span className="w-[34px] overflow-hidden text-ellipsis text-right text-foreground">{m.tasksCompleted}</span>
                             </div>
                           </div>
                         </div>
@@ -1276,10 +1276,10 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
               )}
 
               {activityPopulated && activityView === "trends" && (
-                <div className="mt-4 w-full min-w-0 rounded-[8px] border border-[#ebedee] bg-white">
+                <div className="mt-4 w-full min-w-0 rounded-[8px] border border-border bg-card">
                   {liveProjectNumericId != null ? (
                     velocityLoading ? (
-                      <p className="p-8 text-center text-[14px] font-medium text-[#727d83]">Loading trends…</p>
+                      <p className="p-8 text-center text-[14px] font-medium text-muted-foreground">Loading trends…</p>
                     ) : (
                       <ActivityTrendsBarChart trendWeeks={trendChartWeeksDisplay} />
                     )
@@ -1290,10 +1290,10 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
               )}
 
               {activityPopulated && activityView === "performance" && (
-                <div className="mt-4 w-full min-w-0 rounded-[8px] border border-[#ebedee] bg-white">
+                <div className="mt-4 w-full min-w-0 rounded-[8px] border border-border bg-card">
                   {liveProjectNumericId != null ? (
                     velocityLoading ? (
-                      <p className="p-8 text-center text-[14px] font-medium text-[#727d83]">Loading performance…</p>
+                      <p className="p-8 text-center text-[14px] font-medium text-muted-foreground">Loading performance…</p>
                     ) : (
                       <ActivityPerformanceAreaChart perfWeeks={perfChartWeeksDisplay} />
                     )
@@ -1311,45 +1311,45 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
           {(populated || apiProjectId != null) && (
             <div className="mt-6 flex w-full min-w-0 flex-wrap gap-4">
               {/* Total Hours — 40:8053 */}
-              <div className="flex h-[149px] w-[375px] shrink-0 flex-col justify-between rounded-[12px] border border-[#ebedee] bg-white p-6">
+              <div className="flex h-[149px] w-[375px] shrink-0 flex-col justify-between rounded-[12px] border border-border bg-card p-6">
                 <div className="flex items-start gap-1">
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="text-[16px] font-medium leading-normal text-[#727d83]">Total Hours</p>
-                    <p className="h-[38px] max-w-[291px] text-[24px] font-medium leading-none text-[#0b191f]">
+                    <p className="text-[16px] font-medium leading-normal text-muted-foreground">Total Hours</p>
+                    <p className="h-[38px] max-w-[291px] text-[24px] font-medium leading-none text-foreground">
                       {totalHoursLabel}
                     </p>
                   </div>
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-[#ededed] bg-white">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-border bg-card">
                     <Timer className="size-4" strokeWidth={1.5} />
                   </div>
                 </div>
                 {apiProjectId != null ? (
-                  <p className="text-[16px] font-normal leading-normal text-[#727d83]">Logged for this project</p>
+                  <p className="text-[16px] font-normal leading-normal text-muted-foreground">Logged for this project</p>
                 ) : (
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <TrendingUp className="size-4 shrink-0 text-[#108e27]" strokeWidth={1.5} />
-                    <span className="text-[16px] font-normal leading-normal text-[#108e27]">5.5hrs</span>
-                    <span className="text-[16px] font-normal leading-normal text-[#727d83]">up from last week</span>
+                    <TrendingUp className="size-4 shrink-0 text-success" strokeWidth={1.5} />
+                    <span className="text-[16px] font-normal leading-normal text-success">5.5hrs</span>
+                    <span className="text-[16px] font-normal leading-normal text-muted-foreground">up from last week</span>
                   </div>
                 )}
               </div>
               {/* Total Rate Due — demo only (no billing aggregate in API yet) */}
               {apiProjectId == null && (
-                <div className="flex h-[149px] w-[375px] shrink-0 flex-col items-end justify-between rounded-[12px] border border-[#ebedee] bg-white p-6">
+                <div className="flex h-[149px] w-[375px] shrink-0 flex-col items-end justify-between rounded-[12px] border border-border bg-card p-6">
                   <div className="flex items-start gap-1">
                     <div className="flex flex-col items-end gap-1">
-                      <p className="text-[16px] font-medium leading-normal text-[#727d83]">Total Rate Due</p>
-                      <p className="h-[38px] max-w-[291px] text-right text-[24px] font-medium leading-none text-[#0b191f]">
+                      <p className="text-[16px] font-medium leading-normal text-muted-foreground">Total Rate Due</p>
+                      <p className="h-[38px] max-w-[291px] text-right text-[24px] font-medium leading-none text-foreground">
                         R20,500
                       </p>
                     </div>
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-[#ededed] bg-white">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-border bg-card">
                       <ScrollText className="size-4" strokeWidth={1.5} />
                     </div>
                   </div>
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 text-[16px] font-medium leading-normal text-[#606d76]"
+                    className="flex items-center gap-1.5 text-[16px] font-medium leading-normal text-muted-foreground"
                   >
                     Generate invoice
                     <ChevronRight className="size-4 shrink-0" strokeWidth={1.5} />
@@ -1363,31 +1363,31 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
           <div className="mt-6 flex w-full flex-wrap items-end justify-between gap-4">
             <div className="flex flex-wrap items-end gap-4">
               <div className="flex w-[158px] flex-col gap-1">
-                <label className="text-[14px] font-medium text-[#606d76]">Time Range</label>
-                <div className="flex h-10 items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4">
-                  <span className="text-[14px] text-[#252014]">Daily</span>
-                  <ChevronDown className="size-4 text-[#252014]" />
+                <label className="text-[14px] font-medium text-muted-foreground">Time Range</label>
+                <div className="flex h-10 items-center justify-between rounded-[8px] border border-border bg-card px-4">
+                  <span className="text-[14px] text-foreground">Daily</span>
+                  <ChevronDown className="size-4 text-foreground" />
                 </div>
               </div>
               <div className="flex w-[136px] flex-col gap-1">
-                <label className="text-[14px] font-medium text-[#606d76]">Billable</label>
-                <div className="flex h-10 items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4">
-                  <span className="text-[14px] text-[#252014]">Yes</span>
-                  <ChevronDown className="size-4 text-[#252014]" />
+                <label className="text-[14px] font-medium text-muted-foreground">Billable</label>
+                <div className="flex h-10 items-center justify-between rounded-[8px] border border-border bg-card px-4">
+                  <span className="text-[14px] text-foreground">Yes</span>
+                  <ChevronDown className="size-4 text-foreground" />
                 </div>
               </div>
               <div className="flex w-[220px] flex-col gap-1">
-                <label className="text-[14px] font-medium text-[#606d76]">Date Range</label>
-                <div className="flex h-10 items-center justify-between rounded-[8px] border border-[#e9e9e9] bg-white px-4">
-                  <span className="text-[14px] text-[#606d76]">Start Date-End Date</span>
-                  <Calendar className="size-4 text-[#606d76]" />
+                <label className="text-[14px] font-medium text-muted-foreground">Date Range</label>
+                <div className="flex h-10 items-center justify-between rounded-[8px] border border-border bg-card px-4">
+                  <span className="text-[14px] text-muted-foreground">Start Date-End Date</span>
+                  <Calendar className="size-4 text-muted-foreground" />
                 </div>
               </div>
             </div>
             <div className="flex h-10 items-center gap-2">
-              <div className="flex h-10 w-[212px] items-center gap-2 rounded-[999px] bg-[#edf0f3] px-4">
-                <Search className="size-4 shrink-0 text-[#606d76]" />
-                <span className="text-[14px] text-[#606d76]">Search Projects</span>
+              <div className="flex h-10 w-[212px] items-center gap-2 rounded-[999px] bg-muted px-4">
+                <Search className="size-4 shrink-0 text-muted-foreground" />
+                <span className="text-[14px] text-muted-foreground">Search Projects</span>
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1398,7 +1398,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         .getState()
                         .openLogModalManual(apiProjectId != null ? Number(apiProjectId) : null)
                     }
-                    className="flex h-10 items-center gap-2 rounded-[8px] bg-[#24B5F8] px-4 text-[14px] font-bold text-white"
+                    className="flex h-10 items-center gap-2 rounded-[8px] bg-info px-4 text-[14px] font-bold text-white"
                   >
                     <Plus className="size-4" />
                     Add Time Log
@@ -1411,12 +1411,12 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
 
           {/* Loading / error / empty — real project uses API */}
           {apiProjectId != null && logsLoading && (
-            <div className="mt-6 flex min-h-[200px] flex-col items-center justify-center py-12 text-[14px] font-medium text-[#727d83]">
+            <div className="mt-6 flex min-h-[200px] flex-col items-center justify-center py-12 text-[14px] font-medium text-muted-foreground">
               Loading time logs…
             </div>
           )}
           {apiProjectId != null && logsError && !logsLoading && (
-            <div className="mt-6 flex min-h-[200px] flex-col items-center justify-center py-12 text-[14px] font-medium text-[#c45c5c]">
+            <div className="mt-6 flex min-h-[200px] flex-col items-center justify-center py-12 text-[14px] font-medium text-destructive">
               Couldn&apos;t load time logs. Try again later.
             </div>
           )}
@@ -1424,7 +1424,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
           {/* Empty state — Figma 40:7879 */}
           {logs.length === 0 && !logsLoading && !logsError && (
             <div className="flex min-h-[320px] flex-1 flex-col items-center justify-center py-12">
-              <div className="flex w-[286px] flex-col items-center gap-4 text-[#727d83]">
+              <div className="flex w-[286px] flex-col items-center gap-4 text-muted-foreground">
                 <Timer className="size-12 stroke-[1.25]" />
                 <p className="text-center text-[20px] font-bold">No time Logs</p>
                 <p className="text-center text-[14px] font-medium">Add time logs to existing tasks as you work</p>
@@ -1437,7 +1437,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
             <div className="mt-6 flex w-full min-w-0 flex-col gap-6">
               <div className="w-full min-w-0 overflow-hidden rounded-t-[8px]">
                 {/* Table header + rows — list row Figma 40:8154; horizontal rules only (no vertical row borders) */}
-                <div className="flex items-center gap-6 rounded-t-[8px] border-b border-t border-[#ebedee] bg-[#f0f3f5] px-4 py-3 text-[16px] font-medium text-[#606d76]">
+                <div className="flex items-center gap-6 rounded-t-[8px] border-b border-t border-border bg-muted px-4 py-3 text-[16px] font-medium text-muted-foreground">
                   <span className="min-w-0 flex-1">Task</span>
                   <span className="w-[180px] shrink-0">Date</span>
                   <span className="w-[124px] shrink-0">Duration</span>
@@ -1449,20 +1449,20 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 {paginatedLogs.map((row) => (
                   <div
                     key={row.id}
-                    className="flex items-center gap-6 border-b border-[#ebedee] bg-white px-4 py-[6px]"
+                    className="flex items-center gap-6 border-b border-border bg-card px-4 py-[6px]"
                   >
                     <div className="flex min-h-px min-w-0 flex-1 items-center gap-2">
-                      <p className="min-w-0 flex-1 truncate text-[16px] font-medium leading-normal text-[#131617]">
+                      <p className="min-w-0 flex-1 truncate text-[16px] font-medium leading-normal text-foreground">
                         {row.task}
                       </p>
                     </div>
-                    <p className="w-[180px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium leading-normal text-[#697378]">
+                    <p className="w-[180px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium leading-normal text-muted-foreground">
                       {row.date}
                     </p>
-                    <p className="w-[124px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium leading-normal text-[#697378]">
+                    <p className="w-[124px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium leading-normal text-muted-foreground">
                       {row.duration}
                     </p>
-                    <p className="w-[56px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium leading-normal text-[#697378]">
+                    <p className="w-[56px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium leading-normal text-muted-foreground">
                       Yes
                     </p>
                     <div className="flex shrink-0 items-center gap-2">
@@ -1470,7 +1470,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         <TooltipTrigger asChild>
                           <button
                             type="button"
-                            className="flex size-6 shrink-0 items-center justify-center text-[#697378]"
+                            className="flex size-6 shrink-0 items-center justify-center text-muted-foreground"
                             aria-label="Edit"
                           >
                             <SquarePen className="size-4" strokeWidth={1.5} />
@@ -1482,7 +1482,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         <TooltipTrigger asChild>
                           <button
                             type="button"
-                            className="flex size-6 shrink-0 items-center justify-center text-[#697378]"
+                            className="flex size-6 shrink-0 items-center justify-center text-muted-foreground"
                             aria-label="More"
                           >
                             <Ellipsis className="size-4" strokeWidth={1.5} />
@@ -1498,8 +1498,8 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
               <div className="flex w-full shrink-0 flex-wrap items-center justify-center gap-6 px-2 pb-2 pt-1">
                 <button
                   type="button"
-                  className={`flex size-10 items-center justify-center rounded-[8px] bg-white disabled:opacity-50 ${
-                    page <= 1 ? "text-[#a1a1aa]" : "text-[#52525b]"
+                  className={`flex size-10 items-center justify-center rounded-[8px] bg-card disabled:opacity-50 ${
+                    page <= 1 ? "text-muted-foreground" : "text-foreground"
                   }`}
                   aria-label="First page"
                   disabled={page <= 1}
@@ -1510,8 +1510,8 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 <div className="flex items-center gap-4">
                   <button
                     type="button"
-                    className={`flex size-10 items-center justify-center rounded-[8px] bg-white disabled:opacity-50 ${
-                      page <= 1 ? "text-[#a1a1aa]" : "text-[#52525b]"
+                    className={`flex size-10 items-center justify-center rounded-[8px] bg-card disabled:opacity-50 ${
+                      page <= 1 ? "text-muted-foreground" : "text-foreground"
                     }`}
                     aria-label="Previous page"
                     disabled={page <= 1}
@@ -1526,8 +1526,8 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                           key={n}
                           type="button"
                           onClick={() => setPage(n)}
-                          className={`flex size-10 items-center justify-center rounded-[8px] text-[14px] font-medium text-[#252014] ${
-                            page === n ? "bg-[#ebedee]" : "bg-transparent hover:bg-[#f4f4f5]"
+                          className={`flex size-10 items-center justify-center rounded-[8px] text-[14px] font-medium text-foreground ${
+                            page === n ? "bg-muted" : "bg-transparent hover:bg-card"
                           }`}
                         >
                           {n}
@@ -1538,20 +1538,20 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         <button
                           type="button"
                           onClick={() => setPage(1)}
-                          className={`flex size-10 items-center justify-center rounded-[8px] text-[14px] font-medium text-[#252014] ${
-                            page === 1 ? "bg-[#ebedee]" : ""
+                          className={`flex size-10 items-center justify-center rounded-[8px] text-[14px] font-medium text-foreground ${
+                            page === 1 ? "bg-muted" : ""
                           }`}
                         >
                           1
                         </button>
-                        <span className="flex size-10 items-center justify-center rounded-[8px] border border-[#e9e9e9] text-[14px] font-medium text-[#252014]">
+                        <span className="flex size-10 items-center justify-center rounded-[8px] border border-border text-[14px] font-medium text-foreground">
                           ...
                         </span>
                         <button
                           type="button"
                           onClick={() => setPage(totalPages)}
-                          className={`flex size-10 items-center justify-center rounded-[8px] text-[14px] font-medium text-[#252014] ${
-                            page === totalPages ? "bg-[#ebedee]" : ""
+                          className={`flex size-10 items-center justify-center rounded-[8px] text-[14px] font-medium text-foreground ${
+                            page === totalPages ? "bg-muted" : ""
                           }`}
                         >
                           {totalPages}
@@ -1561,8 +1561,8 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                   </div>
                   <button
                     type="button"
-                    className={`flex size-10 items-center justify-center rounded-[8px] bg-white disabled:opacity-50 ${
-                      page >= totalPages ? "text-[#a1a1aa]" : "text-[#52525b]"
+                    className={`flex size-10 items-center justify-center rounded-[8px] bg-card disabled:opacity-50 ${
+                      page >= totalPages ? "text-muted-foreground" : "text-foreground"
                     }`}
                     aria-label="Next page"
                     disabled={page >= totalPages}
@@ -1573,8 +1573,8 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 </div>
                 <button
                   type="button"
-                  className={`flex size-10 items-center justify-center rounded-[8px] bg-white disabled:opacity-50 ${
-                    page >= totalPages ? "text-[#a1a1aa]" : "text-[#52525b]"
+                  className={`flex size-10 items-center justify-center rounded-[8px] bg-card disabled:opacity-50 ${
+                    page >= totalPages ? "text-muted-foreground" : "text-foreground"
                   }`}
                   aria-label="Last page"
                   disabled={page >= totalPages}

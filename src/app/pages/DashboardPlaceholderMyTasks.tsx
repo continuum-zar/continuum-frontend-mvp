@@ -56,8 +56,8 @@ function placeholderTaskHref(row: TaskAPIResponse, from: WorkspaceMyTasksScope):
 const tabBtn = (active: boolean) =>
   `rounded-[8px] px-4 py-2 text-[14px] font-medium ${
     active
-      ? "border border-[#ededed] bg-white text-[#0b191f] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
-      : "text-[#606d76]"
+      ? "border border-border bg-card text-foreground shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)]"
+      : "text-muted-foreground"
   }`;
 
 export function DashboardPlaceholderMyTasks() {
@@ -182,31 +182,31 @@ export function DashboardPlaceholderMyTasks() {
       className="box-border flex h-screen min-h-0 w-full min-w-0 flex-col overflow-hidden gap-[10px] pb-[8px] pl-[12px] pr-[8px] pt-[12px] font-['Satoshi',sans-serif]"
       style={{
         backgroundImage:
-          "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%)",
+          "linear-gradient(0deg, rgba(178, 230, 247, 0.2) 0%, rgba(255, 255, 255, 0.2) 100%), linear-gradient(90deg, var(--background) 0%, var(--background) 100%)",
       }}
     >
       <div className="isolate flex min-h-0 w-full min-w-0 flex-1 flex-row items-stretch gap-[10px]">
         <DashboardLeftRail />
 
-        <section className="z-[1] flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-[#ebedee] bg-white shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
-          <div className="relative z-20 flex shrink-0 flex-col gap-4 bg-white px-6 pt-4">
-            <div className="flex items-center gap-2 text-[#606d76]">
+        <section className="z-[1] flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-border bg-card shadow-[0px_44px_12px_0px_rgba(15,15,31,0),0px_28px_11px_0px_rgba(15,15,31,0.01),0px_16px_10px_0px_rgba(15,15,31,0.02),0px_7px_7px_0px_rgba(15,15,31,0.03),0px_2px_4px_0px_rgba(15,15,31,0.04)]">
+          <div className="relative z-20 flex shrink-0 flex-col gap-4 bg-card px-6 pt-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
               {scope === "assigned" ? <Target size={16} /> : <ListTodo size={16} />}
               <p className="text-[16px]">{titleEyebrow}</p>
             </div>
 
-            <div className="h-px w-full bg-[#ebedee]" />
+            <div className="h-px w-full bg-muted" />
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <p className="text-[32px] font-medium text-[#0b191f]">{titleMain}</p>
-                <Ellipsis size={16} className="text-[#0b191f]" />
+                <p className="text-[32px] font-medium text-foreground">{titleMain}</p>
+                <Ellipsis size={16} className="text-foreground" />
               </div>
               <div
                 role="tablist"
                 aria-label="Task list scope"
                 data-tour="my-tasks-scope-toggle"
-                className="rounded-[10px] bg-[#f0f3f5] p-[2px]"
+                className="rounded-[10px] bg-muted p-[2px]"
               >
                 <button
                   type="button"
@@ -234,13 +234,13 @@ export function DashboardPlaceholderMyTasks() {
             <DashboardTaskListTableSkeleton />
           ) : isError ? (
             <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
-              <div className="flex flex-col items-center justify-center gap-3 py-16 text-[#727d83]">
+              <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
                 <p className="text-[14px]">Could not load tasks.</p>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      className="rounded-[8px] border border-[#ebedee] px-3 py-1.5 text-[14px] text-[#0b191f]"
+                      className="rounded-[8px] border border-border px-3 py-1.5 text-[14px] text-foreground"
                       onClick={() => void refetch()}
                     >
                       Retry
@@ -252,7 +252,7 @@ export function DashboardPlaceholderMyTasks() {
             </div>
           ) : tasks.length === 0 ? (
             <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto overflow-x-clip px-6 pb-4 pt-4 overscroll-y-contain">
-              <div className="flex flex-col items-center py-16 text-[#727d83]">
+              <div className="flex flex-col items-center py-16 text-muted-foreground">
                 <div className="flex w-[286px] flex-col items-center gap-4">
                   {scope === "assigned" ? <Target size={48} /> : <ListTodo size={48} />}
                   <p className="text-[20px] font-bold">
@@ -268,8 +268,8 @@ export function DashboardPlaceholderMyTasks() {
             </div>
           ) : (
             <>
-              <div className="relative z-10 shrink-0 border-b border-[#ebedee] bg-[#f0f3f5] px-6 pt-4">
-                <div className="grid grid-cols-[225px_185px_292px_72px_124px_52px_56px_24px] items-center gap-6 rounded-t-[8px] px-4 py-3 text-[16px] text-[#606d76]">
+              <div className="relative z-10 shrink-0 border-b border-border bg-muted px-6 pt-4">
+                <div className="grid grid-cols-[225px_185px_292px_72px_124px_52px_56px_24px] items-center gap-6 rounded-t-[8px] px-4 py-3 text-[16px] text-muted-foreground">
                   <p>Task</p>
                   <p>Project</p>
                   <p>Description</p>
@@ -295,7 +295,7 @@ export function DashboardPlaceholderMyTasks() {
                         key={row.id}
                         role="button"
                         tabIndex={0}
-                        className="grid cursor-pointer grid-cols-[225px_185px_292px_72px_124px_52px_56px_24px] items-center gap-6 border-b border-[#ebedee] bg-white px-4 py-1 transition-colors hover:bg-[#fafbfc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#24B5F8]"
+                        className="grid cursor-pointer grid-cols-[225px_185px_292px_72px_124px_52px_56px_24px] items-center gap-6 border-b border-border bg-card px-4 py-1 transition-colors hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-info"
                         onClick={() => navigate(placeholderTaskHref(row, "assigned"))}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
@@ -305,13 +305,13 @@ export function DashboardPlaceholderMyTasks() {
                         }}
                       >
                         <div className="flex min-w-0 items-center gap-2">
-                          <GripVertical size={16} className="pointer-events-none shrink-0 text-[#727d83]" aria-hidden />
-                          <p className="min-w-0 truncate text-[16px] text-[#131617]">{row.title || "Untitled task"}</p>
+                          <GripVertical size={16} className="pointer-events-none shrink-0 text-muted-foreground" aria-hidden />
+                          <p className="min-w-0 truncate text-[16px] text-foreground">{row.title || "Untitled task"}</p>
                         </div>
-                        <p className="truncate text-[14px] text-[#727d83]">
+                        <p className="truncate text-[14px] text-muted-foreground">
                           {row.project_name?.trim() || `Project ${row.project_id}`}
                         </p>
-                        <p className="line-clamp-2 text-[14px] text-[#727d83]">
+                        <p className="line-clamp-2 text-[14px] text-muted-foreground">
                           {row.description?.trim() || "—"}
                         </p>
                         <div className="flex items-center">
@@ -323,17 +323,17 @@ export function DashboardPlaceholderMyTasks() {
                             {assigneeInitials}
                           </div>
                         </div>
-                        <p className="text-[14px] text-[#697378]">{formatDueDate(row.due_date)}</p>
-                        <div className="flex justify-center text-[#697378]">
+                        <p className="text-[14px] text-muted-foreground">{formatDueDate(row.due_date)}</p>
+                        <div className="flex justify-center text-muted-foreground">
                           <Flag size={16} className={taskPriorityFlagClass(row.priority)} aria-hidden />
                         </div>
-                        <p className="text-[14px] text-[#697378]">{checklistProgressPercent(row)}</p>
-                        <div className="flex justify-center text-[#697378]">
+                        <p className="text-[14px] text-muted-foreground">{checklistProgressPercent(row)}</p>
+                        <div className="flex justify-center text-muted-foreground">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
                                 type="button"
-                                className="rounded p-0.5 hover:bg-[#f0f3f5]"
+                                className="rounded p-0.5 hover:bg-muted"
                                 aria-label="Task options"
                                 onClick={(e) => e.stopPropagation()}
                               >
@@ -361,7 +361,7 @@ export function DashboardPlaceholderMyTasks() {
                           key={row.id}
                           role="button"
                           tabIndex={0}
-                          className="grid cursor-pointer grid-cols-[225px_185px_292px_72px_124px_52px_56px_24px] items-center gap-6 border-b border-[#ebedee] bg-white px-4 py-1 transition-colors hover:bg-[#fafbfc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#24B5F8]"
+                          className="grid cursor-pointer grid-cols-[225px_185px_292px_72px_124px_52px_56px_24px] items-center gap-6 border-b border-border bg-card px-4 py-1 transition-colors hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-info"
                           onClick={() => navigate(placeholderTaskHref(row, "created"))}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
@@ -371,13 +371,13 @@ export function DashboardPlaceholderMyTasks() {
                           }}
                         >
                           <div className="flex min-w-0 items-center gap-2">
-                            <GripVertical size={16} className="pointer-events-none shrink-0 text-[#727d83]" aria-hidden />
-                            <p className="min-w-0 truncate text-[16px] text-[#131617]">{row.title || "Untitled task"}</p>
+                            <GripVertical size={16} className="pointer-events-none shrink-0 text-muted-foreground" aria-hidden />
+                            <p className="min-w-0 truncate text-[16px] text-foreground">{row.title || "Untitled task"}</p>
                           </div>
-                          <p className="truncate text-[14px] text-[#727d83]">
+                          <p className="truncate text-[14px] text-muted-foreground">
                             {row.project_name?.trim() || `Project ${row.project_id}`}
                           </p>
-                          <p className="line-clamp-2 text-[14px] text-[#727d83]">{row.description?.trim() || "—"}</p>
+                          <p className="line-clamp-2 text-[14px] text-muted-foreground">{row.description?.trim() || "—"}</p>
                           <div className="flex items-center">
                             {showAssigneeSkeleton(row) ? (
                               <Skeleton className="h-6 w-6 shrink-0 rounded-full" aria-label="Loading assignee" />
@@ -390,20 +390,20 @@ export function DashboardPlaceholderMyTasks() {
                                 {assigneeLabel}
                               </div>
                             ) : (
-                              <span className="text-[14px] text-[#697378]">—</span>
+                              <span className="text-[14px] text-muted-foreground">—</span>
                             )}
                           </div>
-                          <p className="text-[14px] text-[#697378]">{formatDueDate(row.due_date)}</p>
-                          <div className="flex justify-center text-[#697378]">
+                          <p className="text-[14px] text-muted-foreground">{formatDueDate(row.due_date)}</p>
+                          <div className="flex justify-center text-muted-foreground">
                             <Flag size={16} className={taskPriorityFlagClass(row.priority)} aria-hidden />
                           </div>
-                          <p className="text-[14px] text-[#697378]">{checklistProgressPercent(row)}</p>
-                          <div className="flex justify-center text-[#697378]">
+                          <p className="text-[14px] text-muted-foreground">{checklistProgressPercent(row)}</p>
+                          <div className="flex justify-center text-muted-foreground">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button
                                   type="button"
-                                  className="rounded p-0.5 hover:bg-[#f0f3f5]"
+                                  className="rounded p-0.5 hover:bg-muted"
                                   aria-label="Task options"
                                   onClick={(e) => e.stopPropagation()}
                                 >
