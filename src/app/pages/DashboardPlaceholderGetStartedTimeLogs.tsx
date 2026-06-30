@@ -39,7 +39,6 @@ import {
 import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from "@/lib/workspacePaths";
 import { getApiErrorMessage } from "@/api";
 import {
-  downloadLoggedHoursCsv,
   downloadLoggedHoursPdf,
   type LoggedHourEntry,
 } from "@/api/loggedHours";
@@ -53,12 +52,6 @@ import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { useTimeTracking } from "../context/TimeTrackingContext";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
 import { toast } from "sonner";
 import { runWithExportProgress } from "@/app/components/ExportProgressToast";
@@ -733,25 +726,6 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
     }
   }, [apiProjectId]);
 
-  const runExportCsv = useCallback(async () => {
-    if (apiProjectId == null) {
-      toast.error("Select a project to export time logs.");
-      return;
-    }
-    setExportActionPending(true);
-    try {
-      await runWithExportProgress({
-        title: "Preparing CSV export…",
-        success: "CSV download started.",
-        errorFallback: "Could not export time logs as CSV.",
-        task: () => downloadLoggedHoursCsv({ project_id: apiProjectId }),
-        getErrorMessage: getApiErrorMessage,
-      });
-    } finally {
-      setExportActionPending(false);
-    }
-  }, [apiProjectId]);
-
   const { data: loggedEntries = [], isPending: logsLoading, isError: logsError } = useLoggedHours(
     apiProjectId,
     { limit: 200, enabled: apiProjectId != null },
@@ -979,43 +953,21 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 </button>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            disabled={!canExportTimeLogs || exportActionPending}
-                            aria-label="Export project time logs"
-                            className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {exportActionPending ? "Exporting…" : "Export"}
-                            <ChevronDown className="size-4" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-[10rem]">
-                          <DropdownMenuItem
-                            disabled={exportActionPending}
-                            onSelect={() => {
-                              void runExportPdf();
-                            }}
-                          >
-                            Export time logs (PDF)
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={exportActionPending}
-                            onSelect={() => {
-                              void runExportCsv();
-                            }}
-                          >
-                            Export time logs (CSV)
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </span>
+                    <button
+                      type="button"
+                      disabled={!canExportTimeLogs || exportActionPending}
+                      aria-label="Export project time logs as PDF"
+                      onClick={() => {
+                        void runExportPdf();
+                      }}
+                      className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {exportActionPending ? "Exporting…" : "Export"}
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent>
                     {canExportTimeLogs
-                      ? "Export this project's time logs as PDF or CSV"
+                      ? "Export this project's time logs as PDF"
                       : "Open a project to export time logs"}
                   </TooltipContent>
                 </Tooltip>
