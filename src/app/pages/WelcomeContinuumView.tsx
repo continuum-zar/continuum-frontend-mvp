@@ -1,17 +1,8 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
-import { toast } from "sonner";
 
-import { getApiErrorMessage } from "@/api";
 import { useProject, useProjectMembers } from "@/api/hooks";
-import { downloadLoggedHoursCsv, downloadLoggedHoursPdf } from "@/api/loggedHours";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { ProjectSettingsPanel } from "../components/dashboard-placeholder/project-settings/ProjectSettingsPanel";
@@ -84,43 +75,6 @@ export function WelcomeContinuumView() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
   const [editProjectOpen, setEditProjectOpen] = useState(false);
-  const [exportActionPending, setExportActionPending] = useState(false);
-
-  const apiProjectIdForExport =
-    isApiRoute && routeProjectId && isApiProjectId(routeProjectId) ? routeProjectId : null;
-  const canExportTimeLogs = apiProjectIdForExport != null;
-
-  const runExportTimeLogsPdf = useCallback(async () => {
-    if (apiProjectIdForExport == null) {
-      toast.error("Open a project to export time logs.");
-      return;
-    }
-    setExportActionPending(true);
-    try {
-      await downloadLoggedHoursPdf({ project_id: apiProjectIdForExport });
-      toast.success("PDF download started.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Could not export time logs as PDF."));
-    } finally {
-      setExportActionPending(false);
-    }
-  }, [apiProjectIdForExport]);
-
-  const runExportTimeLogsCsv = useCallback(async () => {
-    if (apiProjectIdForExport == null) {
-      toast.error("Open a project to export time logs.");
-      return;
-    }
-    setExportActionPending(true);
-    try {
-      await downloadLoggedHoursCsv({ project_id: apiProjectIdForExport });
-      toast.success("CSV download started.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Could not export time logs as CSV."));
-    } finally {
-      setExportActionPending(false);
-    }
-  }, [apiProjectIdForExport]);
 
   const canEditProject =
     isApiRoute &&
@@ -258,55 +212,25 @@ export function WelcomeContinuumView() {
                     Share
                   </p>
                 </div>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            disabled={!canExportTimeLogs || exportActionPending}
-                            aria-label="Export project time logs"
-                            data-name="Component 8"
-                            data-node-id="8:3549"
-                            className="content-stretch flex gap-[6px] h-[32px] items-center justify-center pl-[16px] pr-[12px] py-[8px] relative rounded-[8px] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            style={{ backgroundImage: "linear-gradient(164.94079331184741deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)" }}
-                          >
-                            <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap" data-node-id="8:3550">
-                              {exportActionPending ? "Exporting…" : "Export"}
-                            </p>
-                            <div className="relative shrink-0 size-[16px]" data-name="lucide/chevron-down" data-node-id="8:3551">
-                              <img alt="" className="absolute block max-w-none size-full" src={imgLucideChevronDown} />
-                            </div>
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-[10rem]">
-                          <DropdownMenuItem
-                            disabled={exportActionPending}
-                            onSelect={() => {
-                              void runExportTimeLogsPdf();
-                            }}
-                          >
-                            Export time logs (PDF)
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={exportActionPending}
-                            onSelect={() => {
-                              void runExportTimeLogsCsv();
-                            }}
-                          >
-                            Export time logs (CSV)
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {canExportTimeLogs
-                      ? "Export this project's time logs as PDF or CSV"
-                      : "Open a project to export time logs"}
-                  </TooltipContent>
-                </Tooltip>
+                <div
+                  className="content-stretch flex gap-[6px] h-[32px] items-center justify-center pl-[16px] pr-[12px] py-[8px] relative rounded-[8px] shrink-0"
+                  data-name="Component 8"
+                  data-node-id="8:3549"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(164.94079331184741deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)",
+                  }}
+                >
+                  <p
+                    className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap"
+                    data-node-id="8:3550"
+                  >
+                    Export
+                  </p>
+                  <div className="relative shrink-0 size-[16px]" data-name="lucide/chevron-down" data-node-id="8:3551">
+                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideChevronDown} />
+                  </div>
+                </div>
               </div>
             </div>
             <div className="h-0 relative shrink-0 w-full" data-node-id="8:3553">

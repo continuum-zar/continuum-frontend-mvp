@@ -61,6 +61,7 @@ import {
 } from "@/app/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
 import { toast } from "sonner";
+import { runWithExportProgress } from "@/app/components/ExportProgressToast";
 
 const tabBtn = (active: boolean) =>
   `rounded-[8px] px-4 py-2 text-[14px] font-medium ${
@@ -711,6 +712,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
   const apiProjectId = projectParam != null && isApiProjectId(projectParam) ? projectParam : null;
 
   const [exportActionPending, setExportActionPending] = useState(false);
+  const canExportTimeLogs = apiProjectId != null;
 
   const runExportPdf = useCallback(async () => {
     if (apiProjectId == null) {
@@ -719,10 +721,13 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
     }
     setExportActionPending(true);
     try {
-      await downloadLoggedHoursPdf({ project_id: apiProjectId });
-      toast.success("PDF download started.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Could not export PDF."));
+      await runWithExportProgress({
+        title: "Generating PDF report…",
+        success: "PDF download started.",
+        errorFallback: "Could not export time logs as PDF.",
+        task: () => downloadLoggedHoursPdf({ project_id: apiProjectId }),
+        getErrorMessage: getApiErrorMessage,
+      });
     } finally {
       setExportActionPending(false);
     }
@@ -735,10 +740,13 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
     }
     setExportActionPending(true);
     try {
-      await downloadLoggedHoursCsv({ project_id: apiProjectId });
-      toast.success("CSV download started.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Could not export CSV."));
+      await runWithExportProgress({
+        title: "Preparing CSV export…",
+        success: "CSV download started.",
+        errorFallback: "Could not export time logs as CSV.",
+        task: () => downloadLoggedHoursCsv({ project_id: apiProjectId }),
+        getErrorMessage: getApiErrorMessage,
+      });
     } finally {
       setExportActionPending(false);
     }
@@ -969,41 +977,48 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                   <Share className="size-4" />
                   Share
                 </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={exportActionPending}
-                          className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white disabled:opacity-60"
-                        >
-                          {exportActionPending ? "Exporting…" : "Export"}
-                          <ChevronDown className="size-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Export time logs</TooltipContent>
-                    </Tooltip>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-[10rem]">
-                    <DropdownMenuItem
-                      disabled={exportActionPending}
-                      onSelect={() => {
-                        void runExportPdf();
-                      }}
-                    >
-                      Export PDF
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      disabled={exportActionPending}
-                      onSelect={() => {
-                        void runExportCsv();
-                      }}
-                    >
-                      Export CSV
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={!canExportTimeLogs || exportActionPending}
+                            aria-label="Export project time logs"
+                            className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {exportActionPending ? "Exporting…" : "Export"}
+                            <ChevronDown className="size-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[10rem]">
+                          <DropdownMenuItem
+                            disabled={exportActionPending}
+                            onSelect={() => {
+                              void runExportPdf();
+                            }}
+                          >
+                            Export time logs (PDF)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={exportActionPending}
+                            onSelect={() => {
+                              void runExportCsv();
+                            }}
+                          >
+                            Export time logs (CSV)
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {canExportTimeLogs
+                      ? "Export this project's time logs as PDF or CSV"
+                      : "Open a project to export time logs"}
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
             <div className="h-px w-full bg-[#ebedee]" />

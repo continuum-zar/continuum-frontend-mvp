@@ -2,6 +2,14 @@ import api from '@/lib/api';
 import type { PaginatedResponse } from '@/types/api';
 import { fetchAllTasks } from './tasks';
 
+/**
+ * Server-side PDF rendering (WeasyPrint) can take several seconds, and the
+ * shared axios client defaults to a 30s timeout — too short here, which aborts
+ * the request mid-render and (worse) prompts retries that pile up on the
+ * worker. Allow up to the backend's gunicorn request timeout (120s).
+ */
+const EXPORT_TIMEOUT_MS = 120_000;
+
 /** Table row shape for Recent Entries (matches TimeEntry in TimeTrackingContext). */
 export interface LoggedHourEntry {
     id: string;
@@ -199,6 +207,7 @@ export async function downloadLoggedHoursCsv(params?: FetchLoggedHoursParams): P
             ...(params?.limit != null && { limit: params.limit }),
         },
         responseType: 'blob',
+        timeout: EXPORT_TIMEOUT_MS,
     });
 
     const contentDisposition = headers?.['content-disposition'];
@@ -232,6 +241,7 @@ export async function downloadLoggedHoursPdf(params: { project_id: number | stri
             ...(params.end_date && { end_date: params.end_date }),
         },
         responseType: 'blob',
+        timeout: EXPORT_TIMEOUT_MS,
     });
 
     const contentDisposition = headers?.['content-disposition'];
