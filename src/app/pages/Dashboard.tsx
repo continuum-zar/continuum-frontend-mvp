@@ -15,7 +15,6 @@ import {
   GitBranch,
   MessageSquare,
   Paperclip,
-  UserX,
   Zap,
   CheckCircle2,
   MoreVertical,
@@ -724,22 +723,6 @@ export function Dashboard({
                   : [<SelectItem key="none" value="__none__">No projects</SelectItem>]}
             </SelectContent>
           </Select>
-          {effectiveRole !== 'Client' && (
-            <UiTooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline"><Clock className="mr-2 h-4 w-4" /> Last 30 Days</Button>
-              </TooltipTrigger>
-              <TooltipContent>Filter dashboard to last 30 days</TooltipContent>
-            </UiTooltip>
-          )}
-          {isProjectPM && (
-            <UiTooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline"><UserX className="mr-2 h-4 w-4" /> Team View</Button>
-              </TooltipTrigger>
-              <TooltipContent>Switch to team-focused metrics</TooltipContent>
-            </UiTooltip>
-          )}
         </div>
       </div>
 
