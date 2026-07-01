@@ -283,7 +283,7 @@ export function WelcomeAiChatModal({
   );
 
   const [composerAttachments, setComposerAttachments] = useState<WelcomeComposerAttachment[]>([]);
-  const [assistantMode, setAssistantMode] = useState<AssistantMode>("create");
+  const [assistantMode, setAssistantMode] = useState<AssistantMode>("plan");
   const composerAttachmentsRef = useRef(composerAttachments);
   composerAttachmentsRef.current = composerAttachments;
   const welcomeFileInputRef = useRef<HTMLInputElement>(null);
@@ -360,7 +360,7 @@ export function WelcomeAiChatModal({
       setApiError(null);
       setConfirming(false);
       setConfirmed(false);
-      setAssistantMode("create");
+      setAssistantMode("plan");
       abortRef.current?.abort();
       abortRef.current = null;
       setReportingThread([]);
@@ -516,7 +516,7 @@ export function WelcomeAiChatModal({
         if (controller.signal.aborted) return;
         const msg = getApiErrorMessage(
           err,
-          "Task generation failed. Make sure the repository is indexed and try again.",
+          "Something went wrong while working on that. Please try again in a moment.",
         );
         setApiError(msg);
         setPhase("getStartedAnswer");
@@ -591,13 +591,30 @@ export function WelcomeAiChatModal({
           const count = res.tasks.length;
           const questionsNext = normalizeWikiChoiceQuestions(res.choice_questions);
 
+          const safeReply = sanitizeDisplayText(res.reply, "").trim() || null;
+
           if (questionsNext.length > 0) {
-            setWikiClarifyReply(res.reply?.trim() ? res.reply!.trim() : null);
+            setWikiClarifyReply(safeReply);
             setWikiChoiceQuestions(questionsNext);
             setWikiSubmittedChoiceIds(new Set());
             setWikiSubmittedChoiceAnswers({});
             setGeneratedTasks(res.tasks);
             setGeneratedSummary("");
+          } else if (assistantMode === "plan") {
+            // Plan converged: no more questions and (by design) no tasks. Show the
+            // final plan so the user can proceed via "Create tasks from this plan" —
+            // without this branch the reply is dropped and the create-mode
+            // "couldn't generate tasks" copy appears instead.
+            setWikiClarifyReply(safeReply);
+            setWikiChoiceQuestions([]);
+            setWikiSubmittedChoiceIds(new Set());
+            setWikiSubmittedChoiceAnswers({});
+            setGeneratedTasks([]);
+            setGeneratedSummary(
+              safeReply
+                ? ""
+                : "I couldn't draft a plan from that. Add more detail and try again.",
+            );
           } else {
             setWikiClarifyReply(null);
             setWikiChoiceQuestions([]);
@@ -616,7 +633,7 @@ export function WelcomeAiChatModal({
         } catch (err) {
           const msg = getApiErrorMessage(
             err,
-            "Task generation failed. Make sure the repository is indexed and try again.",
+            "Something went wrong while working on that. Please try again in a moment.",
           );
           setApiError(msg);
           setPhase("getStartedAnswer");
@@ -707,7 +724,7 @@ export function WelcomeAiChatModal({
       setApiError(
         getApiErrorMessage(
           err,
-          "Task generation failed. Make sure the repository is indexed and try again.",
+          "Something went wrong while working on that. Please try again in a moment.",
         ),
       );
       setPhase("getStartedAnswer");
@@ -1127,9 +1144,13 @@ export function WelcomeAiChatModal({
                                   />
                                 ) : null}
 
+                                {/* Only offer task creation once the plan has converged —
+                                    while feedback questions are pending the user should
+                                    answer them, not skip ahead. */}
                                 {assistantMode === "plan" &&
                                 generatedTasks.length === 0 &&
-                                (wikiClarifyReply || wikiChoiceQuestions.length > 0) ? (
+                                wikiChoiceQuestions.length === 0 &&
+                                wikiClarifyReply ? (
                                   <button
                                     type="button"
                                     onClick={() => void proceedToCreateFromPlan()}

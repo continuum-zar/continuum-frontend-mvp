@@ -130,6 +130,23 @@ describe('getUserErrorMessage', () => {
         expect(getUserErrorMessage(new Error('Failed to fetch'))).toBe(GENERIC_ERROR_MESSAGE);
     });
 
+    it('blocks Firefox and Safari TypeError wording (task-assistant incident)', () => {
+        // Firefox: seen verbatim in the AI task assistant when a non-API 200 body crashed the client.
+        const firefox = new TypeError('can\'t access property "length", res.tasks is undefined');
+        expect(getUserErrorMessage(firefox, 'Could not generate tasks.')).toBe(
+            'Could not generate tasks.',
+        );
+        expect(getUserErrorMessage(new TypeError('res.tasks is undefined'))).toBe(
+            GENERIC_ERROR_MESSAGE,
+        );
+        // Safari wording for the same class of crash.
+        expect(
+            getUserErrorMessage(
+                new TypeError("undefined is not an object (evaluating 'res.tasks.length')"),
+            ),
+        ).toBe(GENERIC_ERROR_MESSAGE);
+    });
+
     it('returns the fallback for canceled requests', () => {
         expect(getUserErrorMessage(new CanceledError('canceled'), 'fallback')).toBe('fallback');
     });

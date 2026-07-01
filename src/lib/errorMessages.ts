@@ -98,6 +98,12 @@ const TECHNICAL_MESSAGE_PATTERNS = [
     /Cannot read propert/,
     /Cannot access /,
     /is not defined$/,
+    // Firefox / Safari TypeError wording (Chrome's is covered above). Seen when a
+    // client-side crash inside a catch block gets rendered as an API error.
+    /can't access property/i,
+    /is (undefined|null)$/,
+    /(undefined|null) is not an object/,
+    /Cannot destructure /,
     /Failed to fetch/,
     /NetworkError/i,
     /Network Error/,

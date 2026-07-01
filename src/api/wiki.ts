@@ -161,7 +161,17 @@ export async function generateTasks(
         },
         { timeout: 600_000 },
     );
-    return data;
+    // Guard against non-API 200s (e.g. proxy/SPA fallback HTML while the backend is
+    // restarting parses as a string, not this shape). Callers do `res.tasks.length`
+    // — validate here once so a bad body becomes a friendly error instead of a
+    // client-side TypeError leaking raw browser wording into the UI.
+    if (data == null || typeof data !== 'object' || !Array.isArray(data.tasks)) {
+        throw new Error('The assistant returned an unexpected response. Please try again.');
+    }
+    return {
+        ...data,
+        choice_questions: Array.isArray(data.choice_questions) ? data.choice_questions : [],
+    };
 }
 
 /** Persist AI-generated tasks after user confirmation. Creator is set only on the server from the auth session (`POST .../wiki/confirm`). */
