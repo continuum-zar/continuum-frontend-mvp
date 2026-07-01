@@ -55,6 +55,7 @@ import {
 } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import { DashboardAnalyticsCharts } from '../components/dashboard-charts/DashboardAnalyticsCharts';
+import { DATE_X_AXIS_TICK_PROPS } from '../components/dashboard-charts/dashboardChartMappers';
 import { ProductivityRhythmHeatmapCard } from '../components/dashboard-charts/ProductivityRhythmHeatmapCard';
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
 import { getCurrentHeatmapHour, getTodayHeatmapDayLabel, HEATMAP_DAY_LABELS } from '@/lib/productivityRhythmLiveCell';
@@ -881,7 +882,7 @@ export function Dashboard({
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={velocityChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} {...DATE_X_AXIS_TICK_PROPS} />
                 <YAxis stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
@@ -960,7 +961,7 @@ export function Dashboard({
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={burndownChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                  <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} {...DATE_X_AXIS_TICK_PROPS} />
                   <YAxis yAxisId="left" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }}

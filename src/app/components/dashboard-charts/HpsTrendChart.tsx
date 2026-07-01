@@ -1,6 +1,6 @@
 import type { HpsVelocityPoint } from '@/api/dashboard';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { mapHpsTrendChartData } from './dashboardChartMappers';
+import { DATE_X_AXIS_TICK_PROPS, mapHpsTrendChartData } from './dashboardChartMappers';
 
 export function HpsTrendChart({
   points,
@@ -20,7 +20,7 @@ export function HpsTrendChart({
     <ResponsiveContainer width="100%" height={260}>
       <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-        <XAxis dataKey="weekLabel" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
+        <XAxis dataKey="weekLabel" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} {...DATE_X_AXIS_TICK_PROPS} />
         <YAxis stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
         <Tooltip
           contentStyle={{

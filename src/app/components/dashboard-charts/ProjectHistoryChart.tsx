@@ -9,7 +9,7 @@ import {
   YAxis,
   ComposedChart,
 } from 'recharts';
-import { mapProjectHistoryChartData } from './dashboardChartMappers';
+import { DATE_X_AXIS_TICK_PROPS, mapProjectHistoryChartData } from './dashboardChartMappers';
 
 export function ProjectHistoryChart({
   history,
@@ -29,7 +29,7 @@ export function ProjectHistoryChart({
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-        <XAxis dataKey="dateLabel" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
+        <XAxis dataKey="dateLabel" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} {...DATE_X_AXIS_TICK_PROPS} />
         <YAxis
           yAxisId="left"
           stroke="var(--color-primary)"

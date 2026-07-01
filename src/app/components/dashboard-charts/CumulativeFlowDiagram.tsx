@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { DATE_X_AXIS_TICK_PROPS } from './dashboardChartMappers';
 
 export type CumulativeFlowRow = {
   date: string;
@@ -48,7 +49,7 @@ export function CumulativeFlowDiagram({
           tickLine={false}
           axisLine={false}
           tickFormatter={formatTick}
-          interval="preserveStartEnd"
+          {...DATE_X_AXIS_TICK_PROPS}
         />
         <YAxis stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
         <Tooltip
