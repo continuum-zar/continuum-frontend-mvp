@@ -29,6 +29,7 @@ import {
   DialogPortal,
 } from "./ui/dialog";
 import { MultiStepLoader, StepChecklist } from "./ui/multi-step-loader";
+import { BouncingDots } from "./ui/bouncing-dots";
 import { cn } from "./ui/utils";
 import { sanitizeDisplayText } from "@/lib/errorMessages";
 
@@ -69,12 +70,12 @@ function StatusPill({ status }: { status: ReviewRunStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[12px] font-medium",
         STATUS_TONE[status],
       )}
     >
-      {isReviewRunActive(status) ? <SpinnerIcon size={11} /> : null}
       {STATUS_LABEL[status]}
+      {isReviewRunActive(status) ? <BouncingDots /> : null}
     </span>
   );
 }
@@ -121,11 +122,11 @@ export function ReviewRunDrawer({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
-        <DialogOverlay className="bg-black/30" />
+        <DialogOverlay className="bg-black/25" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed right-0 top-0 z-50 flex h-full w-full max-w-[640px] flex-col overflow-hidden border-l border-border bg-background text-foreground shadow-xl duration-200",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2 fixed bottom-6 right-6 left-auto top-auto z-50 flex h-[537px] max-h-[min(537px,calc(100vh-32px))] w-[min(395px,calc(100vw-32px))] max-w-[395px] flex-col overflow-hidden rounded-[19px] border border-solid border-[#edecea] bg-white text-foreground shadow-[0px_86px_24px_0px_rgba(11,25,31,0),0px_55px_22px_0px_rgba(11,25,31,0.01),0px_31px_19px_0px_rgba(11,25,31,0.03),0px_14px_14px_0px_rgba(11,25,31,0.04),0px_3px_8px_0px_rgba(11,25,31,0.05)] outline-none duration-200",
           )}
         >
           <DialogPrimitive.Title className="sr-only">
@@ -133,7 +134,7 @@ export function ReviewRunDrawer({
           </DialogPrimitive.Title>
 
           {/* Header */}
-          <div className="z-[3] flex shrink-0 items-center gap-3 border-b border-border bg-muted/40 px-5 py-3">
+          <div className="z-[3] flex shrink-0 items-center gap-3 border-b border-border bg-muted/40 px-4 py-3">
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-medium text-foreground">
                 Continuum review {reviewId ? `· ${reviewId.slice(0, 8)}` : ""}
@@ -162,7 +163,7 @@ export function ReviewRunDrawer({
 
           {/* Steps — animated multi-step loader while reviewing, static
               checklist once the review is done. */}
-          <div className="z-[1] min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          <div className="z-[1] min-h-0 flex-1 overflow-y-auto px-4 py-4">
             {reviewQuery.isLoading && !review ? (
               <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
                 <SpinnerIcon size={14} />
@@ -246,7 +247,7 @@ export function ReviewRunDrawer({
           </div>
 
           {/* Footer */}
-          <div className="z-[3] flex shrink-0 items-center justify-between gap-3 border-t border-border bg-muted/40 px-5 py-3">
+          <div className="z-[3] flex shrink-0 items-center justify-between gap-3 border-t border-border bg-muted/40 px-4 py-3">
             <div className="flex min-w-0 flex-wrap items-center gap-3 text-[12px] text-muted-foreground">
               {review?.verdict ? <VerdictPill verdict={review.verdict} /> : null}
               {review?.github_comment_url ? (
