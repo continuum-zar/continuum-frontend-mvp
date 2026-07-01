@@ -56,16 +56,16 @@ export function WelcomeContinuumView() {
     normalizedGlobalRole === "admin" || normalizedGlobalRole === "project_manager";
 
   const clientPillLabel = (() => {
-    if (!isApiRoute) return "Client name will appear here";
+    if (!isApiRoute) return null;
     const clients = (membersQuery.data ?? []).filter((m) => {
       const k = (m.role || "").toLowerCase().replace(/\s+/g, "_");
       return k === "client";
     });
-    if (clients.length === 0) return "Client name will appear here";
-    return clients
+    const label = clients
       .map((c) => c.name.trim())
       .filter(Boolean)
       .join(", ");
+    return label || null;
   })();
 
   const headerTitle = isWelcomeDemo
@@ -120,23 +120,25 @@ export function WelcomeContinuumView() {
                 </p>
               </div>
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3530">
-                <div className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0" data-name="Component 7" data-node-id="8:3531">
-                  <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3532">
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/building-2" data-node-id="8:3533">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideBuilding2} />
+                {clientPillLabel && (
+                  <div className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0" data-name="Component 7" data-node-id="8:3531">
+                    <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3532">
+                      <div className="relative shrink-0 size-[16px]" data-name="lucide/building-2" data-node-id="8:3533">
+                        <img alt="" className="absolute block max-w-none size-full" src={imgLucideBuilding2} />
+                      </div>
+                      <p
+                        className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative max-w-[min(280px,40vw)] shrink truncate text-[#606d76] text-[14px]"
+                        title={clientPillLabel}
+                        data-node-id="8:3535"
+                      >
+                        {clientPillLabel}
+                      </p>
                     </div>
-                    <p
-                      className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative max-w-[min(280px,40vw)] shrink truncate text-[#606d76] text-[14px]"
-                      title={clientPillLabel}
-                      data-node-id="8:3535"
-                    >
-                      {clientPillLabel}
-                    </p>
+                    <div className="relative shrink-0 size-[16px]" data-name="lucide/x" data-node-id="8:3536">
+                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideX} />
+                    </div>
                   </div>
-                  <div className="relative shrink-0 size-[16px]" data-name="lucide/x" data-node-id="8:3536">
-                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideX} />
-                  </div>
-                </div>
+                )}
                 <AICreditsBadge />
                 {isApiRoute && routeProjectId && isApiProjectId(routeProjectId) ? (
                   <NotificationBell
