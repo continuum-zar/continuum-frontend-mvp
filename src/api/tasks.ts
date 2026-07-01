@@ -78,20 +78,34 @@ export interface TaskOption {
     project_id: number;
 }
 
+/** A single page of tasks plus the total count for pagination controls. */
+export interface PaginatedTasks {
+    data: TaskAPIResponse[];
+    total: number;
+}
+
 /** Tasks assigned to a given user across all projects the current user can access. */
-export async function fetchTasksAssignedToUser(assignedUserId: number): Promise<TaskAPIResponse[]> {
+export async function fetchTasksAssignedToUser(
+    assignedUserId: number,
+    params?: { skip?: number; limit?: number },
+): Promise<PaginatedTasks> {
+    const { skip = 0, limit = 500 } = params ?? {};
     const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/', {
-        params: { assigned_to: assignedUserId, limit: 500, skip: 0 },
+        params: { assigned_to: assignedUserId, limit, skip },
     });
-    return data.data ?? [];
+    return { data: data.data ?? [], total: data.total ?? 0 };
 }
 
 /** Tasks created by a given user across all projects the current user can access. */
-export async function fetchTasksCreatedByUser(creatorUserId: number): Promise<TaskAPIResponse[]> {
+export async function fetchTasksCreatedByUser(
+    creatorUserId: number,
+    params?: { skip?: number; limit?: number },
+): Promise<PaginatedTasks> {
+    const { skip = 0, limit = 500 } = params ?? {};
     const { data } = await api.get<PaginatedResponse<TaskAPIResponse>>('/tasks/', {
-        params: { created_by: creatorUserId, limit: 500, skip: 0 },
+        params: { created_by: creatorUserId, limit, skip },
     });
-    return data.data ?? [];
+    return { data: data.data ?? [], total: data.total ?? 0 };
 }
 
 /** Fetch all tasks for the current user's projects (no project_id). For time log task dropdown. */

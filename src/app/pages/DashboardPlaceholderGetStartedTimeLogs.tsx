@@ -1462,6 +1462,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 ))}
               </div>
 
+              {totalPages > 1 && (
               <div className="flex w-full shrink-0 flex-wrap items-center justify-center gap-6 px-2 pb-2 pt-1">
                 <button
                   type="button"
@@ -1550,6 +1551,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                   <ChevronsRight className="size-4" />
                 </button>
               </div>
+              )}
             </div>
           )}
             </>
