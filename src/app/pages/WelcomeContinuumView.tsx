@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 
-import { useProject, useProjectMembers } from "@/api/hooks";
+import { useProject, useProjectMembers, useProjectMilestones } from "@/api/hooks";
+import { fetchProjectStats, fetchProjectHealth, fetchClassificationBreakdown } from "@/api";
+import { STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
@@ -50,6 +53,39 @@ export function WelcomeContinuumView() {
     pathname.startsWith(`${WORKSPACE_BASE}/project/`);
   const projectQuery = useProject(isApiRoute ? routeProjectId : undefined);
   const membersQuery = useProjectMembers(isApiRoute ? routeProjectId : undefined);
+
+  // Data behind the hero gauge + metrics row + milestones. The branded loader
+  // waits on these (in addition to project detail) so it doesn't clear while the
+  // gauges still read 0 and milestones are empty. Keys match WelcomeEmptyProjectBody,
+  // so React Query dedupes — this adds no extra network requests.
+  const apiProjectId = isApiRoute && routeProjectId ? Number(routeProjectId) : null;
+  const statsQuery = useQuery({
+    queryKey: ["projects", apiProjectId, "stats"],
+    queryFn: () => fetchProjectStats(apiProjectId as number),
+    enabled: apiProjectId != null,
+    staleTime: STALE_TIME_DATA_MS,
+  });
+  const healthQuery = useQuery({
+    queryKey: ["projects", apiProjectId, "health"],
+    queryFn: () => fetchProjectHealth(apiProjectId as number),
+    enabled: apiProjectId != null,
+    staleTime: STALE_TIME_DATA_MS,
+  });
+  const classificationQuery = useQuery({
+    queryKey: ["projects", apiProjectId, "classification-breakdown"],
+    queryFn: () => fetchClassificationBreakdown(apiProjectId as number),
+    enabled: apiProjectId != null,
+    staleTime: STALE_TIME_DATA_MS,
+  });
+  const milestonesQuery = useProjectMilestones(apiProjectId ?? undefined);
+
+  // A query is "settled" once it has resolved or errored — an error must not hang
+  // the loader forever, so we proceed and let the widget show its own fallback.
+  const settled = (q: { isSuccess: boolean; isError: boolean }) => q.isSuccess || q.isError;
+  const summaryReady =
+    !isApiRoute ||
+    (settled(statsQuery) && settled(healthQuery) && settled(classificationQuery) && settled(milestonesQuery));
+
   const user = useAuthStore((s) => s.user);
   const normalizedGlobalRole = (user?.role || "").toLowerCase().replace(/\s+/g, "_");
   const isGlobalAdminOrPm =
@@ -351,7 +387,7 @@ export function WelcomeContinuumView() {
             </div>
             ) : (
             <div className="relative flex w-full min-w-0 flex-col items-start px-1">
-              {isApiRoute && projectQuery.isLoading && (
+              {isApiRoute && (projectQuery.isLoading || (projectQuery.isSuccess && !summaryReady)) && (
                 <BrandedLoadingPlaceholder
                   className="min-h-[60vh] w-full"
                   label="Loading project…"
@@ -365,7 +401,7 @@ export function WelcomeContinuumView() {
                   </Link>
                 </div>
               )}
-              {isApiRoute && projectQuery.isSuccess && routeProjectId && (
+              {isApiRoute && projectQuery.isSuccess && summaryReady && routeProjectId && (
                 <WelcomeEmptyProjectBody
                   projectId={Number(routeProjectId)}
                   onOpenInviteMembers={() => setShareProjectOpen(true)}
