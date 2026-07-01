@@ -49,6 +49,9 @@ import {
   type ChecklistRow,
 } from "../CreateTaskModal";
 import { IndexingProgressBanner } from "@/app/components/IndexingProgressBanner";
+import { IndexingLottie } from "@/app/components/IndexingLottie";
+import { indexingProgressCaption } from "@/lib/indexingProgressDisplay";
+import { isLikelyRawServerErrorText } from "@/lib/errorMessages";
 import { PlannerAssistantMarkdown } from "../planner/PlannerAssistantMarkdown";
 import { PlannerChoiceQuestions } from "../planner/PlannerChoiceQuestions";
 
@@ -398,14 +401,25 @@ export function WelcomeAiChatModal({
           { signal: controller.signal },
         );
         if (controller.signal.aborted) return;
+        // The backend can return a 200 whose answer body is actually a raw
+        // server/DB error (e.g. a SQLAlchemy trace). Never show that to a user.
+        const answer = res.answer ?? "No response.";
+        const isLeakedError = isLikelyRawServerErrorText(answer);
         setReportingThread((prev) => [
           ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: res.answer ?? "No response.",
-            confidence: res.confidence,
-          },
+          isLeakedError
+            ? {
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: "Something went wrong on our end while answering. Please try again in a moment.",
+                isError: true,
+              }
+            : {
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: answer,
+                confidence: res.confidence,
+              },
         ]);
         clearComposerAttachments();
       } catch (err) {
@@ -1925,20 +1939,30 @@ function ReportingAssistantPanel({
               )}
             </Fragment>
           ))}
-          {reportingPending && (
-            <div className="flex w-full flex-col items-start gap-3 rounded-[16px]">
-              <IndexingProgressBanner
-                progress={indexingProgress}
-                pollFailed={Boolean(indexingPollFailed)}
-              />
-              <div className="flex w-full items-center gap-2 opacity-50">
-                <SpinnerGradientThinking />
-                <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
-                  Thinking...
+          {reportingPending &&
+            (indexingPollFailed || indexingProgress?.status === "error" ? (
+              // Indexing failed / progress unavailable — keep the informative text banner.
+              <div className="flex w-full flex-col items-start gap-3 rounded-[16px]">
+                <IndexingProgressBanner
+                  progress={indexingProgress}
+                  pollFailed={Boolean(indexingPollFailed)}
+                />
+                <div className="flex w-full items-center gap-2 opacity-50">
+                  <SpinnerGradientThinking />
+                  <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
+                    Thinking...
+                  </p>
+                </div>
+              </div>
+            ) : (
+              // Indexing / preparing context — play the animation in the middle of the chat area.
+              <div className="flex w-full flex-1 flex-col items-center justify-center gap-2 py-10">
+                <IndexingLottie className="size-40" fallback={<SpinnerGradientThinking />} />
+                <p className="font-['Inter',sans-serif] text-[12px] font-medium leading-[16px] text-[#727d83]">
+                  {indexingProgressCaption(indexingProgress)}
                 </p>
               </div>
-            </div>
-          )}
+            ))}
         </div>
       </div>
       <div className="relative z-10 mt-auto w-full shrink-0 px-[15px] pb-[15px]">

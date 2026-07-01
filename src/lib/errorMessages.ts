@@ -108,10 +108,28 @@ const TECHNICAL_MESSAGE_PATTERNS = [
     /Unexpected token/,
     /JSON\.parse/,
     /^\s*at\s/m,
+    // Backend/database internals that must never surface to a user (raw SQL,
+    // driver errors, ORM tracebacks). Seen leaking through 200 answer bodies.
+    /Traceback \(most recent call last\)/,
+    /\bpsycopg2\b/i,
+    /sqlalche\.me/i,
+    /\bSQLAlchemy\b/,
+    /\[SQL:/,
+    /\b(Undefined(Column|Table|Function)|ProgrammingError|IntegrityError|OperationalError|DataError)\b/,
+    /\b(column|relation|table)\b.+\bdoes not exist\b/i,
 ];
 
 function isTechnicalMessage(message: string): boolean {
     return TECHNICAL_MESSAGE_PATTERNS.some((p) => p.test(message));
+}
+
+/**
+ * True when a *successful* response body (e.g. an AI answer string) actually
+ * contains a raw server/database error that leaked through. Such text must be
+ * replaced with friendly copy before display — see WelcomeAiChatModal.
+ */
+export function isLikelyRawServerErrorText(text: unknown): boolean {
+    return typeof text === 'string' && text.trim().length > 0 && isTechnicalMessage(text);
 }
 
 /** Backend `message` is human-authored, but gate it against anything that slipped through. */

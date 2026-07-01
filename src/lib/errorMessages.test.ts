@@ -4,6 +4,7 @@ import {
     GENERIC_ERROR_MESSAGE,
     describeErrorForToast,
     getUserErrorMessage,
+    isLikelyRawServerErrorText,
 } from './errorMessages';
 
 function makeAxiosError(opts: {
@@ -156,5 +157,28 @@ describe('describeErrorForToast', () => {
             data: { code: '404', message: 'Task not found.', correlation_id: 'abc-123' },
         });
         expect(describeErrorForToast(err).description).toBeUndefined();
+    });
+});
+
+describe('isLikelyRawServerErrorText', () => {
+    it('flags a leaked SQLAlchemy/psycopg2 error returned as an answer body', () => {
+        const leaked =
+            'psycopg2.errors.UndefinedColumn) column project_embeddings.embedding_model does not exist\n' +
+            'LINE 1: ...content_hash AS project_embeddings_content_hash, project_em...\n' +
+            '[SQL: SELECT project_embeddings.content_hash ...]\n' +
+            '(Background on this error at: https://sqlalche.me/e/20/f405)';
+        expect(isLikelyRawServerErrorText(leaked)).toBe(true);
+    });
+
+    it('does not flag a normal AI answer', () => {
+        expect(
+            isLikelyRawServerErrorText('The project is on track; 3 tasks were completed this week.'),
+        ).toBe(false);
+    });
+
+    it('ignores non-string values', () => {
+        expect(isLikelyRawServerErrorText(undefined)).toBe(false);
+        expect(isLikelyRawServerErrorText(null)).toBe(false);
+        expect(isLikelyRawServerErrorText(42)).toBe(false);
     });
 });
