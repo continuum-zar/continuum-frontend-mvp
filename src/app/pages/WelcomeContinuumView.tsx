@@ -11,16 +11,9 @@ import { DashboardLeftRail } from "../components/dashboard-placeholder/Dashboard
 import { ProjectSettingsPanel } from "../components/dashboard-placeholder/project-settings/ProjectSettingsPanel";
 import { NotificationBell } from "../components/notifications/NotificationBell";
 import { AICreditsBadge } from "../components/AICreditsBadge";
-import {
-  WelcomeRecentActivity,
-  WelcomeRepo,
-  WelcomeResources,
-} from "../components/welcome/WelcomeActivityResourcesRepo";
-import { WelcomeMilestoneTimeline } from "../components/welcome/WelcomeMilestoneTimeline";
-import { WelcomeProjectHeroGauge } from "../components/welcome/WelcomeProjectHeroGauge";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeEmptyProjectBody } from "../components/welcome/WelcomeEmptyProjectBody";
-import { WelcomeMetricsRow } from "../components/welcome/WelcomeMetricsRow";
+import { WelcomeDemoProjectBody } from "../components/welcome/WelcomeDemoProjectBody";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
 import {
   DASHBOARD_WELCOME_PROJECT,
@@ -38,9 +31,7 @@ const imgLucideBell = mcpAsset("0e2a64e9-ee3f-4ce3-aa60-05063accc712");
 const imgLucideFolderCog = mcpAsset("5cad83cc-0f0b-48f5-9afd-c5124c0169e6");
 const imgLucideShare = mcpAsset("00b88546-c39b-453e-aa9d-34f496edd586");
 const imgLucideChevronDown = mcpAsset("72ab3ac0-aebf-4278-859f-4205108fb16c");
-const imgLucideInfo = mcpAsset("f597ed55-c78f-481a-a433-abcd6a07d507");
 const imgVector8 = mcpAsset("1acc14a4-997e-4b19-b81a-91ef21ff09c2");
-const imgLucidePlus1 = mcpAsset("1da1cc85-0c45-4470-a43f-e9a9f1a1e4f5");
 const imgVector15 = mcpAsset("41d4c7e7-e987-4d3e-b39f-b0a8c1791b01");
 
 export function WelcomeContinuumView() {
@@ -286,105 +277,7 @@ export function WelcomeContinuumView() {
               }}
             >
             {isWelcomeDemo ? (
-            <div className="relative flex w-full min-w-0 flex-col items-start" data-node-id="8:3554">
-              <div className="content-stretch flex flex-col gap-[64px] items-center pb-[32px] pt-[48px] relative shrink-0 w-full" data-node-id="8:3555">
-                <WelcomeProjectHeroGauge />
-                <WelcomeMetricsRow />
-                <div className="content-stretch flex flex-col gap-[64px] items-start max-w-[815px] relative shrink-0 w-[815px]" data-node-id="8:3562">
-                  <WelcomeMilestoneTimeline variant="demo" />
-                  <div className="flex w-full flex-col gap-16">
-                    <WelcomeRecentActivity />
-                    <WelcomeResources />
-                    <WelcomeRepo />
-                  </div>
-                  <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3717">
-                    <div className="content-stretch flex flex-col gap-[16px] h-[40px] items-start justify-center relative shrink-0 w-full" data-node-id="8:3718">
-                      <div className="content-stretch flex flex-[1_0_0] items-center justify-between min-h-px min-w-px relative w-full" data-node-id="8:3719">
-                        <div className="content-stretch flex items-center relative shrink-0" data-node-id="8:3720">
-                          <div className="content-stretch flex flex-col items-start relative shrink-0" data-node-id="8:3721">
-                            <div className="content-stretch flex gap-[8px] items-center justify-center relative shrink-0" data-node-id="8:3722">
-                              <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[24px] whitespace-nowrap" data-node-id="8:3723">
-                                Members
-                              </p>
-                              <div className="relative shrink-0 size-[16px]" data-name="lucide/info" data-node-id="8:3724">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideInfo} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              data-tour="welcome-invite-members"
-                              className="border border-[#ebedee] border-solid content-stretch flex cursor-pointer gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                              data-name="Component 2"
-                              data-node-id="8:3726"
-                              style={{
-                                backgroundImage:
-                                  "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(168.89065931200642deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
-                              }}
-                              onClick={() => setShareProjectOpen(true)}
-                            >
-                          <div className="relative shrink-0 size-[24px]" data-name="lucide/plus" data-node-id="8:3727">
-                            <img alt="" className="absolute block max-w-none size-full" src={imgLucidePlus1} />
-                          </div>
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3729">
-                            Invite Members
-                          </p>
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Invite members to this project</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
-                    <div className="content-stretch flex items-start relative shrink-0 w-full" data-node-id="8:3761">
-                      <div className="bg-white border border-[#ebedee] border-solid content-stretch flex items-start p-[24px] relative rounded-[12px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-[260px]" data-node-id="8:3762">
-                        <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-start min-h-px min-w-px relative" data-node-id="8:3763">
-                          <div className="content-stretch flex h-[40px] items-center relative rounded-[8px] shrink-0 w-full" data-name="Component 13" data-node-id="8:3764">
-                            <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3765">
-                              <div className="bg-[#f17173] content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[35px]" data-name="Component 31" data-node-id="8:3766">
-                                <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[13.13px] text-white whitespace-nowrap" data-node-id="I8:3766;2032:902">
-                                  <p className="leading-[0.4]">AS</p>
-                                </div>
-                              </div>
-                              <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] items-start justify-center leading-[normal] not-italic relative shrink-0 whitespace-nowrap" data-node-id="8:3767">
-                                <p className="relative shrink-0 text-[#0b191f] text-[14px]" data-node-id="8:3768">
-                                  Amukelani Shiringani
-                                </p>
-                                <p className="relative shrink-0 text-[#727d83] text-[12px]" data-node-id="8:3769">
-                                  Product Designer
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3770">
-                            <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[8px] items-start leading-[normal] not-italic relative shrink-0 text-[14px] w-full whitespace-nowrap" data-node-id="8:3771">
-                              <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3772">
-                                <p className="relative shrink-0 text-[#727d83]" data-node-id="8:3773">
-                                  Total hours
-                                </p>
-                                <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-ellipsis w-[34px]" data-node-id="8:3774">
-                                  0
-                                </p>
-                              </div>
-                              <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3775">
-                                <p className="relative shrink-0 text-[#727d83]" data-node-id="8:3776">
-                                  Task completed
-                                </p>
-                                <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-ellipsis w-[34px]" data-node-id="8:3777">
-                                  0
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <WelcomeDemoProjectBody onOpenInviteMembers={() => setShareProjectOpen(true)} />
             ) : (
             <div className="relative flex w-full min-w-0 flex-col items-start px-1">
               {isApiRoute && (projectQuery.isLoading || (projectQuery.isSuccess && !summaryReady)) && (

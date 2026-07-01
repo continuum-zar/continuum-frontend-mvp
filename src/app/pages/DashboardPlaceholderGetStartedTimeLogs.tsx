@@ -127,7 +127,7 @@ type ActivityMemberRow = {
   commits: number;
   totalHours: number;
   tasksCompleted: number;
-  avatar: { kind: "photo"; src: string } | { kind: "initials"; text: string; bg: string };
+  avatar: { text: string; bg: string };
 };
 
 const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
@@ -138,7 +138,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 128,
     totalHours: 160,
     tasksCompleted: 25,
-    avatar: { kind: "photo", src: "https://picsum.photos/seed/continuum-a/70/70" },
+    avatar: { text: "AS", bg: "#2563eb" },
   },
   {
     id: "2",
@@ -147,7 +147,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 95,
     totalHours: 140,
     tasksCompleted: 18,
-    avatar: { kind: "initials", text: "JD", bg: "#e19c02" },
+    avatar: { text: "JD", bg: "#e19c02" },
   },
   {
     id: "3",
@@ -156,7 +156,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 120,
     totalHours: 150,
     tasksCompleted: 30,
-    avatar: { kind: "initials", text: "MG", bg: "#f17173" },
+    avatar: { text: "MG", bg: "#f17173" },
   },
   {
     id: "4",
@@ -165,7 +165,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 88,
     totalHours: 130,
     tasksCompleted: 22,
-    avatar: { kind: "initials", text: "RP", bg: "#9da2f7" },
+    avatar: { text: "RP", bg: "#9da2f7" },
   },
   {
     id: "5",
@@ -174,7 +174,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 102,
     totalHours: 145,
     tasksCompleted: 19,
-    avatar: { kind: "photo", src: "https://picsum.photos/seed/continuum-l/70/70" },
+    avatar: { text: "LW", bg: "#10b981" },
   },
   {
     id: "6",
@@ -183,7 +183,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 110,
     totalHours: 155,
     tasksCompleted: 27,
-    avatar: { kind: "photo", src: "https://picsum.photos/seed/continuum-c/70/70" },
+    avatar: { text: "CM", bg: "#ec4899" },
   },
 ];
 
@@ -1199,22 +1199,12 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         <div className="flex w-full flex-col gap-6">
                           <div className="flex h-10 w-full items-center rounded-[8px]">
                             <div className="flex items-center gap-2">
-                              {m.avatar.kind === "photo" ? (
-                                <img
-                                  src={m.avatar.src}
-                                  alt=""
-                                  className="size-[35px] shrink-0 rounded-full object-cover"
-                                  width={35}
-                                  height={35}
-                                />
-                              ) : (
-                                <div
-                                  className="flex size-[35px] shrink-0 items-center justify-center rounded-full text-[13.13px] font-medium text-white"
-                                  style={{ backgroundColor: m.avatar.bg }}
-                                >
-                                  {m.avatar.text}
-                                </div>
-                              )}
+                              <div
+                                className="flex size-[35px] shrink-0 items-center justify-center rounded-full text-[13.13px] font-medium text-white"
+                                style={{ backgroundColor: m.avatar.bg }}
+                              >
+                                {m.avatar.text}
+                              </div>
                               <div className="flex flex-col items-start justify-center whitespace-nowrap">
                                 <p className="text-[14px] font-medium text-[#0b191f]">{m.name}</p>
                                 <p className="text-[12px] font-medium text-[#727d83]">{m.role}</p>

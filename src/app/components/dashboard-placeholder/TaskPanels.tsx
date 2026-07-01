@@ -28,6 +28,7 @@ import { getRecordingElapsedMs, useTimeRecordingStore } from "@/store/timeRecord
 import { toast } from "sonner";
 import { isApiProjectId } from "@/app/data/dashboardPlaceholderProjects";
 import { welcomeResourcesMock } from "@/app/data/welcomeDashboardMock";
+import { memberAvatarBackground } from "@/lib/memberAvatar";
 
 import { LogTimeModal } from "./LogTimeModal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -253,7 +254,7 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
                   ["Check for console errors or warnings", true],
                 ].map(([label, done]) => (
                   <div key={String(label)} className="flex items-center gap-4">
-                    <div className={`flex size-5 items-center justify-center rounded-[4px] ${done ? "bg-[#24B5F8]" : "border border-[#ebedee] bg-[#f9f9f9]"}`}>
+                    <div className={`flex size-5 items-center justify-center rounded-[4px] ${done ? "bg-[#24B5F8]" : "border border-black bg-[#f9f9f9]"}`}>
                       {done ? <Check size={13} className="text-white" /> : null}
                     </div>
                     <p
@@ -344,27 +345,24 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
                   <UserRoundPlus size={16} />
                 </button>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {[
-                  { id: "fa", label: "FA", color: "#E8A303", checked: true, ring: true },
-                  { id: "gb", label: "GB", color: "#EE7F84", checked: true, ring: true },
-                  { id: "hc", label: "HC", color: "#7157E7", checked: false, ring: false },
-                  { id: "je", label: "JE", color: "#4A9FF8", checked: true, ring: true },
+                  { userId: 7, initials: "AS", name: "Amukelani Shiringani" },
+                  { userId: 3, initials: "DM", name: "Daniel Max" },
+                  { userId: 12, initials: "TP", name: "Todd Phillips" },
+                  { userId: 5, initials: "JE", name: "Jordan Ellis" },
                 ].map((user) => (
-                  <div key={user.id} className="relative">
+                  <div key={user.userId} className="relative">
                     <div
-                      className={`flex size-[40px] items-center justify-center rounded-full text-[16px] font-medium leading-none text-white ${
-                        user.ring ? "border-2 border-[#0b191f]" : ""
-                      }`}
-                      style={{ backgroundColor: user.color }}
+                      className="flex size-[40px] items-center justify-center rounded-full border-2 border-[#0b191f] text-[16px] font-medium leading-none text-white"
+                      style={{ backgroundColor: memberAvatarBackground(user.userId) }}
+                      title={user.name}
                     >
-                      {user.label}
+                      {user.initials}
                     </div>
-                    {user.checked ? (
-                      <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-white bg-black">
-                        <Check size={10} className="text-white" />
-                      </div>
-                    ) : null}
+                    <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-white bg-black">
+                      <Check size={10} className="text-white" aria-hidden />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -544,18 +542,24 @@ export function TaskPanels({ onBack, taskId = null, projectId = null }: TaskPane
           </div>
           <div className="space-y-4">
             <p className="text-[16px] font-medium text-[#0b191f]">Activity</p>
-            {activityMock.map((a, idx) => (
-              <div key={`${a.time}-${idx}`} className="flex gap-4">
-                <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
-                  <Activity size={16} className="text-[#727d83]" />
+            <div className="relative flex flex-col gap-4">
+              <div
+                className="pointer-events-none absolute top-[25px] bottom-[25px] left-[24px] w-px bg-[#e4eaec]"
+                aria-hidden
+              />
+              {activityMock.map((a, idx) => (
+                <div key={`${a.time}-${idx}`} className="relative z-[1] flex gap-4">
+                  <div className="mt-1 flex size-[50px] shrink-0 items-center justify-center rounded-[99px] bg-[#edf0f3]">
+                    <Activity size={16} className="text-[#727d83]" />
+                  </div>
+                  <div>
+                    <p className="text-[12px] text-[#727d83]">{a.time}</p>
+                    <p className="text-[16px] leading-none text-[#0b191f]">{a.title}</p>
+                    <p className="text-[12px] text-[#727d83]">{a.detail}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[12px] text-[#727d83]">{a.time}</p>
-                  <p className="text-[16px] leading-none text-[#0b191f]">{a.title}</p>
-                  <p className="text-[12px] text-[#727d83]">{a.detail}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </aside>

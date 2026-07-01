@@ -37,6 +37,8 @@ import { CreateTaskModal } from "../components/CreateTaskModal";
 import { CreateMilestoneModal } from "../components/dashboard-placeholder/CreateMilestoneModal";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { KanbanBoardSkeleton } from "../components/dashboard-placeholder/DashboardPlaceholderSkeletons";
+import { KanbanAssigneeAvatars } from "../components/dashboard-placeholder/KanbanAssigneeAvatars";
+import { KanbanTaskMetaPills } from "../components/dashboard-placeholder/KanbanTaskMetaPills";
 import { NotificationBell } from "../components/notifications/NotificationBell";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
@@ -104,11 +106,6 @@ const imgLucideSearch1 = mcpAsset("c5ee61c3-f628-42e7-b456-58f9c49a5cfe");
 const imgVector10 = mcpAsset("0d58a9e0-9d27-4eb3-ad07-b2ad64a15f10");
 const imgVector11 = mcpAsset("4912f83a-d378-4c38-9bf2-ce38aa20cc19");
 const imgVector12 = mcpAsset("64e38728-fa1b-4a8c-97d3-cbb7f586a27c");
-const imgVector13 = mcpAsset("c1ddd3b4-d26b-4a92-b752-d84ba0208f8a");
-const imgFrame308 = mcpAsset("5b22b8e9-bd31-437e-a559-232247be56a0");
-const imgVector14 = mcpAsset("a92d5710-b68e-4205-9b7a-c40338695c51");
-const imgLucidePaperclip = mcpAsset("c4929b2e-a9fc-4fce-913e-ecf4dafe6944");
-const imgLucideMessageCircle = mcpAsset("ff8c6057-7f55-46be-8899-4cb59d2eda1a");
 const imgLucideSquircleDashed = mcpAsset("e2efeca9-31cd-4cf9-ac56-b2799ee8a450");
 const imgLucideCircleCheckBig = mcpAsset("244bb570-3aed-481d-8cf9-f067c69c50b0");
 const imgVector15 = mcpAsset("41d4c7e7-e987-4d3e-b39f-b0a8c1791b01");
@@ -119,20 +116,6 @@ const imgVector19 = mcpAsset("14a8de50-34e0-4b11-af87-5ea05963c40d");
 const imgVector20 = mcpAsset("5f55c469-83d2-4f97-9cb9-f48196e0e890");
 const imgVector21 = mcpAsset("b3719b5c-ed25-42db-a8fe-da0aeeceee0b");
 const imgVector22 = mcpAsset("0a8e6b5c-95b8-4050-8755-f2787f342c6f");
-type ComponentProps = {
-  className?: string;
-  profilePic?: "True" | "False" | "Add user";
-};
-
-function Component({ className }: Pick<ComponentProps, "className">) {
-  return (
-    <div className={className || "bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] size-[24px]"} data-node-id="7:769">
-      <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[9px] text-white whitespace-nowrap" data-node-id="7:770">
-        <p className="leading-[0.4]">AS</p>
-      </div>
-    </div>
-  );
-}
 type Component3Props = {
   className?: string;
   chevron?: "False";
@@ -584,14 +567,28 @@ interface TaskCardData {
   msgCount: number;
   badgesHidden: boolean;
   priority: TaskPriority;
+  /** Checklist progress 0–100 (drives the card progress bar, like the live board). */
+  progress: number;
+  /** Global user ids for the stacked assignee avatars. */
+  assigneeUserIds: number[];
+  branchCount?: number;
+  dependencyCount?: number;
 }
 
 const TASKS: TaskCardData[] = [
-  { id: 1, title: "View project overview", descriptionLines: ['To view the project status, select "Welcome to Continuum!" in the top left under the "Projects" label.'], clipCount: 1, msgCount: 1, badgesHidden: false, priority: "info" },
-  { id: 2, title: "Add a new task", descriptionLines: ['To find, organise, and add a new task, use the "+" icon in the top right corner of ', "To-Do."], multiLineDesc: true, clipCount: 1, msgCount: 1, badgesHidden: false, priority: "high" },
-  { id: 3, title: "Add a new project", descriptionLines: ["Find, organise, and add a new project using the sidebar to the left."], clipCount: 1, msgCount: 1, badgesHidden: false, priority: "low" },
-  { id: 4, title: "Create an account with Continuum", clipCount: 5, msgCount: 3, badgesHidden: true, priority: "medium" },
+  { id: 1, title: "View project overview", descriptionLines: ['To view the project status, select "Welcome to Continuum!" in the top left under the "Projects" label.'], clipCount: 1, msgCount: 1, badgesHidden: false, priority: "info", progress: 40, assigneeUserIds: [7], branchCount: 1 },
+  { id: 2, title: "Add a new task", descriptionLines: ['To find, organise, and add a new task, use the "+" icon in the top right corner of ', "To-Do."], multiLineDesc: true, clipCount: 1, msgCount: 1, badgesHidden: false, priority: "high", progress: 0, assigneeUserIds: [3, 7] },
+  { id: 3, title: "Add a new project", descriptionLines: ["Find, organise, and add a new project using the sidebar to the left."], clipCount: 1, msgCount: 1, badgesHidden: false, priority: "low", progress: 65, assigneeUserIds: [12], dependencyCount: 1 },
+  { id: 4, title: "Create an account with Continuum", clipCount: 5, msgCount: 3, badgesHidden: true, priority: "medium", progress: 100, assigneeUserIds: [7, 3, 12] },
 ];
+
+/** Demo team behind the placeholder board's assignee avatars (ids match TASKS.assigneeUserIds). */
+const DEMO_BOARD_MEMBERS: Member[] = [
+  { id: 1, userId: 7, name: "Amukelani Shiringani", email: "", role: "product_designer", username: "", displayName: "Amukelani Shiringani", initials: "AS" },
+  { id: 2, userId: 3, name: "Daniel Max", email: "", role: "developer", username: "", displayName: "Daniel Max", initials: "DM" },
+  { id: 3, userId: 12, name: "Todd Phillips", email: "", role: "project_manager", username: "", displayName: "Todd Phillips", initials: "TP" },
+];
+const DEMO_BOARD_MEMBER_BY_USER_ID = new Map(DEMO_BOARD_MEMBERS.map((m) => [m.userId, m]));
 
 const INITIAL_COLUMNS: Record<number, ColumnId> = { 1: "todo", 2: "todo", 3: "todo", 4: "completed" };
 const INITIAL_COLUMN_ORDER: Record<ColumnId, number[]> = {
@@ -852,6 +849,9 @@ export function DashboardPlaceholder() {
 
   const renderCard = (task: TaskCardData) => {
     const isDragging = draggingId === task.id;
+    const attachments = task.badgesHidden ? 0 : task.clipCount;
+    const comments = task.badgesHidden ? 0 : task.msgCount;
+    const description = task.descriptionLines?.join(" ").trim();
     return (
       <div
         key={task.id}
@@ -864,79 +864,48 @@ export function DashboardPlaceholder() {
         onClick={() => navigate(workspaceJoin("task", String(task.id)))}
         style={{ order: cardOrderFor(task.id) }}
       >
-        <div className={`bg-white ${isDragging ? "border-2 border-[#24B5F8]" : "border border-[#ebedee]"} border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full`}>
-          <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full">
-            <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">
-              <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full">
-                <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full">
-                  <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]">
-                    {task.title}
-                  </p>
-                  <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]">
-                    <Flag size={16} className={taskPriorityFlagClass(task.priority)} aria-hidden />
-                  </div>
-                </div>
+        <div className={`bg-white ${isDragging ? "border-2 border-[#24B5F8]" : "border border-[#ebedee]"} border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[8px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full`}>
+          <div className="content-stretch flex flex-col gap-[16px] items-start p-[14px] relative shrink-0 w-full">
+            <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
+              <div className="content-stretch flex gap-[12px] items-start justify-between relative shrink-0 w-full">
+                <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[16px] tracking-[-0.16px]">
+                  {task.title}
+                </p>
+                <Flag size={14} className={`shrink-0 ${taskPriorityFlagClass(task.priority)}`} aria-hidden />
               </div>
-              {task.descriptionLines && (
-                <>
-                  <div className="h-0 relative shrink-0 w-full">
-                    <div className="absolute inset-[-0.57px_0]">
-                      <img alt="" className="block max-w-none size-full" src={imgVector13} />
-                    </div>
-                  </div>
-                  <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
-                    {task.multiLineDesc ? (
-                      <div className="font-['Satoshi:Medium',sans-serif] leading-[0] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full whitespace-pre-wrap">
-                        {task.descriptionLines.map((line, i) => (
-                          <p key={i} className={`leading-[normal]${i === 0 ? " mb-0" : ""}`}>{line}</p>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full">
-                        {task.descriptionLines[0]}
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
+              {description ? (
+                <p className="font-['Satoshi:Medium',sans-serif] line-clamp-2 leading-[normal] not-italic relative shrink-0 w-full text-[#606d76] text-[14px]">
+                  {description}
+                </p>
+              ) : null}
             </div>
-            <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
-              <div className="content-stretch flex gap-[6px] h-[15px] isolate items-center justify-center relative shrink-0 w-full">
-                <div className="relative shrink-0 size-[12px] z-[2]">
-                  <div className="absolute inset-[-33.33%]">
-                    <img alt="" className="block max-w-none size-full" src={imgFrame308} />
-                  </div>
-                </div>
-                <div className="flex-[1_0_0] h-0 min-h-px min-w-px relative z-[1]">
-                  <div className="absolute inset-[-2.5px_-0.84%]">
-                    <img alt="" className="block max-w-none size-full" src={imgVector14} />
-                  </div>
-                </div>
-              </div>
+            <div
+              className="relative h-[2px] w-full shrink-0 overflow-hidden bg-[#ebedee]"
+              role="progressbar"
+              aria-valuenow={task.progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Checklist progress"
+            >
+              <div className="absolute inset-y-0 left-0 bg-[#08090A]" style={{ width: `${task.progress}%` }} />
             </div>
-            <div className="content-stretch flex items-center justify-between relative shrink-0 w-full">
-              <div className="content-stretch flex items-center relative shrink-0">
-                <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
+            <div className="content-stretch relative flex w-full shrink-0 flex-wrap items-center justify-between gap-2">
+              <div className="content-stretch relative flex min-w-0 shrink-0 items-center">
+                <KanbanAssigneeAvatars
+                  assigneeUserIds={task.assigneeUserIds}
+                  memberByUserId={DEMO_BOARD_MEMBER_BY_USER_ID}
+                  sizePx={18}
+                  variant="card"
+                />
               </div>
-              <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0">
-                <div className={`bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0${task.badgesHidden ? " opacity-0" : ""}`}>
-                  <div className="relative shrink-0 size-[16px]">
-                    <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
-                  </div>
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap">
-                    {task.clipCount}
-                  </p>
-                </div>
-                <div className={`bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0${task.badgesHidden ? " opacity-0" : ""}`}>
-                  <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]">
-                    <div className="relative shrink-0 size-[13.33px]">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
-                    </div>
-                  </div>
-                  <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap">
-                    {task.msgCount}
-                  </p>
-                </div>
+              <div className="ml-auto min-w-0 max-w-full">
+                <KanbanTaskMetaPills
+                  attachments={attachments}
+                  comments={comments}
+                  branchCount={task.branchCount ?? 0}
+                  dependencyCount={task.dependencyCount ?? 0}
+                  wrap
+                />
               </div>
             </div>
           </div>
@@ -1452,260 +1421,7 @@ export function DashboardPlaceholder() {
                 {dragOverCol === "todo" && draggingId !== null && (
                   <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
                 )}
-                <div
-                  className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${draggingId === 1 ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
-                  draggable
-                  onDragStart={handleDragStart(1)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={handleCardDragOver}
-                  onDrop={handleCardDrop("todo", 1)}
-                  style={{ display: cardColumns[1] !== "todo" ? "none" : undefined, order: cardOrderFor(1) }}
-                  data-name="Component 118"
-                  data-node-id="7:2912"
-                  onClick={() => navigate(workspaceJoin("task", "1"))}
-                >
-                  <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2912;2437:23801">
-                    <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2912;2437:23802">
-                      <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="I7:2912;2437:23803">
-                        <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2912;2437:23804">
-                          <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2912;2437:23805">
-                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]" data-node-id="I7:2912;2437:23806">
-                              View project overview
-                            </p>
-                            <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2912;2437:23807">
-                              <Flag
-                                size={16}
-                                className={taskPriorityFlagClass(TASKS.find((t) => t.id === 1)?.priority)}
-                                aria-hidden
-                                data-name="lucide/flag"
-                                data-node-id="I7:2912;2437:23808"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="h-0 relative shrink-0 w-full" data-node-id="I7:2912;2437:23812">
-                          <div className="absolute inset-[-0.57px_0]">
-                            <img alt="" className="block max-w-none size-full" src={imgVector13} />
-                          </div>
-                        </div>
-                        <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="I7:2912;2437:23813">
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full" data-node-id="I7:2912;2437:23814">
-                            To view the project status, select “Welcome to Continuum!” in the top left under the “Projects” label.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="I7:2912;2437:23815">
-                        <div className="content-stretch flex gap-[6px] h-[15px] isolate items-center justify-center relative shrink-0 w-full" data-node-id="I7:2912;2437:23819">
-                          <div className="relative shrink-0 size-[12px] z-[2]" data-node-id="I7:2912;2437:23820">
-                            <div className="absolute inset-[-33.33%]">
-                              <img alt="" className="block max-w-none size-full" src={imgFrame308} />
-                            </div>
-                          </div>
-                          <div className="flex-[1_0_0] h-0 min-h-px min-w-px relative z-[1]" data-node-id="I7:2912;2437:23823">
-                            <div className="absolute inset-[-2.5px_-0.84%]">
-                              <img alt="" className="block max-w-none size-full" src={imgVector14} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="I7:2912;2437:23824">
-                        <div className="content-stretch flex items-center relative shrink-0" data-name="Component 33" data-node-id="I7:2912;2437:23825">
-                          <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
-                        </div>
-                        <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0" data-node-id="I7:2912;2437:23826">
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2912;2437:23827">
-                            <div className="relative shrink-0 size-[16px]" data-name="lucide/paperclip" data-node-id="I7:2912;2437:23828">
-                              <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
-                            </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2912;2437:23830">
-                              1
-                            </p>
-                          </div>
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2912;2437:23831">
-                            <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]" data-node-id="I7:2912;2437:23832">
-                              <div className="relative shrink-0 size-[13.33px]" data-name="lucide/message-circle" data-node-id="I7:2912;2437:23833">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
-                              </div>
-                            </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2912;2437:23835">
-                              1
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${draggingId === 2 ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
-                  draggable
-                  onDragStart={handleDragStart(2)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={handleCardDragOver}
-                  onDrop={handleCardDrop("todo", 2)}
-                  style={{ display: cardColumns[2] !== "todo" ? "none" : undefined, order: cardOrderFor(2) }}
-                  data-name="Component 127"
-                  data-node-id="7:2913"
-                  onClick={() => navigate(workspaceJoin("task", "2"))}
-                >
-                  <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2913;2437:23801">
-                    <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2913;2437:23802">
-                      <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="I7:2913;2437:23803">
-                        <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2913;2437:23804">
-                          <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2913;2437:23805">
-                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]" data-node-id="I7:2913;2437:23806">
-                              Add a new task
-                            </p>
-                            <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2913;2437:23807">
-                              <Flag
-                                size={16}
-                                className={taskPriorityFlagClass(TASKS.find((t) => t.id === 2)?.priority)}
-                                aria-hidden
-                                data-name="lucide/flag"
-                                data-node-id="I7:2913;2437:23808"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="h-0 relative shrink-0 w-full" data-node-id="I7:2913;2437:23812">
-                          <div className="absolute inset-[-0.57px_0]">
-                            <img alt="" className="block max-w-none size-full" src={imgVector13} />
-                          </div>
-                        </div>
-                        <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="I7:2913;2437:23813">
-                          <div className="font-['Satoshi:Medium',sans-serif] leading-[0] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full whitespace-pre-wrap" data-node-id="I7:2913;2437:23814">
-                            <p className="leading-[normal] mb-0">{`To find, organise, and add a new task, use the “+” icon in the top right corner of `}</p>
-                            <p className="leading-[normal]">To-Do.</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="I7:2913;2437:23815">
-                        <div className="content-stretch flex gap-[6px] h-[15px] isolate items-center justify-center relative shrink-0 w-full" data-node-id="I7:2913;2437:23819">
-                          <div className="relative shrink-0 size-[12px] z-[2]" data-node-id="I7:2913;2437:23820">
-                            <div className="absolute inset-[-33.33%]">
-                              <img alt="" className="block max-w-none size-full" src={imgFrame308} />
-                            </div>
-                          </div>
-                          <div className="flex-[1_0_0] h-0 min-h-px min-w-px relative z-[1]" data-node-id="I7:2913;2437:23823">
-                            <div className="absolute inset-[-2.5px_-0.84%]">
-                              <img alt="" className="block max-w-none size-full" src={imgVector14} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="I7:2913;2437:23824">
-                        <div className="content-stretch flex items-center relative shrink-0" data-name="Component 33" data-node-id="I7:2913;2437:23825">
-                          <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
-                        </div>
-                        <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0" data-node-id="I7:2913;2437:23826">
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2913;2437:23827">
-                            <div className="relative shrink-0 size-[16px]" data-name="lucide/paperclip" data-node-id="I7:2913;2437:23828">
-                              <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
-                            </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2913;2437:23830">
-                              1
-                            </p>
-                          </div>
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2913;2437:23831">
-                            <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]" data-node-id="I7:2913;2437:23832">
-                              <div className="relative shrink-0 size-[13.33px]" data-name="lucide/message-circle" data-node-id="I7:2913;2437:23833">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
-                              </div>
-                            </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2913;2437:23835">
-                              1
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${draggingId === 3 ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
-                  draggable
-                  onDragStart={handleDragStart(3)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={handleCardDragOver}
-                  onDrop={handleCardDrop("todo", 3)}
-                  style={{ display: cardColumns[3] !== "todo" ? "none" : undefined, order: cardOrderFor(3) }}
-                  data-name="Component 126"
-                  data-node-id="7:2914"
-                  onClick={() => navigate(workspaceJoin("task", "3"))}
-                >
-                  <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2914;2437:23801">
-                    <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2914;2437:23802">
-                      <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="I7:2914;2437:23803">
-                        <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2914;2437:23804">
-                          <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2914;2437:23805">
-                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]" data-node-id="I7:2914;2437:23806">
-                              Add a new project
-                            </p>
-                            <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2914;2437:23807">
-                              <Flag
-                                size={16}
-                                className={taskPriorityFlagClass(TASKS.find((t) => t.id === 3)?.priority)}
-                                aria-hidden
-                                data-name="lucide/flag"
-                                data-node-id="I7:2914;2437:23808"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="h-0 relative shrink-0 w-full" data-node-id="I7:2914;2437:23812">
-                          <div className="absolute inset-[-0.57px_0]">
-                            <img alt="" className="block max-w-none size-full" src={imgVector13} />
-                          </div>
-                        </div>
-                        <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="I7:2914;2437:23813">
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[16px] w-full" data-node-id="I7:2914;2437:23814">
-                            Find, organise, and add a new project using the sidebar to the left.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="I7:2914;2437:23815">
-                        <div className="content-stretch flex gap-[6px] h-[15px] isolate items-center justify-center relative shrink-0 w-full" data-node-id="I7:2914;2437:23819">
-                          <div className="relative shrink-0 size-[12px] z-[2]" data-node-id="I7:2914;2437:23820">
-                            <div className="absolute inset-[-33.33%]">
-                              <img alt="" className="block max-w-none size-full" src={imgFrame308} />
-                            </div>
-                          </div>
-                          <div className="flex-[1_0_0] h-0 min-h-px min-w-px relative z-[1]" data-node-id="I7:2914;2437:23823">
-                            <div className="absolute inset-[-2.5px_-0.84%]">
-                              <img alt="" className="block max-w-none size-full" src={imgVector14} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="I7:2914;2437:23824">
-                        <div className="content-stretch flex items-center relative shrink-0" data-name="Component 33" data-node-id="I7:2914;2437:23825">
-                          <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
-                        </div>
-                        <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0" data-node-id="I7:2914;2437:23826">
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2914;2437:23827">
-                            <div className="relative shrink-0 size-[16px]" data-name="lucide/paperclip" data-node-id="I7:2914;2437:23828">
-                              <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
-                            </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2914;2437:23830">
-                              1
-                            </p>
-                          </div>
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2914;2437:23831">
-                            <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]" data-node-id="I7:2914;2437:23832">
-                              <div className="relative shrink-0 size-[13.33px]" data-name="lucide/message-circle" data-node-id="I7:2914;2437:23833">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
-                              </div>
-                            </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2914;2437:23835">
-                              1
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {tasksInColumn("todo").filter(t => INITIAL_COLUMNS[t.id] !== "todo").map(renderCard)}
+                {tasksInColumn("todo").map(renderCard)}
                 </div>
               </div>
               <div className={`content-stretch flex h-full min-h-0 flex-[1_0_0] flex-col items-start overflow-hidden min-w-px p-[16px] relative rounded-[16px] min-h-[120px] transition-colors duration-200 ${dragOverCol === "in-progress" ? "border-2 border-dashed border-[#cdd2d5]" : ""}`} data-node-id="7:2915" style={{ backgroundImage: "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(90deg, rgb(240, 243, 245) 0%, rgb(240, 243, 245) 100%)" }} onDragOver={handleColumnDragOver("in-progress")} onDragLeave={handleColumnDragLeave("in-progress")} onDrop={handleDrop("in-progress")}>
@@ -1763,81 +1479,7 @@ export function DashboardPlaceholder() {
                 {dragOverCol === "completed" && draggingId !== null && (
                   <div className="h-[184px] w-full rounded-[16px] border-2 border-dashed border-[#cdd2d5] bg-[rgba(255,255,255,0.45)]" />
                 )}
-                <div
-                  className={`content-stretch flex flex-col items-start relative shrink-0 w-full select-none transition-opacity duration-100 ${draggingId === 4 ? "cursor-grabbing opacity-0" : "cursor-grab"}`}
-                  draggable
-                  onDragStart={handleDragStart(4)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={handleCardDragOver}
-                  onDrop={handleCardDrop("completed", 4)}
-                  style={{ display: cardColumns[4] !== "completed" ? "none" : undefined, order: cardOrderFor(4) }}
-                  data-name="Component 118"
-                  data-node-id="7:2935"
-                  onClick={() => navigate(workspaceJoin("task", "4"))}
-                >
-                  <div className="bg-white border border-[#ebedee] border-solid content-stretch flex flex-col items-start overflow-clip relative rounded-[16px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-full" data-name="Component 117" data-node-id="I7:2935;2437:23801">
-                    <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] relative shrink-0 w-full" data-node-id="I7:2935;2437:23802">
-                      <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="I7:2935;2437:23803">
-                        <div className="content-stretch flex flex-col gap-[8px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2935;2437:23804">
-                          <div className="content-stretch flex gap-[12px] items-start justify-center relative shrink-0 w-full" data-node-id="I7:2935;2437:23805">
-                            <p className="flex-[1_0_0] font-['Satoshi:Medium',sans-serif] leading-[normal] min-h-px min-w-px not-italic relative text-[#0b191f] text-[20px] tracking-[-0.2px]" data-node-id="I7:2935;2437:23806">
-                              Create an account with Continuum
-                            </p>
-                            <div className="content-stretch flex items-center justify-center relative shrink-0 size-[27px]" data-node-id="I7:2935;2437:23807">
-                              <Flag
-                                size={16}
-                                className={taskPriorityFlagClass(TASKS.find((t) => t.id === 4)?.priority)}
-                                aria-hidden
-                                data-name="lucide/flag"
-                                data-node-id="I7:2935;2437:23808"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="I7:2935;2437:23815">
-                        <div className="content-stretch flex gap-[6px] h-[15px] isolate items-center justify-center relative shrink-0 w-full" data-node-id="I7:2935;2437:23819">
-                          <div className="relative shrink-0 size-[12px] z-[2]" data-node-id="I7:2935;2437:23820">
-                            <div className="absolute inset-[-33.33%]">
-                              <img alt="" className="block max-w-none size-full" src={imgFrame308} />
-                            </div>
-                          </div>
-                          <div className="flex-[1_0_0] h-0 min-h-px min-w-px relative z-[1]" data-node-id="I7:2935;2437:23823">
-                            <div className="absolute inset-[-2.5px_-0.84%]">
-                              <img alt="" className="block max-w-none size-full" src={imgVector14} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="I7:2935;2437:23824">
-                        <div className="content-stretch flex items-center relative shrink-0" data-name="Component 33" data-node-id="I7:2935;2437:23825">
-                          <Component className="bg-[#f17173] border border-solid border-white content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[24px]" />
-                        </div>
-                        <div className="content-stretch flex gap-[8px] h-[24px] items-start relative shrink-0" data-node-id="I7:2935;2437:23826">
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center opacity-0 px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2935;2437:23827">
-                            <div className="relative shrink-0 size-[16px]" data-name="lucide/paperclip" data-node-id="I7:2935;2437:23828">
-                              <img alt="" className="absolute block max-w-none size-full" src={imgLucidePaperclip} />
-                            </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2935;2437:23830">
-                              5
-                            </p>
-                          </div>
-                          <div className="bg-[#f0f3f5] content-stretch flex gap-[4px] items-center justify-center opacity-0 px-[12px] py-[4px] relative rounded-[16px] self-stretch shrink-0" data-node-id="I7:2935;2437:23831">
-                            <div className="content-stretch flex items-center justify-center relative shrink-0 size-[15.333px]" data-node-id="I7:2935;2437:23832">
-                              <div className="relative shrink-0 size-[13.33px]" data-name="lucide/message-circle" data-node-id="I7:2935;2437:23833">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideMessageCircle} />
-                              </div>
-                            </div>
-                            <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#606d76] text-[11px] whitespace-nowrap" data-node-id="I7:2935;2437:23835">
-                              3
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {tasksInColumn("completed").filter(t => INITIAL_COLUMNS[t.id] !== "completed").map(renderCard)}
+                {tasksInColumn("completed").map(renderCard)}
                 </div>
               </div>
             </div>
