@@ -84,6 +84,13 @@ type DashboardProps = {
   surface?: "default" | "productivityRhythm";
 };
 
+/**
+ * Productivity Rhythm is temporarily disabled ("coming soon"). While false, the
+ * embedded heatmap card is not rendered and its `/users/{id}/rhythm` query never
+ * fires (the backend endpoint returns 503). Flip back to `true` to re-enable.
+ */
+const PRODUCTIVITY_RHYTHM_ENABLED = false;
+
 export function Dashboard({
   hideKpiCards = false,
   hideProductivityRhythm = false,
@@ -205,7 +212,7 @@ export function Dashboard({
   const { data: rhythmResponse, isLoading: rhythmLoading, isError: rhythmError } = useQuery({
     queryKey: ['user-rhythm', rhythmUserId],
     queryFn: () => fetchUserRhythm(rhythmUserId!),
-    enabled: rhythmUserId != null && effectiveRole !== 'Client',
+    enabled: PRODUCTIVITY_RHYTHM_ENABLED && rhythmUserId != null && effectiveRole !== 'Client',
     staleTime: STALE_REFERENCE_MS,
     placeholderData: (previousData) => previousData,
   });
@@ -983,7 +990,7 @@ export function Dashboard({
       )}
 
       {/* Row 3: User Rhythm Heatmap (requires single project) */}
-      {!hideProductivityRhythm && effectiveRole !== 'Client' && hasProjectSelected && rhythmHeatmap}
+      {PRODUCTIVITY_RHYTHM_ENABLED && !hideProductivityRhythm && effectiveRole !== 'Client' && hasProjectSelected && rhythmHeatmap}
 
       {/* Row 4: Git Contribution & Stale Work (requires single project) */}
       {isProjectPM && hasProjectSelected && (
