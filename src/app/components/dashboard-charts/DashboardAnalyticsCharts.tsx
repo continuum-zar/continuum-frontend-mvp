@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
+import { Link } from 'react-router';
+import { Maximize2 } from 'lucide-react';
 import type { Role } from '@/app/context/RoleContext';
+import { workspaceChartHref, type WorkspaceChartId } from '@/lib/workspacePaths';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/ui/tooltip';
 import {
   fetchProjectCumulativeFlow,
   fetchProjectLeadTimeDistribution,
@@ -35,12 +39,15 @@ function ChartCard({
   children,
   reduceMotion,
   delay = 0,
+  expandHref,
 }: {
   title: string;
   description: string;
   children: React.ReactNode;
   reduceMotion: boolean;
   delay?: number;
+  /** When set, shows an expand button linking to the fullscreen view. */
+  expandHref?: string;
 }) {
   return (
     <motion.div
@@ -49,13 +56,34 @@ function ChartCard({
       transition={{ duration: reduceMotion ? 0 : 0.2, delay: reduceMotion ? 0 : delay }}
       className="rounded-lg border border-border bg-card p-6"
     >
-      <div className="mb-4">
-        <h3 className="mb-1 text-base font-medium">{title}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="mb-1 text-base font-medium">{title}</h3>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+        {expandHref && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                to={expandHref}
+                aria-label={`Expand ${title} chart`}
+                className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <Maximize2 className="size-4" />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>Expand to fullscreen</TooltipContent>
+          </Tooltip>
+        )}
       </div>
       {children}
     </motion.div>
   );
+}
+
+/** Fullscreen link for a chart, or undefined when no project is selected. */
+function chartExpandHref(chartId: WorkspaceChartId, selectedProject: string): string | undefined {
+  return selectedProject ? workspaceChartHref(chartId, selectedProject) : undefined;
 }
 
 export function DashboardAnalyticsCharts({
@@ -114,6 +142,7 @@ export function DashboardAnalyticsCharts({
         description="Tasks in To do, In progress, and Done over the last 90 days"
         reduceMotion={reduceMotion}
         delay={0}
+        expandHref={chartExpandHref('cumulative-flow', selectedProject)}
       >
         {cfdLoading ? (
           <Skeleton className="h-[280px] w-full" />
@@ -158,7 +187,13 @@ export function DashboardAnalyticsCharts({
         )}
       </ChartCard>
 
-      <ChartCard title="HPS trend" description="Hours per scope point by completion week" reduceMotion={reduceMotion} delay={0.12}>
+      <ChartCard
+        title="HPS trend"
+        description="Hours per scope point by completion week"
+        reduceMotion={reduceMotion}
+        delay={0.12}
+        expandHref={chartExpandHref('hps-trend', selectedProject)}
+      >
         {hpsLoading ? (
           <Skeleton className="h-[260px] w-full" />
         ) : hpsError ? (
@@ -173,6 +208,7 @@ export function DashboardAnalyticsCharts({
         description="Progress % and total hours from snapshots"
         reduceMotion={reduceMotion}
         delay={0.14}
+        expandHref={chartExpandHref('project-history', selectedProject)}
       >
         {histLoading ? (
           <Skeleton className="h-[280px] w-full" />

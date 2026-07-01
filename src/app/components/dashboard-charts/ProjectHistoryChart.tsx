@@ -14,19 +14,21 @@ import { DATE_X_AXIS_TICK_PROPS, mapProjectHistoryChartData } from './dashboardC
 export function ProjectHistoryChart({
   history,
   emptyLabel = 'No snapshot history yet',
+  height = 280,
 }: {
   history: ProjectSnapshotHistoryPoint[];
   emptyLabel?: string;
+  height?: number;
 }) {
   const data = mapProjectHistoryChartData(history);
   if (!data.length) {
     return (
-      <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">{emptyLabel}</div>
+      <div className="flex items-center justify-center text-sm text-muted-foreground" style={{ height }}>{emptyLabel}</div>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={height}>
       <ComposedChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
         <XAxis dataKey="dateLabel" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} {...DATE_X_AXIS_TICK_PROPS} />
