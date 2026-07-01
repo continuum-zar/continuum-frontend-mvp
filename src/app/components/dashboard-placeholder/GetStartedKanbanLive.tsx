@@ -62,6 +62,7 @@ import {
   tasksForKanbanColumn,
   type KanbanColumnConfig,
 } from "./kanbanBoardTypes";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 const CalendarTaskView = lazy(() =>
   import("./CalendarTaskView").then((m) => ({ default: m.CalendarTaskView })),
@@ -1033,16 +1034,22 @@ export function GetStartedKanbanLive({
                 <label htmlFor="kanban-new-col-status" className="font-['Satoshi',sans-serif] text-[13px] font-medium text-[#606d76]">
                   Task status for this column
                 </label>
-                <select
-                  id="kanban-new-col-status"
+                <Select
                   value={newColumnStatus}
-                  onChange={(e) => setNewColumnStatus(e.target.value as TaskStatus)}
-                  className="font-['Satoshi',sans-serif] h-11 w-full rounded-[8px] border border-[#e9e9e9] bg-white px-3 text-[14px] text-[#0b191f] outline-none focus:border-[#0b191f]/20 focus:ring-2 focus:ring-[#0b191f]/10"
+                  onValueChange={(v) => setNewColumnStatus(v as TaskStatus)}
                 >
-                  <option value="todo">To-do</option>
-                  <option value="in-progress">In progress</option>
-                  <option value="done">Done</option>
-                </select>
+                  <SelectTrigger
+                    id="kanban-new-col-status"
+                    className="font-['Satoshi',sans-serif] h-11 w-full rounded-[8px] border-[#e9e9e9] bg-white px-3 text-[14px] text-[#0b191f] focus-visible:border-[#0b191f]/20 focus-visible:ring-2 focus-visible:ring-[#0b191f]/10"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="font-['Satoshi',sans-serif]">
+                    <SelectItem value="todo">To-do</SelectItem>
+                    <SelectItem value="in-progress">In progress</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                  </SelectContent>
+                </Select>
                 <p className="font-['Satoshi',sans-serif] text-[12px] leading-relaxed text-[#727d83]">
                   Tasks dropped here update to this status. You can add several columns that share a status to split work visually.
                 </p>
