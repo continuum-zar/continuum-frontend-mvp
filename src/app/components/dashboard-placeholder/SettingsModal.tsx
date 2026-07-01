@@ -327,20 +327,34 @@ export function SettingsModal({
 
   const handleLogout = async () => {
     handleOpenChange(false);
-    // For Clerk-acquired sessions, tear down the Clerk session first so it
-    // doesn't get re-bridged into the store on the next render. For manual
-    // sessions there is no Clerk session to clear.
-    if (authSource === "clerk" && isClerkEnabled && typeof window !== "undefined") {
-      const clerk = (window as WindowWithClerk).Clerk;
-      if (clerk?.signOut) {
-        try {
-          await clerk.signOut();
-        } catch (err) {
-          console.error("Clerk signOut failed; continuing with backend logout", err);
-        }
+
+    const clerk =
+      authSource === "clerk" && isClerkEnabled && typeof window !== "undefined"
+        ? (window as WindowWithClerk).Clerk
+        : undefined;
+
+    // Revoke the backend refresh-token session (and clear the store) first, so
+    // the HttpOnly refresh cookie is invalidated regardless of the path below.
+    await logout();
+
+    // For Clerk-acquired sessions we MUST hard-redirect via Clerk rather than a
+    // soft SPA navigation. `signOut({ redirectUrl })` performs a full-page
+    // reload, which tears down the React tree — including ClerkSessionBridge —
+    // and re-initialises Clerk with no session. Without the reload the bridge
+    // stays mounted and, seeing a still-live Clerk session against a now-null
+    // `authSource`, re-exchanges the Clerk JWT at /auth/social-login and mints a
+    // fresh backend session — leaving the user effectively still logged in
+    // (Continuum: "Log out" vs "Sign out everywhere" mismatch).
+    if (clerk?.signOut) {
+      try {
+        await clerk.signOut({ redirectUrl: "/login" });
+        return; // hard redirect handles navigation
+      } catch (err) {
+        console.error("Clerk signOut failed; falling back to SPA logout", err);
       }
     }
-    await logout();
+
+    // Manual sessions (or Clerk unavailable): a plain SPA navigation is enough.
     navigate("/login");
   };
 
