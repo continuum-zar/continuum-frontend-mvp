@@ -30,6 +30,7 @@ import {
 } from "./ui/dialog";
 import { MultiStepLoader, StepChecklist } from "./ui/multi-step-loader";
 import { cn } from "./ui/utils";
+import { sanitizeDisplayText } from "@/lib/errorMessages";
 
 type ReviewRunDrawerProps = {
   open: boolean;
@@ -238,7 +239,7 @@ export function ReviewRunDrawer({
               <div className="mt-4 rounded-[8px] border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 p-3 text-[13px] text-[var(--destructive)]">
                 <p className="font-medium">Review failed</p>
                 <p className="mt-1 whitespace-pre-wrap leading-relaxed">
-                  {review.error}
+                  {sanitizeDisplayText(review.error, "The review failed. Please try again.")}
                 </p>
               </div>
             ) : null}

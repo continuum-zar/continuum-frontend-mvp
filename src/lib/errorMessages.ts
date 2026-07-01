@@ -132,6 +132,20 @@ export function isLikelyRawServerErrorText(text: unknown): boolean {
     return typeof text === 'string' && text.trim().length > 0 && isTechnicalMessage(text);
 }
 
+/**
+ * Guard for server-generated *content* rendered to the user (AI answers/replies,
+ * agent-run error fields, streamed step labels). Returns the original text when
+ * safe, or `fallback` when it is empty or looks like a leaked raw server/DB
+ * error. Use this anywhere a response body is shown directly (i.e. not routed
+ * through {@link getUserErrorMessage}).
+ */
+export function sanitizeDisplayText(value: unknown, fallback: string): string {
+    if (typeof value !== 'string') return fallback;
+    if (value.trim().length === 0) return fallback;
+    if (isLikelyRawServerErrorText(value)) return fallback;
+    return value;
+}
+
 /** Backend `message` is human-authored, but gate it against anything that slipped through. */
 function isSafeBackendMessage(message: unknown): message is string {
     return (

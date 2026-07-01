@@ -1,5 +1,6 @@
 import type { AgentRunEvent } from "@/types/agentRun";
 import type { ReviewPhase, ReviewRunEvent } from "@/types/reviewRun";
+import { sanitizeDisplayText } from "@/lib/errorMessages";
 
 import type { LoaderStep, LoaderStepState } from "./ui/multi-step-loader";
 
@@ -86,7 +87,10 @@ function buildEventLabel(ev: AgentRunEvent): string | null {
       return "Wrapping up";
     case "error":
       return `Error: ${firstLine(
-        String(ev.payload.error ?? ev.payload.message ?? "something went wrong"),
+        sanitizeDisplayText(
+          ev.payload.error ?? ev.payload.message,
+          "something went wrong",
+        ),
       )}`;
     case "cancelled":
       return "Run cancelled";
@@ -150,7 +154,7 @@ function reviewEventLabel(ev: ReviewRunEvent): string | null {
   const payload = (ev.payload ?? {}) as Record<string, unknown>;
 
   if (ev.kind === "error") {
-    const msg = firstLine(String(payload.message ?? "something went wrong"));
+    const msg = firstLine(sanitizeDisplayText(payload.message, "something went wrong"));
     return `Error: ${msg}`;
   }
 

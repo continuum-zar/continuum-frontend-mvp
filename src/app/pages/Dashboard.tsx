@@ -57,6 +57,7 @@ import { DashboardAnalyticsCharts } from '../components/dashboard-charts/Dashboa
 import { DATE_X_AXIS_TICK_PROPS } from '../components/dashboard-charts/dashboardChartMappers';
 import { ProductivityRhythmHeatmapCard } from '../components/dashboard-charts/ProductivityRhythmHeatmapCard';
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
+import { sanitizeDisplayText } from '@/lib/errorMessages';
 import { getCurrentHeatmapHour, getTodayHeatmapDayLabel, HEATMAP_DAY_LABELS } from '@/lib/productivityRhythmLiveCell';
 import { projectPresenceEventsStreamUrl, type ProjectPresenceEvent } from '@/api/projectPresenceEvents';
 import { useSseStream } from '@/hooks/useSseStream';
@@ -550,7 +551,9 @@ export function Dashboard({
     setChatSending(true);
     try {
       const res = await postProjectQuery(selectedProject, { query: msg });
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: res.answer ?? 'No response.' }]);
+      // A 200 answer body can still carry a leaked raw server/DB error — never show it.
+      const answer = sanitizeDisplayText(res.answer, 'Something went wrong on our end while answering. Please try again in a moment.');
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: answer }]);
     } catch {
       setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Something went wrong. Please try again.' }]);
     } finally {

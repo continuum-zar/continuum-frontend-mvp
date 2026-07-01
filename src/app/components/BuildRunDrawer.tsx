@@ -48,6 +48,7 @@ import {
 import { PlannerAssistantMarkdown } from "./planner/PlannerAssistantMarkdown";
 import { cn } from "./ui/utils";
 import { useSseStream } from "@/hooks/useSseStream";
+import { sanitizeDisplayText } from "@/lib/errorMessages";
 
 type BuildRunDrawerProps = {
   open: boolean;
@@ -131,7 +132,7 @@ function ReviewSummary({
         </div>
         {review.error ? (
           <p className="whitespace-pre-wrap leading-relaxed text-[#727d83]">
-            {review.error}
+            {sanitizeDisplayText(review.error, "The review failed. Please try again.")}
           </p>
         ) : null}
       </div>
@@ -375,7 +376,9 @@ export function BuildRunDrawer({
             {detail?.error && isTerminal && status === "failed" ? (
               <div className="mt-3 rounded-[8px] border border-[#f87171]/40 bg-[#f87171]/10 p-3 text-[13px] text-[#991b1b]">
                 <p className="font-medium">Run failed</p>
-                <p className="mt-1 whitespace-pre-wrap leading-relaxed">{detail.error}</p>
+                <p className="mt-1 whitespace-pre-wrap leading-relaxed">
+                  {sanitizeDisplayText(detail.error, "The run failed. Please try again.")}
+                </p>
               </div>
             ) : null}
 

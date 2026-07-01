@@ -5,6 +5,7 @@ import {
     describeErrorForToast,
     getUserErrorMessage,
     isLikelyRawServerErrorText,
+    sanitizeDisplayText,
 } from './errorMessages';
 
 function makeAxiosError(opts: {
@@ -180,5 +181,27 @@ describe('isLikelyRawServerErrorText', () => {
         expect(isLikelyRawServerErrorText(undefined)).toBe(false);
         expect(isLikelyRawServerErrorText(null)).toBe(false);
         expect(isLikelyRawServerErrorText(42)).toBe(false);
+    });
+});
+
+describe('sanitizeDisplayText', () => {
+    const FALLBACK = 'Something went wrong.';
+
+    it('returns the original text when it is safe', () => {
+        const answer = 'Your project is 82% complete with 3 open tasks.';
+        expect(sanitizeDisplayText(answer, FALLBACK)).toBe(answer);
+    });
+
+    it('replaces leaked SQL/DB error content with the fallback', () => {
+        const leaked =
+            '(psycopg2.errors.UndefinedColumn) column project_embeddings.embedding_model does not exist';
+        expect(sanitizeDisplayText(leaked, FALLBACK)).toBe(FALLBACK);
+    });
+
+    it('replaces empty / non-string values with the fallback', () => {
+        expect(sanitizeDisplayText('', FALLBACK)).toBe(FALLBACK);
+        expect(sanitizeDisplayText('   ', FALLBACK)).toBe(FALLBACK);
+        expect(sanitizeDisplayText(undefined, FALLBACK)).toBe(FALLBACK);
+        expect(sanitizeDisplayText(null, FALLBACK)).toBe(FALLBACK);
     });
 });

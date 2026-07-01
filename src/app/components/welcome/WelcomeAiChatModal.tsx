@@ -51,7 +51,7 @@ import {
 import { IndexingProgressBanner } from "@/app/components/IndexingProgressBanner";
 import { IndexingLottie } from "@/app/components/IndexingLottie";
 import { indexingProgressCaption } from "@/lib/indexingProgressDisplay";
-import { isLikelyRawServerErrorText } from "@/lib/errorMessages";
+import { isLikelyRawServerErrorText, sanitizeDisplayText } from "@/lib/errorMessages";
 import { PlannerAssistantMarkdown } from "../planner/PlannerAssistantMarkdown";
 import { PlannerChoiceQuestions } from "../planner/PlannerChoiceQuestions";
 
@@ -479,20 +479,22 @@ export function WelcomeAiChatModal({
 
         const count = res.tasks.length;
         const questions = normalizeWikiChoiceQuestions(res.choice_questions);
+        // Drop the reply if it's empty or a leaked raw server/DB error.
+        const safeReply = sanitizeDisplayText(res.reply, "").trim() || null;
 
         if (questions.length > 0) {
-          setWikiClarifyReply(res.reply?.trim() ? res.reply!.trim() : null);
+          setWikiClarifyReply(safeReply);
           setWikiChoiceQuestions(questions);
           setGeneratedTasks(res.tasks);
           setGeneratedSummary("");
         } else if (assistantMode === "plan") {
           // Plan mode never returns tasks. Keep the planning summary on screen so the
           // user can review it and proceed via "Create tasks from this plan".
-          setWikiClarifyReply(res.reply?.trim() ? res.reply.trim() : null);
+          setWikiClarifyReply(safeReply);
           setWikiChoiceQuestions([]);
           setGeneratedTasks([]);
           setGeneratedSummary(
-            res.reply?.trim()
+            safeReply
               ? ""
               : "I couldn't draft a plan from that. Add more detail and try again.",
           );
