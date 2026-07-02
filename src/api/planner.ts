@@ -35,6 +35,19 @@ export interface FileContent {
     meeting_id?: number | null;
 }
 
+/**
+ * One prior turn of an assistant conversation, replayed with follow-up requests
+ * (`history` on project query / wiki generate). Client-held — no server session.
+ * Backend caps: 20 messages, 8000 chars each.
+ */
+export interface AssistantChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+/** Backend cap on `history` length (see `app/schemas/chat.py`). */
+export const ASSISTANT_HISTORY_MAX_MESSAGES = 20;
+
 export type PlanMergeMode = 'merge' | 'isolated';
 
 export interface FigmaContext {

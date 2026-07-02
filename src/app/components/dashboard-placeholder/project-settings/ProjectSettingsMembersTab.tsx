@@ -11,6 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
 import { cn } from "@/app/components/ui/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/app/components/ui/select";
 import type { RbacRole } from "@/types/rbac";
 
 type ProjectSettingsMembersTabProps = {
@@ -82,19 +89,19 @@ export function ProjectSettingsMembersTab({
             placeholder="Email address"
             className="h-11 flex-1 rounded-[8px] border border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] placeholder:text-[#606d76] focus:border-[#1466ff] focus:outline-none"
           />
-          <div className="relative flex-1">
-            <select
-              value={inviteRoleKey}
-              onChange={(e) => setInviteRoleKey(e.target.value)}
-              className="h-11 w-full appearance-none rounded-[8px] border border-[#e9e9e9] bg-white px-4 pr-10 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] focus:border-[#1466ff] focus:outline-none"
-            >
-              {assignableRoles.map((r) => (
-                <option key={r.id} value={r.default_key ?? r.name}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#606d76]" />
+          <div className="flex-1">
+            <Select value={inviteRoleKey} onValueChange={setInviteRoleKey}>
+              <SelectTrigger className="h-11 w-full rounded-[8px] border-[#e9e9e9] bg-white px-4 font-['Satoshi',sans-serif] text-[16px] font-medium text-[#0b191f] focus-visible:border-[#1466ff]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="font-['Satoshi',sans-serif]">
+                {assignableRoles.map((r) => (
+                  <SelectItem key={r.id} value={r.default_key ?? r.name}>
+                    {r.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <button
             type="button"

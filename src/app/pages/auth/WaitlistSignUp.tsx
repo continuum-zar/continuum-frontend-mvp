@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { isAxiosError } from 'axios';
 import { useSignUp } from '@clerk/clerk-react';
 import { Loader2 } from 'lucide-react';
 import { checkEmailExists } from '@/api/auth';
+import { getUserErrorMessage } from '@/lib/errorMessages';
 import { isClerkEnabled } from '@/lib/clerkConfig';
 
 export function WaitlistSignUp() {
@@ -123,10 +123,10 @@ function WaitlistLayout(props: {
         navigate('/register', { state: { email } });
       }
     } catch (error) {
-      const message = isAxiosError(error)
-        ? (error.response?.data?.message ?? 'Could not verify this email right now. Please try again.')
-        : 'Could not verify this email right now. Please try again.';
-      setSubmitError(message);
+      // Route through the shared sanitizer so raw backend/DB text never shows.
+      setSubmitError(
+        getUserErrorMessage(error, 'Could not verify this email right now. Please try again.'),
+      );
     } finally {
       setIsSubmitting(false);
     }

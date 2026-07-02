@@ -4,6 +4,8 @@ import {
     GENERIC_ERROR_MESSAGE,
     describeErrorForToast,
     getUserErrorMessage,
+    isLikelyRawServerErrorText,
+    sanitizeDisplayText,
 } from './errorMessages';
 
 function makeAxiosError(opts: {
@@ -128,6 +130,23 @@ describe('getUserErrorMessage', () => {
         expect(getUserErrorMessage(new Error('Failed to fetch'))).toBe(GENERIC_ERROR_MESSAGE);
     });
 
+    it('blocks Firefox and Safari TypeError wording (task-assistant incident)', () => {
+        // Firefox: seen verbatim in the AI task assistant when a non-API 200 body crashed the client.
+        const firefox = new TypeError('can\'t access property "length", res.tasks is undefined');
+        expect(getUserErrorMessage(firefox, 'Could not generate tasks.')).toBe(
+            'Could not generate tasks.',
+        );
+        expect(getUserErrorMessage(new TypeError('res.tasks is undefined'))).toBe(
+            GENERIC_ERROR_MESSAGE,
+        );
+        // Safari wording for the same class of crash.
+        expect(
+            getUserErrorMessage(
+                new TypeError("undefined is not an object (evaluating 'res.tasks.length')"),
+            ),
+        ).toBe(GENERIC_ERROR_MESSAGE);
+    });
+
     it('returns the fallback for canceled requests', () => {
         expect(getUserErrorMessage(new CanceledError('canceled'), 'fallback')).toBe('fallback');
     });
@@ -156,5 +175,50 @@ describe('describeErrorForToast', () => {
             data: { code: '404', message: 'Task not found.', correlation_id: 'abc-123' },
         });
         expect(describeErrorForToast(err).description).toBeUndefined();
+    });
+});
+
+describe('isLikelyRawServerErrorText', () => {
+    it('flags a leaked SQLAlchemy/psycopg2 error returned as an answer body', () => {
+        const leaked =
+            'psycopg2.errors.UndefinedColumn) column project_embeddings.embedding_model does not exist\n' +
+            'LINE 1: ...content_hash AS project_embeddings_content_hash, project_em...\n' +
+            '[SQL: SELECT project_embeddings.content_hash ...]\n' +
+            '(Background on this error at: https://sqlalche.me/e/20/f405)';
+        expect(isLikelyRawServerErrorText(leaked)).toBe(true);
+    });
+
+    it('does not flag a normal AI answer', () => {
+        expect(
+            isLikelyRawServerErrorText('The project is on track; 3 tasks were completed this week.'),
+        ).toBe(false);
+    });
+
+    it('ignores non-string values', () => {
+        expect(isLikelyRawServerErrorText(undefined)).toBe(false);
+        expect(isLikelyRawServerErrorText(null)).toBe(false);
+        expect(isLikelyRawServerErrorText(42)).toBe(false);
+    });
+});
+
+describe('sanitizeDisplayText', () => {
+    const FALLBACK = 'Something went wrong.';
+
+    it('returns the original text when it is safe', () => {
+        const answer = 'Your project is 82% complete with 3 open tasks.';
+        expect(sanitizeDisplayText(answer, FALLBACK)).toBe(answer);
+    });
+
+    it('replaces leaked SQL/DB error content with the fallback', () => {
+        const leaked =
+            '(psycopg2.errors.UndefinedColumn) column project_embeddings.embedding_model does not exist';
+        expect(sanitizeDisplayText(leaked, FALLBACK)).toBe(FALLBACK);
+    });
+
+    it('replaces empty / non-string values with the fallback', () => {
+        expect(sanitizeDisplayText('', FALLBACK)).toBe(FALLBACK);
+        expect(sanitizeDisplayText('   ', FALLBACK)).toBe(FALLBACK);
+        expect(sanitizeDisplayText(undefined, FALLBACK)).toBe(FALLBACK);
+        expect(sanitizeDisplayText(null, FALLBACK)).toBe(FALLBACK);
     });
 });

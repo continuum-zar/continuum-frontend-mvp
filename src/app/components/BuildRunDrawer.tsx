@@ -9,13 +9,13 @@ import {
   GitCommit,
   GitPullRequest,
   Loader2,
-  Square,
   X,
 } from "lucide-react";
 
 import { ReviewIcon, SpinnerIcon } from "./review/icons";
 import { deriveBuildSteps } from "./agentSteps";
 import { MultiStepLoader, StepChecklist } from "./ui/multi-step-loader";
+import { BouncingDots } from "./ui/bouncing-dots";
 
 import {
   agentRunEventsStreamUrl,
@@ -48,6 +48,7 @@ import {
 import { PlannerAssistantMarkdown } from "./planner/PlannerAssistantMarkdown";
 import { cn } from "./ui/utils";
 import { useSseStream } from "@/hooks/useSseStream";
+import { sanitizeDisplayText } from "@/lib/errorMessages";
 
 type BuildRunDrawerProps = {
   open: boolean;
@@ -131,7 +132,7 @@ function ReviewSummary({
         </div>
         {review.error ? (
           <p className="whitespace-pre-wrap leading-relaxed text-[#727d83]">
-            {review.error}
+            {sanitizeDisplayText(review.error, "The review failed. Please try again.")}
           </p>
         ) : null}
       </div>
@@ -186,14 +187,12 @@ function StatusPill({ status }: { status: AgentRunStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[12px] font-medium",
         tone,
       )}
     >
-      {status === "running" || status === "queued" ? (
-        <Loader2 size={11} className="animate-spin" aria-hidden />
-      ) : null}
       {STATUS_LABEL[status]}
+      {status === "running" || status === "queued" ? <BouncingDots /> : null}
     </span>
   );
 }
@@ -317,17 +316,17 @@ export function BuildRunDrawer({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
-        <DialogOverlay className="bg-black/30" />
+        <DialogOverlay className="bg-black/25" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed right-0 top-0 z-50 flex h-full w-full max-w-[640px] flex-col overflow-hidden border-l border-border bg-background text-foreground shadow-xl duration-200",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2 fixed bottom-6 right-6 left-auto top-auto z-50 flex h-[537px] max-h-[min(537px,calc(100vh-32px))] w-[min(395px,calc(100vw-32px))] max-w-[395px] flex-col overflow-hidden rounded-[19px] border border-solid border-[#edecea] bg-white text-foreground shadow-[0px_86px_24px_0px_rgba(11,25,31,0),0px_55px_22px_0px_rgba(11,25,31,0.01),0px_31px_19px_0px_rgba(11,25,31,0.03),0px_14px_14px_0px_rgba(11,25,31,0.04),0px_3px_8px_0px_rgba(11,25,31,0.05)] outline-none duration-200",
           )}
         >
           <DialogPrimitive.Title className="sr-only">Agent build run</DialogPrimitive.Title>
 
           {/* Header */}
-          <div className="z-[3] flex shrink-0 items-center gap-3 border-b border-border bg-muted/40 px-5 py-3">
+          <div className="z-[3] flex shrink-0 items-center gap-3 border-b border-border bg-muted/40 px-4 py-3">
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-medium text-[#0b191f]">
                 Agent build {runId ? `· ${runId.slice(0, 8)}` : ""}
@@ -354,7 +353,7 @@ export function BuildRunDrawer({
 
           {/* AI steps — animated multi-step loader while running, static
               checklist once the run is done. */}
-          <div className="z-[2] min-h-0 flex-1 overflow-y-auto bg-background px-5 py-4">
+          <div className="z-[2] min-h-0 flex-1 overflow-y-auto bg-background px-4 py-4">
             {detailQuery.isLoading && steps.length === 0 ? (
               <div className="flex items-center gap-2 text-[13px] text-[#727d83]">
                 <Loader2 size={14} className="animate-spin" />
@@ -375,7 +374,9 @@ export function BuildRunDrawer({
             {detail?.error && isTerminal && status === "failed" ? (
               <div className="mt-3 rounded-[8px] border border-[#f87171]/40 bg-[#f87171]/10 p-3 text-[13px] text-[#991b1b]">
                 <p className="font-medium">Run failed</p>
-                <p className="mt-1 whitespace-pre-wrap leading-relaxed">{detail.error}</p>
+                <p className="mt-1 whitespace-pre-wrap leading-relaxed">
+                  {sanitizeDisplayText(detail.error, "The run failed. Please try again.")}
+                </p>
               </div>
             ) : null}
 
@@ -392,7 +393,7 @@ export function BuildRunDrawer({
           {/* Review summary banner — sits between the feed and the footer
               so users see the verdict alongside the build outcome. */}
           {showReviewArea && (review || reviewInFlight || startReviewMutation.isPending) ? (
-            <div className="z-[3] shrink-0 border-t border-border bg-white px-5 py-3">
+            <div className="z-[3] shrink-0 border-t border-border bg-white px-4 py-3">
               <ReviewSummary
                 review={review}
                 pending={reviewInFlight || startReviewMutation.isPending}
@@ -401,7 +402,7 @@ export function BuildRunDrawer({
           ) : null}
 
           {/* Footer */}
-          <div className="z-[3] flex shrink-0 items-center justify-between gap-3 border-t border-border bg-muted/40 px-5 py-3">
+          <div className="z-[3] flex shrink-0 items-center justify-between gap-3 border-t border-border bg-muted/40 px-4 py-3">
             <div className="flex min-w-0 flex-wrap items-center gap-3 text-[12px] text-[#727d83]">
               {detail?.commit_sha ? (
                 <span className="inline-flex items-center gap-1">
@@ -434,14 +435,9 @@ export function BuildRunDrawer({
                   type="button"
                   onClick={handleCancel}
                   disabled={cancelMutation.isPending}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-[#f87171]/50 bg-white px-3 text-[13px] font-medium text-[#991b1b] hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 shrink-0 items-center justify-center rounded-[12px] bg-[#dc2626] px-5 font-['Satoshi',sans-serif] text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/30 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {cancelMutation.isPending ? (
-                    <Loader2 size={13} className="animate-spin" />
-                  ) : (
-                    <Square size={13} />
-                  )}
-                  Cancel run
+                  {cancelMutation.isPending ? "Cancelling…" : "Cancel run"}
                 </button>
               ) : null}
               {showReviewArea ? (

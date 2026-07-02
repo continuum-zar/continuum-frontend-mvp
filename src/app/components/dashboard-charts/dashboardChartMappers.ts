@@ -13,6 +13,17 @@ const FUNNEL_COLORS = {
   overdue: '#ef4444',
 };
 
+/**
+ * Shared props for date/time X-axes. Recharts' default `minTickGap` (5px) lets
+ * date labels pile up and overlap once there are many points; this caps the
+ * number of visible ticks by enforcing a minimum pixel gap between them while
+ * always keeping the first and last dates. Spread onto any date `<XAxis>`.
+ */
+export const DATE_X_AXIS_TICK_PROPS = {
+  interval: 'preserveStartEnd',
+  minTickGap: 28,
+} as const;
+
 export function mergeLeadCycleBins(leadBins: LeadTimeHistogramBin[], cycleBins: LeadTimeHistogramBin[]) {
   return leadBins.map((b, i) => ({
     label: b.label,

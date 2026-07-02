@@ -50,6 +50,7 @@ import type {
 } from '@/api/planner';
 import { PlannerRefinementReviewPanel } from '@/app/components/planner/PlannerRefinementReviewPanel';
 import { fetchPlannerLockMeta, type PlannerLockMeta } from '@/lib/plannerLockMeta';
+import { sanitizeDisplayText } from '@/lib/errorMessages';
 import { computePlannerPlanDiff, type MilestoneDiffSection } from '@/lib/plannerPlanDiff';
 import { PlannerConfidenceGauge } from '@/app/components/welcome/LiveProjectGauges';
 import {
@@ -416,7 +417,11 @@ export function AIProjectPlanner({
 
                 const assistantMsg: PlannerMessage = {
                     role: 'assistant',
-                    content: res.reply,
+                    // Never surface a leaked raw server/DB error as an assistant reply.
+                    content: sanitizeDisplayText(
+                        res.reply,
+                        'Something went wrong on our end. Please try again in a moment.',
+                    ),
                     choice_questions: normalizeChoiceQuestions(res.choice_questions),
                 };
                 setMessages((prev) => [...prev, assistantMsg]);

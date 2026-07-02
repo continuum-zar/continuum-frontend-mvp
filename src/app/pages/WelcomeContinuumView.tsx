@@ -1,32 +1,19 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
-import { getApiErrorMessage } from "@/api";
-import { useProject, useProjectMembers } from "@/api/hooks";
-import { downloadLoggedHoursCsv, downloadLoggedHoursPdf } from "@/api/loggedHours";
+import { useProject, useProjectMembers, useProjectMilestones } from "@/api/hooks";
+import { fetchProjectStats, fetchProjectHealth, fetchClassificationBreakdown } from "@/api";
+import { STALE_TIME_DATA_MS } from "@/lib/queryDefaults";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu";
 
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { ProjectSettingsPanel } from "../components/dashboard-placeholder/project-settings/ProjectSettingsPanel";
 import { NotificationBell } from "../components/notifications/NotificationBell";
 import { AICreditsBadge } from "../components/AICreditsBadge";
-import {
-  WelcomeRecentActivity,
-  WelcomeRepo,
-  WelcomeResources,
-} from "../components/welcome/WelcomeActivityResourcesRepo";
-import { WelcomeMilestoneTimeline } from "../components/welcome/WelcomeMilestoneTimeline";
-import { WelcomeProjectHeroGauge } from "../components/welcome/WelcomeProjectHeroGauge";
 import { WelcomeAiChatModal } from "../components/welcome/WelcomeAiChatModal";
 import { WelcomeEmptyProjectBody } from "../components/welcome/WelcomeEmptyProjectBody";
-import { WelcomeMetricsRow } from "../components/welcome/WelcomeMetricsRow";
+import { WelcomeDemoProjectBody } from "../components/welcome/WelcomeDemoProjectBody";
 import { WelcomeShareProjectModal } from "../components/welcome/WelcomeShareProjectModal";
 import {
   DASHBOARD_WELCOME_PROJECT,
@@ -44,9 +31,7 @@ const imgLucideBell = mcpAsset("0e2a64e9-ee3f-4ce3-aa60-05063accc712");
 const imgLucideFolderCog = mcpAsset("5cad83cc-0f0b-48f5-9afd-c5124c0169e6");
 const imgLucideShare = mcpAsset("00b88546-c39b-453e-aa9d-34f496edd586");
 const imgLucideChevronDown = mcpAsset("72ab3ac0-aebf-4278-859f-4205108fb16c");
-const imgLucideInfo = mcpAsset("f597ed55-c78f-481a-a433-abcd6a07d507");
 const imgVector8 = mcpAsset("1acc14a4-997e-4b19-b81a-91ef21ff09c2");
-const imgLucidePlus1 = mcpAsset("1da1cc85-0c45-4470-a43f-e9a9f1a1e4f5");
 const imgVector15 = mcpAsset("41d4c7e7-e987-4d3e-b39f-b0a8c1791b01");
 
 export function WelcomeContinuumView() {
@@ -59,22 +44,55 @@ export function WelcomeContinuumView() {
     pathname.startsWith(`${WORKSPACE_BASE}/project/`);
   const projectQuery = useProject(isApiRoute ? routeProjectId : undefined);
   const membersQuery = useProjectMembers(isApiRoute ? routeProjectId : undefined);
+
+  // Data behind the hero gauge + metrics row + milestones. The branded loader
+  // waits on these (in addition to project detail) so it doesn't clear while the
+  // gauges still read 0 and milestones are empty. Keys match WelcomeEmptyProjectBody,
+  // so React Query dedupes — this adds no extra network requests.
+  const apiProjectId = isApiRoute && routeProjectId ? Number(routeProjectId) : null;
+  const statsQuery = useQuery({
+    queryKey: ["projects", apiProjectId, "stats"],
+    queryFn: () => fetchProjectStats(apiProjectId as number),
+    enabled: apiProjectId != null,
+    staleTime: STALE_TIME_DATA_MS,
+  });
+  const healthQuery = useQuery({
+    queryKey: ["projects", apiProjectId, "health"],
+    queryFn: () => fetchProjectHealth(apiProjectId as number),
+    enabled: apiProjectId != null,
+    staleTime: STALE_TIME_DATA_MS,
+  });
+  const classificationQuery = useQuery({
+    queryKey: ["projects", apiProjectId, "classification-breakdown"],
+    queryFn: () => fetchClassificationBreakdown(apiProjectId as number),
+    enabled: apiProjectId != null,
+    staleTime: STALE_TIME_DATA_MS,
+  });
+  const milestonesQuery = useProjectMilestones(apiProjectId ?? undefined);
+
+  // A query is "settled" once it has resolved or errored — an error must not hang
+  // the loader forever, so we proceed and let the widget show its own fallback.
+  const settled = (q: { isSuccess: boolean; isError: boolean }) => q.isSuccess || q.isError;
+  const summaryReady =
+    !isApiRoute ||
+    (settled(statsQuery) && settled(healthQuery) && settled(classificationQuery) && settled(milestonesQuery));
+
   const user = useAuthStore((s) => s.user);
   const normalizedGlobalRole = (user?.role || "").toLowerCase().replace(/\s+/g, "_");
   const isGlobalAdminOrPm =
     normalizedGlobalRole === "admin" || normalizedGlobalRole === "project_manager";
 
   const clientPillLabel = (() => {
-    if (!isApiRoute) return "Client name will appear here";
+    if (!isApiRoute) return null;
     const clients = (membersQuery.data ?? []).filter((m) => {
       const k = (m.role || "").toLowerCase().replace(/\s+/g, "_");
       return k === "client";
     });
-    if (clients.length === 0) return "Client name will appear here";
-    return clients
+    const label = clients
       .map((c) => c.name.trim())
       .filter(Boolean)
       .join(", ");
+    return label || null;
   })();
 
   const headerTitle = isWelcomeDemo
@@ -84,43 +102,6 @@ export function WelcomeContinuumView() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareProjectOpen, setShareProjectOpen] = useState(false);
   const [editProjectOpen, setEditProjectOpen] = useState(false);
-  const [exportActionPending, setExportActionPending] = useState(false);
-
-  const apiProjectIdForExport =
-    isApiRoute && routeProjectId && isApiProjectId(routeProjectId) ? routeProjectId : null;
-  const canExportTimeLogs = apiProjectIdForExport != null;
-
-  const runExportTimeLogsPdf = useCallback(async () => {
-    if (apiProjectIdForExport == null) {
-      toast.error("Open a project to export time logs.");
-      return;
-    }
-    setExportActionPending(true);
-    try {
-      await downloadLoggedHoursPdf({ project_id: apiProjectIdForExport });
-      toast.success("PDF download started.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Could not export time logs as PDF."));
-    } finally {
-      setExportActionPending(false);
-    }
-  }, [apiProjectIdForExport]);
-
-  const runExportTimeLogsCsv = useCallback(async () => {
-    if (apiProjectIdForExport == null) {
-      toast.error("Open a project to export time logs.");
-      return;
-    }
-    setExportActionPending(true);
-    try {
-      await downloadLoggedHoursCsv({ project_id: apiProjectIdForExport });
-      toast.success("CSV download started.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Could not export time logs as CSV."));
-    } finally {
-      setExportActionPending(false);
-    }
-  }, [apiProjectIdForExport]);
 
   const canEditProject =
     isApiRoute &&
@@ -166,23 +147,25 @@ export function WelcomeContinuumView() {
                 </p>
               </div>
               <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3530">
-                <div className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0" data-name="Component 7" data-node-id="8:3531">
-                  <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3532">
-                    <div className="relative shrink-0 size-[16px]" data-name="lucide/building-2" data-node-id="8:3533">
-                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideBuilding2} />
+                {clientPillLabel && (
+                  <div className="bg-[#edf0f3] content-stretch flex gap-[12px] h-[32px] items-center justify-center px-[16px] py-[8px] relative rounded-[999px] shrink-0" data-name="Component 7" data-node-id="8:3531">
+                    <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3532">
+                      <div className="relative shrink-0 size-[16px]" data-name="lucide/building-2" data-node-id="8:3533">
+                        <img alt="" className="absolute block max-w-none size-full" src={imgLucideBuilding2} />
+                      </div>
+                      <p
+                        className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative max-w-[min(280px,40vw)] shrink truncate text-[#606d76] text-[14px]"
+                        title={clientPillLabel}
+                        data-node-id="8:3535"
+                      >
+                        {clientPillLabel}
+                      </p>
                     </div>
-                    <p
-                      className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative max-w-[min(280px,40vw)] shrink truncate text-[#606d76] text-[14px]"
-                      title={clientPillLabel}
-                      data-node-id="8:3535"
-                    >
-                      {clientPillLabel}
-                    </p>
+                    <div className="relative shrink-0 size-[16px]" data-name="lucide/x" data-node-id="8:3536">
+                      <img alt="" className="absolute block max-w-none size-full" src={imgLucideX} />
+                    </div>
                   </div>
-                  <div className="relative shrink-0 size-[16px]" data-name="lucide/x" data-node-id="8:3536">
-                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideX} />
-                  </div>
-                </div>
+                )}
                 <AICreditsBadge />
                 {isApiRoute && routeProjectId && isApiProjectId(routeProjectId) ? (
                   <NotificationBell
@@ -258,55 +241,25 @@ export function WelcomeContinuumView() {
                     Share
                   </p>
                 </div>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            disabled={!canExportTimeLogs || exportActionPending}
-                            aria-label="Export project time logs"
-                            data-name="Component 8"
-                            data-node-id="8:3549"
-                            className="content-stretch flex gap-[6px] h-[32px] items-center justify-center pl-[16px] pr-[12px] py-[8px] relative rounded-[8px] shrink-0 outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            style={{ backgroundImage: "linear-gradient(164.94079331184741deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)" }}
-                          >
-                            <p className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap" data-node-id="8:3550">
-                              {exportActionPending ? "Exporting…" : "Export"}
-                            </p>
-                            <div className="relative shrink-0 size-[16px]" data-name="lucide/chevron-down" data-node-id="8:3551">
-                              <img alt="" className="absolute block max-w-none size-full" src={imgLucideChevronDown} />
-                            </div>
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-[10rem]">
-                          <DropdownMenuItem
-                            disabled={exportActionPending}
-                            onSelect={() => {
-                              void runExportTimeLogsPdf();
-                            }}
-                          >
-                            Export time logs (PDF)
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={exportActionPending}
-                            onSelect={() => {
-                              void runExportTimeLogsCsv();
-                            }}
-                          >
-                            Export time logs (CSV)
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {canExportTimeLogs
-                      ? "Export this project's time logs as PDF or CSV"
-                      : "Open a project to export time logs"}
-                  </TooltipContent>
-                </Tooltip>
+                <div
+                  className="content-stretch flex gap-[6px] h-[32px] items-center justify-center pl-[16px] pr-[12px] py-[8px] relative rounded-[8px] shrink-0"
+                  data-name="Component 8"
+                  data-node-id="8:3549"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(164.94079331184741deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)",
+                  }}
+                >
+                  <p
+                    className="font-['Satoshi:Bold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[14px] text-white whitespace-nowrap"
+                    data-node-id="8:3550"
+                  >
+                    Export
+                  </p>
+                  <div className="relative shrink-0 size-[16px]" data-name="lucide/chevron-down" data-node-id="8:3551">
+                    <img alt="" className="absolute block max-w-none size-full" src={imgLucideChevronDown} />
+                  </div>
+                </div>
               </div>
             </div>
             <div className="h-0 relative shrink-0 w-full" data-node-id="8:3553">
@@ -324,108 +277,10 @@ export function WelcomeContinuumView() {
               }}
             >
             {isWelcomeDemo ? (
-            <div className="relative flex w-full min-w-0 flex-col items-start" data-node-id="8:3554">
-              <div className="content-stretch flex flex-col gap-[64px] items-center pb-[32px] pt-[48px] relative shrink-0 w-full" data-node-id="8:3555">
-                <WelcomeProjectHeroGauge />
-                <WelcomeMetricsRow />
-                <div className="content-stretch flex flex-col gap-[64px] items-start max-w-[815px] relative shrink-0 w-[815px]" data-node-id="8:3562">
-                  <WelcomeMilestoneTimeline variant="demo" />
-                  <div className="flex w-full flex-col gap-16">
-                    <WelcomeRecentActivity />
-                    <WelcomeResources />
-                    <WelcomeRepo />
-                  </div>
-                  <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-node-id="8:3717">
-                    <div className="content-stretch flex flex-col gap-[16px] h-[40px] items-start justify-center relative shrink-0 w-full" data-node-id="8:3718">
-                      <div className="content-stretch flex flex-[1_0_0] items-center justify-between min-h-px min-w-px relative w-full" data-node-id="8:3719">
-                        <div className="content-stretch flex items-center relative shrink-0" data-node-id="8:3720">
-                          <div className="content-stretch flex flex-col items-start relative shrink-0" data-node-id="8:3721">
-                            <div className="content-stretch flex gap-[8px] items-center justify-center relative shrink-0" data-node-id="8:3722">
-                              <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[24px] whitespace-nowrap" data-node-id="8:3723">
-                                Members
-                              </p>
-                              <div className="relative shrink-0 size-[16px]" data-name="lucide/info" data-node-id="8:3724">
-                                <img alt="" className="absolute block max-w-none size-full" src={imgLucideInfo} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              data-tour="welcome-invite-members"
-                              className="border border-[#ebedee] border-solid content-stretch flex cursor-pointer gap-[8px] items-center justify-center px-[16px] py-[8px] relative rounded-[8px] shadow-[0px_5px_1px_0px_rgba(14,14,34,0),0px_3px_1px_0px_rgba(14,14,34,0.01),0px_2px_1px_0px_rgba(14,14,34,0.02),0px_1px_1px_0px_rgba(14,14,34,0.03)] shrink-0 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
-                              data-name="Component 2"
-                              data-node-id="8:3726"
-                              style={{
-                                backgroundImage:
-                                  "linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%), linear-gradient(168.89065931200642deg, rgb(36, 181, 248) 123.02%, rgb(85, 33, 254) 802.55%)",
-                              }}
-                              onClick={() => setShareProjectOpen(true)}
-                            >
-                          <div className="relative shrink-0 size-[24px]" data-name="lucide/plus" data-node-id="8:3727">
-                            <img alt="" className="absolute block max-w-none size-full" src={imgLucidePlus1} />
-                          </div>
-                          <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[14px] whitespace-nowrap" data-node-id="8:3729">
-                            Invite Members
-                          </p>
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Invite members to this project</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
-                    <div className="content-stretch flex items-start relative shrink-0 w-full" data-node-id="8:3761">
-                      <div className="bg-white border border-[#ebedee] border-solid content-stretch flex items-start p-[24px] relative rounded-[12px] shadow-[0px_20px_6px_0px_rgba(26,59,84,0),0px_13px_5px_0px_rgba(26,59,84,0),0px_7px_4px_0px_rgba(26,59,84,0.01),0px_3px_3px_0px_rgba(26,59,84,0.03),0px_1px_2px_0px_rgba(26,59,84,0.03)] shrink-0 w-[260px]" data-node-id="8:3762">
-                        <div className="content-stretch flex flex-[1_0_0] flex-col gap-[24px] items-start min-h-px min-w-px relative" data-node-id="8:3763">
-                          <div className="content-stretch flex h-[40px] items-center relative rounded-[8px] shrink-0 w-full" data-name="Component 13" data-node-id="8:3764">
-                            <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-node-id="8:3765">
-                              <div className="bg-[#f17173] content-stretch flex items-center justify-center relative rounded-[999px] shrink-0 size-[35px]" data-name="Component 31" data-node-id="8:3766">
-                                <div className="flex flex-col font-['Satoshi:Medium',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[13.13px] text-white whitespace-nowrap" data-node-id="I8:3766;2032:902">
-                                  <p className="leading-[0.4]">AS</p>
-                                </div>
-                              </div>
-                              <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] items-start justify-center leading-[normal] not-italic relative shrink-0 whitespace-nowrap" data-node-id="8:3767">
-                                <p className="relative shrink-0 text-[#0b191f] text-[14px]" data-node-id="8:3768">
-                                  Amukelani Shiringani
-                                </p>
-                                <p className="relative shrink-0 text-[#727d83] text-[12px]" data-node-id="8:3769">
-                                  Product Designer
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="content-stretch flex flex-col items-start relative shrink-0 w-full" data-node-id="8:3770">
-                            <div className="content-stretch flex flex-col font-['Satoshi:Medium',sans-serif] gap-[8px] items-start leading-[normal] not-italic relative shrink-0 text-[14px] w-full whitespace-nowrap" data-node-id="8:3771">
-                              <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3772">
-                                <p className="relative shrink-0 text-[#727d83]" data-node-id="8:3773">
-                                  Total hours
-                                </p>
-                                <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-ellipsis w-[34px]" data-node-id="8:3774">
-                                  0
-                                </p>
-                              </div>
-                              <div className="content-stretch flex items-center justify-between relative shrink-0 w-full" data-node-id="8:3775">
-                                <p className="relative shrink-0 text-[#727d83]" data-node-id="8:3776">
-                                  Task completed
-                                </p>
-                                <p className="overflow-hidden relative shrink-0 text-[#0b191f] text-ellipsis w-[34px]" data-node-id="8:3777">
-                                  0
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <WelcomeDemoProjectBody onOpenInviteMembers={() => setShareProjectOpen(true)} />
             ) : (
             <div className="relative flex w-full min-w-0 flex-col items-start px-1">
-              {isApiRoute && projectQuery.isLoading && (
+              {isApiRoute && (projectQuery.isLoading || (projectQuery.isSuccess && !summaryReady)) && (
                 <BrandedLoadingPlaceholder
                   className="min-h-[60vh] w-full"
                   label="Loading project…"
@@ -439,7 +294,7 @@ export function WelcomeContinuumView() {
                   </Link>
                 </div>
               )}
-              {isApiRoute && projectQuery.isSuccess && routeProjectId && (
+              {isApiRoute && projectQuery.isSuccess && summaryReady && routeProjectId && (
                 <WelcomeEmptyProjectBody
                   projectId={Number(routeProjectId)}
                   onOpenInviteMembers={() => setShareProjectOpen(true)}
@@ -452,7 +307,7 @@ export function WelcomeContinuumView() {
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="absolute bottom-[14px] right-[14px] z-20 flex size-[48px] flex-col items-start isolate overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                  className="absolute bottom-[14px] right-[14px] z-20 flex size-[48px] flex-col items-start isolate overflow-clip rounded-[48px] border border-solid border-[#1e87e0] bg-[#2798f5] shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 transition-colors hover:bg-[#1e87e0] focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Open AI assistant"
                   data-tour="welcome-project-assistant"
                   data-node-id="8:3521-fab"
@@ -462,7 +317,7 @@ export function WelcomeContinuumView() {
                 <div className="relative size-[28px] shrink-0 overflow-clip">
                   <div className="absolute inset-[16.67%_8.33%]">
                     <div className="absolute inset-[-5.15%_-4.12%]">
-                      <img alt="" className="block size-full max-w-none" src={imgVector15} />
+                      <img alt="" className="block size-full max-w-none brightness-0 invert" src={imgVector15} />
                     </div>
                   </div>
                 </div>

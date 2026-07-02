@@ -28,6 +28,23 @@
   animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Thinking indicator dots — absolute offset because a %-based bounce is
+   invisible on a 4px element (translateY(-25%) = 1px) */
+@keyframes dot-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+@utility animate-dot-bounce {
+  animation: dot-bounce 1.2s ease-in-out infinite;
+}
+
 @utility cursor-pointer {
   cursor: pointer;
 }

@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { DATE_X_AXIS_TICK_PROPS } from './dashboardChartMappers';
 
 export type CumulativeFlowRow = {
   date: string;
@@ -27,18 +28,20 @@ function formatTick(isoDate: string) {
 export function CumulativeFlowDiagram({
   data,
   emptyLabel = 'No flow data for this range',
+  height = 280,
 }: {
   data: CumulativeFlowRow[];
   emptyLabel?: string;
+  height?: number;
 }) {
   if (!data.length) {
     return (
-      <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">{emptyLabel}</div>
+      <div className="flex items-center justify-center text-sm text-muted-foreground" style={{ height }}>{emptyLabel}</div>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
         <XAxis
@@ -48,7 +51,7 @@ export function CumulativeFlowDiagram({
           tickLine={false}
           axisLine={false}
           tickFormatter={formatTick}
-          interval="preserveStartEnd"
+          {...DATE_X_AXIS_TICK_PROPS}
         />
         <YAxis stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
         <Tooltip

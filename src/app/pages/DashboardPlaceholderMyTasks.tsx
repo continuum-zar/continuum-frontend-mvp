@@ -1,8 +1,18 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format, isValid, parseISO } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
-import { Ellipsis, Flag, GripVertical, ListTodo, Target } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Ellipsis,
+  Flag,
+  GripVertical,
+  ListTodo,
+  Target,
+} from "lucide-react";
 import { DashboardLeftRail } from "../components/dashboard-placeholder/DashboardLeftRail";
 import { workspaceJoin, type WorkspaceMyTasksScope, workspaceMyTasksHref } from "@/lib/workspacePaths";
 import { useAssignedToMeTasks, useCreatedByMeTasks } from "@/api/hooks";
@@ -17,6 +27,9 @@ import { DashboardTaskListTableSkeleton } from "@/app/components/dashboard-place
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
 
 const MAX_MEMBER_FETCH_CONCURRENCY = 8;
+
+/** Rows fetched (and shown) per page. Keeps the initial load small instead of pulling everything at once. */
+const PAGE_SIZE = 10;
 
 function parseScope(raw: string | null): WorkspaceMyTasksScope {
   return raw === "created" ? "created" : "assigned";
@@ -84,23 +97,36 @@ export function DashboardPlaceholderMyTasks() {
   );
   const assigneeBg = user ? memberAvatarBackground(Number(user.id)) : "#e19c02";
 
+  // 1-based page. Reset to page 1 whenever the scope tab changes.
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [scope]);
+
   const {
-    data: assignedTasks = [],
+    data: assignedResult,
     isLoading: assignedLoading,
     isError: assignedError,
     refetch: refetchAssigned,
   } = useAssignedToMeTasks({
     enabled: scope === "assigned",
+    page,
+    pageSize: PAGE_SIZE,
   });
 
   const {
-    data: createdTasks = [],
+    data: createdResult,
     isLoading: createdLoading,
     isError: createdError,
     refetch: refetchCreated,
   } = useCreatedByMeTasks({
     enabled: scope === "created",
+    page,
+    pageSize: PAGE_SIZE,
   });
+
+  const assignedTasks = assignedResult?.data ?? [];
+  const createdTasks = useMemo(() => createdResult?.data ?? [], [createdResult]);
 
   const projectIds = useMemo(
     () => [...new Set(createdTasks.map((t) => t.project_id))],
@@ -173,6 +199,14 @@ export function DashboardPlaceholderMyTasks() {
   const isLoading = scope === "assigned" ? assignedLoading : createdLoading;
   const isError = scope === "assigned" ? assignedError : createdError;
   const refetch = scope === "assigned" ? refetchAssigned : refetchCreated;
+
+  const total = scope === "assigned" ? assignedResult?.total ?? 0 : createdResult?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Keep the page in range if the total shrinks (e.g. after a refetch).
+  useEffect(() => {
+    setPage((p) => Math.min(Math.max(1, p), totalPages));
+  }, [totalPages]);
 
   const titleMain = scope === "assigned" ? "Assigned to Me" : "Created by Me";
   const titleEyebrow = scope === "assigned" ? "Assigned to Me" : "Created by Me";
@@ -417,6 +451,97 @@ export function DashboardPlaceholderMyTasks() {
                       );
                     })}
               </div>
+
+              {totalPages > 1 && (
+                <div className="flex w-full shrink-0 flex-wrap items-center justify-center gap-6 border-t border-[#ebedee] bg-white px-2 py-3">
+                  <button
+                    type="button"
+                    className={`flex size-10 items-center justify-center rounded-[8px] bg-white disabled:opacity-50 ${
+                      page <= 1 ? "text-[#a1a1aa]" : "text-[#52525b]"
+                    }`}
+                    aria-label="First page"
+                    disabled={page <= 1}
+                    onClick={() => setPage(1)}
+                  >
+                    <ChevronsLeft className="size-4" />
+                  </button>
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      className={`flex size-10 items-center justify-center rounded-[8px] bg-white disabled:opacity-50 ${
+                        page <= 1 ? "text-[#a1a1aa]" : "text-[#52525b]"
+                      }`}
+                      aria-label="Previous page"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      <ChevronLeft className="size-4" />
+                    </button>
+                    <div className="flex items-center gap-0">
+                      {totalPages <= 10 ? (
+                        Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => setPage(n)}
+                            className={`flex size-10 items-center justify-center rounded-[8px] text-[14px] font-medium text-[#252014] ${
+                              page === n ? "bg-[#ebedee]" : "bg-transparent hover:bg-[#f4f4f5]"
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        ))
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setPage(1)}
+                            className={`flex size-10 items-center justify-center rounded-[8px] text-[14px] font-medium text-[#252014] ${
+                              page === 1 ? "bg-[#ebedee]" : ""
+                            }`}
+                          >
+                            1
+                          </button>
+                          <span className="flex size-10 items-center justify-center rounded-[8px] border border-[#e9e9e9] text-[14px] font-medium text-[#252014]">
+                            ...
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPage(totalPages)}
+                            className={`flex size-10 items-center justify-center rounded-[8px] text-[14px] font-medium text-[#252014] ${
+                              page === totalPages ? "bg-[#ebedee]" : ""
+                            }`}
+                          >
+                            {totalPages}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className={`flex size-10 items-center justify-center rounded-[8px] bg-white disabled:opacity-50 ${
+                        page >= totalPages ? "text-[#a1a1aa]" : "text-[#52525b]"
+                      }`}
+                      aria-label="Next page"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      <ChevronRight className="size-4" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className={`flex size-10 items-center justify-center rounded-[8px] bg-white disabled:opacity-50 ${
+                      page >= totalPages ? "text-[#a1a1aa]" : "text-[#52525b]"
+                    }`}
+                    aria-label="Last page"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(totalPages)}
+                  >
+                    <ChevronsRight className="size-4" />
+                  </button>
+                </div>
+              )}
             </>
           )}
         </section>

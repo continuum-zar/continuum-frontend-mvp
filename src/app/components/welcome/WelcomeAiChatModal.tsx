@@ -34,7 +34,8 @@ import type {
   GenerateTasksResponse,
   WikiConfirmTaskItem,
 } from "@/api";
-import type { PlannerChoiceQuestion } from "@/api/planner";
+import type { AssistantChatMessage, PlannerChoiceQuestion } from "@/api/planner";
+import { ASSISTANT_HISTORY_MAX_MESSAGES } from "@/api/planner";
 import { taskPriorityFlagClass, taskPriorityLabel } from "@/types/task";
 import {
   Dialog,
@@ -49,6 +50,9 @@ import {
   type ChecklistRow,
 } from "../CreateTaskModal";
 import { IndexingProgressBanner } from "@/app/components/IndexingProgressBanner";
+import { IndexingLottie } from "@/app/components/IndexingLottie";
+import { indexingProgressCaption } from "@/lib/indexingProgressDisplay";
+import { isLikelyRawServerErrorText, sanitizeDisplayText } from "@/lib/errorMessages";
 import { PlannerAssistantMarkdown } from "../planner/PlannerAssistantMarkdown";
 import { PlannerChoiceQuestions } from "../planner/PlannerChoiceQuestions";
 
@@ -129,6 +133,22 @@ type ReportingMsg =
       isError?: boolean;
       confidence?: number;
     };
+
+/**
+ * One completed task-assistant exchange, archived when the user sends a
+ * follow-up. Rendered above the live exchange and replayed to the backend as
+ * conversation `history` so follow-ups refine the earlier result.
+ */
+type TaskGenExchange = {
+  id: string;
+  /** What the user saw in their bubble (without the clarifications appendix). */
+  promptDisplay: string;
+  /** Full prompt sent to the API (original + clarifications), used for history. */
+  promptFull: string;
+  reply: string | null;
+  taskTitles: string[];
+  confirmed: boolean;
+};
 
 function isAbortError(err: unknown): boolean {
   const e = err as { code?: string; name?: string };
@@ -232,6 +252,9 @@ export function WelcomeAiChatModal({
   /** First user message for this generation round (clarifications append to this). */
   const [taskGenOriginalPrompt, setTaskGenOriginalPrompt] = useState("");
   const [taskGenClarificationLog, setTaskGenClarificationLog] = useState("");
+  const [taskGenThread, setTaskGenThread] = useState<TaskGenExchange[]>([]);
+  // Ref mirror so async callbacks read the archived thread without stale closures.
+  const taskGenThreadRef = useRef<TaskGenExchange[]>([]);
   const [wikiClarifyReply, setWikiClarifyReply] = useState<string | null>(null);
   const [wikiChoiceQuestions, setWikiChoiceQuestions] = useState<PlannerChoiceQuestion[]>([]);
   const [wikiChoiceSelections, setWikiChoiceSelections] = useState<Record<string, string>>({});
@@ -280,7 +303,7 @@ export function WelcomeAiChatModal({
   );
 
   const [composerAttachments, setComposerAttachments] = useState<WelcomeComposerAttachment[]>([]);
-  const [assistantMode, setAssistantMode] = useState<AssistantMode>("create");
+  const [assistantMode, setAssistantMode] = useState<AssistantMode>("plan");
   const composerAttachmentsRef = useRef(composerAttachments);
   composerAttachmentsRef.current = composerAttachments;
   const welcomeFileInputRef = useRef<HTMLInputElement>(null);
@@ -357,7 +380,9 @@ export function WelcomeAiChatModal({
       setApiError(null);
       setConfirming(false);
       setConfirmed(false);
-      setAssistantMode("create");
+      setTaskGenThread([]);
+      taskGenThreadRef.current = [];
+      setAssistantMode("plan");
       abortRef.current?.abort();
       abortRef.current = null;
       setReportingThread([]);
@@ -381,6 +406,12 @@ export function WelcomeAiChatModal({
       const trimmed = text.trim();
       if (!trimmed || projectId == null || reportingLockRef.current) return;
       const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+      // Replay the visible thread (minus error bubbles) so follow-up questions
+      // keep their context. The backend holds no session state.
+      const history: AssistantChatMessage[] = reportingThread
+        .filter((m) => !(m.role === "assistant" && m.isError))
+        .slice(-ASSISTANT_HISTORY_MAX_MESSAGES)
+        .map((m) => ({ role: m.role, content: m.content }));
       reportingLockRef.current = true;
       const pid = projectId;
       const controller = new AbortController();
@@ -394,18 +425,30 @@ export function WelcomeAiChatModal({
           {
             query: trimmed,
             ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
+            ...(history.length > 0 ? { history } : {}),
           },
           { signal: controller.signal },
         );
         if (controller.signal.aborted) return;
+        // The backend can return a 200 whose answer body is actually a raw
+        // server/DB error (e.g. a SQLAlchemy trace). Never show that to a user.
+        const answer = res.answer ?? "No response.";
+        const isLeakedError = isLikelyRawServerErrorText(answer);
         setReportingThread((prev) => [
           ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: res.answer ?? "No response.",
-            confidence: res.confidence,
-          },
+          isLeakedError
+            ? {
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: "Something went wrong on our end while answering. Please try again in a moment.",
+                isError: true,
+              }
+            : {
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: answer,
+                confidence: res.confidence,
+              },
         ]);
         clearComposerAttachments();
       } catch (err) {
@@ -421,7 +464,7 @@ export function WelcomeAiChatModal({
         reportingAbortRef.current = null;
       }
     },
-    [projectId, clearComposerAttachments],
+    [projectId, clearComposerAttachments, reportingThread],
   );
 
   const startPrompt = (text: string) => {
@@ -432,6 +475,33 @@ export function WelcomeAiChatModal({
     setSelectedPrompt(text);
     setPhase("thinking");
   };
+
+  /**
+   * Archived task-assistant exchanges as backend `history` messages. Assistant
+   * turns carry the reply plus generated task titles so the model can refine
+   * the previous result ("add three more", "make them smaller", …).
+   */
+  const buildTaskGenHistory = useCallback(
+    (): AssistantChatMessage[] =>
+      taskGenThreadRef.current
+        .flatMap((x): AssistantChatMessage[] => [
+          { role: "user", content: x.promptFull },
+          {
+            role: "assistant",
+            content: [
+              x.reply ?? "",
+              x.taskTitles.length
+                ? `Proposed tasks:\n${x.taskTitles.map((t) => `- ${t}`).join("\n")}`
+                : "",
+              x.confirmed ? "(The user created these tasks on the board.)" : "",
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
+          },
+        ])
+        .slice(-ASSISTANT_HISTORY_MAX_MESSAGES),
+    [],
+  );
 
   const runGetStartedPrompt = useCallback(
     async (rawText: string) => {
@@ -454,31 +524,35 @@ export function WelcomeAiChatModal({
 
       try {
         const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+        const history = buildTaskGenHistory();
         const res = await generateTasks(projectId, {
           prompt: text,
           max_tasks: 10,
           mode: assistantMode,
           ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
           ...(filledSources.length ? { sources: filledSources } : {}),
+          ...(history.length > 0 ? { history } : {}),
         });
         if (controller.signal.aborted) return;
 
         const count = res.tasks.length;
         const questions = normalizeWikiChoiceQuestions(res.choice_questions);
+        // Drop the reply if it's empty or a leaked raw server/DB error.
+        const safeReply = sanitizeDisplayText(res.reply, "").trim() || null;
 
         if (questions.length > 0) {
-          setWikiClarifyReply(res.reply?.trim() ? res.reply!.trim() : null);
+          setWikiClarifyReply(safeReply);
           setWikiChoiceQuestions(questions);
           setGeneratedTasks(res.tasks);
           setGeneratedSummary("");
         } else if (assistantMode === "plan") {
           // Plan mode never returns tasks. Keep the planning summary on screen so the
           // user can review it and proceed via "Create tasks from this plan".
-          setWikiClarifyReply(res.reply?.trim() ? res.reply.trim() : null);
+          setWikiClarifyReply(safeReply);
           setWikiChoiceQuestions([]);
           setGeneratedTasks([]);
           setGeneratedSummary(
-            res.reply?.trim()
+            safeReply
               ? ""
               : "I couldn't draft a plan from that. Add more detail and try again.",
           );
@@ -500,7 +574,7 @@ export function WelcomeAiChatModal({
         if (controller.signal.aborted) return;
         const msg = getApiErrorMessage(
           err,
-          "Task generation failed. Make sure the repository is indexed and try again.",
+          "Something went wrong while working on that. Please try again in a moment.",
         );
         setApiError(msg);
         setPhase("getStartedAnswer");
@@ -511,6 +585,7 @@ export function WelcomeAiChatModal({
       clearComposerAttachments,
       assistantMode,
       filledSources,
+      buildTaskGenHistory,
     ],
   );
 
@@ -555,12 +630,14 @@ export function WelcomeAiChatModal({
         setApiError(null);
         try {
           const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+          const history = buildTaskGenHistory();
           const res = await generateTasks(projectId, {
             prompt: fullPrompt,
             max_tasks: 10,
             mode: assistantMode,
             ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
             ...(filledSources.length ? { sources: filledSources } : {}),
+            ...(history.length > 0 ? { history } : {}),
           });
 
           setTaskGenClarificationLog(nextLog);
@@ -575,13 +652,30 @@ export function WelcomeAiChatModal({
           const count = res.tasks.length;
           const questionsNext = normalizeWikiChoiceQuestions(res.choice_questions);
 
+          const safeReply = sanitizeDisplayText(res.reply, "").trim() || null;
+
           if (questionsNext.length > 0) {
-            setWikiClarifyReply(res.reply?.trim() ? res.reply!.trim() : null);
+            setWikiClarifyReply(safeReply);
             setWikiChoiceQuestions(questionsNext);
             setWikiSubmittedChoiceIds(new Set());
             setWikiSubmittedChoiceAnswers({});
             setGeneratedTasks(res.tasks);
             setGeneratedSummary("");
+          } else if (assistantMode === "plan") {
+            // Plan converged: no more questions and (by design) no tasks. Show the
+            // final plan so the user can proceed via "Create tasks from this plan" —
+            // without this branch the reply is dropped and the create-mode
+            // "couldn't generate tasks" copy appears instead.
+            setWikiClarifyReply(safeReply);
+            setWikiChoiceQuestions([]);
+            setWikiSubmittedChoiceIds(new Set());
+            setWikiSubmittedChoiceAnswers({});
+            setGeneratedTasks([]);
+            setGeneratedSummary(
+              safeReply
+                ? ""
+                : "I couldn't draft a plan from that. Add more detail and try again.",
+            );
           } else {
             setWikiClarifyReply(null);
             setWikiChoiceQuestions([]);
@@ -600,7 +694,7 @@ export function WelcomeAiChatModal({
         } catch (err) {
           const msg = getApiErrorMessage(
             err,
-            "Task generation failed. Make sure the repository is indexed and try again.",
+            "Something went wrong while working on that. Please try again in a moment.",
           );
           setApiError(msg);
           setPhase("getStartedAnswer");
@@ -616,6 +710,7 @@ export function WelcomeAiChatModal({
       taskGenClarificationLog,
       assistantMode,
       filledSources,
+      buildTaskGenHistory,
     ],
   );
 
@@ -676,12 +771,14 @@ export function WelcomeAiChatModal({
     abortRef.current = controller;
     try {
       const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+      const history = buildTaskGenHistory();
       const res = await generateTasks(projectId, {
         prompt: fullPrompt,
         max_tasks: 10,
         mode: "create",
         ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
         ...(filledSources.length ? { sources: filledSources } : {}),
+        ...(history.length > 0 ? { history } : {}),
       });
       if (controller.signal.aborted) return;
       applyGeneratedResult(res);
@@ -691,7 +788,7 @@ export function WelcomeAiChatModal({
       setApiError(
         getApiErrorMessage(
           err,
-          "Task generation failed. Make sure the repository is indexed and try again.",
+          "Something went wrong while working on that. Please try again in a moment.",
         ),
       );
       setPhase("getStartedAnswer");
@@ -703,6 +800,47 @@ export function WelcomeAiChatModal({
     taskGenClarificationLog,
     filledSources,
     applyGeneratedResult,
+    buildTaskGenHistory,
+  ]);
+
+  /**
+   * Follow-up request after an answer: archive the exchange currently on
+   * screen (it becomes conversation history + a static thread entry above)
+   * and re-run generation with the new prompt.
+   */
+  const sendTaskFollowUp = useCallback(() => {
+    const text = draftMessage.trim();
+    if (!text || phase !== "getStartedAnswer") return;
+    if (selectedPrompt && !apiError) {
+      const archived: TaskGenExchange = {
+        id: crypto.randomUUID(),
+        promptDisplay: selectedPrompt,
+        promptFull: taskGenClarificationLog
+          ? `${taskGenOriginalPrompt || selectedPrompt}\n\n--- Clarifications ---\n${taskGenClarificationLog}`
+          : taskGenOriginalPrompt || selectedPrompt,
+        reply: wikiClarifyReply ?? (generatedSummary || null),
+        taskTitles: generatedTasks.map((t) => t.title),
+        confirmed,
+      };
+      const next = [...taskGenThreadRef.current, archived];
+      taskGenThreadRef.current = next;
+      setTaskGenThread(next);
+    }
+    setConfirming(false);
+    setConfirmed(false);
+    void runGetStartedPrompt(text);
+  }, [
+    draftMessage,
+    phase,
+    selectedPrompt,
+    apiError,
+    taskGenOriginalPrompt,
+    taskGenClarificationLog,
+    wikiClarifyReply,
+    generatedSummary,
+    generatedTasks,
+    confirmed,
+    runGetStartedPrompt,
   ]);
 
   const stopGetStarted = () => {
@@ -713,6 +851,8 @@ export function WelcomeAiChatModal({
     setSelectedPrompt(null);
     setGeneratedTasks([]);
     setGeneratedSummary("");
+    setTaskGenThread([]);
+    taskGenThreadRef.current = [];
     setTaskGenOriginalPrompt("");
     setTaskGenClarificationLog("");
     setWikiClarifyReply(null);
@@ -1025,6 +1165,41 @@ export function WelcomeAiChatModal({
                     <p>Today</p>
                     <p>Continuum AI</p>
                   </div>
+                  {/* Archived follow-up exchanges (read-only; latest exchange renders below) */}
+                  {taskGenThread.map((x) => (
+                    <Fragment key={x.id}>
+                      <div className="flex w-full justify-end">
+                        <div className="max-w-[min(100%,340px)] rounded-[32px] bg-[#edf0f3] px-4 py-2">
+                          <p className="whitespace-pre-wrap break-words text-left font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#0b191f]">
+                            {x.promptDisplay}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex w-full flex-col items-start gap-2">
+                        {x.reply ? <PlannerAssistantMarkdown content={x.reply} /> : null}
+                        {x.taskTitles.length > 0 && (
+                          <div className="w-full rounded-[12px] border border-solid border-[#ededed] bg-white p-3">
+                            <ul className="flex flex-col gap-1">
+                              {x.taskTitles.map((t, i) => (
+                                <li
+                                  key={`${t}-${i}`}
+                                  className="list-none py-1.5 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f]"
+                                >
+                                  {t}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {x.confirmed && (
+                          <p className="flex items-center gap-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#108e27]">
+                            <Check className="size-3.5 shrink-0" strokeWidth={2} />
+                            Tasks created
+                          </p>
+                        )}
+                      </div>
+                    </Fragment>
+                  ))}
                   <div className="flex w-full justify-end">
                     <div className="max-w-[min(100%,340px)] rounded-[32px] bg-[#edf0f3] px-4 py-2">
                       <p className="whitespace-pre-wrap break-words text-left font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#0b191f]">
@@ -1035,17 +1210,20 @@ export function WelcomeAiChatModal({
                   <div className="w-full">
                     {/* Thinking state (mock for showQuickActions, real for getStarted) */}
                     {(phase === "thinking" || phase === "getStartedLoading") && (
-                      <div className="flex w-full flex-col items-end rounded-[16px]">
-                        <div className="flex w-full flex-col items-end gap-5">
-                          <div className="flex w-full flex-col items-start gap-2">
-                            <div className="flex w-full items-center gap-2 opacity-50">
-                              <SpinnerGradientThinking />
-                              <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
-                                Thinking...
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                      <div className="flex w-full flex-1 flex-col items-center justify-center gap-2 py-6">
+                        <IndexingLottie
+                          animation="processing"
+                          className="aspect-video w-full max-w-[420px]"
+                          fallback={<SpinnerGradientThinking />}
+                        />
+                        <p className="flex items-center font-['Inter',sans-serif] text-[13px] font-medium leading-[16px] text-[#727d83]">
+                          Working on it
+                          <span className="ml-1.5 flex items-center gap-[3px]">
+                            <span className="size-1 animate-dot-bounce rounded-full bg-[#727d83]" />
+                            <span className="size-1 animate-dot-bounce rounded-full bg-[#727d83] [animation-delay:150ms]" />
+                            <span className="size-1 animate-dot-bounce rounded-full bg-[#727d83] [animation-delay:300ms]" />
+                          </span>
+                        </p>
                       </div>
                     )}
 
@@ -1111,9 +1289,13 @@ export function WelcomeAiChatModal({
                                   />
                                 ) : null}
 
+                                {/* Only offer task creation once the plan has converged —
+                                    while feedback questions are pending the user should
+                                    answer them, not skip ahead. */}
                                 {assistantMode === "plan" &&
                                 generatedTasks.length === 0 &&
-                                (wikiClarifyReply || wikiChoiceQuestions.length > 0) ? (
+                                wikiChoiceQuestions.length === 0 &&
+                                wikiClarifyReply ? (
                                   <button
                                     type="button"
                                     onClick={() => void proceedToCreateFromPlan()}
@@ -1213,13 +1395,26 @@ export function WelcomeAiChatModal({
                 </div>
               </div>
               <div className="relative z-10 mt-auto w-full shrink-0 px-[15px] pb-[15px]">
-                {phase === "getStartedLoading" && (
-                  <div className="relative z-40 mb-4 flex w-full justify-center">
-                    <GetStartedTaskBar onStop={stopGetStarted} />
-                  </div>
-                )}
                 {phase === "thinking" || phase === "getStartedLoading" ? (
-                  <ComposerThinking />
+                  <ComposerThinking
+                    onStop={phase === "getStartedLoading" ? stopGetStarted : undefined}
+                  />
+                ) : phase === "getStartedAnswer" ? (
+                  <ComposerWelcome
+                    draft={draftMessage}
+                    onDraftChange={setDraftMessage}
+                    onSubmit={sendTaskFollowUp}
+                    placeholder="Ask a follow-up or refine these tasks…"
+                    inputId="get-started-followup-input"
+                    attachments={composerAttachments}
+                    onRemoveAttachment={removeComposerAttachment}
+                    mode={assistantMode}
+                    onModeChange={setAssistantMode}
+                    fileInputRef={welcomeFileInputRef}
+                    onAddFiles={(files) => void addComposerFiles(files)}
+                    uploadPending={uploadMutation.isPending}
+                    attachmentsEnabled={Boolean(projectId)}
+                  />
                 ) : (
                   <ComposerResponded />
                 )}
@@ -1925,20 +2120,30 @@ function ReportingAssistantPanel({
               )}
             </Fragment>
           ))}
-          {reportingPending && (
-            <div className="flex w-full flex-col items-start gap-3 rounded-[16px]">
-              <IndexingProgressBanner
-                progress={indexingProgress}
-                pollFailed={Boolean(indexingPollFailed)}
-              />
-              <div className="flex w-full items-center gap-2 opacity-50">
-                <SpinnerGradientThinking />
-                <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
-                  Thinking...
+          {reportingPending &&
+            (indexingPollFailed || indexingProgress?.status === "error" ? (
+              // Indexing failed / progress unavailable — keep the informative text banner.
+              <div className="flex w-full flex-col items-start gap-3 rounded-[16px]">
+                <IndexingProgressBanner
+                  progress={indexingProgress}
+                  pollFailed={Boolean(indexingPollFailed)}
+                />
+                <div className="flex w-full items-center gap-2 opacity-50">
+                  <SpinnerGradientThinking />
+                  <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
+                    Thinking...
+                  </p>
+                </div>
+              </div>
+            ) : (
+              // Indexing / preparing context — play the animation in the middle of the chat area.
+              <div className="flex w-full flex-1 flex-col items-center justify-center gap-2 py-10">
+                <IndexingLottie className="size-40" fallback={<SpinnerGradientThinking />} />
+                <p className="font-['Inter',sans-serif] text-[12px] font-medium leading-[16px] text-[#727d83]">
+                  {indexingProgressCaption(indexingProgress)}
                 </p>
               </div>
-            </div>
-          )}
+            ))}
         </div>
       </div>
       <div className="relative z-10 mt-auto w-full shrink-0 px-[15px] pb-[15px]">
@@ -1960,29 +2165,6 @@ function ReportingAssistantPanel({
             attachmentsEnabled
           />
         )}
-      </div>
-    </div>
-  );
-}
-
-function GetStartedTaskBar({ onStop }: { onStop: () => void }) {
-  return (
-    <div className="pointer-events-auto w-full max-w-[368px] shadow-[0px_12px_24px_rgba(11,25,31,0.12)]">
-      <div className="flex items-center gap-2 rounded-[16px] bg-[#0b191f] py-2 pl-4 pr-2">
-        <p className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-white">
-          Generating tasks...
-        </p>
-        <button
-          type="button"
-          onClick={onStop}
-          className="flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-lg px-4 py-2 font-['Satoshi',sans-serif] text-[14px] font-bold leading-[normal] text-white outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-white"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, rgb(235, 67, 53) 0%, rgb(235, 67, 53) 100%)",
-          }}
-        >
-          Stop
-        </button>
       </div>
     </div>
   );

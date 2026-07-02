@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { getApiErrorMessage } from './hooks';
 import { projectKeys } from './hooks';
 import { STALE_MODERATE_MS, WIKI_SCAN_POLL_MS } from '@/lib/queryDefaults';
-import type { FileContent } from './planner';
+import type { AssistantChatMessage, FileContent } from './planner';
 import type { FigmaBlueprint } from './planner';
 import type { PlannerChoiceQuestion } from './planner';
 import type { TaskPriority } from '@/types/task';
@@ -140,6 +140,8 @@ export async function generateTasks(
         sources?: GenerationSource[];
         /** Assistant mode. 'plan' returns a planning summary + clarifying questions and creates no tasks. 'create' generates tasks directly. */
         mode?: AssistantMode;
+        /** Prior turns of this conversation (oldest first) so follow-up requests refine the earlier result. */
+        history?: AssistantChatMessage[];
     }
 ): Promise<GenerateTasksResponse> {
     const sources = (body.sources ?? [])
@@ -158,10 +160,21 @@ export async function generateTasks(
             ...(body.figma_blueprint ? { figma_blueprint: body.figma_blueprint } : {}),
             ...(sources.length ? { sources } : {}),
             ...(body.mode ? { mode: body.mode } : {}),
+            ...(body.history?.length ? { history: body.history } : {}),
         },
         { timeout: 600_000 },
     );
-    return data;
+    // Guard against non-API 200s (e.g. proxy/SPA fallback HTML while the backend is
+    // restarting parses as a string, not this shape). Callers do `res.tasks.length`
+    // — validate here once so a bad body becomes a friendly error instead of a
+    // client-side TypeError leaking raw browser wording into the UI.
+    if (data == null || typeof data !== 'object' || !Array.isArray(data.tasks)) {
+        throw new Error('The assistant returned an unexpected response. Please try again.');
+    }
+    return {
+        ...data,
+        choice_questions: Array.isArray(data.choice_questions) ? data.choice_questions : [],
+    };
 }
 
 /** Persist AI-generated tasks after user confirmation. Creator is set only on the server from the auth session (`POST .../wiki/confirm`). */

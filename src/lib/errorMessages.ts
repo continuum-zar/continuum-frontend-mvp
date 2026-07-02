@@ -98,6 +98,12 @@ const TECHNICAL_MESSAGE_PATTERNS = [
     /Cannot read propert/,
     /Cannot access /,
     /is not defined$/,
+    // Firefox / Safari TypeError wording (Chrome's is covered above). Seen when a
+    // client-side crash inside a catch block gets rendered as an API error.
+    /can't access property/i,
+    /is (undefined|null)$/,
+    /(undefined|null) is not an object/,
+    /Cannot destructure /,
     /Failed to fetch/,
     /NetworkError/i,
     /Network Error/,
@@ -108,10 +114,42 @@ const TECHNICAL_MESSAGE_PATTERNS = [
     /Unexpected token/,
     /JSON\.parse/,
     /^\s*at\s/m,
+    // Backend/database internals that must never surface to a user (raw SQL,
+    // driver errors, ORM tracebacks). Seen leaking through 200 answer bodies.
+    /Traceback \(most recent call last\)/,
+    /\bpsycopg2\b/i,
+    /sqlalche\.me/i,
+    /\bSQLAlchemy\b/,
+    /\[SQL:/,
+    /\b(Undefined(Column|Table|Function)|ProgrammingError|IntegrityError|OperationalError|DataError)\b/,
+    /\b(column|relation|table)\b.+\bdoes not exist\b/i,
 ];
 
 function isTechnicalMessage(message: string): boolean {
     return TECHNICAL_MESSAGE_PATTERNS.some((p) => p.test(message));
+}
+
+/**
+ * True when a *successful* response body (e.g. an AI answer string) actually
+ * contains a raw server/database error that leaked through. Such text must be
+ * replaced with friendly copy before display — see WelcomeAiChatModal.
+ */
+export function isLikelyRawServerErrorText(text: unknown): boolean {
+    return typeof text === 'string' && text.trim().length > 0 && isTechnicalMessage(text);
+}
+
+/**
+ * Guard for server-generated *content* rendered to the user (AI answers/replies,
+ * agent-run error fields, streamed step labels). Returns the original text when
+ * safe, or `fallback` when it is empty or looks like a leaked raw server/DB
+ * error. Use this anywhere a response body is shown directly (i.e. not routed
+ * through {@link getUserErrorMessage}).
+ */
+export function sanitizeDisplayText(value: unknown, fallback: string): string {
+    if (typeof value !== 'string') return fallback;
+    if (value.trim().length === 0) return fallback;
+    if (isLikelyRawServerErrorText(value)) return fallback;
+    return value;
 }
 
 /** Backend `message` is human-authored, but gate it against anything that slipped through. */

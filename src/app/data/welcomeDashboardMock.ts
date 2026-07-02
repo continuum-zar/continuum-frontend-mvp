@@ -1,25 +1,119 @@
 /** Mock data for dashboard-placeholder welcome — matches Figma node 16:1936 (filled). */
 
-export const welcomeRecentActivityMock = [
+/** Gauge values for the demo overview — same shape the live gauges expect. */
+export const welcomeGaugeMock = {
+  /** Hero score 0–100 (≥70 → "Project on track"). */
+  heroScore: 89,
+  /** Hours-per-story-point ratio (<1 → Safe Zone). */
+  hpsRatio: 1.17,
+  completedWeight: 46,
+  totalWeight: 64,
+  structuralCommits: 6,
+  incrementalCommits: 4,
+  trivialCommits: 2,
+} as const;
+
+/**
+ * Recent activity demo rows — mirror the live feed (commit + column-move entries
+ * with classification pills) so the welcome view matches a real project.
+ */
+export type WelcomeActivityMockItem =
+  | {
+      id: string;
+      type: "commit";
+      date: string;
+      title: string;
+      classification: "STRUCTURAL" | "INCREMENTAL" | "TRIVIAL";
+      summary: string;
+      url?: string;
+    }
+  | {
+      id: string;
+      type: "move";
+      date: string;
+      title: string;
+      from: string;
+      to: string;
+    };
+
+export const welcomeRecentActivityMock: WelcomeActivityMockItem[] = [
   {
     id: "1",
-    time: "07:12",
-    title: "Quality assurance",
-    description: "Status changed from in progress to complete",
+    type: "commit",
+    date: "30-06-2026",
+    title: "Amukelani Shiringani pushed to main",
+    classification: "STRUCTURAL",
+    summary: "Add invoice PDF export and email delivery",
+    url: "#",
   },
   {
     id: "2",
-    time: "1 Day ago",
-    title: "Daniel Max",
-    description: "Team member was removed from the project",
+    type: "move",
+    date: "29-06-2026",
+    title: "Todd Phillips moved “Client onboarding checklist”",
+    from: "In Progress",
+    to: "Done",
   },
   {
     id: "3",
-    time: "10 February 2026",
-    title: "Todd Phillips",
-    description: "Project manager deleted 2 tasks",
+    type: "commit",
+    date: "28-06-2026",
+    title: "Daniel Max pushed to feat/time-tracking",
+    classification: "INCREMENTAL",
+    summary: "Wire up timer controls to the task detail panel",
+    url: "#",
   },
-] as const;
+  {
+    id: "4",
+    type: "commit",
+    date: "27-06-2026",
+    title: "Sarah Chen pushed to main",
+    classification: "TRIVIAL",
+    summary: "Fix typo in dashboard header",
+  },
+];
+
+/** Team member cards for the demo overview — same layout as the live team cards. */
+export type WelcomeTeamMockMember = {
+  id: string;
+  /** Global numeric id → stable avatar hue via memberAvatarBackground. */
+  userId: number;
+  name: string;
+  initials: string;
+  roleLabel: string;
+  totalHours: number;
+  tasksCompleted: number;
+};
+
+export const welcomeTeamMock: WelcomeTeamMockMember[] = [
+  {
+    id: "tm1",
+    userId: 7,
+    name: "Amukelani Shiringani",
+    initials: "AS",
+    roleLabel: "Product Designer",
+    totalHours: 128,
+    tasksCompleted: 24,
+  },
+  {
+    id: "tm2",
+    userId: 3,
+    name: "Daniel Max",
+    initials: "DM",
+    roleLabel: "Developer",
+    totalHours: 96,
+    tasksCompleted: 18,
+  },
+  {
+    id: "tm3",
+    userId: 12,
+    name: "Todd Phillips",
+    initials: "TP",
+    roleLabel: "Project Manager",
+    totalHours: 74,
+    tasksCompleted: 11,
+  },
+];
 
 export type WelcomeResourceItem =
   | { id: string; kind: "file"; name: string; sizeLabel: string }

@@ -1,26 +1,28 @@
 import type { HpsVelocityPoint } from '@/api/dashboard';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { mapHpsTrendChartData } from './dashboardChartMappers';
+import { DATE_X_AXIS_TICK_PROPS, mapHpsTrendChartData } from './dashboardChartMappers';
 
 export function HpsTrendChart({
   points,
   emptyLabel = 'No HPS data for this window',
+  height = 260,
 }: {
   points: HpsVelocityPoint[];
   emptyLabel?: string;
+  height?: number;
 }) {
   const data = mapHpsTrendChartData(points);
   if (!data.length) {
     return (
-      <div className="flex h-[260px] items-center justify-center text-sm text-muted-foreground">{emptyLabel}</div>
+      <div className="flex items-center justify-center text-sm text-muted-foreground" style={{ height }}>{emptyLabel}</div>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-        <XAxis dataKey="weekLabel" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
+        <XAxis dataKey="weekLabel" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} {...DATE_X_AXIS_TICK_PROPS} />
         <YAxis stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
         <Tooltip
           contentStyle={{

@@ -15,6 +15,13 @@ import {
   DialogPortal,
 } from "../ui/dialog";
 import { cn } from "../ui/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { mcpAsset } from "@/app/assets/dashboardPlaceholderAssets";
 
 /** Figma playground 21:10053 / 21:10055 / 21:10072 / 21:10202 / 21:10152 */
@@ -23,8 +30,6 @@ const imgLucideArrowLeft =
 const imgLucideX = mcpAsset("2c079b92-8097-4df4-8a11-e1f18dba0f5a");
 const imgLucideCalendar =
   mcpAsset("b6c3dbcc-8336-401f-a031-737097b8b021");
-const imgLucideChevronDown =
-  mcpAsset("e35c7a9b-edbf-490f-911a-a2c7f3582268");
 const imgLucideLink =
   mcpAsset("c71c30bb-4db7-47ac-8e4f-ea6fc97b4fb8");
 
@@ -219,26 +224,26 @@ export function WelcomeShareProjectModal({
                       </div>
                     </div>
                   </div>
-                  <div className="relative min-h-0 min-w-0 flex-1">
-                    <select
+                  <div className="min-h-0 min-w-0 flex-1">
+                    <Select
                       value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value as ProjectMemberRoleValue)}
-                      className={cn(
-                        inputShellClass,
-                        "cursor-pointer appearance-none pr-12 text-[#0b191f]",
-                      )}
-                      aria-label="Role for invitation"
+                      onValueChange={(v) => setInviteRole(v as ProjectMemberRoleValue)}
                       disabled={isLive && addMemberMutation.isPending}
                     >
-                      {PROJECT_MEMBER_ROLE_VALUES.map((v) => (
-                        <option key={v} value={v}>
-                          {ROLE_LABEL[v]}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2" aria-hidden>
-                      <img alt="" className="absolute block size-full max-w-none" src={imgLucideChevronDown} />
-                    </div>
+                      <SelectTrigger
+                        aria-label="Role for invitation"
+                        className={cn(inputShellClass, "h-[50px] text-[#0b191f]")}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="font-['Satoshi',sans-serif]">
+                        {PROJECT_MEMBER_ROLE_VALUES.map((v) => (
+                          <SelectItem key={v} value={v}>
+                            {ROLE_LABEL[v]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <button
                     type="button"
@@ -310,24 +315,22 @@ export function WelcomeShareProjectModal({
                               ) : null}
                             </div>
                             <div className="flex shrink-0 items-center gap-0">
-                              <select
-                                value={rVal}
-                                disabled
-                                title="Role changes are not available yet"
-                                className={cn(
-                                  "cursor-not-allowed appearance-none rounded-[16px] border-0 bg-[#f0f3f5] px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] opacity-90 outline-none",
-                                )}
-                                aria-label={`Role for ${primary}`}
-                              >
-                                {PROJECT_MEMBER_ROLE_VALUES.map((v) => (
-                                  <option key={v} value={v}>
-                                    {ROLE_LABEL[v]}
-                                  </option>
-                                ))}
-                              </select>
-                              <div className="relative shrink-0 size-4" aria-hidden>
-                                <img alt="" className="absolute block size-full max-w-none" src={imgLucideChevronDown} />
-                              </div>
+                              <Select value={rVal} disabled>
+                                <SelectTrigger
+                                  aria-label={`Role for ${primary}`}
+                                  title="Role changes are not available yet"
+                                  className="h-7 gap-1 rounded-[16px] border-0 bg-[#f0f3f5] px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] opacity-90 disabled:opacity-90"
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="font-['Satoshi',sans-serif]">
+                                  {PROJECT_MEMBER_ROLE_VALUES.map((v) => (
+                                    <SelectItem key={v} value={v}>
+                                      {ROLE_LABEL[v]}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                         );
@@ -355,30 +358,30 @@ export function WelcomeShareProjectModal({
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-0">
-                            <select
+                            <Select
                               value={memberRoles[i]}
-                              onChange={(e) => {
-                                const v = e.target.value;
+                              onValueChange={(v) =>
                                 setMemberRoles((prev) => {
                                   const next = [...prev];
                                   next[i] = v;
                                   return next;
-                                });
-                              }}
-                              className={cn(
-                                "cursor-pointer appearance-none rounded-[16px] border-0 bg-[#f0f3f5] px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] outline-none focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40",
-                              )}
-                              aria-label={`Role for ${row.primary}`}
+                                })
+                              }
                             >
-                              {ROLE_OPTIONS.map((opt) => (
-                                <option key={opt} value={opt}>
-                                  {opt}
-                                </option>
-                              ))}
-                            </select>
-                            <div className="relative shrink-0 size-4" aria-hidden>
-                              <img alt="" className="absolute block size-full max-w-none" src={imgLucideChevronDown} />
-                            </div>
+                              <SelectTrigger
+                                aria-label={`Role for ${row.primary}`}
+                                className="h-7 gap-1 rounded-[16px] border-0 bg-[#f0f3f5] px-3 py-1 font-['Satoshi',sans-serif] text-[14px] font-medium text-[#606d76] focus-visible:ring-2 focus-visible:ring-[#24b5f8]/40"
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="font-['Satoshi',sans-serif]">
+                                {ROLE_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt} value={opt}>
+                                    {opt}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       ))

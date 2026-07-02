@@ -19,7 +19,28 @@ export const WORKSPACE_PRODUCTIVITY_RHYTHM_SEGMENT = "productivity-rhythm";
 /** Migration import flow (`/workspace/migrations/...`). */
 export const WORKSPACE_MIGRATIONS_SEGMENT = "migrations";
 
+/** Fullscreen single-chart analytics view (`/workspace/analytics/:chartId`). */
+export const WORKSPACE_ANALYTICS_SEGMENT = "analytics";
+
+/** Chart ids that have a dedicated fullscreen analytics view. */
+export type WorkspaceChartId = "cumulative-flow" | "hps-trend" | "project-history";
+
 export type WorkspaceMyTasksScope = "assigned" | "created";
+
+/**
+ * Fullscreen view for a single dashboard chart, carrying the project and
+ * (optionally) a rolling-window range in days (`"all"` for the full history).
+ * `/workspace/analytics/cumulative-flow?project=12&range=90`
+ */
+export function workspaceChartHref(
+  chartId: WorkspaceChartId,
+  projectId: string | number,
+  range?: number | "all",
+): string {
+  const params = new URLSearchParams({ project: String(projectId) });
+  if (range != null) params.set("range", String(range));
+  return `${workspaceJoin(WORKSPACE_ANALYTICS_SEGMENT, chartId)}?${params.toString()}`;
+}
 
 export function workspaceMyTasksHref(scope: WorkspaceMyTasksScope): string {
   return `${workspaceJoin(WORKSPACE_MY_TASKS_SEGMENT)}?scope=${scope}`;

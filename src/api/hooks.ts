@@ -660,15 +660,26 @@ export function useMyNotifications(
     });
 }
 
-/** Tasks assigned to the current user (Sprint list on Assigned to Me). */
-export function useAssignedToMeTasks(options?: { enabled?: boolean }) {
+interface MyTasksPageOptions {
+    enabled?: boolean;
+    /** 1-based page number. Defaults to 1. */
+    page?: number;
+    /** Rows per page. Defaults to 500 (unpaginated). */
+    pageSize?: number;
+}
+
+/** Tasks assigned to the current user (Sprint list on Assigned to Me). Paginated server-side. */
+export function useAssignedToMeTasks(options?: MyTasksPageOptions) {
     const userId = useAuthStore((s) => s.user?.id);
     const numericUserId =
         userId != null && /^\d+$/.test(String(userId).trim()) ? Number(String(userId).trim()) : null;
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const page = options?.page ?? 1;
+    const pageSize = options?.pageSize ?? 500;
     return useQuery({
-        queryKey: projectKeys.assignedToMeTasks(userId),
-        queryFn: () => fetchTasksAssignedToUser(numericUserId!),
+        queryKey: projectKeys.assignedToMeTasks(userId, page, pageSize),
+        queryFn: () =>
+            fetchTasksAssignedToUser(numericUserId!, { skip: (page - 1) * pageSize, limit: pageSize }),
         enabled:
             (options?.enabled !== false) &&
             isAuthenticated &&
@@ -681,15 +692,18 @@ export function useAssignedToMeTasks(options?: { enabled?: boolean }) {
     });
 }
 
-/** Tasks created by the current user (Deliverables on Created by Me). */
-export function useCreatedByMeTasks(options?: { enabled?: boolean }) {
+/** Tasks created by the current user (Deliverables on Created by Me). Paginated server-side. */
+export function useCreatedByMeTasks(options?: MyTasksPageOptions) {
     const userId = useAuthStore((s) => s.user?.id);
     const numericUserId =
         userId != null && /^\d+$/.test(String(userId).trim()) ? Number(String(userId).trim()) : null;
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const page = options?.page ?? 1;
+    const pageSize = options?.pageSize ?? 500;
     return useQuery({
-        queryKey: projectKeys.createdByMeTasks(userId),
-        queryFn: () => fetchTasksCreatedByUser(numericUserId!),
+        queryKey: projectKeys.createdByMeTasks(userId, page, pageSize),
+        queryFn: () =>
+            fetchTasksCreatedByUser(numericUserId!, { skip: (page - 1) * pageSize, limit: pageSize }),
         enabled:
             (options?.enabled !== false) &&
             isAuthenticated &&

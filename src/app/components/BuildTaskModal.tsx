@@ -19,6 +19,7 @@ import {
   DialogPortal,
 } from "./ui/dialog";
 import { cn } from "./ui/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 type BuildTaskModalProps = {
   open: boolean;
@@ -169,25 +170,31 @@ export function BuildTaskModal({
                   <div className="relative">
                     <GitBranch
                       size={16}
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#727d83]"
+                      className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-[#727d83]"
                       aria-hidden
                     />
-                    <select
-                      id="build-branch"
+                    <Select
                       value={selectedKey}
-                      onChange={(e) => setSelectedKey(e.target.value)}
+                      onValueChange={setSelectedKey}
                       disabled={isPending}
-                      className="h-[46px] w-full appearance-none rounded-[8px] border border-[#e9e9e9] bg-white pl-9 pr-4 text-[14px] font-medium text-[#0b191f] outline-none focus-visible:ring-2 focus-visible:ring-[#24B5F8]/40 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {branches.map((b) => {
-                        const key = `${b.linked_repo}::${b.linked_branch}`;
-                        return (
-                          <option key={key} value={key}>
-                            {branchLabel(b)}
-                          </option>
-                        );
-                      })}
-                    </select>
+                      <SelectTrigger
+                        id="build-branch"
+                        className="h-[46px] w-full rounded-[8px] border-[#e9e9e9] bg-white pl-9 pr-3 text-[14px] font-medium text-[#0b191f] focus-visible:ring-2 focus-visible:ring-[#24B5F8]/40"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.map((b) => {
+                          const key = `${b.linked_repo}::${b.linked_branch}`;
+                          return (
+                            <SelectItem key={key} value={key}>
+                              {branchLabel(b)}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
                 {branches.length > 1 ? (

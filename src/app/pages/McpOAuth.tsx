@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion } from 'motion/react';
 import api from '@/lib/api';
+import { getUserErrorMessage, sanitizeDisplayText } from '@/lib/errorMessages';
 import { Alert, AlertDescription, AlertTitle } from '@/app/components/ui/alert';
 import { Button } from '@/app/components/ui/button';
 import { cn } from '@/app/components/ui/utils';
@@ -228,7 +229,12 @@ function buildOAuthError(error: unknown): OAuthError {
     }
 
     const status = error.response.status;
-    const detail = extractBackendDetail(error.response.data) ?? error.message;
+    // Never render raw axios/backend error text (may include SQL/stack traces):
+    // keep a safe backend detail, else fall back to sanitized user-facing copy.
+    const detail = sanitizeDisplayText(
+        extractBackendDetail(error.response.data),
+        getUserErrorMessage(error, 'Something went wrong. Please try again.'),
+    );
 
     if (status === 401 || status === 403) {
         return {

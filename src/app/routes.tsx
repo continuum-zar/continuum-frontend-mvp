@@ -5,6 +5,7 @@ import { RouterStaleChunkErrorRecovery } from "./components/RouterStaleChunkErro
 import {
   LEGACY_WORKSPACE_BASE,
   LEGACY_WORKSPACE_GET_STARTED_SEGMENT,
+  WORKSPACE_ANALYTICS_SEGMENT,
   WORKSPACE_BASE,
   WORKSPACE_SPRINT_SEGMENT,
   workspaceJoin,
@@ -51,6 +52,9 @@ const DashboardPlaceholderTaskView = lazy(() =>
 );
 const DashboardPlaceholderMyTasks = lazy(() =>
   import("./pages/DashboardPlaceholderMyTasks").then((m) => ({ default: m.DashboardPlaceholderMyTasks }))
+);
+const DashboardChartFullscreen = lazy(() =>
+  import("./pages/DashboardChartFullscreen").then((m) => ({ default: m.DashboardChartFullscreen }))
 );
 const DashboardPlaceholderProductivityRhythm = lazy(() =>
   import("./pages/DashboardPlaceholderProductivityRhythm").then((m) => ({
@@ -414,6 +418,16 @@ const appRoutes = [
       <AuthGuard>
         <Suspense fallback={<WorkspaceShellSkeleton variant="list" />}>
           <DashboardPlaceholderMyTasks />
+        </Suspense>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: workspaceJoin(WORKSPACE_ANALYTICS_SEGMENT, ":chartId"),
+    element: (
+      <AuthGuard>
+        <Suspense fallback={<WorkspaceShellSkeleton variant="generic" />}>
+          <DashboardChartFullscreen />
         </Suspense>
       </AuthGuard>
     ),

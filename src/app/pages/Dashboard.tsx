@@ -15,7 +15,6 @@ import {
   GitBranch,
   MessageSquare,
   Paperclip,
-  UserX,
   Zap,
   CheckCircle2,
   MoreVertical,
@@ -55,8 +54,10 @@ import {
 } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import { DashboardAnalyticsCharts } from '../components/dashboard-charts/DashboardAnalyticsCharts';
+import { DATE_X_AXIS_TICK_PROPS } from '../components/dashboard-charts/dashboardChartMappers';
 import { ProductivityRhythmHeatmapCard } from '../components/dashboard-charts/ProductivityRhythmHeatmapCard';
 import { STALE_MODERATE_MS, STALE_REFERENCE_MS } from '@/lib/queryDefaults';
+import { sanitizeDisplayText } from '@/lib/errorMessages';
 import { getCurrentHeatmapHour, getTodayHeatmapDayLabel, HEATMAP_DAY_LABELS } from '@/lib/productivityRhythmLiveCell';
 import { projectPresenceEventsStreamUrl, type ProjectPresenceEvent } from '@/api/projectPresenceEvents';
 import { useSseStream } from '@/hooks/useSseStream';
@@ -83,6 +84,13 @@ type DashboardProps = {
   /** Minimal dashboard: project selector + rhythm heatmap only. */
   surface?: "default" | "productivityRhythm";
 };
+
+/**
+ * Productivity Rhythm is temporarily disabled ("coming soon"). While false, the
+ * embedded heatmap card is not rendered and its `/users/{id}/rhythm` query never
+ * fires (the backend endpoint returns 503). Flip back to `true` to re-enable.
+ */
+const PRODUCTIVITY_RHYTHM_ENABLED = false;
 
 export function Dashboard({
   hideKpiCards = false,
@@ -205,7 +213,7 @@ export function Dashboard({
   const { data: rhythmResponse, isLoading: rhythmLoading, isError: rhythmError } = useQuery({
     queryKey: ['user-rhythm', rhythmUserId],
     queryFn: () => fetchUserRhythm(rhythmUserId!),
-    enabled: rhythmUserId != null && effectiveRole !== 'Client',
+    enabled: PRODUCTIVITY_RHYTHM_ENABLED && rhythmUserId != null && effectiveRole !== 'Client',
     staleTime: STALE_REFERENCE_MS,
     placeholderData: (previousData) => previousData,
   });
@@ -543,7 +551,9 @@ export function Dashboard({
     setChatSending(true);
     try {
       const res = await postProjectQuery(selectedProject, { query: msg });
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: res.answer ?? 'No response.' }]);
+      // A 200 answer body can still carry a leaked raw server/DB error — never show it.
+      const answer = sanitizeDisplayText(res.answer, 'Something went wrong on our end while answering. Please try again in a moment.');
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: answer }]);
     } catch {
       setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Something went wrong. Please try again.' }]);
     } finally {
@@ -716,22 +726,6 @@ export function Dashboard({
                   : [<SelectItem key="none" value="__none__">No projects</SelectItem>]}
             </SelectContent>
           </Select>
-          {effectiveRole !== 'Client' && (
-            <UiTooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline"><Clock className="mr-2 h-4 w-4" /> Last 30 Days</Button>
-              </TooltipTrigger>
-              <TooltipContent>Filter dashboard to last 30 days</TooltipContent>
-            </UiTooltip>
-          )}
-          {isProjectPM && (
-            <UiTooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline"><UserX className="mr-2 h-4 w-4" /> Team View</Button>
-              </TooltipTrigger>
-              <TooltipContent>Switch to team-focused metrics</TooltipContent>
-            </UiTooltip>
-          )}
         </div>
       </div>
 
@@ -874,7 +868,7 @@ export function Dashboard({
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={velocityChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} {...DATE_X_AXIS_TICK_PROPS} />
                 <YAxis stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
@@ -953,7 +947,7 @@ export function Dashboard({
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={burndownChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                  <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="date" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} {...DATE_X_AXIS_TICK_PROPS} />
                   <YAxis yAxisId="left" stroke="var(--color-muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
@@ -983,7 +977,7 @@ export function Dashboard({
       )}
 
       {/* Row 3: User Rhythm Heatmap (requires single project) */}
-      {!hideProductivityRhythm && effectiveRole !== 'Client' && hasProjectSelected && rhythmHeatmap}
+      {PRODUCTIVITY_RHYTHM_ENABLED && !hideProductivityRhythm && effectiveRole !== 'Client' && hasProjectSelected && rhythmHeatmap}
 
       {/* Row 4: Git Contribution & Stale Work (requires single project) */}
       {isProjectPM && hasProjectSelected && (

@@ -39,7 +39,6 @@ import {
 import { WORKSPACE_SPRINT_SEGMENT, workspaceJoin } from "@/lib/workspacePaths";
 import { getApiErrorMessage } from "@/api";
 import {
-  downloadLoggedHoursCsv,
   downloadLoggedHoursPdf,
   type LoggedHourEntry,
 } from "@/api/loggedHours";
@@ -53,14 +52,9 @@ import { memberAvatarBackground } from "@/lib/memberAvatar";
 import { useTimeRecordingStore } from "@/store/timeRecordingStore";
 import { useTimeTracking } from "../context/TimeTrackingContext";
 import { useWorkspaceTourStore } from "@/store/workspaceTourStore";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip";
 import { toast } from "sonner";
+import { runWithExportProgress } from "@/app/components/ExportProgressToast";
 
 const tabBtn = (active: boolean) =>
   `rounded-[8px] px-4 py-2 text-[14px] font-medium ${
@@ -133,7 +127,7 @@ type ActivityMemberRow = {
   commits: number;
   totalHours: number;
   tasksCompleted: number;
-  avatar: { kind: "photo"; src: string } | { kind: "initials"; text: string; bg: string };
+  avatar: { text: string; bg: string };
 };
 
 const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
@@ -144,7 +138,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 128,
     totalHours: 160,
     tasksCompleted: 25,
-    avatar: { kind: "photo", src: "https://picsum.photos/seed/continuum-a/70/70" },
+    avatar: { text: "AS", bg: "#2563eb" },
   },
   {
     id: "2",
@@ -153,7 +147,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 95,
     totalHours: 140,
     tasksCompleted: 18,
-    avatar: { kind: "initials", text: "JD", bg: "#e19c02" },
+    avatar: { text: "JD", bg: "#e19c02" },
   },
   {
     id: "3",
@@ -162,7 +156,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 120,
     totalHours: 150,
     tasksCompleted: 30,
-    avatar: { kind: "initials", text: "MG", bg: "#f17173" },
+    avatar: { text: "MG", bg: "#f17173" },
   },
   {
     id: "4",
@@ -171,7 +165,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 88,
     totalHours: 130,
     tasksCompleted: 22,
-    avatar: { kind: "initials", text: "RP", bg: "#9da2f7" },
+    avatar: { text: "RP", bg: "#9da2f7" },
   },
   {
     id: "5",
@@ -180,7 +174,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 102,
     totalHours: 145,
     tasksCompleted: 19,
-    avatar: { kind: "photo", src: "https://picsum.photos/seed/continuum-l/70/70" },
+    avatar: { text: "LW", bg: "#10b981" },
   },
   {
     id: "6",
@@ -189,7 +183,7 @@ const SAMPLE_ACTIVITY_MEMBERS: ActivityMemberRow[] = [
     commits: 110,
     totalHours: 155,
     tasksCompleted: 27,
-    avatar: { kind: "photo", src: "https://picsum.photos/seed/continuum-c/70/70" },
+    avatar: { text: "CM", bg: "#ec4899" },
   },
 ];
 
@@ -711,6 +705,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
   const apiProjectId = projectParam != null && isApiProjectId(projectParam) ? projectParam : null;
 
   const [exportActionPending, setExportActionPending] = useState(false);
+  const canExportTimeLogs = apiProjectId != null;
 
   const runExportPdf = useCallback(async () => {
     if (apiProjectId == null) {
@@ -719,26 +714,13 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
     }
     setExportActionPending(true);
     try {
-      await downloadLoggedHoursPdf({ project_id: apiProjectId });
-      toast.success("PDF download started.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Could not export PDF."));
-    } finally {
-      setExportActionPending(false);
-    }
-  }, [apiProjectId]);
-
-  const runExportCsv = useCallback(async () => {
-    if (apiProjectId == null) {
-      toast.error("Select a project to export time logs.");
-      return;
-    }
-    setExportActionPending(true);
-    try {
-      await downloadLoggedHoursCsv({ project_id: apiProjectId });
-      toast.success("CSV download started.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Could not export CSV."));
+      await runWithExportProgress({
+        title: "Generating PDF report…",
+        success: "PDF download started.",
+        errorFallback: "Could not export time logs as PDF.",
+        task: () => downloadLoggedHoursPdf({ project_id: apiProjectId }),
+        getErrorMessage: getApiErrorMessage,
+      });
     } finally {
       setExportActionPending(false);
     }
@@ -969,41 +951,26 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                   <Share className="size-4" />
                   Share
                 </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={exportActionPending}
-                          className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white disabled:opacity-60"
-                        >
-                          {exportActionPending ? "Exporting…" : "Export"}
-                          <ChevronDown className="size-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Export time logs</TooltipContent>
-                    </Tooltip>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-[10rem]">
-                    <DropdownMenuItem
-                      disabled={exportActionPending}
-                      onSelect={() => {
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={!canExportTimeLogs || exportActionPending}
+                      aria-label="Export project time logs as PDF"
+                      onClick={() => {
                         void runExportPdf();
                       }}
+                      className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[#24B5F8] px-4 py-2 text-[14px] font-bold text-white outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Export PDF
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      disabled={exportActionPending}
-                      onSelect={() => {
-                        void runExportCsv();
-                      }}
-                    >
-                      Export CSV
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      {exportActionPending ? "Exporting…" : "Export"}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {canExportTimeLogs
+                      ? "Export this project's time logs as PDF"
+                      : "Open a project to export time logs"}
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
             <div className="h-px w-full bg-[#ebedee]" />
@@ -1232,22 +1199,12 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                         <div className="flex w-full flex-col gap-6">
                           <div className="flex h-10 w-full items-center rounded-[8px]">
                             <div className="flex items-center gap-2">
-                              {m.avatar.kind === "photo" ? (
-                                <img
-                                  src={m.avatar.src}
-                                  alt=""
-                                  className="size-[35px] shrink-0 rounded-full object-cover"
-                                  width={35}
-                                  height={35}
-                                />
-                              ) : (
-                                <div
-                                  className="flex size-[35px] shrink-0 items-center justify-center rounded-full text-[13.13px] font-medium text-white"
-                                  style={{ backgroundColor: m.avatar.bg }}
-                                >
-                                  {m.avatar.text}
-                                </div>
-                              )}
+                              <div
+                                className="flex size-[35px] shrink-0 items-center justify-center rounded-full text-[13.13px] font-medium text-white"
+                                style={{ backgroundColor: m.avatar.bg }}
+                              >
+                                {m.avatar.text}
+                              </div>
                               <div className="flex flex-col items-start justify-center whitespace-nowrap">
                                 <p className="text-[14px] font-medium text-[#0b191f]">{m.name}</p>
                                 <p className="text-[12px] font-medium text-[#727d83]">{m.role}</p>
@@ -1495,6 +1452,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                 ))}
               </div>
 
+              {totalPages > 1 && (
               <div className="flex w-full shrink-0 flex-wrap items-center justify-center gap-6 px-2 pb-2 pt-1">
                 <button
                   type="button"
@@ -1583,6 +1541,7 @@ export function DashboardPlaceholderGetStartedTimeLogs() {
                   <ChevronsRight className="size-4" />
                 </button>
               </div>
+              )}
             </div>
           )}
             </>
