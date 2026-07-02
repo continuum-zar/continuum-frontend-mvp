@@ -8,19 +8,26 @@ import dotLottieWasmUrl from "@lottiefiles/dotlottie-web/dotlottie-player.wasm?u
 setWasmUrl(dotLottieWasmUrl);
 
 /**
- * Indexing animation shown while the reporting assistant prepares/indexes project
- * context. Self-hosted Lottie JSON from `public/assets/animations` (served from
- * our own origin, so no CSP exception or network dependency).
+ * Assistant progress animations. Self-hosted Lottie JSON from
+ * `public/assets/animations` (served from our own origin, so no CSP exception
+ * or network dependency). `toaster` plays while the reporting assistant
+ * prepares/indexes project context; `processing` plays while the task
+ * assistant is thinking and creating tasks.
  */
-const INDEXING_ANIMATION_SRC = `${import.meta.env.BASE_URL}assets/animations/toaster.json`;
+const ANIMATION_SRC = {
+  toaster: `${import.meta.env.BASE_URL}assets/animations/toaster.json`,
+  processing: `${import.meta.env.BASE_URL}assets/animations/processing.json`,
+} as const;
 
 export function IndexingLottie({
   className,
   fallback,
+  animation = "toaster",
 }: {
   className?: string;
   /** Rendered if the animation fails to load (dead link / offline). */
   fallback?: ReactNode;
+  animation?: keyof typeof ANIMATION_SRC;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -28,7 +35,7 @@ export function IndexingLottie({
 
   return (
     <DotLottieReact
-      src={INDEXING_ANIMATION_SRC}
+      src={ANIMATION_SRC[animation]}
       loop
       autoplay
       className={className}

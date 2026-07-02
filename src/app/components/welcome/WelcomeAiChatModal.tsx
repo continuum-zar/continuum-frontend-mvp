@@ -1068,17 +1068,20 @@ export function WelcomeAiChatModal({
                   <div className="w-full">
                     {/* Thinking state (mock for showQuickActions, real for getStarted) */}
                     {(phase === "thinking" || phase === "getStartedLoading") && (
-                      <div className="flex w-full flex-col items-end rounded-[16px]">
-                        <div className="flex w-full flex-col items-end gap-5">
-                          <div className="flex w-full flex-col items-start gap-2">
-                            <div className="flex w-full items-center gap-2 opacity-50">
-                              <SpinnerGradientThinking />
-                              <p className="flex-1 font-['Inter',sans-serif] text-[13px] font-medium leading-[normal] text-[#151515]">
-                                Thinking...
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                      <div className="flex w-full flex-1 flex-col items-center justify-center gap-2 py-6">
+                        <IndexingLottie
+                          animation="processing"
+                          className="aspect-video w-full max-w-[420px]"
+                          fallback={<SpinnerGradientThinking />}
+                        />
+                        <p className="flex items-center font-['Inter',sans-serif] text-[13px] font-medium leading-[16px] text-[#727d83]">
+                          Working on it
+                          <span className="ml-1.5 flex items-center gap-[3px]">
+                            <span className="size-1 animate-dot-bounce rounded-full bg-[#727d83]" />
+                            <span className="size-1 animate-dot-bounce rounded-full bg-[#727d83] [animation-delay:150ms]" />
+                            <span className="size-1 animate-dot-bounce rounded-full bg-[#727d83] [animation-delay:300ms]" />
+                          </span>
+                        </p>
                       </div>
                     )}
 
@@ -1250,13 +1253,10 @@ export function WelcomeAiChatModal({
                 </div>
               </div>
               <div className="relative z-10 mt-auto w-full shrink-0 px-[15px] pb-[15px]">
-                {phase === "getStartedLoading" && (
-                  <div className="relative z-40 mb-4 flex w-full justify-center">
-                    <GetStartedTaskBar onStop={stopGetStarted} />
-                  </div>
-                )}
                 {phase === "thinking" || phase === "getStartedLoading" ? (
-                  <ComposerThinking />
+                  <ComposerThinking
+                    onStop={phase === "getStartedLoading" ? stopGetStarted : undefined}
+                  />
                 ) : (
                   <ComposerResponded />
                 )}
@@ -2007,29 +2007,6 @@ function ReportingAssistantPanel({
             attachmentsEnabled
           />
         )}
-      </div>
-    </div>
-  );
-}
-
-function GetStartedTaskBar({ onStop }: { onStop: () => void }) {
-  return (
-    <div className="pointer-events-auto w-full max-w-[368px] shadow-[0px_12px_24px_rgba(11,25,31,0.12)]">
-      <div className="flex items-center gap-2 rounded-[16px] bg-[#0b191f] py-2 pl-4 pr-2">
-        <p className="min-w-0 flex-1 truncate font-['Satoshi',sans-serif] text-[14px] font-medium leading-[normal] text-white">
-          Generating tasks...
-        </p>
-        <button
-          type="button"
-          onClick={onStop}
-          className="flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-lg px-4 py-2 font-['Satoshi',sans-serif] text-[14px] font-bold leading-[normal] text-white outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-white"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, rgb(235, 67, 53) 0%, rgb(235, 67, 53) 100%)",
-          }}
-        >
-          Stop
-        </button>
       </div>
     </div>
   );
