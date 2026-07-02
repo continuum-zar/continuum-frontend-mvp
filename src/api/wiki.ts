@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { getApiErrorMessage } from './hooks';
 import { projectKeys } from './hooks';
 import { STALE_MODERATE_MS, WIKI_SCAN_POLL_MS } from '@/lib/queryDefaults';
-import type { FileContent } from './planner';
+import type { AssistantChatMessage, FileContent } from './planner';
 import type { FigmaBlueprint } from './planner';
 import type { PlannerChoiceQuestion } from './planner';
 import type { TaskPriority } from '@/types/task';
@@ -140,6 +140,8 @@ export async function generateTasks(
         sources?: GenerationSource[];
         /** Assistant mode. 'plan' returns a planning summary + clarifying questions and creates no tasks. 'create' generates tasks directly. */
         mode?: AssistantMode;
+        /** Prior turns of this conversation (oldest first) so follow-up requests refine the earlier result. */
+        history?: AssistantChatMessage[];
     }
 ): Promise<GenerateTasksResponse> {
     const sources = (body.sources ?? [])
@@ -158,6 +160,7 @@ export async function generateTasks(
             ...(body.figma_blueprint ? { figma_blueprint: body.figma_blueprint } : {}),
             ...(sources.length ? { sources } : {}),
             ...(body.mode ? { mode: body.mode } : {}),
+            ...(body.history?.length ? { history: body.history } : {}),
         },
         { timeout: 600_000 },
     );

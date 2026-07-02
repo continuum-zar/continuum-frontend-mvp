@@ -34,7 +34,8 @@ import type {
   GenerateTasksResponse,
   WikiConfirmTaskItem,
 } from "@/api";
-import type { PlannerChoiceQuestion } from "@/api/planner";
+import type { AssistantChatMessage, PlannerChoiceQuestion } from "@/api/planner";
+import { ASSISTANT_HISTORY_MAX_MESSAGES } from "@/api/planner";
 import { taskPriorityFlagClass, taskPriorityLabel } from "@/types/task";
 import {
   Dialog,
@@ -132,6 +133,22 @@ type ReportingMsg =
       isError?: boolean;
       confidence?: number;
     };
+
+/**
+ * One completed task-assistant exchange, archived when the user sends a
+ * follow-up. Rendered above the live exchange and replayed to the backend as
+ * conversation `history` so follow-ups refine the earlier result.
+ */
+type TaskGenExchange = {
+  id: string;
+  /** What the user saw in their bubble (without the clarifications appendix). */
+  promptDisplay: string;
+  /** Full prompt sent to the API (original + clarifications), used for history. */
+  promptFull: string;
+  reply: string | null;
+  taskTitles: string[];
+  confirmed: boolean;
+};
 
 function isAbortError(err: unknown): boolean {
   const e = err as { code?: string; name?: string };
@@ -235,6 +252,9 @@ export function WelcomeAiChatModal({
   /** First user message for this generation round (clarifications append to this). */
   const [taskGenOriginalPrompt, setTaskGenOriginalPrompt] = useState("");
   const [taskGenClarificationLog, setTaskGenClarificationLog] = useState("");
+  const [taskGenThread, setTaskGenThread] = useState<TaskGenExchange[]>([]);
+  // Ref mirror so async callbacks read the archived thread without stale closures.
+  const taskGenThreadRef = useRef<TaskGenExchange[]>([]);
   const [wikiClarifyReply, setWikiClarifyReply] = useState<string | null>(null);
   const [wikiChoiceQuestions, setWikiChoiceQuestions] = useState<PlannerChoiceQuestion[]>([]);
   const [wikiChoiceSelections, setWikiChoiceSelections] = useState<Record<string, string>>({});
@@ -360,6 +380,8 @@ export function WelcomeAiChatModal({
       setApiError(null);
       setConfirming(false);
       setConfirmed(false);
+      setTaskGenThread([]);
+      taskGenThreadRef.current = [];
       setAssistantMode("plan");
       abortRef.current?.abort();
       abortRef.current = null;
@@ -384,6 +406,12 @@ export function WelcomeAiChatModal({
       const trimmed = text.trim();
       if (!trimmed || projectId == null || reportingLockRef.current) return;
       const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+      // Replay the visible thread (minus error bubbles) so follow-up questions
+      // keep their context. The backend holds no session state.
+      const history: AssistantChatMessage[] = reportingThread
+        .filter((m) => !(m.role === "assistant" && m.isError))
+        .slice(-ASSISTANT_HISTORY_MAX_MESSAGES)
+        .map((m) => ({ role: m.role, content: m.content }));
       reportingLockRef.current = true;
       const pid = projectId;
       const controller = new AbortController();
@@ -397,6 +425,7 @@ export function WelcomeAiChatModal({
           {
             query: trimmed,
             ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
+            ...(history.length > 0 ? { history } : {}),
           },
           { signal: controller.signal },
         );
@@ -435,7 +464,7 @@ export function WelcomeAiChatModal({
         reportingAbortRef.current = null;
       }
     },
-    [projectId, clearComposerAttachments],
+    [projectId, clearComposerAttachments, reportingThread],
   );
 
   const startPrompt = (text: string) => {
@@ -446,6 +475,33 @@ export function WelcomeAiChatModal({
     setSelectedPrompt(text);
     setPhase("thinking");
   };
+
+  /**
+   * Archived task-assistant exchanges as backend `history` messages. Assistant
+   * turns carry the reply plus generated task titles so the model can refine
+   * the previous result ("add three more", "make them smaller", …).
+   */
+  const buildTaskGenHistory = useCallback(
+    (): AssistantChatMessage[] =>
+      taskGenThreadRef.current
+        .flatMap((x): AssistantChatMessage[] => [
+          { role: "user", content: x.promptFull },
+          {
+            role: "assistant",
+            content: [
+              x.reply ?? "",
+              x.taskTitles.length
+                ? `Proposed tasks:\n${x.taskTitles.map((t) => `- ${t}`).join("\n")}`
+                : "",
+              x.confirmed ? "(The user created these tasks on the board.)" : "",
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
+          },
+        ])
+        .slice(-ASSISTANT_HISTORY_MAX_MESSAGES),
+    [],
+  );
 
   const runGetStartedPrompt = useCallback(
     async (rawText: string) => {
@@ -468,12 +524,14 @@ export function WelcomeAiChatModal({
 
       try {
         const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+        const history = buildTaskGenHistory();
         const res = await generateTasks(projectId, {
           prompt: text,
           max_tasks: 10,
           mode: assistantMode,
           ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
           ...(filledSources.length ? { sources: filledSources } : {}),
+          ...(history.length > 0 ? { history } : {}),
         });
         if (controller.signal.aborted) return;
 
@@ -527,6 +585,7 @@ export function WelcomeAiChatModal({
       clearComposerAttachments,
       assistantMode,
       filledSources,
+      buildTaskGenHistory,
     ],
   );
 
@@ -571,12 +630,14 @@ export function WelcomeAiChatModal({
         setApiError(null);
         try {
           const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+          const history = buildTaskGenHistory();
           const res = await generateTasks(projectId, {
             prompt: fullPrompt,
             max_tasks: 10,
             mode: assistantMode,
             ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
             ...(filledSources.length ? { sources: filledSources } : {}),
+            ...(history.length > 0 ? { history } : {}),
           });
 
           setTaskGenClarificationLog(nextLog);
@@ -649,6 +710,7 @@ export function WelcomeAiChatModal({
       taskGenClarificationLog,
       assistantMode,
       filledSources,
+      buildTaskGenHistory,
     ],
   );
 
@@ -709,12 +771,14 @@ export function WelcomeAiChatModal({
     abortRef.current = controller;
     try {
       const fileContents = composerAttachmentsRef.current.map((a) => a.fileContent);
+      const history = buildTaskGenHistory();
       const res = await generateTasks(projectId, {
         prompt: fullPrompt,
         max_tasks: 10,
         mode: "create",
         ...(fileContents.length > 0 ? { file_contents: fileContents } : {}),
         ...(filledSources.length ? { sources: filledSources } : {}),
+        ...(history.length > 0 ? { history } : {}),
       });
       if (controller.signal.aborted) return;
       applyGeneratedResult(res);
@@ -736,6 +800,47 @@ export function WelcomeAiChatModal({
     taskGenClarificationLog,
     filledSources,
     applyGeneratedResult,
+    buildTaskGenHistory,
+  ]);
+
+  /**
+   * Follow-up request after an answer: archive the exchange currently on
+   * screen (it becomes conversation history + a static thread entry above)
+   * and re-run generation with the new prompt.
+   */
+  const sendTaskFollowUp = useCallback(() => {
+    const text = draftMessage.trim();
+    if (!text || phase !== "getStartedAnswer") return;
+    if (selectedPrompt && !apiError) {
+      const archived: TaskGenExchange = {
+        id: crypto.randomUUID(),
+        promptDisplay: selectedPrompt,
+        promptFull: taskGenClarificationLog
+          ? `${taskGenOriginalPrompt || selectedPrompt}\n\n--- Clarifications ---\n${taskGenClarificationLog}`
+          : taskGenOriginalPrompt || selectedPrompt,
+        reply: wikiClarifyReply ?? (generatedSummary || null),
+        taskTitles: generatedTasks.map((t) => t.title),
+        confirmed,
+      };
+      const next = [...taskGenThreadRef.current, archived];
+      taskGenThreadRef.current = next;
+      setTaskGenThread(next);
+    }
+    setConfirming(false);
+    setConfirmed(false);
+    void runGetStartedPrompt(text);
+  }, [
+    draftMessage,
+    phase,
+    selectedPrompt,
+    apiError,
+    taskGenOriginalPrompt,
+    taskGenClarificationLog,
+    wikiClarifyReply,
+    generatedSummary,
+    generatedTasks,
+    confirmed,
+    runGetStartedPrompt,
   ]);
 
   const stopGetStarted = () => {
@@ -746,6 +851,8 @@ export function WelcomeAiChatModal({
     setSelectedPrompt(null);
     setGeneratedTasks([]);
     setGeneratedSummary("");
+    setTaskGenThread([]);
+    taskGenThreadRef.current = [];
     setTaskGenOriginalPrompt("");
     setTaskGenClarificationLog("");
     setWikiClarifyReply(null);
@@ -1058,6 +1165,41 @@ export function WelcomeAiChatModal({
                     <p>Today</p>
                     <p>Continuum AI</p>
                   </div>
+                  {/* Archived follow-up exchanges (read-only; latest exchange renders below) */}
+                  {taskGenThread.map((x) => (
+                    <Fragment key={x.id}>
+                      <div className="flex w-full justify-end">
+                        <div className="max-w-[min(100%,340px)] rounded-[32px] bg-[#edf0f3] px-4 py-2">
+                          <p className="whitespace-pre-wrap break-words text-left font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#0b191f]">
+                            {x.promptDisplay}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex w-full flex-col items-start gap-2">
+                        {x.reply ? <PlannerAssistantMarkdown content={x.reply} /> : null}
+                        {x.taskTitles.length > 0 && (
+                          <div className="w-full rounded-[12px] border border-solid border-[#ededed] bg-white p-3">
+                            <ul className="flex flex-col gap-1">
+                              {x.taskTitles.map((t, i) => (
+                                <li
+                                  key={`${t}-${i}`}
+                                  className="list-none py-1.5 font-['Inter',sans-serif] text-[13px] font-normal leading-[19px] text-[#0b191f]"
+                                >
+                                  {t}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {x.confirmed && (
+                          <p className="flex items-center gap-1 font-['Satoshi',sans-serif] text-[12px] font-medium text-[#108e27]">
+                            <Check className="size-3.5 shrink-0" strokeWidth={2} />
+                            Tasks created
+                          </p>
+                        )}
+                      </div>
+                    </Fragment>
+                  ))}
                   <div className="flex w-full justify-end">
                     <div className="max-w-[min(100%,340px)] rounded-[32px] bg-[#edf0f3] px-4 py-2">
                       <p className="whitespace-pre-wrap break-words text-left font-['Satoshi',sans-serif] text-[13px] font-medium not-italic leading-[normal] text-[#0b191f]">
@@ -1256,6 +1398,22 @@ export function WelcomeAiChatModal({
                 {phase === "thinking" || phase === "getStartedLoading" ? (
                   <ComposerThinking
                     onStop={phase === "getStartedLoading" ? stopGetStarted : undefined}
+                  />
+                ) : phase === "getStartedAnswer" ? (
+                  <ComposerWelcome
+                    draft={draftMessage}
+                    onDraftChange={setDraftMessage}
+                    onSubmit={sendTaskFollowUp}
+                    placeholder="Ask a follow-up or refine these tasks…"
+                    inputId="get-started-followup-input"
+                    attachments={composerAttachments}
+                    onRemoveAttachment={removeComposerAttachment}
+                    mode={assistantMode}
+                    onModeChange={setAssistantMode}
+                    fileInputRef={welcomeFileInputRef}
+                    onAddFiles={(files) => void addComposerFiles(files)}
+                    uploadPending={uploadMutation.isPending}
+                    attachmentsEnabled={Boolean(projectId)}
                   />
                 ) : (
                   <ComposerResponded />

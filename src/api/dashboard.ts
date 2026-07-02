@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { INDEXING_PROGRESS_POLL_MS } from '@/lib/queryDefaults';
-import type { FileContent } from './planner';
+import type { AssistantChatMessage, FileContent } from './planner';
 
 // Dashboard metrics
 export interface DashboardHealth {
@@ -256,6 +256,8 @@ export interface ProjectQueryRequest {
     use_rag?: boolean;
     /** Optional uploaded file extracts (same shape as planner/wiki). */
     file_contents?: FileContent[];
+    /** Prior turns of this conversation (oldest first) so follow-ups keep context. */
+    history?: AssistantChatMessage[];
 }
 
 /** Structured signal sources returned with project query answers (matches API). */
