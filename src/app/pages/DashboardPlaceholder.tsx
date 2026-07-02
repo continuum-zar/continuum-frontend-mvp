@@ -1492,7 +1492,7 @@ export function DashboardPlaceholder() {
               <button
               type="button"
               onClick={() => setAiChatOpen(true)}
-              className="absolute bottom-[14px] right-[14px] z-[40] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+              className="absolute bottom-[14px] right-[14px] z-[40] isolate flex size-[48px] cursor-pointer flex-col items-start overflow-clip rounded-[48px] border border-solid border-[#1e87e0] bg-[#2798f5] p-0 shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 transition-colors hover:bg-[#1e87e0] focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Open AI assistant"
               data-tour="sprint-ai-assistant"
               data-node-id="7:2936"
@@ -1501,12 +1501,12 @@ export function DashboardPlaceholder() {
             <div className="overflow-clip relative shrink-0 size-[28px]" data-name="Frame 453/bot" data-node-id="I7:2936;3646:40267">
               <div className="absolute inset-[16.67%_8.33%]" data-name="Vector" data-node-id="I7:2936;3646:40267;3392:54498">
                 <div className="absolute inset-[-5.15%_-4.12%]">
-                  <img alt="" className="block max-w-none size-full" src={imgVector15} />
+                  <img alt="" className="block max-w-none size-full brightness-0 invert" src={imgVector15} />
                 </div>
               </div>
             </div>
           </div>
-          <div className="bg-white content-stretch flex items-center justify-between pl-[0.96px] pr-[1.92px] py-[0.96px] relative shrink-0 w-[48.4px] z-[2]" data-node-id="I7:2936;3646:40268">
+          <div className="content-stretch flex items-center justify-between pl-[0.96px] pr-[1.92px] py-[0.96px] relative shrink-0 w-[48.4px] z-[2]" data-node-id="I7:2936;3646:40268">
             <div className="content-stretch flex gap-[0.96px] items-center opacity-0 px-[0.96px] py-[0.48px] relative rounded-[40px] shrink-0" data-name="Component 155" data-node-id="I7:2936;3646:40268;3404:19479">
               <div className="content-stretch flex items-center relative shrink-0" data-node-id="I7:2936;3646:40268;3404:19479;3404:19418">
                 <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic overflow-hidden relative shrink-0 text-[#151515] text-[1.68px] text-ellipsis whitespace-nowrap" data-node-id="I7:2936;3646:40268;3404:19479;3404:19419">
@@ -1568,7 +1568,7 @@ export function DashboardPlaceholder() {
             </div>
           </div>
           <div className="content-stretch flex flex-col gap-[4.08px] h-[59.76px] items-start relative shrink-0 w-full z-[1]" data-node-id="I7:2936;3646:40269">
-            <div className="bg-white content-stretch flex flex-[1_0_0] flex-col gap-[1.92px] items-start min-h-px min-w-px overflow-x-clip overflow-y-auto pb-[137px] pt-[5.76px] px-[1.92px] relative w-[48px]" data-node-id="I7:2936;3646:40270">
+            <div className="content-stretch flex flex-[1_0_0] flex-col gap-[1.92px] items-start min-h-px min-w-px overflow-x-clip overflow-y-auto pb-[137px] pt-[5.76px] px-[1.92px] relative w-[48px]" data-node-id="I7:2936;3646:40270">
               <div className="content-stretch flex flex-col gap-[1.8px] items-start opacity-0 relative shrink-0 w-full" data-node-id="I7:2936;3646:40270;3404:18727">
                 <div className="content-stretch flex items-start relative shrink-0 w-full" data-node-id="I7:2936;3646:40270;3404:18730">
                   <p className="font-['Satoshi:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#0b191f] text-[1.89px] whitespace-nowrap" data-node-id="I7:2936;3646:40270;3404:18731">

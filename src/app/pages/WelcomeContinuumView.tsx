@@ -307,7 +307,7 @@ export function WelcomeContinuumView() {
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="absolute bottom-[14px] right-[14px] z-20 flex size-[48px] flex-col items-start isolate overflow-clip rounded-[48px] border border-solid border-[#edecea] bg-white shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+                  className="absolute bottom-[14px] right-[14px] z-20 flex size-[48px] flex-col items-start isolate overflow-clip rounded-[48px] border border-solid border-[#1e87e0] bg-[#2798f5] shadow-[0px_10.32px_2.88px_0px_rgba(11,25,31,0),0px_6.6px_2.64px_0px_rgba(11,25,31,0.01),0px_3.72px_2.28px_0px_rgba(11,25,31,0.03),0px_1.68px_1.68px_0px_rgba(11,25,31,0.04),0px_0.36px_0.96px_0px_rgba(11,25,31,0.05)] outline-none ring-offset-2 transition-colors hover:bg-[#1e87e0] focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Open AI assistant"
                   data-tour="welcome-project-assistant"
                   data-node-id="8:3521-fab"
@@ -317,7 +317,7 @@ export function WelcomeContinuumView() {
                 <div className="relative size-[28px] shrink-0 overflow-clip">
                   <div className="absolute inset-[16.67%_8.33%]">
                     <div className="absolute inset-[-5.15%_-4.12%]">
-                      <img alt="" className="block size-full max-w-none" src={imgVector15} />
+                      <img alt="" className="block size-full max-w-none brightness-0 invert" src={imgVector15} />
                     </div>
                   </div>
                 </div>
